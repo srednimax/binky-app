@@ -1,0 +1,19 @@
+# First-run setup, and when permissions are asked
+
+First-run setup is three short steps: **add your first rabbit** (skippable), **choose a backup scope**
+with a plain explanation of the trade-off, and **enable reminders** (skippable). The backup choice is
+deliberately here rather than in settings, because a backup buried in settings never gets made. All of it
+remains changeable in settings afterwards.
+
+The reminders step is our own screen explaining what reminders are for, with an opt-in button that then
+triggers Android's `POST_NOTIFICATIONS` dialog — never the bare system dialog on launch. Android permits
+only two denials before the permission is permanently refused with no further dialog, and a prompt shown
+before any reminder exists is the most likely to be dismissed. Since medication dose reminders are the one
+notification with real consequences (see ADR-0003), a silently denied permission is a genuine failure mode.
+
+Anyone who skips is asked again at point of use, when the first reminder or medication course is created.
+
+## Consequences
+
+Battery-optimisation exemption is *not* part of onboarding. It is requested when something is first
+scheduled, where the reason is visible. Weight units and other preferences are likewise asked in context.
