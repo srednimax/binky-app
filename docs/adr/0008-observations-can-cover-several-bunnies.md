@@ -35,6 +35,22 @@ Participants can be changed after creation without delete-and-recreate (which wo
 **removing** one follows the deletion rule below — drop that row, keep the observed-together marker on the
 rest.
 
+## The fluffle and the observation group are different columns
+
+Two groupings are easy to conflate and must not be. The **fluffle** — who lives together *now* — is
+**mutable current state**: rabbit bonds break, and a survivor is re-bonded with a new bunny after a death.
+It is a first-class table with a nullable `bunny.fluffleId` FK, set when adding or editing a bunny (the
+on-screen label is "Lives with"); a solo bunny has none. The **observation group** — who a given shared
+observation covered — is an **immutable historical fact**, stamped as its own `groupId` on the
+one-row-per-bunny observation records at creation.
+
+The group is **never derived from the current fluffle at read time.** If it were, re-bonding would silently
+rewrite history — a bunny appearing to have co-observed with one it did not even live with then, the exact
+false attribution this ADR exists to prevent. The fluffle only **pre-selects participants** when logging,
+and only its **current, non-archived** members. So a bond breaking is just an edit to "Lives with", and
+archiving a member drops it from future pre-selection while leaving both its `fluffleId` and its past
+shared observations intact — neither touches recorded history.
+
 ## Consequences
 
 A "no droppings" warning is weaker for a shared observation, since an empty tray means neither bunny

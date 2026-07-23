@@ -7,11 +7,25 @@ to storage the owner already owns.
 **Android Auto Backup** is enabled and covers the database, preferences, **avatars, and scanned
 documents** — the evidential core. The **photo gallery is excluded**: the per-app quota (~25 MB) is small,
 and backing up photos would silently exhaust it, leaving the owner believing they had a backup when they
-had none. Documents are kept *in* precisely because they are evidence the owner may need again — a record,
-not a sentimental memory — and are individually small; but they share the same quota, so a **size guard**
-stops including them once the backup set approaches the limit, and that must **surface honestly** rather
-than silently dropping documents while the owner believes they are covered. This content is fixed at build
-time and is not user-configurable.
+had none.
+
+Documents are kept *in* precisely because they are evidence the owner may need again — a record, not a
+sentimental memory — and are individually small; but they share the same quota. The blunt fact that shapes
+the design: **Android rejects the *entire* over-quota dataset — it does not back up partially.** So a pile
+of documents doesn't cost "just the documents"; it silently takes the database and avatars down with it,
+inverting this ADR's own promise that the evidential core is safe. The size guard therefore exists first to
+**keep the evidential core under quota**, and only second to preserve as many documents as fit.
+
+A static `include`/`exclude` XML rule cannot make that decision, so backup runs through a **custom
+`BackupAgent`**: it checkpoints the WAL into a consistent copy, includes database, preferences and avatars
+unconditionally, then admits documents **newest-first up to a ceiling *below* 25 MB** (headroom for
+database growth between the OS-scheduled backups, which the app does not control). Because Auto Backup runs
+unattended with no UI, "surface honestly" cannot happen at backup time: the agent **persists a marker**
+(last-backup timestamp + excluded-document count) into **preferences** — not the database, which restore
+replaces — and the app surfaces it later as a permanent status line in Backup settings ("Last automatic
+backup: 3 days ago — 12 documents were too large to include; use manual export to keep them"), plus a
+single low-key notification the first time exclusion kicks in. It is never dropped silently. This content
+is fixed at build time and is not user-configurable.
 
 **Manual export** writes a zip to a destination the owner picks, at one of three scopes:
 

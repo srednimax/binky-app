@@ -30,8 +30,14 @@ The top-level destinations and the switcher model are fixed **before Phase 1** a
 real screen does not exist yet — the photo gallery (Phase 3), Care & Meds (Phases 4-5) — so the back-stack
 and entry points are settled while the structure is still cheap to change (ADR-0012 #5).
 
-The bunny switcher is app-wide state, not per-screen. Per-bunny screens read the selected bunny; the global
-observation entry and the "All bunnies" list deliberately ignore it.
+The bunny switcher is app-wide state, not per-screen: a `StateFlow` on `AppContainer`, **persisted to
+DataStore** so an aggressive Xiaomi background-kill lands the owner back on the same bunny rather than a
+default. It is **resolved reactively against the live list of active bunnies**, so archiving or deleting the
+selected bunny self-heals with no explicit event — falling back to the sole remaining active bunny, else
+**"All bunnies"** (never silently auto-attributing to an arbitrary one), else the add-a-bunny empty state.
+Per-bunny screens read the selected bunny; the global observation entry and the "All bunnies" list
+deliberately ignore it. Because there is no "All bunnies" weight chart (below), the Weight screen shows a
+pick-a-bunny prompt while "All bunnies" is selected.
 
 Weight is always individual (ADR-0008), so the Weight screen is always bunny-scoped. There is no
 "All bunnies" weight chart — overlaying unrelated animals of different sizes on one axis would say nothing

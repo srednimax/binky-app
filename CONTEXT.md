@@ -65,7 +65,9 @@ The ordinary hard round pellets a bunny produces. How many, and how big, are the
 something is wrong. Amount, size, form and cecotropes are all optional and **mean "not checked" when
 untouched** — the earliest health signal is never auto-filled "normal", because a "fine" nobody verified is
 a false reassurance (ADR-0001). A healthy day stays one tap through an explicit **"Log a healthy day"**
-shortcut that *affirmatively* records normal droppings, distinct from opening the full observation form.
+shortcut that *affirmatively* records the glance-level facts — normal droppings, cecotropes eaten, no
+symptoms — while leaving graded fields (appetite, mood, activity, water) "not checked", distinct from
+opening the full observation form.
 _Avoid_: poop, faeces, stool, pellets (ambiguous with food pellets)
 
 **Symptom**:
