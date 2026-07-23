@@ -54,14 +54,18 @@ from a dose reminder, which belongs to a medication course and is time-critical.
 _Avoid_: task, todo, alert, notification
 
 **Watch**:
-A period during which the owner has declared a bunny needs closer attention. Only while a watch is
-active does the app chase the owner for fresh observations. Off by default.
+A **time-boxed** period during which the owner has declared a bunny needs closer attention: the owner sets
+a duration when starting it and it auto-expires with a prompt to extend or close. Only while a watch is
+active does the app chase the owner for fresh observations — once daily, and satisfied by logging. Off by
+default.
 _Avoid_: alert mode, monitoring, sick mode, observation period
 
 **Droppings**:
 The ordinary hard round pellets a bunny produces. How many, and how big, are the earliest signals that
-something is wrong. An observation always carries an amount, defaulting to normal so a healthy day is one
-tap; size, form and cecotropes are optional and mean unknown when untouched.
+something is wrong. Amount, size, form and cecotropes are all optional and **mean "not checked" when
+untouched** — the earliest health signal is never auto-filled "normal", because a "fine" nobody verified is
+a false reassurance (ADR-0001). A healthy day stays one tap through an explicit **"Log a healthy day"**
+shortcut that *affirmatively* records normal droppings, distinct from opening the full observation form.
 _Avoid_: poop, faeces, stool, pellets (ambiguous with food pellets)
 
 **Symptom**:

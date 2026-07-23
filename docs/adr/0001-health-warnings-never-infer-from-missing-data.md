@@ -7,7 +7,12 @@ passed without an entry. A warning that fires from silence would cry wolf during
 and a safety signal that is routinely dismissed is worse than none at all.
 
 Chasing the owner for fresh observations happens only while a **Watch** is active on that bunny, and
-that nagging is framed as a prompt about the owner's checking, not as a claim about the bunny.
+that nagging is framed as a prompt about the owner's checking, not as a claim about the bunny. A Watch is
+**time-boxed** — the owner sets a duration when starting it and it auto-expires, rather than persisting
+until manually switched off. A nag that never ends becomes wallpaper the owner stops seeing, which is the
+same dismissal failure this ADR exists to prevent; auto-expiry forces a conscious re-arm so the signal
+keeps meaning something. The nag is once daily, best-effort, and satisfied by logging any observation for
+that bunny that day.
 
 ## Consequences
 
