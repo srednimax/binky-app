@@ -20,3 +20,8 @@ Counts use `<plurals>`, not string concatenation. Polish has four plural categor
 
 Dates, numbers and weights are formatted through the platform so separators follow the locale — `2,45 kg`
 in Polish, `2.45 kg` in English. Never hand-format a date.
+
+The built-in symptom list (ADR-0010) is seeded as **stable keys rendered via `strings.xml`**, not as
+English strings in the database. A seeded English row would display in English on a Polish device,
+bypassing translation entirely and leaving the symptom picker half-translated. Only owner-added symptoms
+are untranslatable literal text, which is expected.

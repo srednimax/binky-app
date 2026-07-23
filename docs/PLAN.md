@@ -40,7 +40,10 @@ confirmations and removes its media; a deliberately broken image path renders as
 ## Phase 2 — Weight and observations
 
 - Weight entry and chart. The chart plots **real timestamps, not list index**.
-- Trend summary: change since last entry and over 30 days, flagging a drop past a threshold.
+- Trend summary: change since last entry and over 30 days, flagging a drop past a threshold. This is the
+  app's **single load-bearing safety signal** — the one thing that fires without the owner pre-diagnosing
+  (CONTEXT.md) — so its threshold math, gram-delta display and time-correct chart get the most careful
+  unit tests in the project.
 - Observation entry (ADR-0001): every field optional — droppings, appetite, mood, activity, water,
   cecotropes, symptoms, note. Timeline grouped by day for display only.
 - Warnings derive from recorded observations, never from silence.
@@ -52,13 +55,15 @@ empty database produces no warnings.
 
 Moved ahead of vet/meds: by the end of Phase 2 the app holds irreplaceable data with no way off the device.
 
-- Auto Backup restricted to database and preferences; media excluded; WAL checkpointed or journal files
-  excluded (ADR-0005).
+- Auto Backup covers database, preferences, avatars and scanned documents (the evidential core); the photo
+  gallery excluded with an honest size guard; WAL checkpointed or journal files excluded (ADR-0005).
 - Manual export at the three scopes — Essential / Records / Everything — via the share sheet.
 - Restore, stating honestly what the file contains.
 - First-run setup: add first bunny (skippable) → backup scope → reminders opt-in (skippable), per ADR-0006.
 - Then attempt the remembered-folder destination and **verify on the real device** whether Google Drive's
-  provider accepts writes. This is the plan's biggest unverified assumption.
+  provider accepts writes. Still the plan's biggest unverified assumption — but with the evidential core
+  now in Auto Backup (ADR-0005), it gates only the sentimental photo gallery, not vet evidence, so its
+  failure is survivable.
 
 **Gate:** export at each scope, clear app data, restore, and confirm what should be present is present and
 what was excluded degrades gracefully.
@@ -76,14 +81,19 @@ prompt on easy ground, so dose reminders later add only the exact-alarm path.
 - Battery-optimisation exemption requested here, at the point something is first scheduled.
 - Care reminders optionally hand off to the owner's calendar, one-way, no permission (ADR-0014).
 
-**Gate:** a reminder set for +2 minutes fires while backgrounded and still fires after a reboot; tapping
+**Gate:** a reminder set for +2 minutes fires while backgrounded and still fires after a reboot; a reminder
+also fires after the phone has sat idle in Doze **overnight** (screen off, app unopened) on the real
+Xiaomi — the +2-minute happy path is not sufficient evidence of reliability (ADR-0003); tapping
 *Add to calendar* on an annual reminder opens the calendar app with the date and yearly repeat already
 filled in.
 
 ## Phase 5 — Vet, medications, documents, dose reminders
 
-- Vets directory; visits linked to a bunny and optionally a vet. A weight recorded on a visit also writes
-  a weight entry in the same transaction.
+- Vets directory; visits linked to a bunny and optionally a vet. A weight recorded on a visit is stored as
+  **one** weight entry tagged with its origin (`source = manual | visit`, plus the visit id) in the same
+  transaction — never a second copy of the number, so the chart and the visit cannot drift apart. Adding
+  `source`/`visitId` is a Phase-5 migration (every earlier weight is `manual`). Deleting a visit makes an
+  explicit, stated choice about its origin-tagged weight: keep it as a standalone weighing, or remove it.
 - Medication courses with start/end and an optional daily schedule of clock times. Due doses derived, not
   stored (ADR-0002). Doses recordable ad hoc, with or without a schedule.
 - Dose reminders on exact alarms, default on per course and switchable off (ADR-0003), reusing the
@@ -92,7 +102,8 @@ filled in.
 
 **Gate:** a two-page scanned document reopens after restart; a visit-recorded weight appears in the chart;
 shortening a course removes its future due doses without touching recorded ones; a dose reminder fires at
-its exact clock time.
+its exact clock time after an **overnight Doze idle** on the real Xiaomi, and while battery-optimisation
+exemption/autostart are unconfirmed it presents as **best-effort**, never as an armed alarm (ADR-0003).
 
 ## Phase 6 — Release
 

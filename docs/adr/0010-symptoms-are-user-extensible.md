@@ -15,6 +15,14 @@ means pain, so an unqualified "teeth grinding" would invert the meaning.
 
 ## Consequences
 
+Built-in symptoms carry a **stable key**, not an English display string, and are rendered through
+`strings.xml` so they translate like all other UI text (ADR-0013). Owner-added symptoms store their
+**literal text** plus a flag marking them owner-created; those are untranslatable, as expected. An
+observation references a symptom's **stable id**, and the "how often has this happened?" count keys off
+that id — never the display text — so a symptom can be renamed or translated without orphaning its
+history. (The English strings the seed list uses above are the *labels* behind those keys, not the stored
+identity.)
+
 Removing a symptom hides it from the picker and never deletes it from historical observations.
 
 The free-text note on an observation remains, for one-off detail that is not a symptom.

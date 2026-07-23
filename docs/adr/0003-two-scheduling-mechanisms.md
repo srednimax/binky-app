@@ -19,3 +19,15 @@ medication course is active, which is expected to be rare.
 Reliability on aggressive Android skins (the test device is Xiaomi HyperOS) depends on the app being
 exempted from battery optimisation and allowed to autostart. Neither mechanism fires reliably without
 that, so the app must detect it and ask, rather than assuming scheduling works.
+
+A dose reminder that *silently* fails to fire is worse than none: the owner stops watching for the dose
+themselves, trusting a prompt that never comes, so unreliability doesn't degrade the feature — it inverts
+it into a hazard. *Asking* for the exemption is therefore not enough:
+
+- **Hard reliability gate.** Before dose reminders are treated as trustworthy, a dose alarm must be proven
+  to fire after the phone has sat idle in Doze **overnight** — screen off, app unopened for 12h+ — on the
+  real Xiaomi. The two-minute happy path does not clear this gate.
+- **Honest state, not a false alarm.** While battery-optimisation exemption and autostart are not
+  confirmed, a dose reminder shows as **best-effort** ("may not fire reliably on this phone until you
+  enable X"), never as an armed alarm. If the overnight gate cannot be met, dose reminders ship explicitly
+  as best-effort — not as a safety-critical alarm the app cannot stand behind on its own hardware.

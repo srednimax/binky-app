@@ -23,3 +23,10 @@ produced anything. The app must say so rather than implying it is about one bunn
 
 Separating a bunny for treatment needs no model change: stop covering both, and individual observations
 resume immediately.
+
+**Deleting** one bunny in a shared observation (ADR-0004) removes only that bunny's row. The surviving
+rows **keep their observed-together marker** and are still rendered as shared ("observed together") even
+when only one member still resolves — never silently downgraded to an individual observation, which would
+recreate exactly the false attribution this ADR exists to prevent. No tombstone of the deleted bunny is
+needed: the marker alone keeps the record honest. The delete confirmation counts sole-owned and
+shared-participation observations separately (ADR-0004).

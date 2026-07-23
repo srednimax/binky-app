@@ -1,7 +1,9 @@
 # Bunny Health Tracker
 
-Tracks the health of one or more pet bunnies so their owner can spot problems early — especially the
-sudden changes in eating and droppings that signal a bunny emergency.
+Keeps a trustworthy record of one or more pet bunnies' health — weight, droppings, appetite, symptoms,
+vet visits — so their owner and their vet can see changes over time. It is a record, not a diagnosis: its
+one genuine early signal is the **weight trend**, which moves whether or not anyone logs a mood; everything
+else helps interpret what was actually observed, and the app never infers trouble from silence (ADR-0001).
 
 ## Language
 
