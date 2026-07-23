@@ -107,11 +107,13 @@ steps in Phase 3 — see the onboarding decision in the README.
 Confirm the launcher reads **Bunny Tracker**. The `applicationId` changed, so Android treats this as a
 *different* app — `adb uninstall app.rabbit.tracker` or two icons sit side by side.
 
-## Then, by hand
+## Repo rename — partly done already
 
-Renaming the working directory has to happen outside a running session:
+The GitHub repo **is already renamed** to `bunny-app`, and `origin` points at
+`git@github.com:srednimax/bunny-app.git`. GitHub redirects the old URL, so clones elsewhere keep working.
+
+What remains is the local directory, which has to happen outside a running session:
 
 ```bash
-gh repo rename bunny-app
-cd ~/repos && mv rabbit-app bunny-app && cd bunny-app && git remote -v   # check the URL updated
+cd ~/repos && mv rabbit-app bunny-app && cd bunny-app && git remote -v
 ```
