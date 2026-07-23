@@ -5,10 +5,10 @@ plugins {
 }
 
 android {
-    namespace = "app.rabbit.tracker"
+    namespace = "app.bunny.tracker"
     compileSdk = 36
     defaultConfig {
-        applicationId = "app.rabbit.tracker"
+        applicationId = "app.bunny.tracker"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

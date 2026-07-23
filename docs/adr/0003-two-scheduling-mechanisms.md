@@ -6,7 +6,7 @@ typically once or twice daily at set times, and a late or dropped reminder can m
 treatment. Those therefore use `AlarmManager.setExactAndAllowWhileIdle` with a `BOOT_COMPLETED` receiver.
 
 Dose reminders default to on when a course has a schedule, and can be switched off per course — an owner
-whose rabbit is not in a risky condition, or who dislikes alarms, should not be forced into them.
+whose bunny is not in a risky condition, or who dislikes alarms, should not be forced into them.
 
 ## Consequences
 

@@ -1,6 +1,6 @@
-# rabbit-app
+# bunny-app
 
-Native Android app for tracking the health of one or more pet rabbits: weight over time, observations of
+Native Android app for tracking the health of one or more pet bunnies: weight over time, observations of
 droppings and wellbeing, vet visits, medications, scanned documents, photos, and reminders for recurring
 care. Free, ad-free, no server, all data on the device.
 
@@ -33,8 +33,9 @@ the *why*, don't restate the line. Prefer explicit and readable over clever.
 
 ## House rules
 
-- **Media paths in the DB are relative** (`photos/<uuid>.jpg`), resolved against `filesDir` at read time.
-  Absolute paths change across installs and break restored backups.
+- **Media paths in the DB are relative** and split by kind — `avatars/<uuid>.jpg`, `photos/<uuid>.jpg`,
+  `documents/<uuid>.jpg` — resolved against `filesDir` at read time. Absolute paths change across installs
+  and break restored backups; the split makes ADR-0005's export scopes a list of directories.
 - **All image writes go through the media helper** — it downsamples and re-encodes. Bypassing it puts
   full-resolution bitmaps in memory and blows up the photo grid.
 - **Missing media renders as a placeholder, never a crash.** A restore may legitimately lack photos.
@@ -65,7 +66,7 @@ adb devices                      # confirm the phone is attached
 ## Layout
 
 ```
-app/src/main/java/app/rabbit/tracker/
+app/src/main/java/app/bunny/tracker/
   data/        Room entities, DAOs, database, type converters, repositories
   media/       MediaFiles.kt — the single path for persisting images. Named to avoid colliding
                with Android's own android.provider.MediaStore

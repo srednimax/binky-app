@@ -6,7 +6,7 @@ than carrying a migration for every field added to a still-unsettled model. Anyt
 Phase 3 is disposable test data by definition.
 
 From Phase 3 onward — once export and restore exist, and once builds may be handed to alpha testers —
-every schema change gets a real Room migration with a test. An alpha tester who loses their rabbit's
+every schema change gets a real Room migration with a test. An alpha tester who loses their bunny's
 history to a routine update does not stay a tester.
 
 Regardless of phase, **a destructive wipe never happens silently.** On startup the database file's schema

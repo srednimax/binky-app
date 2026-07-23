@@ -1,4 +1,4 @@
-package app.rabbit.tracker.theme
+package app.bunny.tracker.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -30,7 +30,7 @@ private val LightColorScheme =
   )
 
 @Composable
-fun RabbitTrackerTheme(
+fun BunnyTrackerTheme(
   darkTheme: Boolean = isSystemInDarkTheme(),
   // Dynamic color is available on Android 12+
   dynamicColor: Boolean = true,

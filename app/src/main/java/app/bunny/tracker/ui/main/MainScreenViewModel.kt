@@ -1,9 +1,9 @@
-package app.rabbit.tracker.ui.main
+package app.bunny.tracker.ui.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.rabbit.tracker.data.DataRepository
-import app.rabbit.tracker.ui.main.MainScreenUiState.Success
+import app.bunny.tracker.data.DataRepository
+import app.bunny.tracker.ui.main.MainScreenUiState.Success
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch

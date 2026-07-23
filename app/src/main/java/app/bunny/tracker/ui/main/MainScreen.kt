@@ -1,4 +1,4 @@
-package app.rabbit.tracker.ui.main
+package app.bunny.tracker.ui.main
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
@@ -9,8 +9,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
-import app.rabbit.tracker.data.DefaultDataRepository
-import app.rabbit.tracker.theme.RabbitTrackerTheme
+import app.bunny.tracker.data.DefaultDataRepository
+import app.bunny.tracker.theme.BunnyTrackerTheme
 
 @Composable
 fun MainScreen(
@@ -45,11 +45,11 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 fun MainScreenPreview() {
-  RabbitTrackerTheme { MainScreen(listOf("Android")) }
+  BunnyTrackerTheme { MainScreen(listOf("Android")) }
 }
 
 @Preview(showBackground = true, widthDp = 340)
 @Composable
 fun MainScreenPortraitPreview() {
-  RabbitTrackerTheme { MainScreen(listOf("Android")) }
+  BunnyTrackerTheme { MainScreen(listOf("Android")) }
 }
