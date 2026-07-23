@@ -22,8 +22,8 @@ meaningful amount of data entered. Elapsed time alone would fire at someone who 
 nothing and forgot.
 
 It is shown **once**. Dismissing is permanent — no "remind me later", no second attempt, and it does not
-return after an app update. It is never shown while a rabbit is under a Watch or on an active medication
-course: someone who opened the app because their rabbit is ill should not be asked for money.
+return after an app update. It is never shown while a bunny is under a Watch or on an active medication
+course: someone who opened the app because their bunny is ill should not be asked for money.
 
 A permanent "Support this app" entry in settings covers everyone who dismissed it or grew grateful later.
 The wording is thanks, not need — there are no bills to plead, and saying otherwise would be a lie.

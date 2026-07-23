@@ -1,6 +1,6 @@
-package app.rabbit.tracker.ui.main
+package app.bunny.tracker.ui.main
 
-import app.rabbit.tracker.data.DataRepository
+import app.bunny.tracker.data.DataRepository
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first

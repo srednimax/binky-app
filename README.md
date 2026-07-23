@@ -1,9 +1,9 @@
-# rabbit-app
+# bunny-app
 
-An Android app for keeping track of a rabbit's health.
+An Android app for keeping track of a bunny's health.
 
-Rabbits hide illness well, and the warning signs — a little less weight, smaller droppings, a skipped
-meal — are easy to miss and easy to forget. This app is somewhere to write them down, for one rabbit or
+Bunnies hide illness well, and the warning signs — a little less weight, smaller droppings, a skipped
+meal — are easy to miss and easy to forget. This app is somewhere to write them down, for one bunny or
 several, so a change over weeks is visible instead of remembered.
 
 **What it keeps track of**
@@ -16,7 +16,7 @@ several, so a change over weeks is visible instead of remembered.
 - Reminders for recurring care — nail trims, vaccinations, weigh-ins
 - Photos, because you will take them anyway
 
-Rabbits that live together share a litter tray, so an observation can honestly cover more than one of them
+Bunnies that live together share a litter tray, so an observation can honestly cover more than one of them
 rather than pretending the droppings belonged to whichever name you tapped.
 
 **What it isn't**

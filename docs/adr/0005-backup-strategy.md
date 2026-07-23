@@ -1,6 +1,6 @@
 # Backup: automatic for the database, manual and scoped for media
 
-All data lives on the device, so losing the phone means losing the rabbit's history unless the owner acts.
+All data lives on the device, so losing the phone means losing the bunny's history unless the owner acts.
 The app therefore backs up on two levels, and neither requires a server or any running cost — exports go
 to storage the owner already owns.
 
@@ -11,7 +11,7 @@ user-configurable.
 
 **Manual export** writes a zip to a destination the owner picks, at one of three scopes:
 
-- **Essential** — database and rabbit avatars.
+- **Essential** — database and bunny avatars.
 - **Records** *(default)* — Essential plus scanned documents; everything the owner may need again.
 - **Everything** — Records plus the photo gallery; large and occasional.
 

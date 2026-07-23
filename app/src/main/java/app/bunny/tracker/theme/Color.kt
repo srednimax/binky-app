@@ -1,4 +1,4 @@
-package app.rabbit.tracker.theme
+package app.bunny.tracker.theme
 
 import androidx.compose.ui.graphics.Color
 
