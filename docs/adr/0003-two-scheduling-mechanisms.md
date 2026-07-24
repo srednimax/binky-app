@@ -8,6 +8,21 @@ treatment. Those therefore use `AlarmManager.setExactAndAllowWhileIdle` with a `
 Dose reminders default to on when a course has a schedule, and can be switched off per course — an owner
 whose bunny is not in a risky condition, or who dislikes alarms, should not be forced into them.
 
+## Dose timing is wall-clock, not a fixed interval
+
+A course's clock times are **wall-clock**: an "08:00 dose" is 08:00 local time, because the owner gives the
+pill relative to their own day (breakfast, bedtime), not to an abstract 24-hour interval. The next dose's
+absolute trigger is therefore resolved **fresh each time** — the `LocalTime` on the next date, in the
+device's *current* zone and DST rules, converted to an `Instant` — so DST changes and travel are handled by
+construction rather than by arithmetic on a stored epoch value. Using `java.time` `ZonedDateTime` default
+resolution, a dose whose wall-clock time falls in a spring-forward *gap* fires **once**, shifted forward to
+the first valid instant; one in a fall-back *overlap* fires **once**, at the earlier offset. Never zero
+times, never twice.
+
+A pre-computed absolute alarm points at the wrong wall-clock the moment the clock or zone changes, so
+`ACTION_TIMEZONE_CHANGED` and `ACTION_TIME_CHANGED` receivers recompute pending dose alarms, alongside the
+`BOOT_COMPLETED` receiver. Care reminders are day-granularity and all-day, so this applies to doses only.
+
 ## Consequences
 
 The exact-alarm permission is `SCHEDULE_EXACT_ALARM`, requested via a prompt into system settings — see
@@ -19,3 +34,15 @@ medication course is active, which is expected to be rare.
 Reliability on aggressive Android skins (the test device is Xiaomi HyperOS) depends on the app being
 exempted from battery optimisation and allowed to autostart. Neither mechanism fires reliably without
 that, so the app must detect it and ask, rather than assuming scheduling works.
+
+A dose reminder that *silently* fails to fire is worse than none: the owner stops watching for the dose
+themselves, trusting a prompt that never comes, so unreliability doesn't degrade the feature — it inverts
+it into a hazard. *Asking* for the exemption is therefore not enough:
+
+- **Hard reliability gate.** Before dose reminders are treated as trustworthy, a dose alarm must be proven
+  to fire after the phone has sat idle in Doze **overnight** — screen off, app unopened for 12h+ — on the
+  real Xiaomi. The two-minute happy path does not clear this gate.
+- **Honest state, not a false alarm.** While battery-optimisation exemption and autostart are not
+  confirmed, a dose reminder shows as **best-effort** ("may not fire reliably on this phone until you
+  enable X"), never as an armed alarm. If the overnight gate cannot be met, dose reminders ship explicitly
+  as best-effort — not as a safety-critical alarm the app cannot stand behind on its own hardware.

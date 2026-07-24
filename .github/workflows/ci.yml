@@ -28,6 +28,11 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      # Fail fast on formatting before the expensive build/test steps.
+      # Fix locally with `./gradlew spotlessApply`.
+      - name: Formatting (Spotless)
+        run: ./gradlew spotlessCheck
+
       - name: Build debug APK
         run: ./gradlew assembleDebug
 

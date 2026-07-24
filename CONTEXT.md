@@ -1,7 +1,9 @@
 # Bunny Health Tracker
 
-Tracks the health of one or more pet bunnies so their owner can spot problems early — especially the
-sudden changes in eating and droppings that signal a bunny emergency.
+Keeps a trustworthy record of one or more pet bunnies' health — weight, droppings, appetite, symptoms,
+vet visits — so their owner and their vet can see changes over time. It is a record, not a diagnosis: its
+one genuine early signal is the **weight trend**, which moves whether or not anyone logs a mood; everything
+else helps interpret what was actually observed, and the app never infers trouble from silence (ADR-0001).
 
 ## Language
 
@@ -36,8 +38,9 @@ the gallery because ADR-0005 backs avatars up as Essential and photos only as Ev
 _Avoid_: profile picture, thumbnail, icon, photo
 
 **Medication Course**:
-A medicine a bunny is meant to take between a start and end date, optionally on a daily schedule of
-clock times. Scheduling can be switched off, leaving a course the owner simply records doses against.
+A medicine a bunny is meant to take from a start date, with an optional end (an open course is ongoing),
+optionally on a daily schedule of clock times. The prescribed dose amount is free text. Scheduling can be
+switched off, leaving a course the owner simply records doses against.
 _Avoid_: prescription, treatment, med
 
 **Dose**:
@@ -52,14 +55,20 @@ from a dose reminder, which belongs to a medication course and is time-critical.
 _Avoid_: task, todo, alert, notification
 
 **Watch**:
-A period during which the owner has declared a bunny needs closer attention. Only while a watch is
-active does the app chase the owner for fresh observations. Off by default.
+A **time-boxed** period during which the owner has declared a bunny needs closer attention: the owner sets
+a duration when starting it and it auto-expires with a prompt to extend or close. Only while a watch is
+active does the app chase the owner for fresh observations — once daily, and satisfied by logging. Off by
+default.
 _Avoid_: alert mode, monitoring, sick mode, observation period
 
 **Droppings**:
 The ordinary hard round pellets a bunny produces. How many, and how big, are the earliest signals that
-something is wrong. An observation always carries an amount, defaulting to normal so a healthy day is one
-tap; size, form and cecotropes are optional and mean unknown when untouched.
+something is wrong. Amount, size, form and cecotropes are all optional and **mean "not checked" when
+untouched** — the earliest health signal is never auto-filled "normal", because a "fine" nobody verified is
+a false reassurance (ADR-0001). A healthy day stays one tap through an explicit **"Log a healthy day"**
+shortcut that *affirmatively* records the glance-level facts — normal droppings, cecotropes eaten, no
+symptoms — while leaving graded fields (appetite, mood, activity, water) "not checked", distinct from
+opening the full observation form.
 _Avoid_: poop, faeces, stool, pellets (ambiguous with food pellets)
 
 **Symptom**:

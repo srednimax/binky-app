@@ -9,11 +9,18 @@ years, and it commits the author to maintaining a patron relationship.
 have not paid. This keeps the app honestly free and keeps it clear of digital-goods payment policy
 entirely.
 
-The supporter credits list is **baked into each release**, not fetched. The app makes no network requests
-at all, which is a real property worth protecting for something holding a pet's medical records — trading
-it away so a thank-you list updates sooner would be a bad deal. Names are added by hand from the Buy Me a
-Coffee supporters export at release time, and only where the supporter opted into being named; everyone
-else is a count of anonymous supporters.
+The supporter credits list is **baked into each release**, not fetched. The app's **own code** makes no
+network requests at all — no analytics, no telemetry, no fetched content — which is a real property worth
+protecting for something holding a pet's medical records; trading it away so a thank-you list updates
+sooner would be a bad deal. Names are added by hand from the Buy Me a Coffee supporters export at release
+time, and only where the supporter opted into being named; everyone else is a count of anonymous
+supporters.
+
+The one qualification is not our code: the **optional** ML Kit document scanner is delivered by Google
+Play services, which may download its module over the network on first use and processes the scan in
+Google's process (ADR-0009). So the honest claim is "the app's own code makes no network requests", not
+"the app makes none at all". An owner who wants zero Google involvement can decline scanning and use the
+plain-camera fallback, which ADR-0009 already provides.
 
 ## The one ask
 

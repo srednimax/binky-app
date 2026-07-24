@@ -1,0 +1,22 @@
+name: Release Please
+
+# Runs on every push to main. release-please reads the Conventional Commits since
+# the last release and keeps a "release PR" open that bumps versionName in
+# app/build.gradle.kts and updates CHANGELOG.md. Merging that PR tags the repo
+# (vX.Y.Z) and creates a GitHub Release. Nothing is released until you merge it.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          # Config + manifest are auto-detected at the repo root.
+          token: ${{ secrets.GITHUB_TOKEN }}

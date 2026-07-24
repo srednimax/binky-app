@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Personal, machine-local Claude Code instructions
+/CLAUDE.local.md
+
+# Context handoff note (written by /handoff, resumed after /clear)
+/HANDOFF.md
