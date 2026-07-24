@@ -7,6 +7,10 @@ care. Free, ad-free, no server, all data on the device.
 - **Vocabulary:** [`CONTEXT.md`](CONTEXT.md) — use these terms in code and UI.
 - **Decisions and why:** [`docs/adr/`](docs/adr/) — read before changing anything they cover.
 - **Roadmap and status:** [`docs/PLAN.md`](docs/PLAN.md).
+- **Commits & releasing:** [`docs/RELEASING.md`](docs/RELEASING.md). Commit subjects **must** be
+  [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `feat!:`, `docs:`, …) — a
+  `commit-msg` hook rejects anything else, and release-please derives the version + `CHANGELOG.md` from them.
+  `versionName` and `versionCode` are automated; never hand-edit either.
 
 Don't restate ADR reasoning here; link to it. This file is loaded every session and must stay short.
 

@@ -4,6 +4,23 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// versionCode must strictly increase for every installable build. We derive it
+// from the git commit count so it climbs on its own and is never hand-edited.
+// (Unlike versionName below, this number is NOT semver — it only has to keep
+// going up, and the Play Store / installer rejects a build whose code didn't.)
+// runCatching falls back to 1 when git history isn't available — a shallow CI
+// checkout or a source archive — which only affects debug builds that don't care.
+val gitVersionCode: Int =
+    runCatching {
+        providers
+            .exec {
+                commandLine("git", "rev-list", "--count", "HEAD")
+            }.standardOutput.asText
+            .get()
+            .trim()
+            .toInt()
+    }.getOrDefault(1)
+
 android {
     namespace = "app.bunny.tracker"
     compileSdk = 36
@@ -11,8 +28,11 @@ android {
         applicationId = "app.bunny.tracker"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = gitVersionCode
+        // versionName is the human-facing semver string. Do NOT edit it by hand —
+        // release-please bumps it from your Conventional Commits. The trailing
+        // comment is the marker its "generic" updater looks for. See docs/RELEASING.md.
+        versionName = "0.1.0" // x-release-please-version
     }
 
     buildTypes {
