@@ -51,6 +51,22 @@ and only its **current, non-archived** members. So a bond breaking is just an ed
 archiving a member drops it from future pre-selection while leaving both its `fluffleId` and its past
 shared observations intact — neither touches recorded history.
 
+### The fluffle's own identity and lifecycle
+
+A fluffle carries an **optional custom name** (`Fluffle.name`, nullable): named, it shows as the owner's
+label ("The Girls"); unnamed, it renders by its members ("Thumper & Clover"). "Lives with" is a **symmetric
+join** — putting Thumper with Clover writes *both* onto one `fluffleId` row, and if Clover already lives
+with Hazel, Thumper joins the existing trio rather than forming a rival pair. A bunny has exactly one
+`fluffleId`, matching the biology: one bonded group, one shared space and tray.
+
+Membership dropping below two active bunnies is handled by *how* it dropped. **Archival** changes nothing —
+`fluffleId`, the name, and history all stay, because the survivor of a bonded pair genuinely *did* live
+with the archived one. **Deletion** (the destructive, explicit path, ADR-0004) is different: when deleting
+a member leaves a single active bunny, that survivor is **reverted to solo** — `fluffleId` set null and the
+now-empty fluffle row cleaned up in the same transaction. A consequence to accept: a custom name is
+therefore **ephemeral** — dissolving a group by deleting its members discards the name, and re-bonding later
+means naming afresh. That is correct: the group genuinely dissolved.
+
 ## Consequences
 
 A "no droppings" warning is weaker for a shared observation, since an empty tray means neither bunny

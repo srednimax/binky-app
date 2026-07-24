@@ -41,6 +41,24 @@ The scope is chosen during first-run setup with a plain explanation of the trade
 settings — and can be changed in settings later. The scope is recorded in the export filename so a
 restore can state what the file actually contains.
 
+## Restore replaces the database but merges media
+
+The export's counterpart, restore, is a **full database replace** — the incoming db becomes the app's db
+outright (which is why the exclusion marker lives in preferences, not the database). Media directories,
+though, are **merged, not wiped**: the backup's files are overlaid onto whatever is on disk, keyed by their
+relative `<kind>/<uuid>.jpg` path. This is safe precisely because the split relative paths make each uuid a
+**stable global identity** — a file with a given uuid is always that exact image, so an overlay can never
+mismatch. It is strictly better than wipe-and-replace in the case that matters: restoring an **Essential**
+backup (db + avatars, no photos) onto a phone that still holds its photo files keeps those irreplaceable
+photos instead of turning them all into placeholders. The database is always the *full* database regardless
+of scope, so its photo rows line up with the surviving files; any file the restored db does not reference
+is an invisible orphan, never rendered, cleanable later — it never resurrects stale data into the UI.
+
+Because a restore is an irreversible destructive replace, it is gated behind an **explicit confirmation**
+stating what it will replace ("[scope] backup from [date]"), and it **snapshots the current database aside**
+(timestamped, next to the media) first — the same recovery-artifact move ADR-0007 makes for a schema wipe.
+Restore is the same class of event and gets the same net.
+
 ## Consequences
 
 A restore may legitimately arrive without media, and the app must show missing images as a placeholder

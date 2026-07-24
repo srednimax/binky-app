@@ -42,3 +42,23 @@ pick-a-bunny prompt while "All bunnies" is selected.
 Weight is always individual (ADR-0008), so the Weight screen is always bunny-scoped. There is no
 "All bunnies" weight chart — overlaying unrelated animals of different sizes on one axis would say nothing
 true.
+
+## Each screen resolves "All bunnies" by the shape of its data
+
+"All bunnies" is not one behaviour — each top-level screen answers it by whether its data is individual or
+fluffle-shaped, and the resulting asymmetry is intentional:
+
+- **Home** becomes a **fluffle dashboard**: one compact vitals card per active bunny — current weight and
+  trend flag, any active watch, any active medication course, the date of the most recent observation. This
+  is the most valuable screen for a multi-bunny owner, and it is where a trend flag on *bunny B* catches the
+  eye of someone who opened the app thinking about bunny A. Each card is the single-bunny Home summary in
+  miniature.
+- **Observations** becomes the **combined day-grouped timeline** across every active bunny, each row showing
+  which bunnies it covered (shared observations are already multi-bunny, ADR-0008). Selecting a single bunny
+  *filters* to observations that include it; here the single-bunny view is the special case and "All
+  bunnies" is the natural default.
+- **Weight** alone **refuses** "All bunnies" and shows a pick-a-bunny prompt, because weight is individual
+  and no honest cross-bunny chart exists (above).
+
+Three screens, three empty-selection behaviours, driven entirely by whether the underlying data is
+individual (weight) or fluffle-shaped (observations) — not an inconsistency to smooth over.

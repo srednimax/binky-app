@@ -38,8 +38,9 @@ the gallery because ADR-0005 backs avatars up as Essential and photos only as Ev
 _Avoid_: profile picture, thumbnail, icon, photo
 
 **Medication Course**:
-A medicine a bunny is meant to take between a start and end date, optionally on a daily schedule of
-clock times. Scheduling can be switched off, leaving a course the owner simply records doses against.
+A medicine a bunny is meant to take from a start date, with an optional end (an open course is ongoing),
+optionally on a daily schedule of clock times. The prescribed dose amount is free text. Scheduling can be
+switched off, leaving a course the owner simply records doses against.
 _Avoid_: prescription, treatment, med
 
 **Dose**:

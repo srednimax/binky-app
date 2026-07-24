@@ -44,8 +44,10 @@ the *why*, don't restate the line. Prefer explicit and readable over clever.
   hides the signal that `−40 g` makes obvious.
 - **DAOs return `Flow`**, screens collect it. Don't hand-roll refresh calls.
 - **Enums with `TypeConverter`s, not loose strings**, for droppings, mood and care type — closed
-  vocabularies. Symptoms are the exception: a seeded table, because owners add their own (ADR-0010).
-  Store enums by **name, never ordinal**, so adding a value can't rewrite history.
+  vocabularies. For **care type** the closed enum only tags the *known* kinds; a care reminder is
+  `{label, interval, optional type}`, so custom reminders carry a free-text label with no type (ADR-0018).
+  Symptoms are the other exception: a seeded table, because owners add their own (ADR-0010). Store enums by
+  **name, never ordinal**, so adding a value can't rewrite history.
 - **The weight chart plots real timestamps, not list index** — weighings are irregular and index-based
   plotting silently lies about the trend.
 - **Never infer a health problem from missing data** (ADR-0001). Silence means nobody looked.

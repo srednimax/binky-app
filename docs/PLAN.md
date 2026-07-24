@@ -34,14 +34,18 @@ package `app.bunny.tracker`.
 - Navigation shell per ADR-0015: the bunny-first top-level destinations (Home / Weight / Observations /
   Care & Meds / More), the persistent bunny switcher and the global "+" observation entry are fixed now —
   as stubs where a screen doesn't exist yet — because ADR-0012 requires the structure decided before the
-  first screen.
+  first screen. In "All bunnies" mode Home is a fluffle dashboard and Observations a combined timeline,
+  while Weight refuses with a pick-a-bunny prompt (ADR-0015).
 - Retire the template placeholders as real screens land: keep `Navigation.kt` / `NavigationKeys.kt` as the
   Nav3 wiring; delete `DataRepository.kt`, `MainScreen.kt`, `MainScreenViewModel.kt` and their two tests.
-- Bunny list / add / edit / archive / delete, per ADR-0004. Avatar from camera or album.
+- Bunny list / add / edit / archive / delete, per ADR-0004. Avatar from camera or album. Profile fields —
+  `name`, `sex`, `neutered`, `birthdate` (with an "approximate" flag), `breed`, `colour/markings`, and no
+  target weight — per ADR-0016.
 - **Fluffle** as a first-class table with a nullable `bunny.fluffleId` FK (ADR-0008): "Lives with" is set
   when adding or editing a bunny; solo bunnies have none. The observation `groupId` is a *separate* column
   stamped per shared observation (Phase 2) and is never derived from the current fluffle, so re-bonding or
-  archival can't rewrite past observations.
+  archival can't rewrite past observations. The fluffle carries an optional custom name, "Lives with" is a
+  symmetric join, and *deleting* a member down to one active bunny reverts that survivor to solo (ADR-0008).
 - **Selected-bunny state** is app-wide (ADR-0015): a `StateFlow` on `AppContainer`, persisted to DataStore
   so a Xiaomi background-kill lands the owner back on the same bunny, resolved reactively against the live
   list of active bunnies so archiving or deleting the selected bunny self-heals — falling back to the sole
@@ -76,12 +80,22 @@ top-level destinations exist (as stubs where needed) and the bunny switcher scop
   weigh-in no longer trips the trigger against the *current* trailing baseline — covering both a real regain
   and a **stabilized-low** bunny whose baseline has caught up, because the signal is about a *drop*, not
   absolute thinness, and a flag that never clears becomes wallpaper (the ADR-0001 auto-expiry logic).
-  **Manual acknowledge** stores the weight it was acknowledged at: a later still-low reading stays quiet,
-  but one that drops meaningfully **below the acknowledged weight** raises a fresh flag. **No push
+  **Manual acknowledge** stores the weight it was acknowledged at; the watermark is **episode-scoped** —
+  discarded the instant the trigger goes false, so a since-recovered episode can never silence a new drop —
+  and a later reading re-raises only when it falls **below the acknowledged weight by more than the
+  noise-floor**. The flag is **derived on read**, never stored, so editing a fat-fingered timestamp
+  self-heals and a back-dated weight recomputes the *current* flag but never resurrects one for a past,
+  since-recovered moment; a **vet-directed diet** is an accepted limitation the flag names in its own copy
+  rather than suppressing (all ADR-0001). **No push
   notification:** a drop can only appear when a weight is logged and the owner is present at that moment, so
   a push would be redundant and would drift toward sounding diagnostic.
 - Observation entry (ADR-0001): every field optional — droppings, appetite, mood, activity, water,
-  cecotropes, symptoms, note. Back-dating supported on the same terms as weight. Droppings **amount
+  cecotropes, symptoms, note. The closed vocabularies (each also carrying *not checked*): droppings amount
+  `none·few·normal`, size `small·normal·large`, form `normal·misshapen·soft·watery·mucus`; cecotropes
+  `eaten·left uneaten`; appetite `none·reduced·normal`; mood `bright·subdued·distressed`; activity
+  `normal·reduced·very low`; water `none·reduced·normal·increased` — water the only field that records
+  "more than usual", since only there is it a signal. Symptoms attach as a binary tick, severity carried
+  by the symptom's name (ADR-0010). Back-dating supported on the same terms as weight. Droppings **amount
   defaults to "not checked," never a silent "normal"** (CONTEXT.md): auto-filling the earliest health
   signal with an unverified "fine" is a false reassurance the app must not manufacture. The one-tap healthy
   day is preserved by an explicit **"Log a healthy day"** shortcut that *affirmatively* records the
@@ -114,7 +128,9 @@ Moved ahead of vet/meds: by the end of Phase 2 the app holds irreplaceable data 
   persisted as a marker (timestamp + excluded count) and surfaced honestly in Backup settings plus a
   one-time notification — never silently.
 - Manual export at the three scopes — Essential / Records / Everything — via the share sheet.
-- Restore, stating honestly what the file contains.
+- Restore (ADR-0005): a full database replace but a **media merge** (keyed by relative uuid path, so an
+  Essential restore keeps photos already on disk), gated behind an explicit confirmation and a pre-restore
+  database snapshot, stating honestly what the file contains.
 - First-run setup: add first bunny (skippable) → backup scope → reminders opt-in (skippable), per ADR-0006.
 - Then attempt the remembered-folder destination and **verify on the real device** whether Google Drive's
   provider accepts writes. Still the plan's biggest unverified assumption — but with the evidential core
@@ -134,7 +150,9 @@ prompt on easy ground, so dose reminders later add only the exact-alarm path.
 - Repeat handled as "complete → record the care event → schedule the next", not an OS periodic trigger.
   Completion can be **back-dated** (did the nail trim yesterday, log it today) on the same terms as Phase 2
   entry; the next occurrence is scheduled from the recorded completion, not from when it was ticked off.
-- Presets: nail trim (~6 weeks), vaccination (annual), weigh-in (weekly).
+- A care reminder is `{label, interval, optional type}` (ADR-0018): the closed `CareType` enum tags only
+  the known kinds — presets nail trim (~6 weeks), vaccination (annual), weigh-in (weekly), which map to
+  calendar RRULEs and icons — while a custom reminder is a free-text label plus an owner-chosen interval.
 - Watch: opt-in per bunny and **time-boxed** — the owner sets a duration when starting it (default ~7 days)
   and it **auto-expires** with a prompt to extend or close, never silently persisting into wallpaper
   (ADR-0001). Only while active does the app chase for fresh observations: a **once-daily best-effort
@@ -152,13 +170,15 @@ filled in; a short-duration watch stops nagging once it auto-expires.
 
 ## Phase 5 — Vet, medications, documents, dose reminders
 
-- Vets directory; visits linked to a bunny and optionally a vet. A weight recorded on a visit is stored as
+- Vets directory; visits linked to a bunny and optionally a vet — a health record, with no cost field
+  (ADR-0017). A weight recorded on a visit is stored as
   **one** weight entry tagged with its origin (`source = manual | visit`, plus the visit id) in the same
   transaction — never a second copy of the number, so the chart and the visit cannot drift apart. Adding
   `source`/`visitId` is a Phase-5 migration (every earlier weight is `manual`). Deleting a visit makes an
   explicit, stated choice about its origin-tagged weight: keep it as a standalone weighing, or remove it.
-- Medication courses with start/end and an optional daily schedule of clock times. Due doses derived, not
-  stored (ADR-0002). Doses recordable ad hoc, with or without a schedule.
+- Medication courses with a start, a **nullable end** (an open course is ongoing), a **free-text dose
+  amount**, and an optional daily schedule of clock times. Due doses derived, not stored (ADR-0002). Doses
+  recordable ad hoc, with or without a schedule.
 - Dose reminders on exact alarms, default on per course and switchable off (ADR-0003), reusing the
   notification plumbing from Phase 4. **Wall-clock semantics** (ADR-0003): the next trigger is resolved
   fresh in the device's current zone each time, so DST and travel keep a dose at its intended time of day;
