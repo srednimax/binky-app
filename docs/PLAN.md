@@ -42,20 +42,11 @@ two-bucket proof (ADR-0004, ADR-0008) moves to Phase 2's gate.
   timestamp before a destructive migration. The blocking consent screen arrives in Phase 2, when the data
   first cannot be retyped — in Phase 1 it would fire on every entity added, to guard a bunny name and a
   birthdate, and the realistic outcome is that it gets commented out.
-- `MediaFiles.kt` — the single path for persisting images, **kind-aware from the start**:
-  `persist(uri, kind)`, where `MediaKind` (`Avatar` / `Photo` / `Document`) picks both the subdirectory and
-  the downsample spec, so Phase 3's photos and Phase 5's documents extend it instead of forking it — a
-  document downsampled to gallery dimensions can make small print unreadable, and it is evidence. Avatars
-  are a **blind centre crop, 512², JPEG q85**; a crop-and-zoom UI is not Phase 1 work (ADR-0012). EXIF
-  orientation is **applied to the pixels and then all metadata stripped**: a cropped re-encode loses the tag
-  that Coil would otherwise honour, so camera avatars come out rotated, and stripping also keeps camera GPS
-  out of a backup that leaves the device.
-- **Media writes go file first, then the row.** A crash mid-write then leaks bytes nobody sees, rather than
-  leaving a dangling path that renders the placeholder and reads to the owner as lost data. Replacement is
-  write-new, update-row, delete-old, so every intermediate state renders. Deletion is the mirror: cascade
-  the rows, commit, then remove files best-effort. There is **no orphan sweep** — a routine that deletes
-  user files on the strength of a query being correct is a bad trade against a few kilobytes, and it would
-  have to run near ADR-0005's deliberate media merge.
+- `MediaFiles.kt` — the single path for persisting images, built **kind-aware** and **file-first** per
+  ADR-0020: `persist(uri, kind)` with a per-kind directory and downsample spec, avatars as a blind centre
+  crop at 512² JPEG q85, EXIF orientation applied to the pixels then all metadata stripped, and no orphan
+  sweep. Phase 1 implements the `Avatar` kind only; the shape is fixed now so Phase 3's photos and Phase 5's
+  documents extend it rather than fork it.
 - Avatars alone exercise the whole pipeline (write through the helper, relative split path, placeholder on a
   broken path); the sentimental photo gallery is deferred to Phase 3 (ADR-0015) so Phase 1 keeps the media
   machinery without the extra surface area.
@@ -122,6 +113,9 @@ something to run at boundaries rather than per commit.
 
 `spotlessApply`, `assembleDebug` and `test` at every checkpoint; `connectedAndroidTest` at the end of 1a and
 1b, the two that add instrumented tests.
+
+Each checkpoint is meant to survive being picked up cold, so read its decisions first — **1a**: ADR-0004,
+0007, 0008, 0016. **1b**: ADR-0020, 0005. **1c**: ADR-0012, 0015. **1d**: ADR-0004, 0008, 0015, 0016.
 
 **Gate:**
 

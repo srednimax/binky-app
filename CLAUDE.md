@@ -40,8 +40,9 @@ the *why*, don't restate the line. Prefer explicit and readable over clever.
 - **Media paths in the DB are relative** and split by kind — `avatars/<uuid>.jpg`, `photos/<uuid>.jpg`,
   `documents/<uuid>.jpg` — resolved against `filesDir` at read time. Absolute paths change across installs
   and break restored backups; the split makes ADR-0005's export scopes a list of directories.
-- **All image writes go through the media helper** — it downsamples and re-encodes. Bypassing it puts
-  full-resolution bitmaps in memory and blows up the photo grid.
+- **All image writes go through the media helper** — it downsamples and re-encodes per kind, and writes the
+  file before the row (ADR-0020). Bypassing it puts full-resolution bitmaps in memory and blows up the photo
+  grid.
 - **Missing media renders as a placeholder, never a crash.** A restore may legitimately lack photos.
 - **Weight is stored as `Int` grams.** Never a float. Entry is in grams (that's what scales show); display
   unit is a user preference defaulting to kg; **changes are always shown in grams**, because `−0.04 kg`
