@@ -100,5 +100,16 @@ Linux dev machine, no Android Studio — build and install from the CLI against 
 An emulator would additionally need `usermod -aG kvm` and a re-login.
 
 Test device is a **Xiaomi (HyperOS)**. Split-APK installs (`connectedAndroidTest`) prompt for confirmation
-**on the phone** — accept it or the run fails with `INSTALL_FAILED_USER_RESTRICTED`. Xiaomi also kills
-background work aggressively; scheduled notifications need battery-optimisation exemption and autostart.
+**on the phone**, and a missed prompt fails the run with `INSTALL_FAILED_USER_RESTRICTED`. If it keeps
+refusing, skip the split install entirely — install both APKs plain, then run the tests directly:
+
+```bash
+adb install -r -t app/build/outputs/apk/debug/app-debug.apk
+adb install -r -t app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+adb shell am instrument -w app.bunny.tracker.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+Same APKs, same runner, same tests — it just asks for two ordinary install confirmations instead.
+
+Xiaomi also kills background work aggressively; scheduled notifications need battery-optimisation
+exemption and autostart.
