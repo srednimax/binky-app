@@ -7,7 +7,7 @@ The data model lives in the Room entities, so it cannot drift from the code.
 ## Status
 
 - [x] **Phase 0** — Toolchain, project skeleton, docs
-- [ ] **Phase 1** — Data layer, bunnies, avatars
+- [x] **Phase 1** — Data layer, bunnies, avatars
 - [ ] **Phase 2** — Weight and observations
 - [ ] **Phase 3** — Backup, first-run setup, photo gallery — **ships as 1.0**
 - [ ] **Phase 4** — Care reminders and watch — **ships as 1.1**
@@ -26,7 +26,12 @@ package `app.bunny.tracker`.
 
 **Gate met:** `assembleDebug`, `test`, `lint`, and `connectedAndroidTest` all pass; the app runs on the phone.
 
-## Phase 1 — Data layer, bunnies, avatars
+## Phase 1 — Data layer, bunnies, avatars ✅
+
+**Gate met:** `spotlessApply`, `assembleDebug`, `test` and `lint` pass; 29 instrumented tests pass on the
+Xiaomi; the on-device checks — avatars surviving a restart and upright from the camera, delete asking once
+and removing the file, a broken avatar path rendering the placeholder, the five destinations and the
+switcher, archive and the read-only archived scope — were verified by hand.
 
 Scope is deliberately narrow: **`Bunny` and `Fluffle` only.** Weights, observations, symptoms, vets,
 medications and documents are not modelled here — ADR-0007 makes pre-Phase-3 schema churn free, so an entity
