@@ -11,6 +11,10 @@ only two denials before the permission is permanently refused with no further di
 before any reminder exists is the most likely to be dismissed. Since medication dose reminders are the one
 notification with real consequences (see ADR-0003), a silently denied permission is a genuine failure mode.
 
+The backup step also **asks whether system backup is switched on**, with a deep link into Android's backup
+settings. The app cannot detect this for itself (ADR-0005), and first-run setup is the one moment the owner
+is already thinking about backup — so asking here is the only alternative to assuming.
+
 Anyone who skips is asked again at point of use, when the first reminder or medication course is created.
 
 ## Consequences

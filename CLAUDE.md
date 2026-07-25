@@ -40,8 +40,9 @@ the *why*, don't restate the line. Prefer explicit and readable over clever.
 - **Media paths in the DB are relative** and split by kind — `avatars/<uuid>.jpg`, `photos/<uuid>.jpg`,
   `documents/<uuid>.jpg` — resolved against `filesDir` at read time. Absolute paths change across installs
   and break restored backups; the split makes ADR-0005's export scopes a list of directories.
-- **All image writes go through the media helper** — it downsamples and re-encodes. Bypassing it puts
-  full-resolution bitmaps in memory and blows up the photo grid.
+- **All image writes go through the media helper** — it downsamples and re-encodes per kind, and writes the
+  file before the row (ADR-0020). Bypassing it puts full-resolution bitmaps in memory and blows up the photo
+  grid.
 - **Missing media renders as a placeholder, never a crash.** A restore may legitimately lack photos.
 - **Weight is stored as `Int` grams.** Never a float. Entry is in grams (that's what scales show); display
   unit is a user preference defaulting to kg; **changes are always shown in grams**, because `−0.04 kg`
@@ -73,9 +74,13 @@ adb devices                      # confirm the phone is attached
 
 ```
 app/src/main/java/app/bunny/tracker/
+  MainActivity.kt, Navigation.kt, NavigationKeys.kt
+               the app shell and Nav3 wiring stay at the package root, not under ui/ — they describe
+               how the app hangs together rather than any one screen
   data/        Room entities, DAOs, database, type converters, repositories
-  media/       MediaFiles.kt — the single path for persisting images. Named to avoid colliding
-               with Android's own android.provider.MediaStore
+  media/       MediaFiles.kt — the single path for persisting images, kind-aware
+               (avatar / photo / document, each with its own directory and downsample spec). Named to
+               avoid colliding with Android's own android.provider.MediaStore
   ui/          Compose screens + ViewModels, one package per tab
   work/        reminder scheduling and notifications
 ```
