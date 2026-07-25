@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
 
 // versionCode must strictly increase for every installable build. We derive it
@@ -33,6 +34,7 @@ android {
         // release-please bumps it from your Conventional Commits. The trailing
         // comment is the marker its "generic" updater looks for. See docs/RELEASING.md.
         versionName = "0.1.0" // x-release-please-version
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -63,6 +65,14 @@ kotlin {
     jvmToolchain(21)
 }
 
+// Room exports the compiled schema as JSON. ADR-0007 lets us wipe the database until Phase 3,
+// but these files are what makes Phase 3's first real migration reviewable — so they are
+// generated here and committed.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.generateKotlin", "true")
+}
+
 dependencies {
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -87,6 +97,12 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
+    // Persistence
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.datastore.preferences)
+
     // Local tests: jUnit, coroutines, Android runner
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
@@ -96,6 +112,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 
     // Navigation
     implementation(libs.androidx.navigation3.ui)
