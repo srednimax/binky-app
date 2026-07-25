@@ -1,17 +1,20 @@
 package app.bunny.tracker.data
 
 import androidx.room.withTransaction
+import app.bunny.tracker.media.MediaFiles
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 
 /**
  * Reads and writes bunnies. Thin over the DAO, and the owner of the things a DAO cannot own: the
- * fluffle dissolve predicate, and clearing a deleted bunny out of the persisted selection.
+ * fluffle dissolve predicate, clearing a deleted bunny out of the persisted selection, and removing
+ * the avatar file a cascade cannot reach.
  */
 class BunnyRepository(
     private val database: BunnyDatabase,
     private val fluffles: FluffleRepository,
     private val preferences: AppPreferences,
+    private val media: MediaFiles,
 ) {
     private val bunnyDao = database.bunnyDao()
 
@@ -20,6 +23,12 @@ class BunnyRepository(
     val archivedBunnies: Flow<List<BunnyEntity>> = bunnyDao.archivedBunnies()
 
     fun bunny(id: String): Flow<BunnyEntity?> = bunnyDao.bunny(id)
+
+    /**
+     * One-shot read, for the editor: a form fed by a `Flow` would fight the owner's typing every
+     * time the row it is editing emits again.
+     */
+    suspend fun bunnyNow(id: String): BunnyEntity? = bunnyDao.bunnyNow(id)
 
     /**
      * Adds a bunny and returns its id. `name` is the only required field — trimmed, empty
@@ -58,17 +67,25 @@ class BunnyRepository(
 
     /**
      * The destructive, explicit path (ADR-0004). Removes the bunny, puts any fluffle it left
-     * through the dissolve predicate, and clears it from the persisted selection so no id dangles.
+     * through the dissolve predicate, clears it from the persisted selection so no id dangles, and
+     * deletes the avatar file — Room's cascade deletes rows, never files.
      *
-     * The avatar *file* is removed here too once the media helper exists (checkpoint 1b) — Room's
-     * cascade deletes rows, never files.
+     * Kotlin note: `avatarPath` is assigned inside the lambda below and read after it. Kotlin
+     * closures capture `var`s by reference, unlike Java's effectively-final rule, so this needs no
+     * holder object.
      */
     suspend fun delete(id: String) {
+        var avatarPath: String? = null
         database.withTransaction {
             val bunny = bunnyDao.bunnyNow(id) ?: return@withTransaction
+            avatarPath = bunny.avatarPath
             bunnyDao.deleteById(id)
             bunny.fluffleId?.let { fluffles.dissolveIfBelowTwo(it) }
         }
+        // Deliberately after the transaction: a rolled-back delete would otherwise leave a live row
+        // pointing at a file that is already gone, which is the failure ADR-0020's file-first rule
+        // exists to avoid, in reverse.
+        avatarPath?.let { media.delete(it) }
         preferences.clearSelectionIfSet(id)
     }
 

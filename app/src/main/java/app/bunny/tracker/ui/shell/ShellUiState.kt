@@ -1,13 +1,17 @@
 package app.bunny.tracker.ui.shell
 
 import app.bunny.tracker.data.BunnySelection
+import java.io.File
 
 /** Just enough of a bunny to identify it in the switcher and on a stub. */
 data class BunnySummary(
     val id: String,
     val name: String,
-    /** Relative, `avatars/<uuid>.jpg` (house rule). Rendered from checkpoint 1d, when Coil lands. */
-    val avatarPath: String?,
+    /**
+     * The avatar file, already resolved from the row's relative path. Null when there is none, and
+     * the file can be missing even when this is not — either way it renders as a placeholder.
+     */
+    val avatar: File?,
 )
 
 /**

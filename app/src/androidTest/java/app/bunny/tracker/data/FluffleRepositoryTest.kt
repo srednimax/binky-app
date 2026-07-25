@@ -28,7 +28,7 @@ class FluffleRepositoryTest {
         database = inMemoryDatabase()
         preferences = temporaryPreferences()
         fluffles = FluffleRepository(database)
-        bunnies = BunnyRepository(database, fluffles, preferences)
+        bunnies = BunnyRepository(database, fluffles, preferences, temporaryMedia())
     }
 
     @After

@@ -110,6 +110,10 @@ dependencies {
     implementation(libs.androidx.exifinterface)
     androidTestImplementation(libs.androidx.exifinterface)
 
+    // Avatars on screen. Coil renders a missing file as its `error` painter rather than throwing,
+    // which is the house rule's "missing media is a placeholder, never a crash" for free.
+    implementation(libs.coil.compose)
+
     // Local tests: jUnit, coroutines, Android runner
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
