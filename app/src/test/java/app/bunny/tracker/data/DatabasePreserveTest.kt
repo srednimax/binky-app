@@ -92,6 +92,25 @@ class DatabasePreserveTest {
         assertNull(preserveBeforeWipe(absent, File(temporaryFolder.root, PRESERVED_DIRECTORY), appSchemaVersion = 2))
     }
 
+    /**
+     * The consent screen has no cancel, but an owner can still relaunch instead of pressing the one
+     * button. Nothing writes to the database in between, so its `lastModified()` has not moved and
+     * the copy takes the same name — one copy, overwritten, rather than a new one per bout of
+     * hesitation (ADR-0007).
+     */
+    @Test
+    fun `relaunching before consent overwrites one copy rather than minting another`() {
+        val database = databaseFile(userVersion = 1, payload = "a year of weighings")
+        val preservedDir = File(temporaryFolder.root, PRESERVED_DIRECTORY)
+
+        val first = preserveBeforeWipe(database, preservedDir, appSchemaVersion = 2)!!
+        val second = preserveBeforeWipe(database, preservedDir, appSchemaVersion = 2)!!
+
+        assertEquals(first.name, second.name)
+        assertEquals(1, preservedDir.listFiles()!!.size)
+        assertEquals(database.readBytes().toList(), second.readBytes().toList())
+    }
+
     @Test
     fun `carries the WAL sidecar, where the most recent writes may be`() {
         val database = databaseFile(userVersion = 1)

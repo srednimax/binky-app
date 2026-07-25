@@ -53,11 +53,22 @@ interface BunnyDao {
     suspend fun membersOfNow(fluffleId: String): List<BunnyEntity>
 
     /**
-     * Phase 1 has no record types yet, so this honestly returns zeros — but it returns them
-     * through the query the confirmation will keep calling, so Phase 2 changes the SQL and
-     * nothing else. Null when the bunny no longer exists.
+     * What deleting this bunny would destroy. Null when the bunny no longer exists.
+     *
+     * Weighings are **sole-owned** — a weight belongs to exactly one bunny and cascades with it —
+     * so this is the first bucket's first real contributor, and it is what makes 1d's structurally
+     * built two-stage ceremony reachable for the first time. The shared bucket stays zero until
+     * observations land in 2e, where this reaches its final form: bucketed by **survivorship, not
+     * provenance** (ADR-0004).
      */
-    @Query("SELECT 0 AS soleOwnedRecords, 0 AS sharedRecords FROM bunnies WHERE id = :bunnyId")
+    @Query(
+        """
+        SELECT
+            (SELECT COUNT(*) FROM weights WHERE bunnyId = :bunnyId) AS soleOwnedRecords,
+            0 AS sharedRecords
+        FROM bunnies WHERE id = :bunnyId
+        """,
+    )
     suspend fun recordCounts(bunnyId: String): RecordCounts?
 
     @Insert

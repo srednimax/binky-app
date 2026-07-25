@@ -11,11 +11,22 @@ import kotlinx.coroutines.flow.map
 import java.io.IOException
 
 /**
+ * How weights are shown. **Entry is always in grams** — that is what a scale reads out — and
+ * **changes are always shown in grams** whichever this is set to, because `−0.04 kg` hides the
+ * signal that `−40 g` makes obvious (house rule). This only decides how a stored weight is rendered.
+ *
+ * A preference rather than a column: it is a display choice about the whole app, and it has to
+ * survive ADR-0007's wipes.
+ */
+enum class WeightUnit { KILOGRAMS, GRAMS }
+
+/**
  * Owner preferences held outside the database, because ADR-0007 lets the database be wiped and
  * these must survive that.
  *
- * Phase 1 stores **exactly one key**: which bunny is selected. The weight display unit arrives in
- * Phase 2, with the screens that read it.
+ * Two keys: which bunny is selected, and the weight display unit. The unit's toggle lands in 2c with
+ * the Settings screen — a preference with no setter is a constant with a DataStore round-trip, so
+ * the setter is here from the start even though nothing calls it yet.
  */
 class AppPreferences(
     private val dataStore: DataStore<Preferences>,
@@ -27,6 +38,16 @@ class AppPreferences(
             // unreadable choice is indistinguishable from never having made one.
             .catch { cause -> if (cause is IOException) emit(emptyPreferences()) else throw cause }
             .map { preferences -> decode(preferences[SELECTED_BUNNY]) }
+
+    /** Kilograms by default: it is what an owner says out loud about a rabbit. */
+    val weightUnit: Flow<WeightUnit> =
+        dataStore.data
+            .catch { cause -> if (cause is IOException) emit(emptyPreferences()) else throw cause }
+            .map { preferences -> decodeUnit(preferences[WEIGHT_UNIT]) }
+
+    suspend fun setWeightUnit(unit: WeightUnit) {
+        dataStore.edit { preferences -> preferences[WEIGHT_UNIT] = unit.name }
+    }
 
     suspend fun setSelection(selection: StoredSelection) {
         dataStore.edit { preferences ->
@@ -51,6 +72,7 @@ class AppPreferences(
 
     private companion object {
         val SELECTED_BUNNY = stringPreferencesKey("selected_bunny")
+        val WEIGHT_UNIT = stringPreferencesKey("weight_unit")
 
         /** Bunny ids are UUIDs, so this sentinel cannot collide with one. */
         const val ALL = "all"
@@ -61,5 +83,10 @@ class AppPreferences(
                 ALL -> StoredSelection.All
                 else -> StoredSelection.Bunny(value)
             }
+
+        // Stored by name, never ordinal, and falling back rather than throwing — the same rule the
+        // database's enums follow, for the same reason.
+        fun decodeUnit(value: String?): WeightUnit =
+            WeightUnit.entries.firstOrNull { it.name == value } ?: WeightUnit.KILOGRAMS
     }
 }

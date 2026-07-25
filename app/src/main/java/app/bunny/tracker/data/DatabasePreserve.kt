@@ -40,10 +40,15 @@ fun readUserVersion(databaseFile: File): Int {
  * Copies the database aside if opening it with this build would destroy it, and returns the copy.
  * Returns null when there is nothing to preserve — no file yet, or a file already at this version.
  *
- * ADR-0007: a destructive wipe never loses the file, in any phase. The **consent** half — the
- * blocking screen that asks first — arrives in Phase 2, when the database holds a weight series
- * that cannot be retyped. In Phase 1 it would fire on every entity added, to guard a bunny name and
- * a birthdate, and the realistic outcome is that it gets disabled before the phase where it counts.
+ * ADR-0007: a destructive wipe never loses the file, in any phase. Its **consent** half — the
+ * blocking screen in front of this — is wired up by `BunnyTrackerApplication`, which is where this
+ * runs: before Room exists, let alone opens anything.
+ *
+ * The copy is named from the database file's own [File.lastModified] rather than the moment of
+ * panic, so a hesitating owner who relaunches repeatedly **overwrites one copy instead of minting a
+ * new one each time** — nothing has written to the file in between, so its modification time has not
+ * moved. The name therefore dates the *data*, not the launch. [timestamp] stays a parameter only so
+ * tests can pin it.
  *
  * The preserved file is a **recovery artifact, not a restore**: reading old data into a new schema
  * *is* a migration, so it cannot be re-imported automatically.
@@ -52,7 +57,7 @@ fun preserveBeforeWipe(
     databaseFile: File,
     preservedDir: File,
     appSchemaVersion: Int = BUNNY_SCHEMA_VERSION,
-    timestamp: Instant = Instant.now(),
+    timestamp: Instant = Instant.ofEpochMilli(databaseFile.lastModified()),
 ): File? {
     val onDisk = readUserVersion(databaseFile)
     // A *newer* on-disk version is preserved too: Room destroys a downgrade just as thoroughly.
