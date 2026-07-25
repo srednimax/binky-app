@@ -32,8 +32,8 @@ respect the split or it reintroduces exactly the false attribution this ADR prev
 
 Participants can be changed after creation without delete-and-recreate (which would lose the timestamp).
 **Adding** a bunny inserts a row that inherits the group's tray-level facts with blank individual fields;
-**removing** one follows the deletion rule below — drop that row, keep the observed-together marker on the
-rest.
+**removing** one drops that row — but correcting the list is *not* the same event as deleting a bunny, and the
+observed-together marker follows the difference (see "Sharedness, deletion and correction" below).
 
 ## The fluffle and the observation group are different columns
 
@@ -117,3 +117,37 @@ when only one member still resolves — never silently downgraded to an individu
 recreate exactly the false attribution this ADR exists to prevent. No tombstone of the deleted bunny is
 needed: the marker alone keeps the record honest. The delete confirmation counts sole-owned and
 shared-participation observations separately (ADR-0004).
+
+## Sharedness, deletion and correction
+
+**Sharedness is `groupId IS NOT NULL`, never a count of rows sharing it.** A count would silently downgrade
+exactly the record this ADR protects: the deletion rule above requires a lone survivor to keep reading
+"observed together", which the group id does and a count cannot. There is deliberately **no separate
+`observedTogether` column** — a second spelling of the same fact, able to do nothing but drift out of step
+with the first. Converting a solo observation to shared mints a group id and back-fills it onto the existing
+row, inside the transaction that is already there.
+
+**Deleting a bunny and correcting the participant list are different events.** Deletion *preserves* history:
+they were observed together and one of them is now gone, so the survivor keeps its group id. Correction
+*amends* history: the owner is saying the observation never covered that bunny at all, so if the correction
+leaves a single row, that row's group id is **cleared** and the observation becomes solo again — the exact
+inverse of converting solo to shared. Left as one rule, correcting *"Nugget wasn't in the room"* leaves
+Bijou's row asserting a shared observation with nobody, which is a lie of the same family as the false
+attribution this ADR exists to prevent.
+
+Correction has to exist because the healthy-day shortcut's review *is* a snackbar. A few seconds of Undo is
+not a durable review path, and an owner who missed it must be able to remove a wrongly-covered bunny without
+destroying the observation for the rest.
+
+**Under "All bunnies" the timeline collapses rows sharing a group id into one entry** naming the
+participants. The tray-level facts are identical by construction, so rendering them once per participant
+produces two apparently duplicate cards on the same day and inflates the apparent observation count on the
+one screen meant to give a fluffle-wide read. The individual fields are listed per named bunny inside the
+entry and never merged.
+
+**"All bunnies" has no bunny to pre-select from.** ADR-0015's rule takes the selected bunny's fluffle as its
+input, and in that scope there is none. Pre-selecting every active bunny would write one identical
+tray-level fact across bunnies that share no tray — this ADR's prohibition, running in the direction it is
+not usually stated in. So in that scope the global "+" and the healthy-day shortcut both **ask which bunny
+first**, then apply the ordinary rule unchanged. The single-bunny scope is untouched and the shortcut stays
+one tap.

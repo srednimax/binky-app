@@ -27,6 +27,42 @@ to retype — daily consent from the only user, who already knows they are wipin
 likely outcome is that it gets disabled before reaching the phase where it matters. It matters from Phase 2,
 when the database first holds a weight series (below).
 
+## The guard is structural: the container does not exist until consent
+
+A blocking screen only blocks if **nothing opens the file before it**. Room's `build()` does not open the
+file, so the tempting arrangement is to leave the container constructed and merely stop it from *collecting* —
+which works, and is one eager `stateIn` away from silently breaking, in a project that goes on to add reminder
+rescheduling at process start. A guard by absence-of-subscription is unwritten, unenforceable, and
+load-bearing for the only copy of unretypeable data.
+
+So the pre-Room check and the copy-aside run in `Application.onCreate` — four bytes at offset 60 of the SQLite
+header, no Room and no container involved — and `AppContainer` sits behind a `lazy` that is forced only once
+the wipe has been consented to. No Room object exists, so no collection can exist, and the property stays
+true however the container grows later. (This is not the decorative `database by lazy`, which would be forced
+immediately by the eager repositories that take it as a constructor argument. This lazy *is* the gate.)
+
+On consent the database is then opened **explicitly**, so the destruction the screen describes happens while
+the owner is looking at the screen rather than whenever some flow first collects.
+
+## The copy has to stay reachable
+
+The screen states where the copy is and offers one forward button. After that tap, `filesDir/preserved/` is
+unreachable to the owner without `adb` — and through Phase 2 that file is the only copy of a weight series.
+So Settings lists the preserved copies with a **share** action and a per-file **delete**. A share sheet puts
+the copy into Drive or an email at the moment the owner is thinking about it, which is the only thing that
+actually makes it safe; `adb` instructions on a screen are a developer's recovery path, not an owner's. The
+share carries the `-wal` and `-shm` sidecars alongside the `.db`, because the newest writes may live only in
+the sidecar and the guard cannot checkpoint them — checkpointing means opening the file, which is the one
+thing it must not do.
+
+Nothing prunes automatically: silently deleting the owner's only copy is the failure this whole mechanism
+exists to prevent. The copy is named from the database file's own `lastModified()` rather than the moment of
+panic, so a hesitating owner relaunching repeatedly overwrites one copy instead of minting a new one each
+time, and the name dates the *data*.
+
+Whether `preserved/` belongs inside the Auto Backup set is Phase 3's question (ADR-0005): a second full copy
+of the database, inside a quota where scanned documents are already being squeezed out.
+
 ## Consequences
 
 The preserved file is a recovery artifact, not a restore: reading old data into a new schema *is* a

@@ -55,6 +55,35 @@ a new reading either trips the trigger or does not, which the trigger and the re
 The cost is one extra re-acknowledge when an owner corrects an old unrelated typo while a flag stands
 acknowledged: rare, deliberate, and one tap.
 
+### Discarding the watermark is a write, and the repository owns it
+
+"Derived on read" describes the *flag*. Discarding the watermark is a **write**, and leaving it unassigned
+breaks the episode-scoping above. Consider a series of plain inserts, with no edit anywhere: `2500, 2500,
+2500` establishes a baseline, `2300` fires and is acknowledged, `2500` takes the trigger false, and a later
+`2300` fires raw again — but if the row is still on disk, the watermark says 2300 and the new reading is not
+below 2300 by more than the floor, so a **genuinely new drop is silenced by a months-old acknowledgment of a
+recovered episode**. And the pure evaluation cannot fix this alone: given the series and the acknowledgment it
+cannot know the trigger went false in between without re-walking every intermediate state, which is the
+history audit this ADR rejects.
+
+So `WeightRepository.insert` inserts, re-reads the series, evaluates the trigger and deletes the
+acknowledgment row when it is false — one transaction. `update` and `delete` discard unconditionally, per the
+widened rule above. That establishes the invariant the read path depends on: **a stored acknowledgment row
+implies the raw trigger was true as of the last weight write**, which is what lets the flag stay a pure
+function of `(series, acknowledgment)` with no history walk.
+
+Not the read path: under "All bunnies" every vitals card evaluates the flag, so N cards would race to delete
+the same row, and *derived on read* must not come to mean *writes on read*. Not the `ViewModel`: the
+sample-data seeder writes through the repository, and so will Phase 5's visit-recorded weight, and both would
+miss it.
+
+### The flag is never evaluated for an archived bunny
+
+An archived bunny has died or been rehomed. *"Down 240 g since 3 June — worth a closer look"* on a memorial
+page is grotesque; its **Acknowledge** action is a write inside a scope that forbids writes; and Phase 4
+would offer to start a watch on a dead bunny. The flag is therefore not evaluated at all in that scope, not
+merely hidden — see the read-only scope's three clauses in ADR-0004.
+
 ## The trigger's constants
 
 The shape above is fixed. These are the numbers, and they are **chosen now rather than left pending vet
