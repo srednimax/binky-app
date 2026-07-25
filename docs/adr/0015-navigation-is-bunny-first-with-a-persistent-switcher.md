@@ -39,6 +39,19 @@ dead **tab** is `Hidden`; a dead **row** inside More or Settings may be `ComingS
 line in a list rather than a fifth of the navigation. Promoting a destination is then a one-value change,
 not a restructure — which is the cost ADR-0012 #5 exists to avoid in the first place.
 
+The enum is **defined in Phase 1**, not introduced in Phase 3, or that promotion is an introduction rather
+than the one-value change just described. Through Phases 1-2 everything stays visible, there being no users
+to mislead. The same reasoning covers the global "+": route and nav key from Phase 1, but **no FAB renders**
+until observations exist (Phase 2) — deciding the structure and rendering it are different claims, and the
+app's primary write action is the worst one to teach the owner is inert.
+
+**Back stack: one stack, and switching top-level destination replaces rather than pushes.** Back from
+Weight / Observations / Care & Meds / More returns to Home; back from Home exits. Per-tab back stacks are
+where Nav3 wiring turns hairy, and this app's detail screens are shallow — a weight entry, a bunny editor —
+so pushing top-level destinations would only turn Back into a history tour of the bottom bar. Stubs render
+the **selected bunny's name**, which is what makes the switcher's wiring falsifiable while it is still cheap
+to change: a stub scoped to the wrong bunny is otherwise indistinguishable from one scoped to the right one.
+
 The bunny switcher is app-wide state, not per-screen: a `StateFlow` on `AppContainer`, **persisted to
 DataStore** so an aggressive Xiaomi background-kill lands the owner back on the same bunny rather than a
 default. It is **resolved reactively against the live list of active bunnies**, so archiving or deleting the
@@ -47,6 +60,31 @@ selected bunny self-heals with no explicit event — falling back to the sole re
 Per-bunny screens read the selected bunny; the global observation entry and the "All bunnies" list
 deliberately ignore it. Because there is no "All bunnies" weight chart (below), the Weight screen shows a
 pick-a-bunny prompt while "All bunnies" is selected.
+
+Healing is **resolve-on-read, with no write-back.** DataStore holds the owner's last *explicit* choice and
+the resolver renders reality against it, so archiving a bunny yields "All bunnies" while unarchiving her a
+week later **restores the selection** — the considerate reading of an archive-by-mistake, and the simpler
+implementation, since a write hidden inside a read path is how a `Flow` graph acquires feedback loops. A
+*deleted* bunny's id is cleared from DataStore in the delete transaction rather than left dangling.
+
+**"All bunnies" is offered only once two active bunnies exist.** For the likeliest owner in the world — one
+bunny — it is otherwise a two-tap path to a Home that is a one-card dashboard and a Weight screen that
+refuses to render, in exchange for nothing. A persisted "All" resolves to the single bunny when the count
+drops to one, so that owner can never reach the pick-a-bunny prompt, which then exists only for owners for
+whom it is a real question.
+
+The switcher is therefore a **scope indicator first and a picker second** — with one bunny it still shows
+name and avatar, saying whose data is on screen. It **always opens a menu**: the active bunnies,
+"All bunnies" once ≥2 exist, and **"Add a bunny"** always. That last item is load-bearing, because there is
+**no separate bunny-list screen** (below) — without it a single-bunny owner would have nowhere to add a
+second. Editing a bunny stays on its profile, reached from Home.
+
+A third selection state, **`Archived(id)`**, is entered only by tapping a bunny in the archived list
+(ADR-0004). It scopes the ordinary screens **read-only** — a banner, no write actions — and is **never
+persisted**: a background kill must not reopen the app into a read-only memorial, since the persistence
+exists to restore *working* context. It also separates the two cases the resolver would otherwise conflate,
+the selected bunny having *vanished* (heal) versus the owner having *deliberately opened* an archived one
+(honour it).
 
 Weight is always individual (ADR-0008), so the Weight screen is always bunny-scoped. There is no
 "All bunnies" weight chart — overlaying unrelated animals of different sizes on one axis would say nothing
@@ -61,7 +99,9 @@ fluffle-shaped, and the resulting asymmetry is intentional:
   trend flag, any active watch, any active medication course, the date of the most recent observation. This
   is the most valuable screen for a multi-bunny owner, and it is where a trend flag on *bunny B* catches the
   eye of someone who opened the app thinking about bunny A. Each card is the single-bunny Home summary in
-  miniature.
+  miniature. It is also **the bunny list** — there is no separate one. In Phase 1, before any vitals exist,
+  the card carries avatar, name, age and "Lives with"; it grows into the vitals card in Phase 2. Two screens
+  rendering the same rows would diverge the moment one of them gained a field.
 - **Observations** becomes the **combined day-grouped timeline** across every active bunny, each row showing
   which bunnies it covered (shared observations are already multi-bunny, ADR-0008). Selecting a single bunny
   *filters* to observations that include it; here the single-bunny view is the special case and "All

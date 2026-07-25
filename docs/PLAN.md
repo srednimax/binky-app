@@ -28,35 +28,121 @@ package `app.bunny.tracker`.
 
 ## Phase 1 — Data layer, bunnies, avatars
 
-- Room entities, DAOs, database, type converters, `AppContainer`, repositories.
-- `MediaFiles.kt` — the single path for persisting images (downsample, re-encode, relative path out).
-  Avatars alone exercise the whole pipeline (write through the helper, relative split path, placeholder on
-  a broken path); the sentimental photo gallery is deferred to Phase 3 (ADR-0015) so Phase 1 keeps the
-  media machinery without the extra surface area.
+Scope is deliberately narrow: **`Bunny` and `Fluffle` only.** Weights, observations, symptoms, vets,
+medications and documents are not modelled here — ADR-0007 makes pre-Phase-3 schema churn free, so an entity
+written before the phase that exercises it buys nothing and locks in a guess (`source`/`visitId` on weights
+is already deferred to a Phase-5 migration). The consequence to accept: a Phase-1 bunny has **no records**,
+so the delete-confirmation counting is built structurally against a query that returns zeros, and its honest
+two-bucket proof (ADR-0004, ADR-0008) moves to Phase 2's gate.
+
+- Room entities, DAOs, database, type converters, `AppContainer`, repositories, and a DataStore preferences
+  repository holding **exactly one key** — the bunny selection. The weight display unit arrives in Phase 2,
+  with the screens that read it.
+- Destructive-wipe handling per ADR-0007, **preserve half only**: the database file is copied aside with a
+  timestamp before a destructive migration. The blocking consent screen arrives in Phase 2, when the data
+  first cannot be retyped — in Phase 1 it would fire on every entity added, to guard a bunny name and a
+  birthdate, and the realistic outcome is that it gets commented out.
+- `MediaFiles.kt` — the single path for persisting images, **kind-aware from the start**:
+  `persist(uri, kind)`, where `MediaKind` (`Avatar` / `Photo` / `Document`) picks both the subdirectory and
+  the downsample spec, so Phase 3's photos and Phase 5's documents extend it instead of forking it — a
+  document downsampled to gallery dimensions can make small print unreadable, and it is evidence. Avatars
+  are a **blind centre crop, 512², JPEG q85**; a crop-and-zoom UI is not Phase 1 work (ADR-0012). EXIF
+  orientation is **applied to the pixels and then all metadata stripped**: a cropped re-encode loses the tag
+  that Coil would otherwise honour, so camera avatars come out rotated, and stripping also keeps camera GPS
+  out of a backup that leaves the device.
+- **Media writes go file first, then the row.** A crash mid-write then leaks bytes nobody sees, rather than
+  leaving a dangling path that renders the placeholder and reads to the owner as lost data. Replacement is
+  write-new, update-row, delete-old, so every intermediate state renders. Deletion is the mirror: cascade
+  the rows, commit, then remove files best-effort. There is **no orphan sweep** — a routine that deletes
+  user files on the strength of a query being correct is a bad trade against a few kilobytes, and it would
+  have to run near ADR-0005's deliberate media merge.
+- Avatars alone exercise the whole pipeline (write through the helper, relative split path, placeholder on a
+  broken path); the sentimental photo gallery is deferred to Phase 3 (ADR-0015) so Phase 1 keeps the media
+  machinery without the extra surface area.
 - Navigation shell per ADR-0015: the bunny-first top-level destinations (Home / Weight / Observations /
-  Care & Meds / More), the persistent bunny switcher and the global "+" observation entry are fixed now —
-  as stubs where a screen doesn't exist yet — because ADR-0012 requires the structure decided before the
-  first screen. In "All bunnies" mode Home is a fluffle dashboard and Observations a combined timeline,
-  while Weight refuses with a pick-a-bunny prompt (ADR-0015).
+  Care & Meds / More) are fixed now — as stubs where a screen doesn't exist yet — because ADR-0012 requires
+  the structure decided before the first screen. **One back stack**: switching top-level destination
+  replaces rather than pushes, back from any of them returns to Home, back from Home exits. The visibility
+  enum (`Hidden` / `ComingSoon` / `Live`) is **defined here**, so Phase 3's promotion is the one-value flip
+  ADR-0015 intends rather than an introduction. The global "+" observation entry has its route and nav key
+  but **renders no FAB yet** — deciding the structure and rendering it are different claims, and the app's
+  primary write action is the worst one to teach the owner is inert. Every stub **renders the selected
+  bunny**, so the switcher's wiring is falsifiable in Phase 1 rather than in Phase 2.
+- **The switcher always opens a menu**: the active bunnies, "All bunnies" **only once ≥2 exist**, and
+  "Add a bunny" always. There is **no separate bunny-list screen** — All-bunnies Home *is* the list, its
+  card carrying avatar, name, age and "Lives with" now and growing into ADR-0015's vitals card in Phase 2.
+  In "All bunnies" mode Home is that fluffle dashboard and Observations a combined timeline, while Weight
+  refuses with a pick-a-bunny prompt (ADR-0015).
 - Retire the template placeholders as real screens land: keep `Navigation.kt` / `NavigationKeys.kt` as the
   Nav3 wiring; delete `DataRepository.kt`, `MainScreen.kt`, `MainScreenViewModel.kt` and their two tests.
-- Bunny list / add / edit / archive / delete, per ADR-0004. Avatar from camera or album. Profile fields —
-  `name`, `sex`, `neutered`, `birthdate` (with an "approximate" flag), `breed`, `colour/markings`, and no
-  target weight — per ADR-0016.
+- Bunny add / edit / archive / delete, per ADR-0004. Avatar from camera or album. Profile fields — `name`
+  (the only required one, trimmed, and duplicates allowed), `sex`, `neutered`, `birthdate` (with an
+  "approximate" flag, rendered as "~2 years old" and never as a date), `breed`, `colour/markings`, and no
+  target weight — per ADR-0016. **Archiving asks once**, stating that records are kept; unarchiving asks
+  nothing. Deleting a Phase-1 bunny also asks **once**: the two-stage ceremony is calibrated to destroying
+  history, and an avatar the owner still has in their camera roll is not history (ADR-0004).
+- **Archived bunnies** are reachable from More, with unarchive and delete, and their records stay
+  **readable in a deliberate read-only scope** — archiving that keeps records nobody can reach is
+  indistinguishable from deleting them, which would hollow out ADR-0004.
 - **Fluffle** as a first-class table with a nullable `bunny.fluffleId` FK (ADR-0008): "Lives with" is set
   when adding or editing a bunny; solo bunnies have none. The observation `groupId` is a *separate* column
   stamped per shared observation (Phase 2) and is never derived from the current fluffle, so re-bonding or
   archival can't rewrite past observations. The fluffle carries an optional custom name, "Lives with" is a
-  symmetric join, and *deleting* a member down to one active bunny reverts that survivor to solo (ADR-0008).
+  symmetric join, and a fluffle **dissolves when it would be left with one member counting archived ones** —
+  one predicate shared by editing, deleting and archiving (ADR-0008).
 - **Selected-bunny state** is app-wide (ADR-0015): a `StateFlow` on `AppContainer`, persisted to DataStore
   so a Xiaomi background-kill lands the owner back on the same bunny, resolved reactively against the live
   list of active bunnies so archiving or deleting the selected bunny self-heals — falling back to the sole
-  active bunny, else "All bunnies", else the add-a-bunny empty state.
+  active bunny, else "All bunnies", else the add-a-bunny empty state. Healing is **resolve-on-read with no
+  write-back**: DataStore holds the owner's last explicit choice, so unarchiving a bunny restores it. A
+  third state, `Archived(id)`, is entered only from the archived list, is read-only, and is **never
+  persisted**.
 - Missing-media placeholder, required by ADR-0005.
+- All user-facing text in `strings.xml` from the first screen, counts through `<plurals>` (ADR-0013). The
+  delete confirmation's record counts are the app's first plurals case and the fluffle's "Thumper & Clover"
+  its first list join; neither may be concatenated.
 
-**Gate:** two bunnies with avatars survive a restart; deleting a bunny with records requires two
-confirmations and removes its media; a deliberately broken image path renders as a placeholder; the
-top-level destinations exist (as stubs where needed) and the bunny switcher scopes the per-bunny screens.
+### Checkpoints
+
+Dependencies run one way, and the Xiaomi's split-APK confirmation prompt makes `connectedAndroidTest`
+something to run at boundaries rather than per commit.
+
+1. **1a — Data layer.** Entities, converters, DAOs, `AppContainer`, repositories, DataStore, the pre-wipe
+   preserve. **The fluffle logic is proven here, before any UI exists**: instrumented Room tests, plus a
+   pure JVM unit test for the selection resolver, written as `(persisted selection, active bunnies) →
+   resolved selection` so every state is testable with no Android involved.
+2. **1b — Media pipeline.** `MediaFiles` and `MediaKind`. Its tests are **instrumented, not JVM** —
+   `Bitmap` and `ExifInterface` decoding are framework — with a fixture JPEG carrying orientation tag 6 in
+   `androidTest/assets` asserting the written pixels come out upright.
+3. **1c — Nav shell.** Destinations, back-stack policy, switcher, All-bunnies behaviour, stubs, visibility
+   enum, template deletion. **No Compose UI tests**: this UI churns through Phases 2-3 and ADR-0012 puts
+   visual work last, so it is verified by hand on the phone against the gate.
+4. **1d — Bunny CRUD.** List, add, edit, avatar picking (needs a `FileProvider`), "Lives with", archive,
+   delete, archived list and the read-only scope. Leans on 1a's tests; verified by hand.
+
+`spotlessApply`, `assembleDebug` and `test` at every checkpoint; `connectedAndroidTest` at the end of 1a and
+1b, the two that add instrumented tests.
+
+**Gate:**
+
+- Two bunnies with avatars survive a restart; a camera-taken avatar is **upright**, and matches an
+  album-picked one.
+- Deleting a bunny asks **once**, names its avatar, and removes the file; the two-stage path passes an
+  instrumented test fed fake counts.
+- A deliberately broken avatar path (`adb shell run-as app.bunny.tracker rm …`) renders the placeholder,
+  never a crash.
+- All five top-level destinations exist; **switching bunny visibly changes every per-bunny stub**; Weight
+  shows the pick-a-bunny prompt under "All bunnies" while Home and Observations do not; "All bunnies" is
+  absent while only one bunny exists.
+- Fluffle, as instrumented tests: symmetric join writes both members onto one `fluffleId`; joining someone
+  who already lives with a third bunny joins the **existing** fluffle rather than forming a rival pair;
+  editing a member out of a pair reverts the survivor to solo and removes the row **in one transaction**;
+  archiving a member changes nothing; deleting from a trio that includes an archived member leaves the row
+  standing.
+- Selection resolver unit tests cover heal-on-archive, heal-on-delete, restore-on-unarchive, and the
+  `Archived(id)` scope.
+- Archiving asks once and says records are kept; the archived bunny is reachable, read-only, from More.
+- No user-facing string is hardcoded; counts use `<plurals>`.
 
 ## Phase 2 — Weight and observations
 
@@ -127,6 +213,11 @@ top-level destinations exist (as stubs where needed) and the bunny switcher scop
   fluctuation afterwards. Range is **display only**: the flag always reads the last three prior weighings
   regardless of what is on screen, so the two cannot drift.
 - Warnings derive from recorded observations, never from silence.
+- The **blocking wipe screen** lands here (ADR-0007): from Phase 2 the database holds a weight series that
+  cannot be retyped, so startup reads the schema version before Room opens it and asks before destroying
+  anything. The preserve half already exists from Phase 1.
+- The delete confirmation's **record counts become real** here, since this is the phase that creates records
+  to count — two buckets, sole-owned versus shared-participation (ADR-0004, ADR-0008).
 
 **Gate:** unit tests for trend math pass (interval-independent level trigger, trailing baseline of the 3
 prior weighings excluding the current one, the ≥2-prior firing gate, noise-floor, gram-delta, and the
@@ -170,7 +261,8 @@ policy before assuming the numbers.
 - First-run setup: add first bunny (skippable) → backup scope → reminders opt-in (skippable), per ADR-0006.
   The backup step also **asks whether system backup is switched on**, with a deep link into Android's
   settings — the app cannot detect it, and this is the one moment the owner is already thinking about it.
-- Top-level destinations gain a **visibility state** (`Hidden` / `ComingSoon` / `Live`) before this ships,
+- Top-level destinations get their **visibility state** (`Hidden` / `ComingSoon` / `Live`) set for real
+  before this ships — the enum was defined in Phase 1, so this is the one-value flip, not an introduction —
   since 1.0 is the first build real users see: Care & Meds is hidden rather than opening onto a stub, while
   unbuilt rows inside More may read "coming soon" (ADR-0019, ADR-0015).
 - Then attempt the remembered-folder destination and **verify on the real device** whether Google Drive's

@@ -3,6 +3,10 @@
 A `Bunny` record is: `name` (required), an avatar, a nullable `fluffleId` (ADR-0008), `archivedAt`
 (ADR-0004), and a small profile — `sex`, `neutered`, `birthdate`, `breed`, `colour/markings`.
 
+`name` is the **only required field** — trimmed, empty rejected — and **duplicates are allowed**. Owners
+really do have two bunnies with near-identical names, refusing "Thumper" because an archived or deleted
+namesake exists would be absurd, and the avatar is what disambiguates them in the switcher.
+
 Most of that profile is ordinary identification, but two fields are here specifically because this is a
 **health** tracker, not a pet scrapbook:
 
@@ -14,7 +18,14 @@ Most of that profile is ordinary identification, but two fields are here specifi
 
 `birthdate` is nullable and carries an **"approximate" flag**, because rescues and secondhand rabbits
 routinely arrive with a guessed age; a false-precision exact date would misrepresent what the owner
-actually knows. It drives age display and age-relevant context. `breed` and `colour/markings` are
+actually knows. It drives age display and age-relevant context.
+
+A boolean, not a precision enum (`DAY`/`MONTH`/`YEAR`), which would record what is known more exactly — but
+only if the **display rule** below is skipped, and with it a picker able to express "year only". The rule
+carries the honesty at no schema cost: an **approximate birthdate renders as "~2 years old", never as a
+date**, and only an exact one shows the date and a precise age. Boolean→enum stays a nullable-column
+migration if it is ever wanted. One consequence to bank for Phase 4: a **birthday care reminder** built on
+an approximate birthdate would fire on a fabricated 1 July, so the flag has to suppress or reframe it. `breed` and `colour/markings` are
 nullable identification helpers — useful when two bunnies look alike — and carry no health meaning.
 
 ## Why there is no target or ideal weight

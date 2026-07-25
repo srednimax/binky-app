@@ -1,7 +1,7 @@
 # Schema changes wipe data until Phase 3, then use real migrations
 
-There is no public release until every phase is complete, and the schema churns hardest in Phases 1-2 —
-before any backup exists. Through those phases a schema change is allowed to destroy the database rather
+Version 1.0 ships at the end of Phase 3 (ADR-0019), and the schema churns hardest in Phases 1-2 — before
+any backup exists, and before any build has reached a device holding data worth keeping. Through those phases a schema change is allowed to destroy the database rather
 than carrying a migration for every field added to a still-unsettled model. Anything entered before
 Phase 3 is disposable test data by definition.
 
@@ -17,9 +17,15 @@ feature's schema settles, a **single consolidated, tested** migration is written
 version, and only then does it reach the real-data app. Migration count tracks *releases*, not keystrokes,
 and no tester — or the author — loses history to a routine update.
 
-Regardless of phase, **a destructive wipe never happens silently.** On startup the database file's schema
-version is read *before* Room opens it. If this build would wipe it, a blocking screen appears first, and
-the existing database file is preserved with a timestamp alongside the media.
+**A destructive wipe never loses the file**, in any phase: before a destructive migration the existing
+database is copied aside with a timestamp, alongside the media.
+
+The **consent** half arrives in Phase 2, not Phase 1. From then on, startup reads the database file's schema
+version *before* Room opens it, and a blocking screen appears first if this build would wipe it. In Phase 1
+that screen would fire on every entity added, to guard a bunny name and a birthdate that take twenty seconds
+to retype — daily consent from the only user, who already knows they are wiping, is a rubber stamp, and the
+likely outcome is that it gets disabled before reaching the phase where it matters. It matters from Phase 2,
+when the database first holds a weight series (below).
 
 ## Consequences
 

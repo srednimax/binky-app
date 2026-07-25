@@ -54,18 +54,33 @@ shared observations intact — neither touches recorded history.
 ### The fluffle's own identity and lifecycle
 
 A fluffle carries an **optional custom name** (`Fluffle.name`, nullable): named, it shows as the owner's
-label ("The Girls"); unnamed, it renders by its members ("Thumper & Clover"). "Lives with" is a **symmetric
-join** — putting Thumper with Clover writes *both* onto one `fluffleId` row, and if Clover already lives
-with Hazel, Thumper joins the existing trio rather than forming a rival pair. A bunny has exactly one
-`fluffleId`, matching the biology: one bonded group, one shared space and tray.
+label ("The Girls"); unnamed, it renders by its members ("Thumper & Clover"). That fallback is a list of
+names joined **through a string resource**, never concatenated with `" & "` — Polish joins lists differently,
+and this label appears in the switcher, on the profile and in the healthy-day snackbar (ADR-0013).
+"Lives with" is a **symmetric join** — putting Thumper with Clover writes *both* onto one `fluffleId` row,
+and if Clover already lives with Hazel, Thumper joins the existing trio rather than forming a rival pair. A
+bunny has exactly one `fluffleId`, matching the biology: one bonded group, one shared space and tray.
 
-Membership dropping below two active bunnies is handled by *how* it dropped. **Archival** changes nothing —
-`fluffleId`, the name, and history all stay, because the survivor of a bonded pair genuinely *did* live
-with the archived one. **Deletion** (the destructive, explicit path, ADR-0004) is different: when deleting
-a member leaves a single active bunny, that survivor is **reverted to solo** — `fluffleId` set null and the
-now-empty fluffle row cleaned up in the same transaction. A consequence to accept: a custom name is
-therefore **ephemeral** — dissolving a group by deleting its members discards the name, and re-bonding later
-means naming afresh. That is correct: the group genuinely dissolved.
+A fluffle **dissolves when it would be left with one member, counting archived ones** — a single predicate
+shared by every path that can change membership, rather than a rule per path:
+
+- **Archival** changes nothing, now as a consequence rather than an exception: the archived bunny is still a
+  member, so the count does not move. `fluffleId`, the name and history all stay, because the survivor of a
+  bonded pair genuinely *did* live with the archived one.
+- **Editing "Lives with" to none** — the ordinary bond break, which this ADR names as a real event and
+  previously left unhandled — dissolves a pair: the bunny that left is solo, and so is the one that stayed,
+  because both are active and neither shares a tray any more. Editing one member out of a trio simply
+  leaves the remaining two a fluffle.
+- **Deletion** (the destructive, explicit path, ADR-0004) uses the same predicate, which is exactly why it
+  counts archived members. Deleting Thumper from {Thumper, Clover, Hazel-archived} leaves **two** members,
+  so the row stands and Clover keeps having lived with Hazel. An active-only rule would have dissolved it
+  and erased the very fact the archival clause above exists to protect.
+
+Dissolving sets the survivor's `fluffleId` to null and cleans up the now-single-member fluffle row in the
+same transaction. A consequence to accept: a custom name is therefore **ephemeral** — dissolving a group
+discards the name, and re-bonding later means naming afresh. That is correct: the group genuinely dissolved.
+A second: a fluffle whose only other member is archived still renders "Lives with", so that member has to be
+shown distinguishably — *"Lives with Hazel (archived)"* — rather than as a current roommate.
 
 ## Consequences
 

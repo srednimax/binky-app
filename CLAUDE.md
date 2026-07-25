@@ -73,9 +73,13 @@ adb devices                      # confirm the phone is attached
 
 ```
 app/src/main/java/app/bunny/tracker/
+  MainActivity.kt, Navigation.kt, NavigationKeys.kt
+               the app shell and Nav3 wiring stay at the package root, not under ui/ — they describe
+               how the app hangs together rather than any one screen
   data/        Room entities, DAOs, database, type converters, repositories
-  media/       MediaFiles.kt — the single path for persisting images. Named to avoid colliding
-               with Android's own android.provider.MediaStore
+  media/       MediaFiles.kt — the single path for persisting images, kind-aware
+               (avatar / photo / document, each with its own directory and downsample spec). Named to
+               avoid colliding with Android's own android.provider.MediaStore
   ui/          Compose screens + ViewModels, one package per tab
   work/        reminder scheduling and notifications
 ```

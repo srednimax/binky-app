@@ -19,7 +19,9 @@ _Avoid_: health log, daily log, diary entry, check-in
 
 **Archive**:
 To hide a bunny from everyday use while keeping all of its records. The opposite of deleting, which
-destroys them. An archived bunny has usually died or been rehomed.
+destroys them. An archived bunny has usually died or been rehomed. It stays reachable from More, can be
+brought back, and its records stay **readable in a read-only scope** — records nobody can reach would be
+indistinguishable from deleted ones (ADR-0004).
 _Avoid_: delete, remove, hide, deactivate
 
 **Document**:
@@ -85,7 +87,8 @@ _Avoid_: bonded pair, group, herd, cage mates
 **Fluffle**:
 The set of bunnies that live **Together**, sharing a space and litter tray. Declared when adding or
 editing a bunny, not inferred. The code and glossary word; the on-screen label is "Lives with". "Group"
-is reserved for the link joining one observation across several bunnies.
+is reserved for the link joining one observation across several bunnies. A fluffle **dissolves when it would
+be left with one member, counting archived ones** — one bunny shares a tray with nobody (ADR-0008).
 _Avoid_: group, warren, household, cage, hutch
 
 **Cecotrope**:
