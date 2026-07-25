@@ -9,12 +9,14 @@ The data model lives in the Room entities, so it cannot drift from the code.
 - [x] **Phase 0** — Toolchain, project skeleton, docs
 - [ ] **Phase 1** — Data layer, bunnies, avatars
 - [ ] **Phase 2** — Weight and observations
-- [ ] **Phase 3** — Backup, first-run setup, photo gallery
-- [ ] **Phase 4** — Care reminders and watch
-- [ ] **Phase 5** — Vet, medications, documents, dose reminders
-- [ ] **Phase 6** — Release
+- [ ] **Phase 3** — Backup, first-run setup, photo gallery — **ships as 1.0**
+- [ ] **Phase 4** — Care reminders and watch — **ships as 1.1**
+- [ ] **Phase 5** — Vet, medications, documents, dose reminders — **ships as 1.2**
 
-There is no intermediate public release: the app ships to end users only once every phase is complete.
+The rule is **no release before the data is safe**, which Phase 3 satisfies (ADR-0019). It replaces the
+former blanket ban on shipping before every phase was complete — a rule that held the weight trend flag,
+the app's one load-bearing safety signal, hostage to a document scanner. Release work is therefore not a
+phase of its own; it happens at the end of each of Phases 3, 4 and 5.
 
 ## Phase 0 — Toolchain, project skeleton, docs ✅
 
@@ -69,12 +71,16 @@ top-level destinations exist (as stubs where needed) and the bunny switcher scop
   and must never be dampened into silence. The **baseline is the median of the last 3 *prior* weighings**
   (fewer if fewer exist, but **at least 2**, and always **excluding the current reading**, so a real drop
   can't dilute its own signal); the flag **cannot fire until ≥2 prior weighings exist**. The small **gram
-  noise-floor** stops day-to-day gut/bladder fluctuation tripping it. The delta is displayed in **grams**
+  noise-floor** — `max(20 g, 2% of baseline)`, proportional rather than flat — stops day-to-day gut/bladder
+  fluctuation tripping it. The delta is displayed in **grams**
   (house rule) and framed "down [X] g since [date] — worth a closer look," **never a diagnosis** (ADR-0001,
   no medical advice). The interval is used **only as framing** ("much of that may be recent — weigh again in
-  a day or two"), **never to withhold the flag**. The exact percentage, baseline size and noise-floor are
-  tunable with vet input; the *shape* (level trigger, baseline-relative, noise-floored, interval-independent)
-  is fixed.
+  a day or two"), **never to withhold the flag**. The constants are **fixed now, not left pending vet
+  input** (ADR-0001): trigger **5% of baseline**, noise floor **`max(20 g, 2% of baseline)`**. The floor is
+  proportional because the app spans a 1.1 kg Netherland dwarf to a 6.5 kg Flemish giant — a 6× range over
+  which a flat gram floor would consume most of the trigger at one end and mean nothing at the other. Vet
+  input is later tuning, a one-line change; the *shape* (level trigger, baseline-relative, noise-floored,
+  interval-independent) is fixed.
 - The flag surfaces **at the point of entry** — the moment a just-logged weight trips the threshold, shown
   in the entry flow — **and persists on Home / the weight screen**. It **auto-clears** when the latest
   weigh-in no longer trips the trigger against the *current* trailing baseline — covering both a real regain
@@ -104,7 +110,22 @@ top-level destinations exist (as stubs where needed) and the bunny switcher scop
   manufacture the same unverified "fine" (ADR-0001). On a bunny that lives with others it writes a
   **shared observation** across the fluffle (tray-level facts propagated, per-bunny "no symptoms"), never a
   solo row that falsely attributes the shared tray (ADR-0008).
-  Timeline grouped by day for display only.
+  Timeline grouped by day for display only. The one-tap shortcut **names who it covered**, as a snackbar
+  with undo — the only write path in the app that commits participants without review, so the review
+  happens immediately afterwards instead (ADR-0008).
+- **Every weight and observation is individually editable and deletable** — the *value* as well as the
+  timestamp — behind a single confirmation, since ADR-0004's two-stage ceremony is calibrated to destroying
+  a bunny's whole history, not one mistyped number. A fat-fingered `250` for `2500` trips the flag hard and
+  immediately, and then sits in the trailing baseline suppressing a real drop for the next three weigh-ins;
+  correcting the date cannot fix that, so correction has to reach the number. The acknowledgment watermark
+  is discarded when the weight it was taken against is edited or deleted (ADR-0001), or it stands against a
+  reading that no longer exists.
+- The chart carries a **range selector — 30 days / 90 days / 1 year / All, defaulting to 90 days**. An
+  all-time axis compresses the two- or three-week drop the app exists to surface into a couple of percent
+  of chart width — the same signal loss the gram/kilogram house rule exists to prevent, in geometry rather
+  than arithmetic — and a juvenile growth curve from 900 g to 2.4 kg sets a y-axis that flattens every adult
+  fluctuation afterwards. Range is **display only**: the flag always reads the last three prior weighings
+  regardless of what is on screen, so the two cannot drift.
 - Warnings derive from recorded observations, never from silence.
 
 **Gate:** unit tests for trend math pass (interval-independent level trigger, trailing baseline of the 3
@@ -112,11 +133,20 @@ prior weighings excluding the current one, the ≥2-prior firing gate, noise-flo
 auto-clear/acknowledge/re-raise transitions — including that a long gap before an acute drop still fires);
 the chart is time-correct with deliberately uneven and back-dated dates; a future-dated weight is rejected;
 an untouched droppings field records "not checked", not "normal"; "Log a healthy day" records the
-glance-level fields and leaves the graded ones "not checked"; an empty database produces no warnings.
+glance-level fields, leaves the graded ones "not checked", and names the bunnies it covered; correcting a
+mistyped weight clears the flag it caused and restores the baseline; deleting a duplicate weighing does the
+same; an empty database produces no warnings.
 
-## Phase 3 — Backup, first-run setup, photo gallery
+## Phase 3 — Backup, first-run setup, photo gallery — ships as 1.0
 
 Moved ahead of vet/meds: by the end of Phase 2 the app holds irreplaceable data with no way off the device.
+That is also why this phase is 1.0 (ADR-0019) — the data being safe is the whole precondition for having
+users, and everything after it is additive.
+
+**Register the Play developer account and open the internal testing track at the *start* of this phase**,
+not the end (ADR-0009). New personal accounts face a closed-testing prerequisite — 12 testers over 14 days
+at the time of writing — which is a multi-week wait if discovered at release time. Verify the current
+policy before assuming the numbers.
 
 - Photo gallery, moved here from Phase 1 (ADR-0015): per-bunny lazy grid, full-screen pager, captions. It
   lands alongside backup because photos are the sentimental bulk excluded from Auto Backup and covered only
@@ -127,20 +157,34 @@ Moved ahead of vet/meds: by the end of Phase 2 the app holds irreplaceable data 
   is protecting the evidential core, not the documents. The photo gallery is excluded. What was dropped is
   persisted as a marker (timestamp + excluded count) and surfaced honestly in Backup settings plus a
   one-time notification — never silently.
+- **The backup status line cannot be allowed to lie in either direction** (ADR-0005). Absence of a marker
+  is rendered in words — *"No automatic backup has been recorded on this phone"*, with a button into system
+  backup settings — never as a blank, which reads as a working net and is ADR-0001's silence failure applied
+  to backup. `onRestoreFinished()` **clears the marker**, or a restore carries the old phone's timestamp
+  onto a device that has never backed up anything. Past **14 days** the status says it is stale rather than
+  showing a bare date.
 - Manual export at the three scopes — Essential / Records / Everything — via the share sheet.
 - Restore (ADR-0005): a full database replace but a **media merge** (keyed by relative uuid path, so an
   Essential restore keeps photos already on disk), gated behind an explicit confirmation and a pre-restore
   database snapshot, stating honestly what the file contains.
 - First-run setup: add first bunny (skippable) → backup scope → reminders opt-in (skippable), per ADR-0006.
+  The backup step also **asks whether system backup is switched on**, with a deep link into Android's
+  settings — the app cannot detect it, and this is the one moment the owner is already thinking about it.
+- Top-level destinations gain a **visibility state** (`Hidden` / `ComingSoon` / `Live`) before this ships,
+  since 1.0 is the first build real users see: Care & Meds is hidden rather than opening onto a stub, while
+  unbuilt rows inside More may read "coming soon" (ADR-0019, ADR-0015).
 - Then attempt the remembered-folder destination and **verify on the real device** whether Google Drive's
   provider accepts writes. Still the plan's biggest unverified assumption — but with the evidential core
   now in Auto Backup (ADR-0005), it gates only the sentimental photo gallery, not vet evidence, so its
   failure is survivable.
 
 **Gate:** export at each scope, clear app data, restore, and confirm what should be present is present and
-what was excluded degrades gracefully.
+what was excluded degrades gracefully; a device that has never run Auto Backup says so in words rather than
+showing a blank; a restore does not carry the source phone's backup timestamp onto the target; no
+bottom-navigation tab opens onto a stub. Then the 1.0 release itself — signed build on the internal testing
+track, and installable from Play on the Xiaomi.
 
-## Phase 4 — Care reminders and watch
+## Phase 4 — Care reminders and watch — ships as 1.1
 
 Care reminders depend only on a bunny existing, and use the simpler mechanism. Building them first
 establishes the notification channel, permission flow, reboot rescheduling and Xiaomi battery-exemption
@@ -159,6 +203,13 @@ prompt on easy ground, so dose reminders later add only the exact-alarm path.
   WorkManager notification** framed about the owner's checking, not the bunny's state, and **satisfied by
   logging any observation** for that bunny that day. A missed watch nag is low-stakes, so best-effort
   delivery is fine — it needs none of the exact-alarm treatment doses get.
+- The trend flag and the Watch are **connected in both directions**, now that both exist. The flag carries
+  a *Start a watch* action pre-filled with the default duration — **offered, never automatic**, because
+  "worth a closer look" is already the flag's voice and a button acting on that sentence presumes less than
+  the sentence does (ADR-0001). The auto-expiry prompt shows the **current trend**, since "is it still
+  dropping" is exactly what the owner is being asked. And a bunny under an active watch is **excluded from
+  "Log a healthy day" pre-selection**, with the reason stated — the one unreviewed write path must not
+  sweep a separated, ill bunny into a shared tray fact (ADR-0008).
 - Battery-optimisation exemption requested here, at the point something is first scheduled.
 - Care reminders optionally hand off to the owner's calendar, one-way, no permission (ADR-0014).
 
@@ -166,9 +217,10 @@ prompt on easy ground, so dose reminders later add only the exact-alarm path.
 also fires after the phone has sat idle in Doze **overnight** (screen off, app unopened) on the real
 Xiaomi — the +2-minute happy path is not sufficient evidence of reliability (ADR-0003); tapping
 *Add to calendar* on an annual reminder opens the calendar app with the date and yearly repeat already
-filled in; a short-duration watch stops nagging once it auto-expires.
+filled in; a short-duration watch stops nagging once it auto-expires; a trend flag offers to start a watch
+and "Log a healthy day" refuses to cover a watched bunny. Then the 1.1 release.
 
-## Phase 5 — Vet, medications, documents, dose reminders
+## Phase 5 — Vet, medications, documents, dose reminders — ships as 1.2
 
 - Vets directory; visits linked to a bunny and optionally a vet — a health record, with no cost field
   (ADR-0017). A weight recorded on a visit is stored as
@@ -190,10 +242,18 @@ filled in; a short-duration watch stops nagging once it auto-expires.
 shortening a course removes its future due doses without touching recorded ones; a dose reminder fires at
 its exact clock time after an **overnight Doze idle** on the real Xiaomi, and while battery-optimisation
 exemption/autostart are unconfirmed it presents as **best-effort**, never as an armed alarm (ADR-0003).
+Then the 1.2 release.
 
-## Phase 6 — Release
+## Releasing — at the end of Phases 3, 4 and 5
 
-Signed release APK, keystore out of git, signing config from `local.properties`.
+Signed release build, keystore out of git, signing config from `local.properties`. A Play listing cannot
+change its signing key, so the key is generated **once**, backed up off this machine, and never
+regenerated (ADR-0009).
+
+Releasing is not a phase. It happens three times, and the schema shipped at each one acquires a permanent
+migration obligation (ADR-0007) — which starts at 1.0, while the medication and vet tables are still being
+designed. That is already provided for: their churn happens on a throwaway debug database, and a single
+consolidated, tested migration from the last released version is written once each feature settles.
 
 ## Verification
 

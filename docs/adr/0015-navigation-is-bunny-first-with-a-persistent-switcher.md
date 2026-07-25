@@ -27,8 +27,17 @@ The structure is therefore **bunny-first with two escapes**:
 ## Consequences
 
 The top-level destinations and the switcher model are fixed **before Phase 1** and built as stubs where the
-real screen does not exist yet — the photo gallery (Phase 3), Care & Meds (Phases 4-5) — so the back-stack
+real screen does not exist yet — the photo gallery (Phase 3), Care & Meds (1.1-1.2) — so the back-stack
 and entry points are settled while the structure is still cheap to change (ADR-0012 #5).
+
+Because 1.0 now ships at the end of Phase 3 (ADR-0019), those stubs would be **seen by real users**, and a
+bottom-navigation tab opening onto "coming in a later version" is a fifth of primary navigation spent on a
+dead end. Deciding the structure and rendering the destination are different claims, and ADR-0012 #5 only
+requires the first. Each top-level destination therefore carries a **visibility state — `Hidden` /
+`ComingSoon` / `Live`** — while every nav key and route exists in code from Phase 1 exactly as before. A
+dead **tab** is `Hidden`; a dead **row** inside More or Settings may be `ComingSoon`, because it costs one
+line in a list rather than a fifth of the navigation. Promoting a destination is then a one-value change,
+not a restructure — which is the cost ADR-0012 #5 exists to avoid in the first place.
 
 The bunny switcher is app-wide state, not per-screen: a `StateFlow` on `AppContainer`, **persisted to
 DataStore** so an aggressive Xiaomi background-kill lands the owner back on the same bunny rather than a

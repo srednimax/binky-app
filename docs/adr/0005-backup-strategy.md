@@ -27,6 +27,30 @@ backup: 3 days ago — 12 documents were too large to include; use manual export
 single low-key notification the first time exclusion kicks in. It is never dropped silently. This content
 is fixed at build time and is not user-configurable.
 
+### The marker must not lie in either direction
+
+The marker is honest when the agent runs. Two cases where it isn't, both of which the design has to handle
+explicitly, because each one produces a *reassuring* falsehood:
+
+- **Absence must never render as fine.** Auto Backup runs only if the device has backup enabled with an
+  account signed in, and then only when idle, charging and on a network. An owner who has that switched
+  off — or a Xiaomi that never gets round to it — produces **no marker at all**, and Android exposes no
+  reliable public API to ask whether the app's data is actually being included. A blank status line then
+  reads as a working net. That is precisely ADR-0001's failure applied to backup: silence meaning nobody
+  looked. Backup settings therefore states the unknown case in words — *"No automatic backup has been
+  recorded on this phone"* — with a button into system backup settings. Unknown is a state and gets its own
+  copy.
+- **The marker must not survive onto a different phone.** It lives in preferences so that a *restore* does
+  not wipe it — but preferences are themselves inside the backup set, so a restore carries the old device's
+  marker onto the new one, which then reports a recent successful backup having never made one. The marker
+  is restored by the very event it describes. Because backup runs through a custom agent, the fix is a hook
+  already owned: **`onRestoreFinished()` clears the marker**, and the new device correctly reports none
+  recorded until its own first backup runs.
+
+A marker also **ages out**: past 14 days — against Auto Backup's roughly daily cadence — the status stops
+showing a bare date and says it is stale. A technically true timestamp from two months ago is a worse
+signal than an admission.
+
 **Manual export** writes a zip to a destination the owner picks, at one of three scopes:
 
 - **Essential** — database and bunny avatars.

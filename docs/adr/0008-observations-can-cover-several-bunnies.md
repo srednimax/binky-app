@@ -75,6 +75,27 @@ produced anything. The app must say so rather than implying it is about one bunn
 Separating a bunny for treatment needs no model change: stop covering both, and individual observations
 resume immediately.
 
+### "Log a healthy day" is the one path that commits participants unreviewed
+
+Every other write shows the participants and lets the owner change them. The one-tap healthy-day shortcut
+cannot, because not asking is the entire feature — and it writes the field this ADR most exists to protect.
+Left alone it defeats the separation guidance above at the worst possible moment: an owner whose bunny is
+separated and ill taps it out of habit and **affirmatively records normal droppings and no symptoms for the
+sick bunny**, from a tray it is not using. "Lives with" will not save them; it is declared living
+arrangement, and nobody edits it for a fortnight of critical care.
+
+Two requirements follow, and they keep the shortcut at one tap:
+
+- **It names who it covered**, as a snackbar with undo — *"Healthy day logged for Thumper & Clover · Undo"*.
+  The attribution is visible immediately and a wrong one is reversible, without a dialog standing between
+  the owner and the tap.
+- **A bunny under an active Watch is excluded from its pre-selection**, with the reason stated — *"Clover
+  is under a watch — log for her separately."* A Watch is the owner's own declaration that this bunny needs
+  individual attention, which makes it the signal that already exists for "do not sweep this one into a
+  group fact."
+
+The second lands with Watch (1.1); the first ships with the shortcut itself.
+
 **Deleting** one bunny in a shared observation (ADR-0004) removes only that bunny's row. The surviving
 rows **keep their observed-together marker** and are still rendered as shared ("observed together") even
 when only one member still resolves — never silently downgraded to an individual observation, which would

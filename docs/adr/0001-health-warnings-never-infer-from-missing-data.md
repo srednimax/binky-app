@@ -14,6 +14,14 @@ same dismissal failure this ADR exists to prevent; auto-expiry forces a consciou
 keeps meaning something. The nag is once daily, best-effort, and satisfied by logging any observation for
 that bunny that day.
 
+A Watch is started by the owner and never by the app — but the **trend flag offers one**, as a "Start a
+watch" action pre-filled with the default duration. The moment a drop is detected is exactly when fresh
+observations are worth having, and the owner should not have to independently remember that the feature
+exists. Offering is not claiming: *"worth a closer look"* is already the flag's voice, and a button that
+acts on that sentence presumes less than the sentence does. Symmetrically, the auto-expiry prompt shows the
+**current trend**, because "is it still dropping" is the question the owner is being asked to answer and
+they should not have to go and look it up.
+
 ## The weight trend flag is derived, present-tense, and self-clearing
 
 The trend flag — the one signal that fires without the owner pre-diagnosing — is **derived on read**, never
@@ -31,6 +39,27 @@ months-old acknowledgment of a since-recovered episode can never silence it. A l
 flag when it falls **below the watermark by more than the gram noise-floor** — a tighter bar than the 5%
 trigger, because a bunny already flagged *and* acknowledged must not be allowed to slide a further 5% in
 silence.
+
+The watermark is **also discarded when the weight it was taken against is edited or deleted** — weight
+entries are individually correctable, value as well as timestamp. A watermark measured against a number
+that no longer exists is a suppression the owner never agreed to.
+
+## The trigger's constants
+
+The shape above is fixed. These are the numbers, and they are **chosen now rather than left pending vet
+input**: a constant labelled provisional in a document ships as whatever was typed first, because the label
+does not remove itself.
+
+- **Trigger — 5% below baseline.** The figure rabbit-welfare guidance generally treats as significant, and
+  defensible without a specialist in the room.
+- **Noise floor — `max(20 g, 2% of baseline)`**, proportional rather than flat. The app must serve a 1.1 kg
+  Netherland dwarf and a 6.5 kg Flemish giant — a 6× range, over which 5% is 55 g at one end and 325 g at
+  the other, and over which day-to-day gut and bladder variation scales the same way. A flat gram floor
+  would consume most of the trigger on a small bunny and mean nothing on a large one. The 20 g absolute
+  stops the floor collapsing to noise on the very smallest.
+
+Both live as named constants in one file with this reasoning in comments. Vet input remains welcome as
+later tuning; because the shape does not depend on the values, acting on it is a one-line change.
 
 One case is an **accepted limitation, not engineered around**: a vet-directed weight-loss diet trips the
 flag on exactly the intended loss, and the watermark cannot suppress a sustained managed decline. Rather
