@@ -49,6 +49,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.bunny.tracker.R
 import app.bunny.tracker.data.NeuterStatus
 import app.bunny.tracker.data.Sex
+import app.bunny.tracker.ui.appViewModelExtras
 import java.io.File
 import java.time.Instant
 import java.time.LocalDate
@@ -71,10 +72,13 @@ fun BunnyEditorScreen(
 ) {
     val viewModel: BunnyEditorViewModel =
         viewModel(
-            // Keyed, or Compose would hand the "edit Clover" screen the ViewModel it built for
-            // "add a bunny" — same type, same back stack.
+            // The store this lands in belongs to the back-stack entry (see `entryDecorators` in
+            // Navigation.kt), so it is already one ViewModel per editor screen, cleared when the
+            // screen pops. The key only keeps "edit Clover" and "add a bunny" apart if some future
+            // caller ever renders two editors under one entry.
             key = "bunny-editor-${bunnyId ?: "new"}",
             factory = BunnyEditorViewModel.factory(bunnyId),
+            extras = appViewModelExtras(),
         )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -322,20 +326,16 @@ private fun HousemateField(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(text = stringResource(R.string.bunny_lives_with_label), style = MaterialTheme.typography.titleSmall)
-        if (candidates.isEmpty()) {
-            Text(
-                text = stringResource(R.string.bunny_lives_with_nobody_yet),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            return@Column
-        }
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.horizontalScroll(rememberScrollState()),
         ) {
+            // Shown even with nobody to pick yet, and inert while that is true: living alone is a
+            // real answer about this bunny, so the field should say it. An empty field reads as
+            // something that failed to load.
             FilterChip(
                 selected = selectedId == null,
+                enabled = candidates.isNotEmpty(),
                 onClick = { onSelect(null) },
                 label = { Text(stringResource(R.string.bunny_lives_with_alone)) },
             )
@@ -355,6 +355,15 @@ private fun HousemateField(
                 )
             }
         }
+        if (candidates.isEmpty()) {
+            Text(
+                text = stringResource(R.string.bunny_lives_with_nobody_yet),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        // Shown in both cases on purpose. This is the one line that says *why* the app cares who
+        // lives with whom, and an owner with a single bunny is exactly who has not learned it yet.
         Text(
             text = stringResource(R.string.bunny_lives_with_help),
             style = MaterialTheme.typography.bodySmall,

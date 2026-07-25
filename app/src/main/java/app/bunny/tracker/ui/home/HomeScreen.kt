@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.bunny.tracker.R
 import app.bunny.tracker.data.BunnySelection
+import app.bunny.tracker.ui.appViewModelExtras
 import app.bunny.tracker.ui.bunny.BunnyAvatar
 import app.bunny.tracker.ui.bunny.BunnyDialogHost
 import app.bunny.tracker.ui.bunny.BunnyProfile
@@ -49,7 +50,7 @@ fun HomeScreen(
     onSelectBunny: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
+    val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory, extras = appViewModelExtras())
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     when (state.selection) {

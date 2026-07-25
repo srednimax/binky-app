@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.bunny.tracker.R
+import app.bunny.tracker.ui.appViewModelExtras
 import app.bunny.tracker.ui.bunny.BunnyAvatar
 import app.bunny.tracker.ui.bunny.BunnyDialogHost
 import app.bunny.tracker.ui.bunny.BunnyProfile
@@ -48,7 +49,8 @@ fun ArchivedBunniesScreen(
     onOpen: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val viewModel: ArchivedBunniesViewModel = viewModel(factory = ArchivedBunniesViewModel.Factory)
+    val viewModel: ArchivedBunniesViewModel =
+        viewModel(factory = ArchivedBunniesViewModel.Factory, extras = appViewModelExtras())
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxSize()) {

@@ -24,10 +24,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import app.bunny.tracker.ui.archive.ArchivedBunniesScreen
 import app.bunny.tracker.ui.bunny.BunnyEditorScreen
@@ -39,6 +42,29 @@ import app.bunny.tracker.ui.observations.ObservationsScreen
 import app.bunny.tracker.ui.shell.AppShellViewModel
 import app.bunny.tracker.ui.shell.BunnySwitcher
 import app.bunny.tracker.ui.weight.WeightScreen
+
+/**
+ * What every back-stack entry is wrapped in — above all, **one `ViewModelStore` per entry**.
+ *
+ * Nav3 does not do this on its own. The ViewModel decorator ships in a separate artifact
+ * (`lifecycle-viewmodel-navigation3`), which `navigation3-ui` does not depend on, so `NavDisplay`'s
+ * default list cannot contain it. Without it every `viewModel()` resolves to the *Activity's* store
+ * and outlives the screen that made it: the bunny editor came back with its `saved` flag still set
+ * and bounced straight out of the second "Add a bunny" of a session, and only killing the process
+ * cleared it.
+ *
+ * `rememberSaveableStateHolderNavEntryDecorator` is Nav3's own default, restated because passing
+ * the list replaces it. The scene-setup decorator is `internal` to Nav3 and applied by `NavDisplay`
+ * itself, so it is not ours to restate.
+ *
+ * Extracted from [MainNavigation] so `NavigationScopingTest` can assert the scoping directly.
+ */
+@Composable
+internal fun appEntryDecorators(): List<NavEntryDecorator<NavKey>> =
+    listOf(
+        rememberSaveableStateHolderNavEntryDecorator(),
+        rememberViewModelStoreNavEntryDecorator(),
+    )
 
 /**
  * The app shell: the persistent bunny switcher, the bottom-navigation destinations, and the one
@@ -93,6 +119,7 @@ fun MainNavigation(modifier: Modifier = Modifier) {
         NavDisplay(
             backStack = backStack,
             modifier = Modifier.padding(insets),
+            entryDecorators = appEntryDecorators(),
             onBack = {
                 // Back from a detail screen returns to its destination; back from any top-level
                 // destination returns to Home, which is always the bottom of the stack; back from
