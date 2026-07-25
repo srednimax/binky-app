@@ -1,8 +1,13 @@
 name: CI
 
 on:
+  # main only. Triggering on every branch as well as on pull_request ran the whole
+  # workflow twice for every PR — same commit, double the minutes — and put a
+  # permanently "skipped" instrumented job on each PR, which reads like a broken gate.
+  # A feature branch is covered the moment it has a PR; before that, use the Run
+  # workflow button (workflow_dispatch) if you want a check.
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -63,8 +68,11 @@ jobs:
   instrumented:
     name: Instrumented tests (emulator)
     runs-on: ubuntu-latest
-    # Slow (~10-15 min) — only gate the shared branches on it, not every push.
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    # Slow (~10-15 min), and deliberately unconditional now: the trigger list above is
+    # what keeps it off feature-branch pushes. It used to carry an `if:` naming
+    # pull_request and main, which every surviving trigger already satisfies — a
+    # condition that is always true is worse than no condition, because it looks like
+    # a gate. Restore it if `push` ever widens past main again.
     steps:
       - uses: actions/checkout@v7
 
