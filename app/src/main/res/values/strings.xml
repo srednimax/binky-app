@@ -1,3 +1,55 @@
 <resources>
     <string name="app_name">Bunny Tracker</string>
+
+    <!-- Bottom-navigation destinations (ADR-0015) -->
+    <string name="destination_home">Home</string>
+    <string name="destination_weight">Weight</string>
+    <string name="destination_observations">Observations</string>
+    <string name="destination_care">Care &amp; Meds</string>
+    <string name="destination_more">More</string>
+
+    <!-- The bunny switcher -->
+    <string name="switcher_open">Choose which bunny to show</string>
+    <string name="switcher_all_bunnies">All bunnies</string>
+    <string name="switcher_add_bunny">Add a bunny</string>
+    <string name="switcher_no_bunnies">No bunnies yet</string>
+
+    <!-- Which bunny a screen is scoped to. Every stub says so, or a stub scoped to the wrong
+         bunny would be indistinguishable from one scoped to the right one. -->
+    <string name="scope_all_bunnies">Showing all bunnies</string>
+    <string name="scope_bunny">Showing %1$s</string>
+    <string name="scope_bunny_archived">Showing %1$s, archived</string>
+
+    <!-- The read-only scope onto an archived bunny -->
+    <string name="archived_banner">Archived. Records can be read, not changed.</string>
+    <string name="archived_banner_leave">Leave</string>
+
+    <string name="action_back">Back</string>
+    <string name="add_a_bunny_first">Add a bunny first.</string>
+
+    <!-- Home -->
+    <string name="home_empty_title">No bunnies yet</string>
+    <string name="home_empty_body">Add your first bunny to start keeping records.</string>
+    <string name="home_stub">The overview arrives in Phase 2, with current weight, recent observations and the trend flag.</string>
+    <string name="home_all_bunnies_stub">One card per bunny. Avatar, age and who they live with arrive with the bunny profile.</string>
+
+    <!-- Weight -->
+    <string name="weight_pick_a_bunny">Weight is recorded per bunny. Choose a bunny from the switcher to see its chart.</string>
+    <string name="weight_stub">The weight chart and entry arrive in Phase 2.</string>
+
+    <!-- Observations -->
+    <string name="observations_stub">The observation timeline arrives in Phase 2.</string>
+    <string name="observations_all_stub">The combined timeline across every bunny arrives in Phase 2.</string>
+    <string name="log_observation_stub">Logging an observation arrives in Phase 2.</string>
+
+    <!-- Care &amp; Meds -->
+    <string name="care_stub">Care reminders arrive in version 1.1, medications in 1.2.</string>
+
+    <!-- More -->
+    <string name="more_stub">Photos, documents, archived bunnies, settings and support live here.</string>
+
+    <!-- Bunny profile -->
+    <string name="bunny_editor_add_title">Add a bunny</string>
+    <string name="bunny_editor_edit_title">Edit bunny</string>
+    <string name="bunny_editor_stub">The profile form arrives with the next checkpoint.</string>
 </resources>
