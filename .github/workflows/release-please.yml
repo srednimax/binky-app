@@ -19,4 +19,13 @@ jobs:
       - uses: googleapis/release-please-action@v4
         with:
           # Config + manifest are auto-detected at the repo root.
-          token: ${{ secrets.GITHUB_TOKEN }}
+          #
+          # A PAT, deliberately NOT the built-in GITHUB_TOKEN: GitHub refuses to
+          # run workflows on a PR that GITHUB_TOKEN opened (the run lands as
+          # "action_required", 0 jobs, awaiting an "Approve and run" click). The
+          # "main: require CI" ruleset requires those checks with no bypass
+          # actors, so such a PR can never merge. A PAT makes the release PR
+          # author a human identity, and CI runs on it like any other PR.
+          # Secret: fine-grained PAT, contents + pull-requests write. See
+          # docs/RELEASING.md.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}

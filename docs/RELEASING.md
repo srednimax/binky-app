@@ -52,8 +52,12 @@ Config lives in `release-please-config.json` + `.release-please-manifest.json`
 - **`versionCode` in CI debug builds is `1`.** GitHub's checkout is shallow, so the
   commit count can't be read. That's fine for debug. For a *release* build, do a full
   checkout (`fetch-depth: 0`) or build locally so the count is real.
-- **The release PR won't re-trigger CI** (it's created by the built-in `GITHUB_TOKEN`).
-  For a solo repo that's harmless; if you ever want CI on that PR, swap in a PAT.
+- **The release workflow needs a `RELEASE_PLEASE_TOKEN` secret** — a fine-grained PAT
+  with *contents: write* and *pull-requests: write* on this repo. The built-in
+  `GITHUB_TOKEN` can't be used: GitHub won't run workflows on a PR that `GITHUB_TOKEN`
+  opened, so the release PR's CI sits at `action_required` with zero jobs, and the
+  `main: require CI` ruleset (no bypass actors) then blocks the merge forever. If the
+  secret is missing or expired, the workflow fails and no release PR appears at all.
 - **We start at `0.1.0`** on purpose — the app is pre-1.0 until all phases ship.
   While the major is `0`, release-please stays in pre-release: `fix:` → `0.1.1`,
   `feat:` → `0.2.0`, and even a breaking `feat!:` bumps the *minor* (`0.2.0`), it
