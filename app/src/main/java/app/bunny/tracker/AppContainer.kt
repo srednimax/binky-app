@@ -15,6 +15,7 @@ import app.bunny.tracker.data.PRESERVED_DIRECTORY
 import app.bunny.tracker.data.StoredSelection
 import app.bunny.tracker.data.preserveBeforeWipe
 import app.bunny.tracker.data.resolveSelection
+import app.bunny.tracker.media.MediaFiles
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -62,6 +63,9 @@ class AppContainer(
             .build()
 
     val preferences = AppPreferences(appContext.preferencesStore)
+
+    /** The single path for persisting images (house rule, ADR-0020). */
+    val mediaFiles = MediaFiles(appContext)
 
     val fluffleRepository = FluffleRepository(database)
 
