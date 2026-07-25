@@ -151,20 +151,33 @@ Each checkpoint is meant to survive being picked up cold, so read its decisions 
   chart plots **real timestamps, not list index**.
 - Trend flag — the app's **single load-bearing safety signal**, the one thing that fires without the owner
   pre-diagnosing (CONTEXT.md), so it gets the most careful unit tests in the project. The trigger is
-  **interval-independent**: flag whenever `current ≤ baseline − max(~5% of baseline, gram noise-floor)`,
+  **interval-independent**: flag whenever `current ≤ baseline − max(5% of baseline, gram noise-floor)`,
   regardless of the gap between weigh-ins — an acute drop *after a long gap* is the most dangerous pattern
-  and must never be dampened into silence. The **baseline is the median of the last 3 *prior* weighings**
-  (fewer if fewer exist, but **at least 2**, and always **excluding the current reading**, so a real drop
-  can't dilute its own signal); the flag **cannot fire until ≥2 prior weighings exist**. The small **gram
-  noise-floor** — `max(20 g, 2% of baseline)`, proportional rather than flat — stops day-to-day gut/bladder
-  fluctuation tripping it. The delta is displayed in **grams**
+  and must never be dampened into silence.
+- **In practice that trigger is 5% of baseline, and it is worth being honest about why.** `2%` is always
+  less than `5%`, so the inner `max` can only ever resolve to the **20 g absolute**, and 20 g exceeds 5% of
+  baseline only below **400 g** — a four-week-old kit. Across the whole 1.1 kg – 6.5 kg range the app exists
+  to serve, the floor never binds here. It stays in the formula as a deliberate **juvenile guard** (on a
+  300 g kit, 5% is 15 g, inside real scale noise), and a unit test pins that case so the `max` is not
+  "simplified" away later. The floor's genuinely load-bearing role is the **re-raise bar** below, where
+  ADR-0001 wants a tighter threshold than 5%.
+- The **baseline is the median of the 3 *prior* weighings**, always **excluding the current reading**, so a
+  real drop can't dilute its own signal; the flag **cannot fire until ≥2 prior weighings exist**. At exactly
+  two priors the baseline is the **higher of the two, not their median** — because the median of an even set
+  is the mean of the middle pair, and a 2-element mean is the most outlier-sensitive estimator in the
+  scheme, in the very window where the flag first switches on. It fails *silent*: priors of `2500, 250`
+  average to 1375 g, putting a healthy bunny permanently "above baseline" and suppressing every later drop.
+  Higher-of-two matches the mean on a fat-fingered *high* prior (both fire) and fixes the low one, so it
+  strictly dominates. The failure it admits — a false alarm from a typo'd high prior — is self-announcing,
+  since the flag shows grams and dates and the value is editable.
+- The delta is displayed in **grams**
   (house rule) and framed "down [X] g since [date] — worth a closer look," **never a diagnosis** (ADR-0001,
   no medical advice). The interval is used **only as framing** ("much of that may be recent — weigh again in
   a day or two"), **never to withhold the flag**. The constants are **fixed now, not left pending vet
   input** (ADR-0001): trigger **5% of baseline**, noise floor **`max(20 g, 2% of baseline)`**. The floor is
   proportional because the app spans a 1.1 kg Netherland dwarf to a 6.5 kg Flemish giant — a 6× range over
-  which a flat gram floor would consume most of the trigger at one end and mean nothing at the other. Vet
-  input is later tuning, a one-line change; the *shape* (level trigger, baseline-relative, noise-floored,
+  which a flat gram floor would consume most of the re-raise bar at one end and mean nothing at the other.
+  Vet input is later tuning, a one-line change; the *shape* (level trigger, baseline-relative, noise-floored,
   interval-independent) is fixed.
 - The flag surfaces **at the point of entry** — the moment a just-logged weight trips the threshold, shown
   in the entry flow — **and persists on Home / the weight screen**. It **auto-clears** when the latest
@@ -174,7 +187,12 @@ Each checkpoint is meant to survive being picked up cold, so read its decisions 
   **Manual acknowledge** stores the weight it was acknowledged at; the watermark is **episode-scoped** —
   discarded the instant the trigger goes false, so a since-recovered episode can never silence a new drop —
   and a later reading re-raises only when it falls **below the acknowledged weight by more than the
-  noise-floor**. The flag is **derived on read**, never stored, so editing a fat-fingered timestamp
+  noise-floor**. It is **also discarded by any edit or deletion of any of that bunny's weights** (not by
+  inserts, which the trigger and the re-raise bar already handle). That is wider than ADR-0001's original
+  "the weight it was taken against", and deliberately so: editing a *baseline* weight can deepen the real
+  drop while leaving the current reading — and therefore the watermark comparison — untouched, so the flag
+  would stay silent on a drop that just got worse. The wider rule is also the simpler one to implement,
+  needing no "was this the acknowledged row?" test. The flag is **derived on read**, never stored, so editing a fat-fingered timestamp
   self-heals and a back-dated weight recomputes the *current* flag but never resurrects one for a past,
   since-recovered moment; a **vet-directed diet** is an accepted limitation the flag names in its own copy
   rather than suppressing (all ADR-0001). **No push
@@ -203,29 +221,271 @@ Each checkpoint is meant to survive being picked up cold, so read its decisions 
   a bunny's whole history, not one mistyped number. A fat-fingered `250` for `2500` trips the flag hard and
   immediately, and then sits in the trailing baseline suppressing a real drop for the next three weigh-ins;
   correcting the date cannot fix that, so correction has to reach the number. The acknowledgment watermark
-  is discarded when the weight it was taken against is edited or deleted (ADR-0001), or it stands against a
-  reading that no longer exists.
+  is discarded by any weight edit or deletion (ADR-0001, as widened above), or it stands against a reading
+  that no longer exists — or against a baseline that has since moved beneath it.
 - The chart carries a **range selector — 30 days / 90 days / 1 year / All, defaulting to 90 days**. An
   all-time axis compresses the two- or three-week drop the app exists to surface into a couple of percent
   of chart width — the same signal loss the gram/kilogram house rule exists to prevent, in geometry rather
   than arithmetic — and a juvenile growth curve from 900 g to 2.4 kg sets a y-axis that flattens every adult
-  fluctuation afterwards. Range is **display only**: the flag always reads the last three prior weighings
-  regardless of what is on screen, so the two cannot drift.
+  fluctuation afterwards. Range is **display only**: the flag always reads the full series regardless of
+  what is on screen, so the two cannot drift. The selector therefore creates a **third empty state** —
+  weighings exist but none fall in the selected range — which must say so and name the last weighing's date,
+  never "no weight recorded yet", which would be the app claiming ignorance of data it holds. It is reached
+  on an ordinary path: weigh monthly, skip a quiet winter, open to a blank 90-day window. The honest
+  consequence is a **trend flag rendered above an empty chart**; that is correct and must not be "fixed" by
+  making the flag respect the range.
 - Warnings derive from recorded observations, never from silence.
 - The **blocking wipe screen** lands here (ADR-0007): from Phase 2 the database holds a weight series that
   cannot be retyped, so startup reads the schema version before Room opens it and asks before destroying
   anything. The preserve half already exists from Phase 1.
 - The delete confirmation's **record counts become real** here, since this is the phase that creates records
-  to count — two buckets, sole-owned versus shared-participation (ADR-0004, ADR-0008).
+  to count — two buckets, sole-owned versus shared-participation (ADR-0004, ADR-0008). The buckets are
+  counted by **survivorship, not provenance**: a shared observation where this bunny is the *last remaining
+  participant* is destroyed outright, so it belongs in the sole-owned bucket. Counting it as "shared" would
+  make the second dialog reassure the owner that the records survive for the other bunnies at the exact
+  moment the loss is total — and ADR-0004's whole justification for a second dialog is that it states what
+  is actually destroyed.
 
-**Gate:** unit tests for trend math pass (interval-independent level trigger, trailing baseline of the 3
-prior weighings excluding the current one, the ≥2-prior firing gate, noise-floor, gram-delta, and the
-auto-clear/acknowledge/re-raise transitions — including that a long gap before an acute drop still fires);
-the chart is time-correct with deliberately uneven and back-dated dates; a future-dated weight is rejected;
-an untouched droppings field records "not checked", not "normal"; "Log a healthy day" records the
-glance-level fields, leaves the graded ones "not checked", and names the bunnies it covered; correcting a
-mistyped weight clears the flag it caused and restores the baseline; deleting a duplicate weighing does the
-same; an empty database produces no warnings.
+### Checkpoints
+
+Six rather than Phase 1's four, because this is roughly twice the phase: weight and observations each split
+into a data layer proven by tests and a UI verified by hand, and the two pieces that are easy to entangle
+with everything else — the trend math and the chart — are kept separate so they can be reviewed for what
+they are. Dependencies still run one way, and the Xiaomi's split-APK confirmation prompt still makes
+`connectedAndroidTest` a boundary run rather than a per-commit one.
+
+**Two schema bumps, two wipes** — version 2 at 2a, version 3 at 2e. Both are free under ADR-0007 and both
+are a chance to exercise the consent screen on a real device. The consequence stands for the whole phase:
+until Phase 3 the phone's database is disposable, so weights worth keeping are written down outside the app.
+
+1. **2a — Weight data layer, and the consent half of the wipe guard.**
+   - `WeightEntity` — `id`, `bunnyId` FK `CASCADE` indexed, `grams: Int` (house rule — never a float),
+     `recordedAt: Instant` (the moment on the scale, back-datable), `createdAt: Instant`. Indexed on
+     `(bunnyId, recordedAt)`, because every query this app makes is one bunny's series in time order. No
+     `source` / `visitId`: already deferred to a Phase-5 migration.
+   - `TrendAcknowledgmentEntity` — the flag's **only** persisted piece (ADR-0001): `bunnyId` as primary key
+     (at most one live episode per bunny), `weightId` FK `ON DELETE CASCADE`, `grams`, `acknowledgedAt`.
+     A table rather than columns on `bunnies` so that "discarded when the weight it was taken against is
+     deleted" is a **database constraint rather than a rule someone has to remember**. The semantics that
+     govern the row are 2b's; only the shape lands here.
+   - `WeightDao` / `WeightRepository`: the series as a `Flow`, insert / update / delete. **No "the *n*
+     weighings prior to an instant" query** — windowing belongs to 2b's pure function and must be defined in
+     exactly one place. The DAO returns the bunny's series in a **total order** (`recordedAt` desc, then
+     `createdAt` desc, then `id`), because `recordedAt` alone is not one: a minute-granularity picker, two
+     entries in a session and the 2f seeder all produce ties, and without a stated rule the baseline depends
+     silently on SQLite's row order. The full series is loaded anyway — 2d feeds the trend function the
+     unfiltered series, and five years of weekly weighings is 260 rows of `(String, Int, Long)`.
+   - `WeightRepository.update` and `.delete` **discard that bunny's acknowledgment row**, per the widened
+     ADR-0001 rule above. One line each, no "was this the acknowledged weight?" test. The FK below stops
+     being the mechanism and becomes a backstop.
+   - Schema → **2**, and **the consent screen lands in the same commit as the bump**. This is the first wipe
+     ADR-0007's consent half exists for; shipping the bump a commit earlier would spend it on the phone that
+     matters.
+   - The screen is **honest about having no alternative**: Phase 1's preserve half has already taken the
+     copy, so it states what is about to be destroyed, where the copy is
+     (`files/preserved/bunny-<timestamp>.db`), how to pull it off the phone, and offers one forward button.
+     What ADR-0007 forbids is the *silent* wipe, not the unavoidable one.
+   - It has to block **before Room opens the file**, which today it does not: `AppContainer.selectedBunny`
+     is `SharingStarted.Eagerly` over `activeBunnies`, so merely constructing the container runs a query.
+     `selectedBunny` becomes `WhileSubscribed(5_000)` and `AppContainer` exposes the pending wipe for
+     `MainActivity` to gate the whole UI on.
+   - **Not `database by lazy`** — that would be cargo. Room's `build()` does not open the file (which is
+     precisely why 2e's `onCreate` seeding callback works: it fires on first *access*), and the lazy would
+     be forced immediately anyway, because `fluffleRepository` and `bunnyRepository` are eager `val`s taking
+     `database` as a constructor argument. The guard is therefore **indirect and must be named as such**:
+     nothing collects, so no query runs, so the file stays shut. An instrumented test pins it — constructing
+     `AppContainer` over a stale-version file leaves that file **byte-identical**.
+   - `preserveBeforeWipe` names the copy from **`databaseFile.lastModified()`**, not `Instant.now()`
+     (which stays as the injected default for tests). Phase 1 was idempotent by accident: preserve ran, Room
+     wiped immediately, and the next launch saw a matching version. A *blocking* screen removes that, so
+     every relaunch before consent would mint another full copy plus `-wal`/`-shm` — and CLAUDE.md notes the
+     Xiaomi kills backgrounded apps aggressively, which is exactly what a hesitating owner triggers. A
+     deterministic name makes the re-copy overwrite itself, and dates the *data* rather than the moment of
+     panic.
+   - Weight display unit becomes `AppPreferences`' **second key** — kg by default, grams the alternative.
+     Entry is in grams either way; only display moves. Its toggle lands in 2c, not here: a preference with
+     no setter is a constant with a DataStore round-trip, and it would leave the grams branch of every
+     display site unexecuted for a whole phase.
+   - `BunnyDao.recordCounts` gets its first real SQL (weights are sole-owned), which makes 1d's structurally
+     built **two-stage delete ceremony reachable for the first time**. It reaches its final form in 2e.
+   - Tests, instrumented: weights cascade with their bunny; an acknowledgment row disappears with the weight
+     it names; a stale-version database file survives container construction untouched. The out-of-order
+     windowing test moves to **2b**, as JVM arithmetic — faster, and free of the Xiaomi's split-APK prompt.
+2. **2b — Trend math.** Pure JVM, no Room and no Android — `deleteConfirmationFor` is the precedent: a
+   decision function in `data/` whose test reads as a table of cases.
+   - Input is the bunny's **whole series** as a plain list of `(id, grams, recordedAt)` plus the current
+     acknowledgment, output a sealed result. Deliberately **not** Room types, so the tests stay arithmetic.
+   - **This function owns the windowing**, not the DAO: it sorts, takes the latest reading as *current*, and
+     takes the priors beneath it. That is the only reason 2b's back-dating cases mean anything — if SQL had
+     already chosen the three priors, the project's heaviest tests would be measuring a stub.
+   - Both constants live in this one file with ADR-0001's reasoning in comments: trigger **5 % of baseline**,
+     noise floor **`max(20 g, 2 % of baseline)`** — with a comment recording that the floor cannot bind in
+     the trigger above a 400 g baseline, so its real job is the re-raise bar.
+   - The rules, restated as code: baseline is the **median** of the 3 prior weighings (never the mean — one
+     fat-fingered outlier must not drag it) but the **higher of the two** when only two priors exist, since
+     a 2-element median *is* a mean; **excluding** the current reading; **≥ 2 priors** before anything can
+     fire; level trigger, **interval-independent**; the acknowledgment is discarded the instant the raw
+     trigger goes false, and re-raises only below the watermark by more than the floor.
+   - The project's heaviest unit tests, as a case table: a long gap before an acute drop still fires; one
+     prior weighing never fires and two do; **at exactly two priors a fat-fingered low prior does not
+     suppress** (`2500, 250` must not yield a 1375 g baseline); the floor behaves at both ends of the
+     1.1 kg – 6.5 kg range **and binds in the trigger only on a ~300 g kit**, so the `max` cannot be
+     simplified away; a stabilized-low bunny auto-clears as the baseline catches up; acknowledge → further
+     slide re-raises, acknowledge → wobble within the floor stays quiet; a trigger going false discards the
+     watermark so the next episode fires from scratch; a back-dated insert into the middle of history changes
+     the current flag and never resurrects a past one; ties in `recordedAt` resolve by the stated total
+     order; rows arriving out of order window correctly (moved here from 2a).
+3. **2c — Weight entry, history, the flag surfaced, and Settings.**
+   - A **`WeightEntry(bunnyId, weightId: String? = null)` nav key** — null adds, non-null edits, mirroring
+     `BunnyEditor`. This **closes a Phase-1 omission rather than adding scope**: ADR-0015 names weight entry
+     as one of the app's two shallow detail screens, and `NavigationKeys.kt` promises every route exists from
+     Phase 1 "even where the screen behind them is still a stub" — this one didn't. The global "+" stays
+     **observation-only** (ADR-0015) and is never the way in.
+   - Entry defaulting to now, date/time editable, back-dating allowed, **future rejected with the reason
+     stated** rather than silently clamped.
+   - The per-bunny history list, every row editable and deletable — **value as well as timestamp** — behind
+     **one** confirmation.
+   - Every write path re-evaluates the flag; the watermark is maintained by 2a's repository rule (any edit or
+     delete discards it) plus discard-on-trigger-false, with the FK as backstop.
+   - One flag composable rendered in three places: at the point of entry the moment a logged weight trips it,
+     on the weight screen, and on Home's card. Grams, dated, "worth a closer look", the long-gap framing when
+     the gap warrants it, the vet-diet line, an acknowledge action — and **no notification**. Built with room
+     for a **second action**, since Phase 4 adds *Start a watch* to this same composable.
+   - Home under "All bunnies" is **one vitals card per active bunny**, so it is *N* series reads and *N*
+     trend evaluations per emission, recomputed on any weight change. Stated, not optimised — at three
+     rabbits it is free, and "derived on read" plus "a card each" is the pairing that stops being free
+     quietly.
+   - A minimal **Settings screen**, flipping More's `more_settings` row from "coming soon" to live — one row,
+     the weight display unit. Same shape as `ArchivedBunnies`: a detail route off More. Settings has to exist
+     before 1.0 regardless, since ADR-0013's language switcher needs the same screen.
+   - **One weight formatter, in one place**, so kg-vs-grams and the "changes are always shown in grams"
+     house rule are expressed once rather than re-derived at the axis, the row and the card.
+   - Weight stops being a stub and still refuses "All bunnies". No Compose tests (ADR-0012, as in 1c); the
+     logic beneath is already covered by 2b.
+4. **2d — The chart.** Vico enters `libs.versions.toml` here and nowhere earlier. Real `recordedAt` on the
+   x-axis; range selector 30 d / 90 d / 1 y / All defaulting to 90 d. **Three** empty states, not two: no
+   weighings at all, a single point, and **weighings exist but none in range** — the third naming the last
+   weighing's date and offering one tap to *All*, never claiming the app has no data. No auto-widening: a
+   selector that silently overrides the owner's choice lies about its own state.
+   **Range is display-only** — the trend function is fed the unfiltered series, never the chart's list, which
+   is what keeps the two from drifting, and which means **the flag can render above an empty chart**. That
+   composition is correct and gets verified by eye, because it is the one that looks like a bug. Its own
+   checkpoint on purpose: a new charting dependency against
+   Compose BOM 2026.03.01 either drops straight in or eats a day, and neither outcome should be tangled up in
+   the review of the entry flow.
+5. **2e — Observation data layer.** Schema → **3**.
+   - `ObservationEntity`, one row per bunny (ADR-0008): `id`, `bunnyId` FK `CASCADE`, `groupId: String?`
+     (non-null only when shared), `recordedAt`, `createdAt`, the tray-level fields (droppings amount / size /
+     form, cecotropes) and the individual ones (appetite, mood, activity, water, note).
+   - **Sharedness is `groupId IS NOT NULL`, never a count of rows sharing it.** The count would silently
+     downgrade exactly the record ADR-0008 exists to protect — deleting one participant has to leave the
+     survivors still reading "observed together" even when a single row is left — but `groupId` already
+     survives that, and every other correction path besides. There is deliberately **no `observedTogether`
+     column**: it would be a second spelling of the same fact, unable to do anything but drift out of step
+     with the first. Converting a solo observation to shared mints a `groupId` and back-fills it onto the
+     existing row, inside the transaction that is already there.
+   - Every vocabulary column is a **nullable enum stored by name**, and `null` *is* "not checked" — no
+     `NOT_CHECKED` entry, or absence gets two spellings and every query has to handle both.
+   - `SymptomEntity` (ADR-0010): `id`, `key: String?` for built-ins — the stable identity, whose English
+     label lives in `strings.xml` — `label: String?` for owner-added rows, `hiddenAt: Instant?`. Both label
+     columns earn their place: built-in labels **must not** be stored, because ADR-0013 needs them
+     translatable out of `strings.xml`, while owner labels must be. There is no `ownerCreated` flag —
+     `key == null` already says it, and a second column could only drift. Seeded on create and **reconciled
+     on open** with an `INSERT OR IGNORE` over the built-in set keyed on `key`: fifteen rows, idempotent by
+     construction, and it keeps the list in code identical to the list in the database once wipes stop being
+     free after Phase 3. Matching on `key` leaves a hidden symptom's `hiddenAt` untouched; built-ins are
+     retired by hiding, never by deleting. `ObservationSymptomEntity` joins them on a composite key,
+     `CASCADE` from the observation and **no cascade from the symptom** — hiding a symptom is not deleting
+     it.
+   - `ObservationRepository` owns the shared write as **one transaction**: one `groupId`, tray-level facts
+     written identically onto every participant, individual fields blank. Editing a tray-level field is an
+     `UPDATE … WHERE groupId = :groupId`; editing an individual one touches one row.
+   - `recordCounts` reaches its final form, bucketed by **survivorship, not provenance**: shared means a
+     grouped observation with `EXISTS` at least one row belonging to a *different* bunny; a grouped
+     observation where this bunny is the last participant is **destroyed**, so it counts as sole-owned.
+     Archived bunnies count as survivors — archive is not deletion and their rows persist. `deleteConfirmationFor`
+     is untouched: either bucket being non-zero still yields `TWO_STAGE`, so only the numbers get honest.
+     Note the two different questions this leaves — *"was this observed together?"* (history, immutable,
+     `groupId`) and *"will anything be left of it?"* (present-tense, the `EXISTS`) — which deserve different
+     predicates rather than one column doing both jobs badly.
+   - Tests, instrumented: the shared write lands one `groupId` and identical tray facts on every
+     participant; editing a tray fact moves every row and editing a mood moves one; deleting one participant
+     leaves the rest marked observed-together; deleting a bunny cascades its observations and symptom links
+     but no symptom; **the last surviving participant's observations count as sole-owned, and an archived
+     housemate keeps them counted as shared**; the seed runs once, survives a wipe, and tops up on open
+     without resurrecting a hidden symptom; a hidden symptom still resolves on an old observation. JVM: the
+     healthy-day field set as a pure function, so 2f only wires it up.
+6. **2f — Observation UI, the "+", and the healthy day.**
+   - The global "+" FAB **finally renders** — Phase 1 settled its route and deliberately left it inert.
+   - The full form: every field optional, droppings amount landing on **not checked**, participants
+     pre-selected from the current fluffle's *active* members and editable, the symptom picker with
+     add-your-own, note, back-dating and future-rejection on the same terms as weight.
+   - Pre-selection is built as a **filter with a stated reason per exclusion**, even though Phase 2 excludes
+     nobody — so Phase 4's watch exclusion is one predicate added, rather than the participant picker and the
+     snackbar copy being reworked together under reminder-scheduling pressure.
+   - The timeline grouped by day **for display only**, shared entries naming who they covered; under "All
+     bunnies" it is the combined timeline.
+   - Edit and delete per observation behind one confirmation, respecting the tray/individual split.
+   - **"Log a healthy day"** — one tap, affirmative on the glance-level facts, "not checked" on the graded
+     ones, and a snackbar naming who it covered with **Undo**. The Watch-based exclusion is Phase 4's and is
+     not stubbed here.
+   - A **flagged bunny is not excluded**, but the snackbar **names the flag** — *"Logged a healthy day for
+     Bijou (weight flag) and Nugget"*. The flag is about **weight**; the healthy day records droppings,
+     cecotropes and symptoms, and a bunny losing weight with entirely normal droppings is real and useful
+     data. Excluding would add friction to the one-tap path over exactly the stretch that most wants daily
+     observations. Phase 4's Watch is different in kind and its exclusion still stands: a Watch is the owner
+     declaring concern about *observation* and exists to elicit deliberate ones, whereas letting an
+     app-derived signal block the owner from recording what they saw would have the app presuming more than
+     its own "worth a closer look" copy does. Naming it in the snackbar puts the fact in front of the owner
+     while **Undo** is still on screen, which is ADR-0008's logic for why that snackbar exists at all.
+   - A **`BuildConfig.DEBUG`-only sample-data action** in Settings, writing **through the repositories** so
+     it cannot seed rows the app itself could not produce. It generates the fixture the gate describes — a
+     year-long series with deliberately uneven and back-dated timestamps, a fat-fingered entry, a long gap
+     before an acute drop, and a shared observation across two bunnies. Two wipes land in this phase and the
+     gate needs that data three times; retyping a year of back-dated entries through a date picker is the
+     kind of toil that gets skimmed, and a seeder makes the fixture *identical* each time, so a chart that
+     looks wrong at 2d and again at 2f is being compared like with like. It pays for itself again at every
+     schema bump in Phases 3–5, and never ships.
+   - Observations stops being a stub, and Home's card completes its growth into ADR-0015's vitals card: last
+     weight, last observation, the flag.
+
+`spotlessApply`, `assembleDebug` and `test` at every checkpoint; `connectedAndroidTest` at the end of 2a and
+2e, the two that add instrumented tests; `lint` at the gate.
+
+Each checkpoint is meant to survive being picked up cold, so read its decisions first — **2a**: ADR-0007,
+0004. **2b**: ADR-0001. **2c**: ADR-0001, 0004, 0012. **2d**: ADR-0001, 0012. **2e**: ADR-0008, 0010, 0004.
+**2f**: ADR-0008, 0010, 0001, 0013.
+
+**Gate:**
+
+- Trend-math unit tests pass: interval-independent level trigger, trailing baseline of the 3 prior weighings
+  excluding the current one, the ≥ 2-prior firing gate, the noise floor, the gram delta, and the
+  auto-clear / acknowledge / re-raise transitions — **including that a long gap before an acute drop still
+  fires**.
+- At exactly two priors the baseline is the higher of the two: `2500, 250` does not yield a 1375 g baseline
+  and does not silence a later drop.
+- The noise floor binds in the trigger only below a ~400 g baseline; the kit case is covered, so the `max`
+  cannot be dropped without a red test.
+- Correcting a mistyped weight clears the flag it caused and restores the baseline; deleting a duplicate
+  weighing does the same; either one also discards an acknowledgment taken against it. **Editing an
+  unrelated weight discards it too** — including a baseline weight whose correction deepens the drop.
+- Constructing `AppContainer` over a database file at a stale schema version leaves that file byte-identical,
+  and relaunching before consenting does not add a second preserved copy.
+- The chart is time-correct with deliberately uneven and back-dated dates, and switching range never changes
+  whether the flag is showing. A range holding no weighings says so and names the last weighing's date rather
+  than reporting no data, and the flag still renders above it.
+- A future-dated weight is rejected, in both the weight and the observation forms.
+- An untouched droppings field records "not checked", not "normal".
+- "Log a healthy day" records the glance-level fields, leaves the graded ones "not checked", and names the
+  bunnies it covered in a snackbar that can be undone.
+- Deleting a bunny that has weights and shared observations shows **two** confirmations, with the two buckets
+  counted separately and correct pluralisation at 1 and at 3; the shared observations survive for the other
+  bunnies, still marked observed-together. Deleting the **last remaining participant** counts those
+  observations as destroyed, not as surviving.
+- The blocking wipe screen appears on a real schema bump, names the preserved file, and the file is there.
+- An empty database produces no warnings.
+- No user-facing string is hardcoded; counts use `<plurals>`, and the built-in symptom labels resolve
+  through `strings.xml` rather than being stored.
 
 ## Phase 3 — Backup, first-run setup, photo gallery — ships as 1.0
 

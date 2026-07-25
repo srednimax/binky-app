@@ -40,9 +40,20 @@ flag when it falls **below the watermark by more than the gram noise-floor** —
 trigger, because a bunny already flagged *and* acknowledged must not be allowed to slide a further 5% in
 silence.
 
-The watermark is **also discarded when the weight it was taken against is edited or deleted** — weight
-entries are individually correctable, value as well as timestamp. A watermark measured against a number
-that no longer exists is a suppression the owner never agreed to.
+The watermark is **also discarded by any edit or deletion of any of that bunny's weights** — weight entries
+are individually correctable, value as well as timestamp. A watermark measured against a number that no
+longer exists is a suppression the owner never agreed to.
+
+This is deliberately wider than "the weight it was taken against", which is where the rule started and which
+turned out to leave a hole. Editing a weight in the **baseline** can deepen the real drop while leaving the
+current reading untouched — and therefore leaving the watermark comparison untouched — so the flag stays
+silent on a drop that just got worse. The principle applies to the baseline exactly as well as to the
+acknowledged reading: a watermark measured against a baseline that no longer exists is the same
+unagreed suppression. The wider rule is also the **simpler** one to build, needing no "was this the
+acknowledged row?" test, so it cannot be right only in the case someone thought of. Inserts do not discard —
+a new reading either trips the trigger or does not, which the trigger and the re-raise bar already handle.
+The cost is one extra re-acknowledge when an owner corrects an old unrelated typo while a flag stands
+acknowledged: rare, deliberate, and one tap.
 
 ## The trigger's constants
 
@@ -55,8 +66,20 @@ does not remove itself.
 - **Noise floor — `max(20 g, 2% of baseline)`**, proportional rather than flat. The app must serve a 1.1 kg
   Netherland dwarf and a 6.5 kg Flemish giant — a 6× range, over which 5% is 55 g at one end and 325 g at
   the other, and over which day-to-day gut and bladder variation scales the same way. A flat gram floor
-  would consume most of the trigger on a small bunny and mean nothing on a large one. The 20 g absolute
+  would consume most of the bar on a small bunny and mean nothing on a large one. The 20 g absolute
   stops the floor collapsing to noise on the very smallest.
+
+**Where the floor actually binds, stated plainly, because the arithmetic is easy to misread.** The trigger is
+written `current ≤ baseline − max(5% of baseline, noise floor)`, but `2%` is always less than `5%`, so the
+inner `max` can only ever resolve to the **20 g absolute** — and 20 g exceeds 5% of baseline only below a
+**400 g** baseline, which is a four-week-old kit. Across the entire 1.1 kg – 6.5 kg range this ADR sets out
+to serve, **the floor never binds in the trigger; the 5% does all of that work.** It is not day-to-day
+fluctuation that the floor suppresses there.
+
+The floor is kept in the trigger as a deliberate **juvenile guard** — on a 300 g kit, 5% is 15 g, inside real
+scale noise — and a unit test pins that case so the `max` is not "simplified" away by someone who notices it
+is inert everywhere else. Its genuinely load-bearing role is the **re-raise bar** above, where a tighter
+threshold than the 5% trigger is exactly what is wanted.
 
 Both live as named constants in one file with this reasoning in comments. Vet input remains welcome as
 later tuning; because the shape does not depend on the values, acting on it is a one-line change.
