@@ -165,6 +165,9 @@ per checkpoint below — this section is what lands, in what order.
   (ADR-0001). Shared observations across a fluffle, one row per bunny, with participant correction and a
   snackbar naming who was covered (ADR-0008).
 - **Symptoms** as a seeded table with owner-added rows and an explicit "checked, none seen" state (ADR-0010).
+- **Breed becomes a searchable picker with add-your-own** — a Phase-1 field finishing its UI here, not new
+  scope. Deliberately **not** ADR-0010's seeded table: breed is asked no "how often" question, so it stays a
+  text column and the suggestion list is a query.
 - The **blocking wipe screen** — ADR-0007's consent half, which lands here because the database first holds a
   weight series that cannot be retyped. The preserve half already exists from Phase 1.
 - Warnings derive from recorded observations, **never from silence** (ADR-0001).
@@ -344,6 +347,19 @@ Phase 3 the phone's database is disposable, so weights worth keeping are written
      Bijou (weight flag) and Nugget"*. The flag is about **weight**; a bunny losing weight with entirely
      normal droppings is real and useful data, and excluding would add friction to the one-tap path over
      exactly the stretch that most wants daily observations (ADR-0008, ADR-0001).
+   - **Breed gets that same picker**, single-select with a search field — the one bunny-editor item riding
+     this checkpoint, because the picker is built here and building it twice is the alternative. The list is
+     the built-in breeds from `strings.xml` ∪ `SELECT DISTINCT breed` over **all** bunnies including archived,
+     "Mixed / unknown" first since that is most pet rabbits, and an unmatched entry is **accepted as typed**
+     rather than refused — then it is in the list for the next bunny, which is the whole of "add your own".
+     Search is why the two pickers share code: 13 symptoms do not need it, ~50 breeds do.
+   - `bunnies.breed` stays a **text column** — no `BreedEntity`. ADR-0010's reason a vocabulary earns a table
+     is that the "how often has this happened?" count must key off a stable id; breed is a profile fact on
+     Home's card and is counted by nothing. Two costs accepted in exchange for no schema bump and no new
+     table: a breed drops out of the suggestions once no bunny carries it (the reuse that matters — a second
+     bunny of the same breed — still works, because the first one carries the string), and a built-in name is
+     stored as the literal text picked, so it does not follow a language switch (ADR-0013). `colour` is the
+     obvious second user of the picker and is **not** wired to it here.
    - The **observation half of the sample-data action**: the two bunnies it needs, a shared observation across
      them, symptom links. Re-running it after 2e's wipe regenerates 2c's weight fixture identically, which is
      what makes the 2d and 2f chart reviews like-for-like.
