@@ -103,6 +103,12 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
 
+    // Media: reading the camera's orientation tag so it can be baked into the pixels (ADR-0020).
+    // The androidx one, not android.media.ExifInterface — it reads from an InputStream, which is
+    // what a content:// Uri from the photo picker gives us.
+    implementation(libs.androidx.exifinterface)
+    androidTestImplementation(libs.androidx.exifinterface)
+
     // Local tests: jUnit, coroutines, Android runner
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
