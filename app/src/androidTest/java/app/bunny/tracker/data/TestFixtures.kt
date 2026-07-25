@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import app.bunny.tracker.media.MediaFiles
 import java.io.File
 import java.util.UUID
 
@@ -20,6 +21,12 @@ fun temporaryPreferences(): AppPreferences {
     val context = ApplicationProvider.getApplicationContext<Context>()
     val file = File(context.cacheDir, "test-${UUID.randomUUID()}.preferences_pb")
     return AppPreferences(PreferenceDataStoreFactory.create { file })
+}
+
+/** Media rooted in a throwaway directory, so no test writes into the real `filesDir`. */
+fun temporaryMedia(): MediaFiles {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    return MediaFiles(context, File(context.cacheDir, "media-${UUID.randomUUID()}"))
 }
 
 /** Counts rows without going through a DAO, so the assertion cannot be fooled by one. */

@@ -29,6 +29,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import app.bunny.tracker.ui.archive.ArchivedBunniesScreen
 import app.bunny.tracker.ui.bunny.BunnyEditorScreen
 import app.bunny.tracker.ui.care.CareAndMedsScreen
 import app.bunny.tracker.ui.home.HomeScreen
@@ -104,12 +105,27 @@ fun MainNavigation(modifier: Modifier = Modifier) {
             entryProvider =
                 entryProvider {
                     entry<Home> {
-                        HomeScreen(state = state, onAddBunny = { backStack.add(BunnyEditor()) })
+                        HomeScreen(
+                            onAddBunny = { backStack.add(BunnyEditor()) },
+                            onEditBunny = { bunnyId -> backStack.add(BunnyEditor(bunnyId)) },
+                            onSelectBunny = shellViewModel::selectBunny,
+                        )
                     }
                     entry<Weight> { WeightScreen(state = state) }
                     entry<Observations> { ObservationsScreen(state = state) }
                     entry<CareAndMeds> { CareAndMedsScreen(state = state) }
-                    entry<More> { MoreScreen(state = state) }
+                    entry<More> { MoreScreen(onOpenArchived = { backStack.add(ArchivedBunnies) }) }
+                    entry<ArchivedBunnies> {
+                        ArchivedBunniesScreen(
+                            onBack = { backStack.removeLastOrNull() },
+                            onOpen = { bunnyId ->
+                                shellViewModel.openArchivedScope(bunnyId)
+                                // The read-only scope is a scope over the ordinary screens, not a
+                                // screen of its own, so entering it lands on Home.
+                                backStack.showTopLevel(TopLevelDestination.HOME)
+                            },
+                        )
+                    }
                     // Reachable only from Phase 2's "+" — the route is settled now, the FAB is not.
                     entry<LogObservation> { LogObservationScreen(state = state) }
                     entry<BunnyEditor> { key ->

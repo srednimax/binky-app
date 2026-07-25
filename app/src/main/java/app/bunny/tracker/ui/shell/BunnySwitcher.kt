@@ -1,6 +1,8 @@
 package app.bunny.tracker.ui.shell
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenu
@@ -16,8 +18,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import app.bunny.tracker.R
 import app.bunny.tracker.data.BunnySelection
+import app.bunny.tracker.ui.bunny.BunnyAvatar
 
 /**
  * The persistent bunny switcher (ADR-0015). A **scope indicator first and a picker second**: with
@@ -42,6 +46,12 @@ fun BunnySwitcher(
 
     Box(modifier) {
         TextButton(onClick = { expanded = true }) {
+            // The avatar is what disambiguates two bunnies with near-identical names, which
+            // ADR-0016 explicitly allows — so the scope indicator shows it, not just the name.
+            state.scopedBunny?.let { bunny ->
+                BunnyAvatar(avatar = bunny.avatar, name = bunny.name, size = 28.dp)
+                Spacer(Modifier.width(8.dp))
+            }
             Text(text = switcherLabel(state))
             Icon(
                 imageVector = Icons.Filled.ArrowDropDown,
@@ -53,6 +63,7 @@ fun BunnySwitcher(
             state.activeBunnies.forEach { bunny ->
                 DropdownMenuItem(
                     text = { Text(bunny.name) },
+                    leadingIcon = { BunnyAvatar(avatar = bunny.avatar, name = bunny.name, size = 32.dp) },
                     onClick = {
                         expanded = false
                         onSelectBunny(bunny.id)

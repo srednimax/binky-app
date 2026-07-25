@@ -36,11 +36,17 @@ import kotlinx.serialization.Serializable
  */
 @Serializable data object LogObservation : NavKey
 
-/** Add or edit a bunny. `null` adds. The form itself lands in checkpoint 1d. */
+/** Add or edit a bunny. `null` adds. */
 @Serializable
 data class BunnyEditor(
     val bunnyId: String? = null,
 ) : NavKey
+
+/**
+ * The archived bunnies list, reached from More (ADR-0004). A detail screen, not a destination:
+ * archived bunnies are deliberately absent from the switcher, and this is the one way to them.
+ */
+@Serializable data object ArchivedBunnies : NavKey
 
 /**
  * Whether a top-level destination is shown, shown as unavailable, or absent (ADR-0015).

@@ -9,6 +9,7 @@ import app.bunny.tracker.AppContainer
 import app.bunny.tracker.BunnyTrackerApplication
 import app.bunny.tracker.data.BunnyEntity
 import app.bunny.tracker.data.BunnySelection
+import app.bunny.tracker.media.MediaFiles
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -45,10 +46,10 @@ class AppShellViewModel(
                 }
             ShellUiState(
                 selection = selection,
-                activeBunnies = active.map { it.toSummary() },
+                activeBunnies = active.map { it.toSummary(container.mediaFiles) },
                 // Archived bunnies are looked up too: the read-only scope names a bunny that is
                 // deliberately absent from the switcher's list.
-                scopedBunny = (active + archived).find { it.id == scopedId }?.toSummary(),
+                scopedBunny = (active + archived).find { it.id == scopedId }?.toSummary(container.mediaFiles),
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ShellUiState())
 
@@ -63,6 +64,12 @@ class AppShellViewModel(
     fun selectAllBunnies() {
         viewModelScope.launch { container.selectAllBunnies() }
     }
+
+    /**
+     * Enters the read-only scope onto an archived bunny, from the archived list under More. In
+     * memory only — a background kill must not reopen the app into a memorial (ADR-0015).
+     */
+    fun openArchivedScope(bunnyId: String) = container.openArchived(bunnyId)
 
     /** Leaves the read-only scope onto an archived bunny. In memory only — never persisted. */
     fun closeArchivedScope() = container.closeArchived()
@@ -82,4 +89,9 @@ class AppShellViewModel(
     }
 }
 
-private fun BunnyEntity.toSummary() = BunnySummary(id = id, name = name, avatarPath = avatarPath)
+/**
+ * The relative path stored on the row is resolved here, at read time (house rule), so no composable
+ * has to know where `filesDir` is. The file may be missing; the avatar renders a placeholder.
+ */
+private fun BunnyEntity.toSummary(media: MediaFiles) =
+    BunnySummary(id = id, name = name, avatar = avatarPath?.let(media::resolve))

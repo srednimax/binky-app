@@ -69,7 +69,7 @@ class AppContainer(
 
     val fluffleRepository = FluffleRepository(database)
 
-    val bunnyRepository = BunnyRepository(database, fluffleRepository, preferences)
+    val bunnyRepository = BunnyRepository(database, fluffleRepository, preferences, mediaFiles)
 
     /**
      * The read-only scope onto an archived bunny. In memory only — a background kill must not

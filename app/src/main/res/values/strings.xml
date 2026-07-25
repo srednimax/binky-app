@@ -25,13 +25,20 @@
     <string name="archived_banner_leave">Leave</string>
 
     <string name="action_back">Back</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_archive">Archive</string>
+    <string name="action_unarchive">Unarchive</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_ok">OK</string>
     <string name="add_a_bunny_first">Add a bunny first.</string>
 
     <!-- Home -->
     <string name="home_empty_title">No bunnies yet</string>
     <string name="home_empty_body">Add your first bunny to start keeping records.</string>
     <string name="home_stub">The overview arrives in Phase 2, with current weight, recent observations and the trend flag.</string>
-    <string name="home_all_bunnies_stub">One card per bunny. Avatar, age and who they live with arrive with the bunny profile.</string>
+    <string name="home_all_bunnies_stub">Tap a bunny to open it.</string>
 
     <!-- Weight -->
     <string name="weight_pick_a_bunny">Weight is recorded per bunny. Choose a bunny from the switcher to see its chart.</string>
@@ -46,10 +53,93 @@
     <string name="care_stub">Care reminders arrive in version 1.1, medications in 1.2.</string>
 
     <!-- More -->
-    <string name="more_stub">Photos, documents, archived bunnies, settings and support live here.</string>
+    <string name="more_archived_bunnies">Archived bunnies</string>
+    <string name="more_archived_bunnies_summary">Bunnies you have archived. Their records are kept.</string>
+    <string name="more_photos">Photos</string>
+    <string name="more_documents">Documents</string>
+    <string name="more_settings">Settings</string>
+    <string name="more_support">Support</string>
+    <string name="more_coming_soon">Coming soon</string>
+
+    <!-- The archived list (ADR-0004): reachable, with unarchive, delete, and a read-only scope -->
+    <string name="archived_title">Archived bunnies</string>
+    <string name="archived_empty">Nothing archived. Archiving hides a bunny from the switcher and keeps every record.</string>
+    <string name="archived_on">Archived %1$s</string>
+    <string name="archived_open">Open</string>
 
     <!-- Bunny profile -->
     <string name="bunny_editor_add_title">Add a bunny</string>
     <string name="bunny_editor_edit_title">Edit bunny</string>
-    <string name="bunny_editor_stub">The profile form arrives with the next checkpoint.</string>
+    <string name="bunny_name_label">Name</string>
+    <string name="bunny_name_required">A bunny needs a name.</string>
+    <string name="bunny_avatar_take">Take a photo</string>
+    <string name="bunny_avatar_choose">Choose a photo</string>
+    <string name="bunny_avatar_remove">Remove the photo</string>
+    <string name="bunny_avatar_failed">That picture could not be read. Try another one.</string>
+    <string name="bunny_avatar_description">Photo of %1$s</string>
+    <string name="bunny_avatar_placeholder">No photo yet</string>
+    <string name="bunny_birthdate_label">Birthday</string>
+    <string name="bunny_birthdate_none">Not known</string>
+    <string name="bunny_birthdate_set">Set a birthday</string>
+    <string name="bunny_birthdate_clear">Clear the birthday</string>
+    <string name="bunny_birthdate_approximate">Approximate</string>
+    <string name="bunny_birthdate_approximate_help">Rescues often arrive with a guessed age. An approximate birthday is shown as an age, never as a date.</string>
+    <string name="bunny_sex_label">Sex</string>
+    <string name="sex_male">Male</string>
+    <string name="sex_female">Female</string>
+    <string name="sex_unknown">Unknown</string>
+    <string name="bunny_neutered_label">Neutered</string>
+    <string name="neutered_yes">Yes</string>
+    <string name="neutered_no">No</string>
+    <string name="neutered_unknown">Unknown</string>
+    <string name="bunny_breed_label">Breed</string>
+    <string name="bunny_colour_label">Colour and markings</string>
+    <string name="bunny_lives_with_label">Lives with</string>
+    <string name="bunny_lives_with_alone">Lives alone</string>
+    <string name="bunny_lives_with_nobody_yet">Add a second bunny to record who they live with.</string>
+    <string name="bunny_lives_with_help">Bonded bunnies share a litter tray, so one observation can cover all of them.</string>
+    <string name="bunny_lives_with_value">Lives with %1$s</string>
+    <string name="bunny_archived_name">%1$s (archived)</string>
+
+    <!-- Joining names into a list. Never concatenated with " &amp; ": other languages join lists
+         differently, and this label appears in the switcher, on the profile and in Phase 2's
+         healthy-day snackbar (ADR-0008, ADR-0013). -->
+    <string name="list_join_pair">%1$s &amp; %2$s</string>
+    <string name="list_join_more">%1$s, %2$s</string>
+
+    <!-- Age. An approximate birthday wraps the same age rather than being spelled out twice, so a
+         translator adjusts one string (ADR-0016). -->
+    <string name="age_approximate">~%1$s</string>
+    <plurals name="age_years">
+        <item quantity="one">%d year old</item>
+        <item quantity="other">%d years old</item>
+    </plurals>
+    <plurals name="age_months">
+        <item quantity="one">%d month old</item>
+        <item quantity="other">%d months old</item>
+    </plurals>
+    <plurals name="age_weeks">
+        <item quantity="one">%d week old</item>
+        <item quantity="other">%d weeks old</item>
+    </plurals>
+
+    <!-- Archiving asks once and says plainly that nothing is lost (ADR-0004) -->
+    <string name="archive_dialog_title">Archive %1$s?</string>
+    <string name="archive_dialog_body">Every record is kept and stays readable under More. %1$s leaves the bunny switcher, and you can bring them back at any time.</string>
+
+    <!-- Deleting is the explicit escape hatch. A second dialog appears only when there is history
+         to destroy — an avatar is not history (ADR-0004). -->
+    <string name="delete_dialog_title">Delete %1$s?</string>
+    <string name="delete_dialog_body">This removes the bunny from the app. Archiving instead keeps everything and only hides them.</string>
+    <string name="delete_dialog_avatar_note">Their photo is deleted from this phone too.</string>
+    <string name="delete_dialog_second_title">Delete %1$s and their records?</string>
+    <string name="delete_dialog_second_body">This cannot be undone.</string>
+    <plurals name="delete_records_sole_owned">
+        <item quantity="one">%d record kept only for this bunny is destroyed.</item>
+        <item quantity="other">%d records kept only for this bunny are destroyed.</item>
+    </plurals>
+    <plurals name="delete_records_shared">
+        <item quantity="one">%d shared entry stays, for the other bunnies it covered.</item>
+        <item quantity="other">%d shared entries stay, for the other bunnies they covered.</item>
+    </plurals>
 </resources>

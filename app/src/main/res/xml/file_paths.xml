@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Exactly one directory is shared, and only with the camera app we hand a Uri to: the cache
+    folder holding the just-taken shot. It is a staging area — MediaFiles re-encodes the picture
+    into filesDir/avatars and the original is dropped — so nothing durable is exposed.
+-->
+<paths>
+    <cache-path
+        name="camera"
+        path="camera/" />
+</paths>
