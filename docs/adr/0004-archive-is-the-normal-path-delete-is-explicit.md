@@ -24,6 +24,14 @@ Archived bunnies stay **reachable**: a list under More offering unarchive and de
 readable in a deliberate **read-only scope** (ADR-0015). Records nobody can reach are indistinguishable from
 deleted ones, which would hollow out the "every record kept" claim above.
 
+That scope has **three clauses**, stated once here so no screen has to re-decide them: records are
+**readable**, nothing is **writable**, and **no signal that calls for action is shown**. The third is the one
+that needs saying, and it is not obvious until there are records to show — through Phase 1 the scope was
+trivially satisfied by having nothing in it. A trend flag on a bunny that has died is grotesque and its
+acknowledge action would write inside a read-only scope (ADR-0001), so it is not evaluated there at all
+rather than hidden at the composable. The clause also pre-answers the later phases for free: no watch offer,
+no reminder, no dose entry on an archived bunny.
+
 ## Consequences
 
 Both `archivedAt` and cascading foreign keys exist deliberately — they are not redundant. Archiving must
@@ -35,3 +43,14 @@ the confirmation only stays honest if it counts **two buckets, not one**: observ
 bunny's (destroyed) versus *shared* observations it merely took part in (the bunny leaves them; the event
 survives for the others). Lumping the two together overstates the loss and hides a side effect on a
 *different* bunny — the exact dishonesty this confirmation exists to prevent.
+
+The buckets are counted by **survivorship, not provenance**. A shared observation where this bunny is the
+*last remaining participant* is destroyed outright, so it belongs in the **sole-owned** bucket. Counting it as
+"shared" would have the second dialog reassure the owner that the record survives for the other bunnies at
+the exact moment the loss is total — and stating what is actually destroyed is this dialog's entire
+justification. Archived bunnies count as survivors: archiving is not deleting and their rows persist.
+
+Two different questions therefore get two different predicates, deliberately, rather than one column doing
+both jobs badly: *"was this observed together?"* is history, immutable, answered by the group id (ADR-0008),
+while *"will anything be left of it?"* is present tense, answered by an `EXISTS` over rows belonging to
+another bunny.
