@@ -4,16 +4,15 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.room.Room
 import app.bunny.tracker.data.AppPreferences
 import app.bunny.tracker.data.BUNNY_DATABASE_FILE
 import app.bunny.tracker.data.BunnyDatabase
 import app.bunny.tracker.data.BunnyRepository
 import app.bunny.tracker.data.BunnySelection
 import app.bunny.tracker.data.FluffleRepository
-import app.bunny.tracker.data.PRESERVED_DIRECTORY
 import app.bunny.tracker.data.StoredSelection
-import app.bunny.tracker.data.preserveBeforeWipe
+import app.bunny.tracker.data.WeightRepository
+import app.bunny.tracker.data.buildBunnyDatabase
 import app.bunny.tracker.data.resolveSelection
 import app.bunny.tracker.media.MediaFiles
 import kotlinx.coroutines.CoroutineScope
@@ -25,7 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import java.io.File
+import kotlinx.coroutines.withContext
 
 private val Context.preferencesStore: DataStore<Preferences> by preferencesDataStore(name = "bunny_preferences")
 
@@ -39,28 +38,37 @@ private val Context.preferencesStore: DataStore<Preferences> by preferencesDataS
 class AppContainer(
     context: Context,
     scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+    databaseName: String = BUNNY_DATABASE_FILE,
 ) {
     private val appContext = context.applicationContext
 
     /**
-     * Declaration order is load-bearing: this runs **before** [database] below is built, because
-     * once Room opens a file whose schema has moved it is already too late (ADR-0007). Null when
-     * there was nothing to preserve, which is the ordinary case.
+     * **Constructing this does not open the file.** Room's `build()` only assembles the object; the
+     * file is touched on the first query, or by [openDatabase] below. That is what lets ADR-0007's
+     * consent screen block in front of a whole `AppContainer` that has not yet destroyed anything —
+     * and `BunnyTrackerApplication` keeps the container behind a `lazy` so that even this much does
+     * not happen before consent.
      *
-     * Phase 2 puts a blocking screen in front of this; Phase 1 keeps the copy without the consent.
+     * The preserve-and-check half lives in `Application.onCreate`, deliberately not here: a guard
+     * that depended on nothing *collecting* would be one eager `stateIn` away from silently
+     * breaking, and [selectedBunny] below is exactly that eager `stateIn`.
      */
-    val preservedDatabase: File? =
-        preserveBeforeWipe(
-            databaseFile = appContext.getDatabasePath(BUNNY_DATABASE_FILE),
-            preservedDir = File(appContext.filesDir, PRESERVED_DIRECTORY),
-        )
+    private val database: BunnyDatabase = buildBunnyDatabase(appContext, databaseName)
 
-    private val database: BunnyDatabase =
-        Room
-            .databaseBuilder(appContext, BunnyDatabase::class.java, BUNNY_DATABASE_FILE)
-            .fallbackToDestructiveMigration(dropAllTables = true)
-            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
-            .build()
+    /**
+     * Opens the database file for real, destroying it first if this build's schema has moved on.
+     *
+     * Called on consent, so the destruction the screen just described happens while the owner is
+     * still looking at the screen — rather than at whatever unpredictable later moment some flow
+     * first collects (ADR-0007).
+     *
+     * Kotlin note: `suspend` + `withContext(Dispatchers.IO)` is how blocking work moves off the
+     * caller's thread. Unlike an `async` function in JS, a `suspend` function does not pick its own
+     * thread — the dispatcher does, and without this one the open would run wherever it was called.
+     */
+    suspend fun openDatabase() {
+        withContext(Dispatchers.IO) { database.openHelper.writableDatabase }
+    }
 
     val preferences = AppPreferences(appContext.preferencesStore)
 
@@ -70,6 +78,8 @@ class AppContainer(
     val fluffleRepository = FluffleRepository(database)
 
     val bunnyRepository = BunnyRepository(database, fluffleRepository, preferences, mediaFiles)
+
+    val weightRepository = WeightRepository(database)
 
     /**
      * The read-only scope onto an archived bunny. In memory only — a background kill must not

@@ -101,6 +101,16 @@
     <string name="bunny_lives_with_value">Lives with %1$s</string>
     <string name="bunny_archived_name">%1$s (archived)</string>
 
+    <!-- ADR-0007's consent half. The copy has already been taken by the time this shows, and no
+         migration exists to read the old file back, so the screen states what is going and where
+         the copy is rather than pretending there is a choice. One forward button, no cancel. -->
+    <string name="wipe_title">This update has to clear the records on this phone</string>
+    <string name="wipe_body">Bunny Tracker is still being built, and this version changed how records are stored. It cannot read what is already on this phone, so that has to go.</string>
+    <string name="wipe_versions">Records on this phone: format %1$d. This version: format %2$d.</string>
+    <string name="wipe_copy_taken">A copy has already been saved on this phone before anything is deleted:</string>
+    <string name="wipe_copy_reach">The copy cannot be loaded back in automatically — reading old records into the new format is a conversion that has to be written by hand. Keep any weights you care about written down somewhere else until backup arrives.</string>
+    <string name="wipe_continue">Clear the records and continue</string>
+
     <!-- Joining names into a list. Never concatenated with " &amp; ": other languages join lists
          differently, and this label appears in the switcher, on the profile and in Phase 2's
          healthy-day snackbar (ADR-0008, ADR-0013). -->

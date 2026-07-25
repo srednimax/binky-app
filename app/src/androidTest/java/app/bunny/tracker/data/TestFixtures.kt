@@ -29,6 +29,15 @@ fun temporaryMedia(): MediaFiles {
     return MediaFiles(context, File(context.cacheDir, "media-${UUID.randomUUID()}"))
 }
 
+/** Whether the table exists at all — for asserting a destructive wipe left nothing behind. */
+fun BunnyDatabase.hasTable(table: String): Boolean =
+    openHelper.readableDatabase
+        .query("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", arrayOf(table))
+        .use { cursor ->
+            cursor.moveToFirst()
+            cursor.getInt(0) > 0
+        }
+
 /** Counts rows without going through a DAO, so the assertion cannot be fooled by one. */
 fun BunnyDatabase.countRows(table: String): Int =
     openHelper.readableDatabase.query("SELECT COUNT(*) FROM $table").use { cursor ->
