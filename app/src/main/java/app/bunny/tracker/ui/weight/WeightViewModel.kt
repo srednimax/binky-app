@@ -58,6 +58,8 @@ data class WeightUiState(
     val pendingDelete: WeightRow? = null,
     /** Set straight after a delete that leaves a visible, unacknowledged flag: the dialog host. */
     val writeFlag: TrendDrop? = null,
+    val chartRange: WeightChartRange = WeightChartRange.DAYS_90,
+    val chart: WeightChartContent = WeightChartContent.NoWeighings,
 ) {
     val bunnyId: String? get() = selection.bunnyId
 
@@ -77,6 +79,14 @@ class WeightViewModel(
 
     private val pendingDelete = MutableStateFlow<WeightRow?>(null)
     private val writeFlag = MutableStateFlow<TrendDrop?>(null)
+
+    /**
+     * The chart's window — held here and **not persisted** (ADR-0022). Living in the `ViewModel`
+     * means it survives a rotation and dies with the process, which is the point: an owner who once
+     * tapped *All* should not be left permanently in the view that flattens the signal, having
+     * opted in with a tap they have long forgotten. It resets to 90 days each session on purpose.
+     */
+    private val chartRange = MutableStateFlow(WeightChartRange.DAYS_90)
 
     /** The scope this screen is in, before any of the bunny's own records are read. */
     private data class Scope(
@@ -109,7 +119,9 @@ class WeightViewModel(
                         weights.acknowledgment(bunnyId),
                         pendingDelete,
                         writeFlag,
-                    ) { series, acknowledgment, pending, raised ->
+                        chartRange,
+                    ) { series, acknowledgment, pending, raised, range ->
+                        val rows = series.toRows()
                         WeightUiState(
                             selection = scope.selection,
                             bunnyName =
@@ -118,7 +130,13 @@ class WeightViewModel(
                                     ?.name
                                     .orEmpty(),
                             unit = scope.unit,
-                            rows = series.toRows(),
+                            rows = rows,
+                            // The chart is filtered; the flag below is **not**. Range never reaches
+                            // `evaluateTrend`, which is what stops the two from drifting apart —
+                            // and is why the flag can legitimately sit above an empty chart
+                            // (ADR-0022). That composition is correct, not a bug to fix.
+                            chartRange = range,
+                            chart = weightChartContentFor(rows, range, Instant.now()),
                             flag =
                                 if (scope.selection.readOnlyScope) {
                                     null
@@ -134,6 +152,11 @@ class WeightViewModel(
                     }
                 }
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WeightUiState())
+
+    /** Display-only, and deliberately never written to `AppPreferences` (ADR-0022). */
+    fun setChartRange(range: WeightChartRange) {
+        chartRange.value = range
+    }
 
     fun requestDelete(row: WeightRow) {
         pendingDelete.value = row

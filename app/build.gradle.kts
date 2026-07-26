@@ -127,6 +127,10 @@ dependencies {
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.kotlinx.coroutines.test)
 
+    // The weight chart (ADR-0022). Accepted on behaviour, not on whether it compiles: it plots real
+    // `recordedAt` on a numeric x-axis, which is the house rule a categorical/index axis would break.
+    implementation(libs.vico.compose.m3)
+
     // Navigation
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)

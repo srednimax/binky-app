@@ -33,11 +33,12 @@ import app.bunny.tracker.ui.appViewModelExtras
  * weight is individual, and overlaying unrelated animals of different sizes on one axis would say
  * nothing true.
  *
- * Phase 2c is the history, the entry points to it, and the trend flag surfaced. The chart is 2d's,
- * and lands above the list.
+ * Top to bottom: the trend flag, then 2d's chart, then the history. The flag sits **above** the
+ * chart because it reads the whole series while the chart reads only the selected window — so it
+ * stays put and stays true as the range changes underneath it (ADR-0022).
  *
- * No Compose UI tests here (ADR-0012, as in checkpoint 1c): this screen churns through 2d and the
- * logic beneath it is covered by 2b's trend tests.
+ * No Compose UI tests here (ADR-0012, as in checkpoint 1c); the logic beneath is covered by 2b's
+ * trend tests and by `WeightChartContentTest`.
  */
 @Composable
 fun WeightScreen(
@@ -60,6 +61,7 @@ fun WeightScreen(
                 onEdit = { row -> state.bunnyId?.let { onEditWeight(it, row.id) } },
                 onDelete = viewModel::requestDelete,
                 onAcknowledge = viewModel::acknowledge,
+                onRangeChange = viewModel::setChartRange,
                 modifier = modifier,
             )
     }
@@ -105,6 +107,7 @@ private fun History(
     onEdit: (WeightRow) -> Unit,
     onDelete: (WeightRow) -> Unit,
     onAcknowledge: () -> Unit,
+    onRangeChange: (WeightChartRange) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -117,6 +120,17 @@ private fun History(
                 flag = state.flag,
                 unit = state.unit,
                 onAcknowledge = onAcknowledge,
+            )
+        }
+
+        // The chart renders in the archived scope too — reading a history back is exactly what an
+        // archived bunny's screen is for, and a chart has nothing to gate: it is already read-only.
+        item {
+            WeightChart(
+                content = state.chart,
+                range = state.chartRange,
+                unit = state.unit,
+                onRangeChange = onRangeChange,
             )
         }
 
