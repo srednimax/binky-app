@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Exactly one directory is shared, and only with the camera app we hand a Uri to: the cache
-    folder holding the just-taken shot. It is a staging area — MediaFiles re-encodes the picture
-    into filesDir/avatars and the original is dropped — so nothing durable is exposed.
+    Two directories, both narrow.
+
+    camera/ is shared with the camera app we hand a Uri to: a staging area holding the just-taken
+    shot. MediaFiles re-encodes the picture into filesDir/avatars and the original is dropped, so
+    nothing durable is exposed.
+
+    preserved/ holds ADR-0007's pre-wipe database copies, and is shared only on the owner's own
+    explicit "share" tap in Settings — a copy they cannot get off the phone is only marginally
+    better than no copy at all. Neither the live database nor the media directories are listed here.
 -->
 <paths>
     <cache-path
         name="camera"
         path="camera/" />
+    <files-path
+        name="preserved"
+        path="preserved/" />
 </paths>

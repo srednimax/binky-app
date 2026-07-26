@@ -50,7 +50,9 @@ android {
     buildFeatures {
         compose = true
         aidl = false
-        buildConfig = false
+        // Needed for BuildConfig.DEBUG, which gates the sample-data action in Settings — a fixture
+        // that writes through the repositories and must never reach a release build.
+        buildConfig = true
         shaders = false
     }
 

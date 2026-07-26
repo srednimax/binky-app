@@ -37,12 +37,106 @@
     <!-- Home -->
     <string name="home_empty_title">No bunnies yet</string>
     <string name="home_empty_body">Add your first bunny to start keeping records.</string>
-    <string name="home_stub">The overview arrives in Phase 2, with current weight, recent observations and the trend flag.</string>
+    <string name="home_observations_stub">Recent observations arrive in the next checkpoint.</string>
     <string name="home_all_bunnies_stub">Tap a bunny to open it.</string>
+    <string name="home_last_weight_label">Last weighing</string>
+    <string name="home_last_weight_value">%1$s on %2$s</string>
+    <!-- A statement about the record, never about the bunny: silence means nobody looked (ADR-0001). -->
+    <string name="home_no_weighings">None recorded yet</string>
 
     <!-- Weight -->
-    <string name="weight_pick_a_bunny">Weight is recorded per bunny. Choose a bunny from the switcher to see its chart.</string>
-    <string name="weight_stub">The weight chart and entry arrive in Phase 2.</string>
+    <string name="weight_pick_a_bunny">Weight is recorded per bunny. Choose a bunny from the switcher to see its history.</string>
+    <string name="weight_add">Record a weighing</string>
+    <string name="weight_history_empty">No weighings recorded yet. Three are needed before a trend can be judged at all.</string>
+    <string name="weight_delete_title">Delete this weighing?</string>
+    <string name="weight_delete_body">%1$s on %2$s is removed from the history, and the trend is worked out again without it.</string>
+
+    <!-- Adding or editing a weighing. Entry is always in grams, whatever the display unit is set
+         to, because that is what a scale reads out (house rule). -->
+    <string name="weight_entry_add_title">Record a weighing</string>
+    <string name="weight_entry_edit_title">Edit a weighing</string>
+    <string name="weight_grams_label">Weight in grams</string>
+    <string name="weight_grams_help">Whole grams, as the scale reads it.</string>
+    <string name="weight_grams_required">Enter the weight in grams.</string>
+    <string name="weight_grams_as_kilograms">That is %1$s.</string>
+    <string name="weight_recorded_at_label">When the bunny was on the scale</string>
+    <string name="weight_pick_date">Change the date</string>
+    <string name="weight_pick_time">Change the time</string>
+    <string name="weight_backdating_help">Defaults to now. Weigh in the morning and log it in the evening if that suits — the time you set is the one that counts.</string>
+    <string name="weight_future_rejected">That is in the future. A weighing that has not happened yet cannot be recorded.</string>
+
+    <!-- The exact-timestamp collision prompt (ADR-0021). Replacing is the default: it is the
+         commonest correction, and a second row at the same minute would push a real weighing out
+         of the baseline window. -->
+    <string name="weight_collision_title">There is already a weighing at that time</string>
+    <plurals name="weight_collision_body">
+        <item quantity="one">This bunny already has %d weighing recorded at exactly that date and time. Replacing it keeps one reading for that moment; adding a second keeps both.</item>
+        <item quantity="other">This bunny already has %d weighings recorded at exactly that date and time. Replacing keeps one reading for that moment; adding another keeps them all.</item>
+    </plurals>
+    <string name="weight_collision_replace">Replace it</string>
+    <string name="weight_collision_add_second">Add a second</string>
+
+    <!-- How a stored weight is rendered. Three decimal places, because storage is whole grams and
+         two would hide them. Changes are ALWAYS in grams, whatever the display unit says. -->
+    <string name="weight_in_kilograms">%1$s kg</string>
+    <string name="weight_in_grams">%1$s g</string>
+    <string name="weight_change_down">−%1$s g</string>
+    <string name="weight_change_up">+%1$s g</string>
+    <string name="weight_change_none">no change</string>
+
+    <!-- The trend flag (ADR-0001). Framed "worth a closer look" and never as a diagnosis; the
+         numbers are grams and dated; there is no notification, ever. -->
+    <string name="trend_flag_title">Worth a closer look</string>
+    <string name="trend_flag_drop">%1$s is down %2$s since %3$s.</string>
+    <string name="trend_flag_readings">%1$s then, %2$s now.</string>
+    <string name="trend_flag_long_gap">Those two weighings are %1$s apart, so this is a change over a long stretch rather than a sudden one.</string>
+    <string name="trend_flag_not_advice">This is an observation about the numbers, not a diagnosis. If you are worried, ask a vet.</string>
+    <string name="trend_flag_vet_diet">On a vet-directed diet? Then this is the loss you are aiming for, and you can ignore these.</string>
+    <string name="trend_flag_acknowledge">I have seen this</string>
+    <string name="trend_flag_acknowledged">Seen %1$s.</string>
+    <string name="trend_flag_close">Close</string>
+
+    <!-- How far apart two weighings are. Separate from the age plurals: the same number reads
+         differently as a gap than as an age (ADR-0013). -->
+    <plurals name="gap_years">
+        <item quantity="one">%d year</item>
+        <item quantity="other">%d years</item>
+    </plurals>
+    <plurals name="gap_months">
+        <item quantity="one">%d month</item>
+        <item quantity="other">%d months</item>
+    </plurals>
+    <plurals name="gap_weeks">
+        <item quantity="one">%d week</item>
+        <item quantity="other">%d weeks</item>
+    </plurals>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_weight_unit">Show weights in</string>
+    <string name="settings_unit_kilograms">Kilograms</string>
+    <string name="settings_unit_grams">Grams</string>
+    <string name="settings_weight_unit_help">This changes how weights are shown, not how they are entered — entry is always in grams, and changes are always shown in grams.</string>
+    <string name="settings_preserved_title">Preserved copies</string>
+    <string name="settings_preserved_help">When an update cannot read the records already on this phone, a copy is saved here first. Share it somewhere safe — it cannot be loaded back in automatically.</string>
+    <string name="settings_preserved_empty">No copies have been saved on this phone.</string>
+    <string name="settings_preserved_detail">Saved %1$s · %2$s · %3$s</string>
+    <!-- A copy with no sidecars really is one file, so the singular is reachable. -->
+    <plurals name="settings_preserved_files">
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
+    </plurals>
+    <string name="settings_preserved_undated">date unknown</string>
+    <string name="settings_preserved_share">Share this copy</string>
+    <string name="settings_preserved_delete_title">Delete this copy?</string>
+    <string name="settings_preserved_delete_body">%1$s is removed from this phone for good. If you have not shared it somewhere else, it is gone.</string>
+
+    <!-- Debug builds only, and never shown in a release build. -->
+    <string name="settings_sample_data">Sample data</string>
+    <string name="settings_sample_data_help">Debug builds only. Adds two bunnies and a year of uneven, back-dated weighings, so the chart and the trend flag can be reviewed against real history.</string>
+    <string name="settings_sample_data_action">Add the sample data</string>
+    <string name="settings_sample_data_seeded">Sample data added.</string>
+    <string name="settings_sample_data_present">The sample bunnies are already here.</string>
 
     <!-- Observations -->
     <string name="observations_stub">The observation timeline arrives in Phase 2.</string>
@@ -58,6 +152,7 @@
     <string name="more_photos">Photos</string>
     <string name="more_documents">Documents</string>
     <string name="more_settings">Settings</string>
+    <string name="more_settings_summary">Weight units, and copies kept before an update cleared the records.</string>
     <string name="more_support">Support</string>
     <string name="more_coming_soon">Coming soon</string>
 

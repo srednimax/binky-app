@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.bunny.tracker.R
 import app.bunny.tracker.data.BunnySelection
+import app.bunny.tracker.data.WeightUnit
 import app.bunny.tracker.ui.appViewModelExtras
 import app.bunny.tracker.ui.bunny.BunnyAvatar
 import app.bunny.tracker.ui.bunny.BunnyDialogHost
@@ -35,6 +36,9 @@ import app.bunny.tracker.ui.bunny.dateLabel
 import app.bunny.tracker.ui.bunny.housematesLabel
 import app.bunny.tracker.ui.bunny.neuterLabel
 import app.bunny.tracker.ui.bunny.sexLabel
+import app.bunny.tracker.ui.weight.TrendFlagBanner
+import app.bunny.tracker.ui.weight.instantDateLabel
+import app.bunny.tracker.ui.weight.weightLabel
 
 /**
  * Home — the selected bunny's profile, and under "All bunnies" the fluffle dashboard (ADR-0015).
@@ -58,15 +62,18 @@ fun HomeScreen(
         // beats flashing an empty state at an owner who has bunnies.
         BunnySelection.Loading -> Unit
         BunnySelection.Empty -> NoBunniesYet(onAddBunny, modifier)
-        BunnySelection.All -> AllBunnies(state, onSelectBunny, modifier)
+        BunnySelection.All -> AllBunnies(state, onSelectBunny, viewModel::acknowledge, modifier)
         else ->
             state.profiles.firstOrNull()?.let { profile ->
                 OneBunny(
                     profile = profile,
+                    vitals = state.vitalsFor(profile.id),
+                    unit = state.unit,
                     readOnly = state.readOnly,
                     onEdit = { onEditBunny(profile.id) },
                     onArchive = { viewModel.requestArchive(profile) },
                     onDelete = { viewModel.requestDelete(profile) },
+                    onAcknowledge = { viewModel.acknowledge(profile.id) },
                     modifier = modifier,
                 )
             }
@@ -104,10 +111,13 @@ private fun NoBunniesYet(
 @Composable
 private fun OneBunny(
     profile: BunnyProfile,
+    vitals: BunnyVitals,
+    unit: WeightUnit,
     readOnly: Boolean,
     onEdit: () -> Unit,
     onArchive: () -> Unit,
     onDelete: () -> Unit,
+    onAcknowledge: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -135,6 +145,16 @@ private fun OneBunny(
             }
         }
 
+        // The vitals half of ADR-0015's card. The flag comes first because it is the one thing on
+        // this screen the owner has not already told the app.
+        TrendFlagBanner(
+            bunnyName = profile.name,
+            flag = vitals.flag,
+            unit = unit,
+            onAcknowledge = onAcknowledge,
+        )
+        LastWeighing(vitals = vitals, unit = unit)
+
         Fact(stringResource(R.string.bunny_sex_label), sexLabel(profile.sex))
         Fact(stringResource(R.string.bunny_neutered_label), neuterLabel(profile.neutered))
         // Only an *exact* birthdate is ever shown as a date; an approximate one is an age and
@@ -154,11 +174,39 @@ private fun OneBunny(
         }
 
         Text(
-            text = stringResource(R.string.home_stub),
+            text = stringResource(R.string.home_observations_stub),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+/**
+ * The last weighing, or the plain fact that there is none.
+ *
+ * "No weighings yet" is a statement about the **record**, never about the bunny: silence means
+ * nobody looked, and the app must not let an empty series read as reassurance (ADR-0001).
+ */
+@Composable
+private fun LastWeighing(
+    vitals: BunnyVitals,
+    unit: WeightUnit,
+) {
+    val grams = vitals.lastGrams
+    val recordedAt = vitals.lastRecordedAt
+    Fact(
+        label = stringResource(R.string.home_last_weight_label),
+        value =
+            if (grams == null || recordedAt == null) {
+                stringResource(R.string.home_no_weighings)
+            } else {
+                stringResource(
+                    R.string.home_last_weight_value,
+                    weightLabel(grams, unit),
+                    instantDateLabel(recordedAt),
+                )
+            },
+    )
 }
 
 @Composable
@@ -177,10 +225,15 @@ private fun Fact(
     }
 }
 
+/**
+ * The fluffle dashboard — **one vitals card per active bunny** (ADR-0015). The dashboard *is* the
+ * bunny list; there is deliberately no separate list screen.
+ */
 @Composable
 private fun AllBunnies(
     state: HomeUiState,
     onSelectBunny: (String) -> Unit,
+    onAcknowledge: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -197,22 +250,35 @@ private fun AllBunnies(
         // Kotlin note: `items(list) { }` is the LazyColumn equivalent of `list.map(...)` in JSX —
         // except only the visible rows are composed, so a long list stays cheap.
         items(state.profiles, key = { it.id }) { profile ->
+            val vitals = state.vitalsFor(profile.id)
             Card(modifier = Modifier.fillMaxWidth().clickable { onSelectBunny(profile.id) }) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                Column(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    BunnyAvatar(avatar = profile.avatar, name = profile.name)
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(text = profile.name, style = MaterialTheme.typography.titleMedium)
-                        ageLabel(profile.birthDate, profile.birthDateApproximate)?.let {
-                            Text(text = it, style = MaterialTheme.typography.bodySmall)
-                        }
-                        housematesLabel(profile.housemates)?.let {
-                            Text(text = it, style = MaterialTheme.typography.bodySmall)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        BunnyAvatar(avatar = profile.avatar, name = profile.name)
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(text = profile.name, style = MaterialTheme.typography.titleMedium)
+                            ageLabel(profile.birthDate, profile.birthDateApproximate)?.let {
+                                Text(text = it, style = MaterialTheme.typography.bodySmall)
+                            }
+                            housematesLabel(profile.housemates)?.let {
+                                Text(text = it, style = MaterialTheme.typography.bodySmall)
+                            }
                         }
                     }
+                    LastWeighing(vitals = vitals, unit = state.unit)
+                    TrendFlagBanner(
+                        bunnyName = profile.name,
+                        flag = vitals.flag,
+                        unit = state.unit,
+                        onAcknowledge = { onAcknowledge(profile.id) },
+                    )
                 }
             }
         }

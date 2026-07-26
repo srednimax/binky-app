@@ -28,6 +28,18 @@ class WeightRepository(
     fun acknowledgment(bunnyId: String): Flow<TrendAcknowledgmentEntity?> = weightDao.acknowledgment(bunnyId)
 
     /**
+     * What this bunny already has at exactly [recordedAt] — the entry form's collision check
+     * (ADR-0021).
+     *
+     * A read, and the *only* thing this repository does about collisions: the prompt is UI-level, so
+     * writes through here still produce the tied rows the trend tests want.
+     */
+    suspend fun existingAt(
+        bunnyId: String,
+        recordedAt: Instant,
+    ): List<WeightEntity> = weightDao.weightsAt(bunnyId, recordedAt)
+
+    /**
      * Adds a weighing and returns its id.
      *
      * An insert **re-reads the series and discards the acknowledgment only if the raw trigger has
