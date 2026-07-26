@@ -5,18 +5,27 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -32,16 +41,20 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import app.bunny.tracker.data.BunnySelection
+import app.bunny.tracker.data.bunnyId
 import app.bunny.tracker.ui.archive.ArchivedBunniesScreen
 import app.bunny.tracker.ui.bunny.BunnyEditorScreen
 import app.bunny.tracker.ui.care.CareAndMedsScreen
 import app.bunny.tracker.ui.home.HomeScreen
 import app.bunny.tracker.ui.more.MoreScreen
-import app.bunny.tracker.ui.observations.LogObservationScreen
+import app.bunny.tracker.ui.observations.ChooseBunnyDialog
+import app.bunny.tracker.ui.observations.ObservationEntryScreen
 import app.bunny.tracker.ui.observations.ObservationsScreen
 import app.bunny.tracker.ui.settings.SettingsScreen
 import app.bunny.tracker.ui.shell.AppShellViewModel
 import app.bunny.tracker.ui.shell.BunnySwitcher
+import app.bunny.tracker.ui.shell.ShellUiState
 import app.bunny.tracker.ui.weight.WeightEntryScreen
 import app.bunny.tracker.ui.weight.WeightScreen
 
@@ -88,8 +101,20 @@ fun MainNavigation(modifier: Modifier = Modifier) {
     val current = backStack.lastOrNull { it.asTopLevelDestination() != null }?.asTopLevelDestination()
     val onDetailScreen = backStack.lastOrNull()?.asTopLevelDestination() == null
 
+    // The "which bunny?" step the global "+" takes under "All bunnies" (ADR-0008). Lives here rather
+    // than in a screen because the FAB does, and the FAB is in the shell precisely so it is the same
+    // button on Home and on Observations.
+    var choosingBunny by rememberSaveable { mutableStateOf(false) }
+
+    // The snackbar host belongs to the **same** Scaffold as the FAB, or the two lay out in ignorance
+    // of each other and the FAB covers the snackbar's action — which for the healthy day means an
+    // Undo the owner can see and cannot press. Material3's Scaffold lifts the FAB above whatever its
+    // own snackbar host is showing; that only works if it owns both.
+    val snackbarHostState = remember { SnackbarHostState() }
+
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (!onDetailScreen) {
                 Column {
@@ -115,6 +140,24 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                     current = current,
                     onSelect = { destination -> backStack.showTopLevel(destination) },
                 )
+            }
+        },
+        floatingActionButton = {
+            if (!onDetailScreen && current.offersLogObservation && state.canLogObservation) {
+                FloatingActionButton(
+                    onClick = {
+                        // Under "All bunnies" there is no fluffle to pre-select from, so the scope
+                        // asks which bunny before opening the form (ADR-0008). One bunny in scope
+                        // goes straight there.
+                        val bunnyId = state.selection.bunnyId
+                        if (bunnyId != null) backStack.add(LogObservation(bunnyId)) else choosingBunny = true
+                    },
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = stringResource(R.string.observation_add_title),
+                    )
+                }
             }
         },
     ) { insets ->
@@ -148,7 +191,15 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                             },
                         )
                     }
-                    entry<Observations> { ObservationsScreen(state = state) }
+                    entry<Observations> {
+                        ObservationsScreen(
+                            shell = state,
+                            snackbarHostState = snackbarHostState,
+                            onEditObservation = { bunnyId, observationId ->
+                                backStack.add(LogObservation(bunnyId, observationId))
+                            },
+                        )
+                    }
                     entry<CareAndMeds> { CareAndMedsScreen(state = state) }
                     entry<More> {
                         MoreScreen(
@@ -175,8 +226,13 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                             },
                         )
                     }
-                    // Reachable only from Phase 2's "+" — the route is settled now, the FAB is not.
-                    entry<LogObservation> { LogObservationScreen(state = state) }
+                    entry<LogObservation> { key ->
+                        ObservationEntryScreen(
+                            bunnyId = key.bunnyId,
+                            observationId = key.observationId,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
                     entry<BunnyEditor> { key ->
                         BunnyEditorScreen(
                             bunnyId = key.bunnyId,
@@ -186,7 +242,40 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                 },
         )
     }
+
+    if (choosingBunny) {
+        ChooseBunnyDialog(
+            title = stringResource(R.string.observation_which_bunny),
+            bunnies = state.activeBunnies,
+            onPick = { bunnyId ->
+                choosingBunny = false
+                backStack.add(LogObservation(bunnyId))
+            },
+            onDismiss = { choosingBunny = false },
+        )
+    }
 }
+
+/**
+ * Where the global "+" renders (ADR-0015): the two destinations an observation belongs to.
+ *
+ * **Not on More**, which is a settings drawer, and not on Weight, whose own add button carries a
+ * bunny id the "+" deliberately does not — the global "+" stays observation-only.
+ */
+private val TopLevelDestination?.offersLogObservation: Boolean
+    get() = this == TopLevelDestination.HOME || this == TopLevelDestination.OBSERVATIONS
+
+/**
+ * Whether there is anything to log against: a real bunny in scope, and a scope that permits writing.
+ *
+ * An archived bunny is read-only, so the "+" is **absent** rather than present-and-refusing
+ * (ADR-0004).
+ */
+private val ShellUiState.canLogObservation: Boolean
+    get() =
+        !readOnly &&
+            selection != BunnySelection.Loading &&
+            selection != BunnySelection.Empty
 
 @Composable
 private fun BunnyNavigationBar(

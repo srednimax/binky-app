@@ -24,8 +24,14 @@ class ObservationRepository(
 
     fun forBunny(bunnyId: String): Flow<List<ObservationEntity>> = observationDao.forBunny(bunnyId)
 
+    /** One bunny's timeline, whole groups included so a shared entry can name who it covered (ADR-0008). */
+    fun timelineForBunny(bunnyId: String): Flow<List<ObservationEntity>> = observationDao.timelineForBunny(bunnyId)
+
     /** The combined timeline under "All bunnies" — active bunnies only, rows not yet collapsed by group. */
     val forActiveBunnies: Flow<List<ObservationEntity>> = observationDao.forActiveBunnies()
+
+    /** Every symptom tick, for the timeline to index by observation. See [ObservationDao.allSymptomLinks]. */
+    val symptomLinks: Flow<List<ObservationSymptomEntity>> = observationDao.allSymptomLinks()
 
     /** One-shot read, for the editor: a form fed by a `Flow` would fight the owner's typing. */
     suspend fun observationNow(id: String): ObservationEntity? = observationDao.observationNow(id)
@@ -118,6 +124,28 @@ class ObservationRepository(
                     droppingsForm = tray.droppingsForm,
                     cecotropes = tray.cecotropes,
                 )
+            }
+        }
+    }
+
+    /**
+     * Corrects **when** it was noticed — every participant's row, like the tray facts and for the
+     * same reason: one real-world moment, however many bunnies were in the room.
+     *
+     * Nothing here rejects a future [Instant]; that check belongs to the form, on the same terms as
+     * weight (see the class doc).
+     */
+    suspend fun updateRecordedAt(
+        observationId: String,
+        recordedAt: Instant,
+    ) {
+        database.withTransaction {
+            val row = observationDao.observationNow(observationId) ?: return@withTransaction
+            val groupId = row.groupId
+            if (groupId != null) {
+                observationDao.setRecordedAtForGroup(groupId, recordedAt)
+            } else {
+                observationDao.setRecordedAtForObservation(row.id, recordedAt)
             }
         }
     }

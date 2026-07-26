@@ -46,6 +46,26 @@ interface BunnyDao {
     fun membersOf(fluffleId: String): Flow<List<BunnyEntity>>
 
     /**
+     * Every breed any bunny carries — the picker's "add your own" half, as a **query rather than a
+     * table**.
+     *
+     * ADR-0010's reason a vocabulary earns a table is that a "how often has this happened?" count
+     * must key off a stable id. Breed is asked no such question: it is a profile fact on Home's card,
+     * counted by nothing. So it stays a text column and the suggestions are this.
+     *
+     * **Archived bunnies included**, deliberately — a breed the owner typed once should still be
+     * offered after that bunny is archived. The accepted cost is the other direction: a breed drops
+     * out of the suggestions once no bunny at all carries it. The reuse that matters — a second bunny
+     * of the same breed — still works, because the first one is still carrying the string.
+     */
+    @Query(
+        "SELECT DISTINCT breed FROM bunnies " +
+            "WHERE breed IS NOT NULL AND TRIM(breed) <> '' " +
+            "ORDER BY breed COLLATE NOCASE",
+    )
+    fun breeds(): Flow<List<String>>
+
+    /**
      * Counts archived members too — the dissolve predicate depends on it (ADR-0008): deleting one
      * bunny from a trio whose third member is archived must leave the fluffle standing.
      */

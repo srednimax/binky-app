@@ -24,6 +24,9 @@ class BunnyRepository(
 
     fun bunny(id: String): Flow<BunnyEntity?> = bunnyDao.bunny(id)
 
+    /** The breed picker's stored half — see [BunnyDao.breeds] for why this is a query and not a table. */
+    val breeds: Flow<List<String>> = bunnyDao.breeds()
+
     /**
      * One-shot read, for the editor: a form fed by a `Flow` would fight the owner's typing every
      * time the row it is editing emits again.

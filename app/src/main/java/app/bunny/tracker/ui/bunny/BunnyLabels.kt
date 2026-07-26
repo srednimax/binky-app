@@ -73,7 +73,7 @@ fun housematesLabel(housemates: List<Housemate>): String? {
  * Builds from the right, so three names come out "Thumper, Clover &amp; Hazel": the last two go
  * through the pair format, and every name before them wraps what has been built so far.
  */
-private fun joinNames(
+fun joinNames(
     resources: Resources,
     names: List<String>,
 ): String {

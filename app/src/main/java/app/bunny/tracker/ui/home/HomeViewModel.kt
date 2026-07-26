@@ -31,13 +31,18 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 
 /**
- * The vitals half of ADR-0015's card: what the weight series says about this bunny right now.
+ * ADR-0015's vitals card: what the record says about this bunny right now — last weight, last
+ * observation, and the flag.
  *
- * Phase 2f adds the last observation, completing the card.
+ * Every field can be null, and null is always a statement about the **record** rather than about the
+ * bunny: nobody has weighed them, nobody has looked. The card must never let that read as
+ * reassurance (ADR-0001).
  */
 data class BunnyVitals(
     val lastGrams: Int? = null,
     val lastRecordedAt: Instant? = null,
+    /** When anything was last noticed about this bunny, shared observations included. */
+    val lastObservationAt: Instant? = null,
     /**
      * Null means **not evaluated**, which is the archived scope — the flag is not evaluated at all
      * there, not merely hidden (ADR-0001, ADR-0004).
@@ -68,6 +73,7 @@ class HomeViewModel(
 ) : ViewModel() {
     private val actions = BunnyActions(container.bunnyRepository, viewModelScope)
     private val weights = container.weightRepository
+    private val observations = container.observationRepository
 
     /** Everything the card needs *before* the per-bunny series reads fan out beneath it. */
     private data class Shown(
@@ -139,12 +145,19 @@ class HomeViewModel(
         bunnyId: String,
         evaluateFlag: Boolean,
     ): Flow<Pair<String, BunnyVitals>> =
-        combine(weights.series(bunnyId), weights.acknowledgment(bunnyId)) { series, acknowledgment ->
+        combine(
+            weights.series(bunnyId),
+            weights.acknowledgment(bunnyId),
+            // This bunny's own rows, which for a shared observation is its copy — so "last
+            // observation" is true of this bunny whether or not it was observed alone (ADR-0008).
+            observations.forBunny(bunnyId),
+        ) { series, acknowledgment, observed ->
             val latest = series.firstOrNull()
             bunnyId to
                 BunnyVitals(
                     lastGrams = latest?.grams,
                     lastRecordedAt = latest?.recordedAt,
+                    lastObservationAt = observed.firstOrNull()?.recordedAt,
                     flag =
                         if (!evaluateFlag) {
                             null

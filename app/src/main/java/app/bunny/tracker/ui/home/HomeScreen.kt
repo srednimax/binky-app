@@ -154,6 +154,7 @@ private fun OneBunny(
             onAcknowledge = onAcknowledge,
         )
         LastWeighing(vitals = vitals, unit = unit)
+        LastObservation(vitals = vitals)
 
         Fact(stringResource(R.string.bunny_sex_label), sexLabel(profile.sex))
         Fact(stringResource(R.string.bunny_neutered_label), neuterLabel(profile.neutered))
@@ -172,12 +173,6 @@ private fun OneBunny(
                 TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
             }
         }
-
-        Text(
-            text = stringResource(R.string.home_observations_stub),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -206,6 +201,22 @@ private fun LastWeighing(
                     instantDateLabel(recordedAt),
                 )
             },
+    )
+}
+
+/**
+ * When anything was last noticed about this bunny — the observation half of the vitals card.
+ *
+ * "None recorded yet" is a statement about the **record**, not about the bunny. Silence means nobody
+ * looked, and it must never be shown as though it meant nothing was wrong (ADR-0001).
+ */
+@Composable
+private fun LastObservation(vitals: BunnyVitals) {
+    Fact(
+        label = stringResource(R.string.home_last_observation_label),
+        value =
+            vitals.lastObservationAt?.let { instantDateLabel(it) }
+                ?: stringResource(R.string.home_no_observations),
     )
 }
 
@@ -273,6 +284,7 @@ private fun AllBunnies(
                         }
                     }
                     LastWeighing(vitals = vitals, unit = state.unit)
+                    LastObservation(vitals = vitals)
                     TrendFlagBanner(
                         bunnyName = profile.name,
                         flag = vitals.flag,

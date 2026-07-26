@@ -22,6 +22,13 @@ interface SymptomDao {
     @Query("SELECT * FROM symptoms WHERE hiddenAt IS NULL")
     fun visible(): Flow<List<SymptomEntity>>
 
+    /**
+     * Hidden ones included, for the timeline: retiring a symptom must never blank it out of the
+     * observations that recorded it (ADR-0010), and the timeline resolves ticks by id off this list.
+     */
+    @Query("SELECT * FROM symptoms")
+    fun all(): Flow<List<SymptomEntity>>
+
     /** Hidden ones included — the add-time duplicate check needs them, since a match unhides (ADR-0010). */
     @Query("SELECT * FROM symptoms")
     suspend fun allNow(): List<SymptomEntity>

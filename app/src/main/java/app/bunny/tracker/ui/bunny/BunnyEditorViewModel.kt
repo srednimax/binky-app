@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.bunny.tracker.BunnyTrackerApplication
+import app.bunny.tracker.data.BunnyDao
 import app.bunny.tracker.data.BunnyEntity
 import app.bunny.tracker.data.BunnyRepository
 import app.bunny.tracker.data.FluffleRepository
@@ -51,6 +52,12 @@ data class BunnyEditorUiState(
     val sex: Sex = Sex.UNKNOWN,
     val neutered: NeuterStatus = NeuterStatus.UNKNOWN,
     val breed: String = "",
+    /**
+     * Breeds any bunny already carries — the stored half of the picker's list (ADR-0010's reasoning
+     * deliberately *not* applied; see [BunnyDao.breeds]). The built-in half comes from `strings.xml`
+     * and is joined on in the composable, because only it can resolve the owner's language.
+     */
+    val breedSuggestions: List<String> = emptyList(),
     val colour: String = "",
     val housemateId: String? = null,
     val candidates: List<HousemateOption> = emptyList(),
@@ -107,6 +114,7 @@ class BunnyEditorViewModel(
                     sex = bunny?.sex ?: Sex.UNKNOWN,
                     neutered = bunny?.neutered ?: NeuterStatus.UNKNOWN,
                     breed = bunny?.breed ?: "",
+                    breedSuggestions = bunnies.breeds.first(),
                     colour = bunny?.colour ?: "",
                     // Any current member will do: joining one member of a trio joins the trio.
                     housemateId =
