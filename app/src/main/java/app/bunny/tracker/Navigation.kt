@@ -39,8 +39,10 @@ import app.bunny.tracker.ui.home.HomeScreen
 import app.bunny.tracker.ui.more.MoreScreen
 import app.bunny.tracker.ui.observations.LogObservationScreen
 import app.bunny.tracker.ui.observations.ObservationsScreen
+import app.bunny.tracker.ui.settings.SettingsScreen
 import app.bunny.tracker.ui.shell.AppShellViewModel
 import app.bunny.tracker.ui.shell.BunnySwitcher
+import app.bunny.tracker.ui.weight.WeightEntryScreen
 import app.bunny.tracker.ui.weight.WeightScreen
 
 /**
@@ -138,10 +140,30 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                             onSelectBunny = shellViewModel::selectBunny,
                         )
                     }
-                    entry<Weight> { WeightScreen(state = state) }
+                    entry<Weight> {
+                        WeightScreen(
+                            onAddWeight = { bunnyId -> backStack.add(WeightEntry(bunnyId)) },
+                            onEditWeight = { bunnyId, weightId ->
+                                backStack.add(WeightEntry(bunnyId, weightId))
+                            },
+                        )
+                    }
                     entry<Observations> { ObservationsScreen(state = state) }
                     entry<CareAndMeds> { CareAndMedsScreen(state = state) }
-                    entry<More> { MoreScreen(onOpenArchived = { backStack.add(ArchivedBunnies) }) }
+                    entry<More> {
+                        MoreScreen(
+                            onOpenArchived = { backStack.add(ArchivedBunnies) },
+                            onOpenSettings = { backStack.add(Settings) },
+                        )
+                    }
+                    entry<Settings> { SettingsScreen(onBack = { backStack.removeLastOrNull() }) }
+                    entry<WeightEntry> { key ->
+                        WeightEntryScreen(
+                            bunnyId = key.bunnyId,
+                            weightId = key.weightId,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
                     entry<ArchivedBunnies> {
                         ArchivedBunniesScreen(
                             onBack = { backStack.removeLastOrNull() },

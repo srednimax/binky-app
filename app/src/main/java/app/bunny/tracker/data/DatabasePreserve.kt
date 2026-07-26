@@ -9,6 +9,17 @@ import java.time.format.DateTimeFormatter
 /** Where preserved copies land, relative to `filesDir` — alongside the media directories. */
 const val PRESERVED_DIRECTORY = "preserved"
 
+/** How a preserved copy is named. Settings matches on these to find them again. */
+internal const val PRESERVED_PREFIX = "bunny-"
+internal const val PRESERVED_SUFFIX = ".db"
+
+/**
+ * In WAL mode the most recent writes may live only in a sidecar, so a copy of the `.db` alone can be
+ * missing the very data worth preserving. Both travel with it, and both have to travel again when
+ * the owner shares the copy off the phone.
+ */
+internal val PRESERVED_SIDECAR_SUFFIXES = listOf("-wal", "-shm")
+
 /**
  * SQLite writes `user_version` as a big-endian 32-bit integer at byte 60 of the 100-byte file
  * header, and Room uses that field as its schema version. Reading it is therefore a four-byte read
@@ -18,8 +29,14 @@ const val PRESERVED_DIRECTORY = "preserved"
 private const val USER_VERSION_OFFSET = 60L
 private const val SQLITE_HEADER_BYTES = 100
 
-/** Filesystem-safe and sorts chronologically. Colons in a filename are a portability trap. */
-private val TIMESTAMP_FORMAT =
+/**
+ * Filesystem-safe and sorts chronologically. Colons in a filename are a portability trap.
+ *
+ * `internal` rather than private because Settings reads the date back *out* of the filename when it
+ * lists the copies — the name dates the data, where the copy's own `lastModified` only dates the
+ * moment it was written.
+ */
+internal val PRESERVED_TIMESTAMP_FORMAT: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC)
 
 /**
@@ -64,12 +81,11 @@ fun preserveBeforeWipe(
     if (onDisk == 0 || onDisk == appSchemaVersion) return null
 
     preservedDir.mkdirs()
-    val preserved = File(preservedDir, "bunny-${TIMESTAMP_FORMAT.format(timestamp)}.db")
+    val preserved =
+        File(preservedDir, "$PRESERVED_PREFIX${PRESERVED_TIMESTAMP_FORMAT.format(timestamp)}$PRESERVED_SUFFIX")
     databaseFile.copyTo(preserved, overwrite = true)
 
-    // In WAL mode the most recent writes may live only in the -wal sidecar, so a copy of the .db
-    // alone can be missing the very data worth preserving. Both sidecars travel with it.
-    for (suffix in listOf("-wal", "-shm")) {
+    for (suffix in PRESERVED_SIDECAR_SUFFIXES) {
         val sidecar = File(databaseFile.path + suffix)
         if (sidecar.isFile) sidecar.copyTo(File(preserved.path + suffix), overwrite = true)
     }

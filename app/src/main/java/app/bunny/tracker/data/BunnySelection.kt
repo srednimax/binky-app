@@ -45,6 +45,24 @@ sealed interface BunnySelection {
 }
 
 /**
+ * The bunny a per-bunny screen is scoped to, or null under All / Empty / Loading.
+ *
+ * Both scopes that name a bunny answer the same question — *whose records are these?* — and the
+ * difference between them is what a screen may **do**, not what it reads. That is [readOnlyScope]'s
+ * job, deliberately a separate property so a screen cannot conflate the two by accident.
+ */
+val BunnySelection.bunnyId: String?
+    get() =
+        when (this) {
+            is BunnySelection.Single -> id
+            is BunnySelection.Archived -> id
+            BunnySelection.Loading, BunnySelection.Empty, BunnySelection.All -> null
+        }
+
+/** An archived bunny is a read-only scope: records readable, nothing writable (ADR-0004). */
+val BunnySelection.readOnlyScope: Boolean get() = this is BunnySelection.Archived
+
+/**
  * Resolves what to show from what was chosen and what still exists.
  *
  * This is the whole of ADR-0015's self-healing, and it is a pure function on purpose: every state

@@ -43,10 +43,26 @@ data class BunnyEditor(
 ) : NavKey
 
 /**
+ * Add or edit a weighing. `null` [weightId] adds, mirroring [BunnyEditor].
+ *
+ * This **closes a Phase-1 omission rather than adding scope**: this file promises every route exists
+ * from Phase 1 and this one did not. The global "+" stays observation-only and is never the way in
+ * (ADR-0015).
+ */
+@Serializable
+data class WeightEntry(
+    val bunnyId: String,
+    val weightId: String? = null,
+) : NavKey
+
+/**
  * The archived bunnies list, reached from More (ADR-0004). A detail screen, not a destination:
  * archived bunnies are deliberately absent from the switcher, and this is the one way to them.
  */
 @Serializable data object ArchivedBunnies : NavKey
+
+/** Settings, reached from More — the same shape as [ArchivedBunnies]: a detail route off a tab. */
+@Serializable data object Settings : NavKey
 
 /**
  * Whether a top-level destination is shown, shown as unavailable, or absent (ADR-0015).

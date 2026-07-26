@@ -10,6 +10,7 @@ import app.bunny.tracker.data.BunnyDatabase
 import app.bunny.tracker.data.BunnyRepository
 import app.bunny.tracker.data.BunnySelection
 import app.bunny.tracker.data.FluffleRepository
+import app.bunny.tracker.data.PRESERVED_DIRECTORY
 import app.bunny.tracker.data.StoredSelection
 import app.bunny.tracker.data.WeightRepository
 import app.bunny.tracker.data.buildBunnyDatabase
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
+import java.io.File
 
 private val Context.preferencesStore: DataStore<Preferences> by preferencesDataStore(name = "bunny_preferences")
 
@@ -71,6 +73,13 @@ class AppContainer(
     }
 
     val preferences = AppPreferences(appContext.preferencesStore)
+
+    /**
+     * Where ADR-0007's pre-wipe copies land. Settings lists them, shares them off the phone and
+     * deletes them; `BunnyTrackerApplication` writes them before this container exists, so the two
+     * agree on the path through [PRESERVED_DIRECTORY] rather than by both hardcoding it.
+     */
+    val preservedDir: File = File(appContext.filesDir, PRESERVED_DIRECTORY)
 
     /** The single path for persisting images (house rule, ADR-0020). */
     val mediaFiles = MediaFiles(appContext)

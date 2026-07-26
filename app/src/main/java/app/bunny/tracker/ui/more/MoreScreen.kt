@@ -26,6 +26,7 @@ import app.bunny.tracker.R
 @Composable
 fun MoreScreen(
     onOpenArchived: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -36,11 +37,15 @@ fun MoreScreen(
             subtitle = stringResource(R.string.more_archived_bunnies_summary),
             onClick = onOpenArchived,
         )
+        MoreRow(
+            title = stringResource(R.string.more_settings),
+            subtitle = stringResource(R.string.more_settings_summary),
+            onClick = onOpenSettings,
+        )
         HorizontalDivider()
         val comingSoon = stringResource(R.string.more_coming_soon)
         MoreRow(title = stringResource(R.string.more_photos), subtitle = comingSoon)
         MoreRow(title = stringResource(R.string.more_documents), subtitle = comingSoon)
-        MoreRow(title = stringResource(R.string.more_settings), subtitle = comingSoon)
         MoreRow(title = stringResource(R.string.more_support), subtitle = comingSoon)
     }
 }
