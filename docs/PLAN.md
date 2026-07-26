@@ -8,7 +8,7 @@ The data model lives in the Room entities, so it cannot drift from the code.
 
 - [x] **Phase 0** — Toolchain, project skeleton, docs
 - [x] **Phase 1** — Data layer, bunnies, avatars
-- [ ] **Phase 2** — Weight and observations
+- [x] **Phase 2** — Weight and observations
 - [ ] **Phase 3** — Backup, first-run setup, photo gallery — **ships as 1.0**
 - [ ] **Phase 4** — Care reminders and watch — **ships as 1.1**
 - [ ] **Phase 5** — Vet, medications, documents, dose reminders — **ships as 1.2**
@@ -497,6 +497,38 @@ ADR-0008, 0010, 0004. **2f**: ADR-0008, 0010, 0001, 0013.
 - An empty database produces no warnings.
 - No user-facing string is hardcoded; counts use `<plurals>`, and the built-in symptom labels resolve through
   `strings.xml` rather than being stored.
+
+**Gate met:** `spotlessApply`, `assembleDebug`, `test` (97 unit tests) and `lint` pass, and the **65
+instrumented tests were re-run on the Xiaomi after 2f** rather than inherited from 2e — 2f left the
+repository additive, but a phase gate that leans on instrumented proof should not take that on trust.
+
+Two things the checkpoints had left owing were closed by hand here. First, **the two-bucket delete ceremony
+was finally driven on a real device** — Phase 1 built it structurally against a query returning zeros and
+deferred the honest proof to this gate. Deleting a sample-data bunny showed two dialogs, the first offering
+archiving as the alternative and the second naming the buckets separately: *"38 records kept only for this
+bunny are destroyed"* beside *"2 shared entries stay, for the other bunnies they covered"*. Both plural forms
+were then exercised at the boundaries in one dialog, on a bunny built to have exactly three weighings and one
+shared observation: *"3 records … are destroyed"* against *"1 shared entry stays, for the other bunnies **it**
+covered"* — the verb and pronoun agreement is why these are `<plurals>` and not a count spliced into one
+string. Completing that delete left the observation on the survivors' timeline reading *"Observed together
+with Nugget"*: still shared at two participants, and with no tombstone for the bunny that is gone.
+
+Second, **an empty database produces no warnings**, checked on a freshly cleared install: every destination
+shows *"No bunnies yet"* and an invitation, and a bunny with no records reads *"None recorded yet"* rather
+than anything inferred. The weight screen states the reason it is silent — *"Three are needed before a trend
+can be judged at all"* — which is ADR-0001's rule surfacing as copy rather than as an absence.
+
+Incidental confirmations from the same session, each of which had only been claimed at a checkpoint: the
+exact-timestamp collision dialog offering *Replace it* or *Add a second*; history deltas rendering as
+`+10 g`; the trend flag on Home carrying the vet-diet line and no notification; and a bunny joining a bonded
+pair joining the **existing** fluffle rather than forming a rival one.
+
+Lint is honest rather than silent: **0 errors, 19 warnings, 4 of them in project code**, and all four are
+standing decisions rather than debt. `OldTargetApi` is `targetSdk` 36 held deliberately (CLAUDE.md);
+`ObsoleteSdkInt` on `mipmap-anydpi-v26` is the AGP template's own folder; and `backup_rules.xml` and
+`data_extraction_rules.xml` read as unused because `AndroidManifest.xml` sets `allowBackup="true"` without
+yet referencing either — **that pair is Phase 3's first piece of wiring** (ADR-0005), so the warning is a
+correct description of an unfinished phase and is left standing until it is.
 
 ## Phase 3 — Backup, first-run setup, photo gallery — ships as 1.0
 
