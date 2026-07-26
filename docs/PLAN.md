@@ -307,7 +307,7 @@ Phase 3 the phone's database is disposable, so weights worth keeping are written
      full year, which is exactly why the selector exists and proves the filtering; the `Archived(id)` scope
      charts with no add / edit / delete affordances and **no flag**; and all three empty states, the third
      naming the last weighing's date and its one tap to *All* switching the selector and redrawing.
-5. **2e — Observation data layer.** Schema → **3**.
+5. **2e — Observation data layer.** ✅ Schema → **3**.
    - `ObservationEntity`, one row per bunny (ADR-0008): `id`, `bunnyId` FK `CASCADE`, `groupId: String?`
      (non-null only when shared), `recordedAt`, `createdAt`, the tray-level fields (droppings amount / size /
      form, cecotropes), the individual ones (appetite, mood, activity, water, note) and
@@ -342,6 +342,31 @@ Phase 3 the phone's database is disposable, so weights worth keeping are written
      counted as shared; the seed runs once, survives a wipe, and tops up on open **without inserting the whole
      built-in list again** or resurrecting a hidden symptom; a hidden symptom still resolves on an old
      observation. JVM: the healthy-day field set as a pure function, asserting `symptomsChecked`.
+   - **Gate met:** `spotlessApply`, `assembleDebug`, `test` (79 unit tests, 6 new) and `lint` pass; **65
+     instrumented tests** pass on the Xiaomi, 26 of them new. Two decisions worth naming, because neither is
+     forced by the ADRs and both would be easy to get wrong later. First, the **seed hangs on `onOpen`, not
+     just `onCreate`**: after ADR-0007's destructive migration Room drops and recreates the tables inside
+     `onUpgrade`, so `onCreate` never fires and a seed hung only on it would land the owner on an empty
+     picker at exactly the launch a wipe just happened. `onCreate` is kept anyway, as documentation that
+     cannot go stale. Second, `add` writes the **individual** facts onto every participant, not just the tray
+     ones, because *looked, no symptoms seen* is an individual fact read from the same glance as the tray —
+     a shortcut covering a bonded pair has to be able to claim it for both. Anything genuinely per-bunny goes
+     through `updateIndividual`, which touches one row.
+   - Also decided here rather than deferred: `delete` removes **every** row of a shared observation ("that
+     observation was wrong"), which is a different event from `removeParticipant`'s "this bunny wasn't in
+     it" — keeping them apart is what stops 2f's confirmation dialog having to guess which the owner meant.
+     The built-in symptom **labels stay out of `data/`**: `add` takes the resolved built-ins as a parameter,
+     so the duplicate check sees the owner's current locale (ADR-0010) and the data layer stays free of
+     `R.string`, as it was before this checkpoint. The labels themselves land in `strings.xml` with the
+     picker, at 2f.
+   - Exercised on the Xiaomi, on the real bump: the consent screen appeared naming *format 2 → format 3* and
+     the copy at `files/preserved/bunny-20260726T073547Z.db`, which was on disk with its `-wal` and `-shm`
+     before anything was destroyed. Consenting wiped and reopened the file at `user_version` **3** with all
+     six tables — and the symptom table holding **exactly 13 rows**, which is the `onOpen` decision above
+     confirmed on the path that actually exercises it. The instrumented test can only stand in for that path
+     by emptying the table by hand; this is Room's own destructive migration, where `onCreate` provably never
+     fired and the picker came back full anyway. Relaunching left the count at 13 and added no second
+     preserved copy.
 6. **2f — Observation UI, the "+", and the healthy day.**
    - The global "+" FAB **finally renders** — Phase 1 settled its route and deliberately left it inert. On Home
      and Observations, not on More.

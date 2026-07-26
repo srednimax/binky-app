@@ -10,8 +10,10 @@ import app.bunny.tracker.data.BunnyDatabase
 import app.bunny.tracker.data.BunnyRepository
 import app.bunny.tracker.data.BunnySelection
 import app.bunny.tracker.data.FluffleRepository
+import app.bunny.tracker.data.ObservationRepository
 import app.bunny.tracker.data.PRESERVED_DIRECTORY
 import app.bunny.tracker.data.StoredSelection
+import app.bunny.tracker.data.SymptomRepository
 import app.bunny.tracker.data.WeightRepository
 import app.bunny.tracker.data.buildBunnyDatabase
 import app.bunny.tracker.data.resolveSelection
@@ -89,6 +91,10 @@ class AppContainer(
     val bunnyRepository = BunnyRepository(database, fluffleRepository, preferences, mediaFiles)
 
     val weightRepository = WeightRepository(database)
+
+    val observationRepository = ObservationRepository(database)
+
+    val symptomRepository = SymptomRepository(database)
 
     /**
      * The read-only scope onto an archived bunny. In memory only — a background kill must not

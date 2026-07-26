@@ -11,7 +11,7 @@ import androidx.room.TypeConverters
  * opens it and compares it against this (see `DatabasePreserve.kt`), so the two must stay in step —
  * which is why it is one constant used in both places.
  */
-const val BUNNY_SCHEMA_VERSION = 2
+const val BUNNY_SCHEMA_VERSION = 3
 
 /** The database file name, under the app's standard databases directory. */
 const val BUNNY_DATABASE_FILE = "bunny.db"
@@ -27,6 +27,9 @@ const val BUNNY_DATABASE_FILE = "bunny.db"
         FluffleEntity::class,
         WeightEntity::class,
         TrendAcknowledgmentEntity::class,
+        ObservationEntity::class,
+        SymptomEntity::class,
+        ObservationSymptomEntity::class,
     ],
     version = BUNNY_SCHEMA_VERSION,
     exportSchema = true,
@@ -38,6 +41,10 @@ abstract class BunnyDatabase : RoomDatabase() {
     abstract fun fluffleDao(): FluffleDao
 
     abstract fun weightDao(): WeightDao
+
+    abstract fun observationDao(): ObservationDao
+
+    abstract fun symptomDao(): SymptomDao
 }
 
 /**
@@ -61,4 +68,8 @@ fun buildBunnyDatabase(
         .databaseBuilder(context, BunnyDatabase::class.java, databaseName)
         // dropAllTables so a wipe leaves nothing behind, including tables Room did not create.
         .fallbackToDestructiveMigration(dropAllTables = true)
+        // Seeds the built-in symptoms on create and reconciles them on open (ADR-0010). It belongs
+        // here rather than in a repository because it has to have run before the picker's first read,
+        // and because a wipe must land an owner on a full list rather than an empty one.
+        .addCallback(builtInSymptomSeedCallback())
         .build()

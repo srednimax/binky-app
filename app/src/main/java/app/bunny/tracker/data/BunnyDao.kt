@@ -55,17 +55,44 @@ interface BunnyDao {
     /**
      * What deleting this bunny would destroy. Null when the bunny no longer exists.
      *
-     * Weighings are **sole-owned** — a weight belongs to exactly one bunny and cascades with it —
-     * so this is the first bucket's first real contributor, and it is what makes 1d's structurally
-     * built two-stage ceremony reachable for the first time. The shared bucket stays zero until
-     * observations land in 2e, where this reaches its final form: bucketed by **survivorship, not
-     * provenance** (ADR-0004).
+     * Bucketed by **survivorship, not provenance** (ADR-0004) — the question the confirmation asks is
+     * "what is lost?", not "where did this come from?". So:
+     *
+     * - Weighings are always sole-owned: a weight belongs to exactly one bunny and cascades with it.
+     * - A grouped observation counts as **shared** only while at least one row belongs to a *different*
+     *   bunny, because those rows survive the delete.
+     * - A grouped observation where this bunny is the **last participant** is destroyed by the delete,
+     *   so it counts as sole-owned. Calling it "shared" would promise a survivor that does not exist.
+     *
+     * The `EXISTS` deliberately does **not** filter on `archivedAt`: an archived housemate is a
+     * survivor, and its copy of the observation stays readable in its own scope (ADR-0004).
+     *
+     * A solo observation has a `NULL` groupId, which no equality can match, so `NOT EXISTS` puts it in
+     * the sole-owned bucket without needing a branch of its own.
+     *
+     * [deleteConfirmationFor] is untouched by this: either bucket being non-zero still yields
+     * `TWO_STAGE`, so only the numbers get honest.
      */
     @Query(
         """
         SELECT
-            (SELECT COUNT(*) FROM weights WHERE bunnyId = :bunnyId) AS soleOwnedRecords,
-            0 AS sharedRecords
+            (SELECT COUNT(*) FROM weights WHERE bunnyId = :bunnyId)
+            + (
+                SELECT COUNT(*) FROM observations o
+                WHERE o.bunnyId = :bunnyId
+                  AND NOT EXISTS (
+                      SELECT 1 FROM observations other
+                      WHERE other.groupId = o.groupId AND other.bunnyId <> :bunnyId
+                  )
+            ) AS soleOwnedRecords,
+            (
+                SELECT COUNT(*) FROM observations o
+                WHERE o.bunnyId = :bunnyId
+                  AND EXISTS (
+                      SELECT 1 FROM observations other
+                      WHERE other.groupId = o.groupId AND other.bunnyId <> :bunnyId
+                  )
+            ) AS sharedRecords
         FROM bunnies WHERE id = :bunnyId
         """,
     )
