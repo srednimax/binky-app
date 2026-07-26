@@ -184,7 +184,7 @@ boundary run rather than a per-commit one.
 a chance to exercise the consent screen on a real device. The consequence stands for the whole phase: until
 Phase 3 the phone's database is disposable, so weights worth keeping are written down outside the app.
 
-1. **2a — Weight data layer, and the consent half of the wipe guard.**
+1. **2a — Weight data layer, and the consent half of the wipe guard.** ✅
    - `WeightEntity` — `id`, `bunnyId` FK `CASCADE` indexed, `grams: Int` (house rule — never a float),
      `recordedAt: Instant` (the moment on the scale, back-datable), `createdAt: Instant`. Indexed on
      `(bunnyId, recordedAt)`. No `source` / `visitId`: deferred to a Phase-5 migration.
@@ -220,7 +220,7 @@ Phase 3 the phone's database is disposable, so weights worth keeping are written
      weight it names and with its bunny; a stale-version database file survives `AppContainer` construction
      **byte-identical**, and relaunching before consent adds no second preserved copy. The out-of-order
      windowing test lives in **2b**, as JVM arithmetic.
-2. **2b — Trend math.** Pure JVM, no Room and no Android — `deleteConfirmationFor` is the precedent: a
+2. **2b — Trend math.** ✅ Pure JVM, no Room and no Android — `deleteConfirmationFor` is the precedent: a
    decision function in `data/` whose test reads as a table of cases.
    - Input is the bunny's **whole series** as a plain list of `(id, grams, recordedAt)` plus the current
      acknowledgment; output a sealed result that also reports a **stale watermark** for 2a to act on.
@@ -240,7 +240,7 @@ Phase 3 the phone's database is disposable, so weights worth keeping are written
      and never resurrects a past one; ties in `recordedAt` resolve by the stated total order; rows arriving out
      of order window correctly; and the **gap blind spot** as a green test — after a long gap the second
      post-gap reading does not fire and the third does (ADR-0021).
-3. **2c — Weight entry, history, the flag surfaced, and Settings.**
+3. **2c — Weight entry, history, the flag surfaced, and Settings.** ✅
    - A **`WeightEntry(bunnyId, weightId: String? = null)` nav key** — null adds, non-null edits, mirroring
      `BunnyEditor`. This **closes a Phase-1 omission rather than adding scope**: `NavigationKeys.kt` promises
      every route exists from Phase 1 and this one didn't. The global "+" stays **observation-only**
@@ -275,6 +275,12 @@ Phase 3 the phone's database is disposable, so weights worth keeping are written
      the flag is **not evaluated** (ADR-0004).
    - Weight stops being a stub and still refuses "All bunnies". No Compose tests (ADR-0012, as in 1c); the
      logic beneath is covered by 2b.
+   - **Gate met:** `spotlessApply`, `assembleDebug`, `test` (64 unit tests) and `lint` pass. Exercised on the
+     Xiaomi: a future time refused with the reason stated; an exact-timestamp collision offering *replace* and
+     updating the row rather than adding a second; a corrected weight and a deleted row each clearing the flag
+     they caused; **editing an unrelated baseline discarding the acknowledgment and raising the dialog on an
+     edit**; an archived bunny showing a year of history with no add/edit/delete and **no flag** across a
+     −500 g drop; and a preserved copy listed, shared with its `-wal`, then deleted with it.
 4. **2d — The chart.** Vico enters `libs.versions.toml` here and nowhere earlier. Real `recordedAt` on the
    x-axis; range selector 30 d / 90 d / 1 y / All defaulting to 90 d, held in the `ViewModel` and not
    persisted; **three** empty states, the third naming the last weighing's date and offering one tap to *All*;
