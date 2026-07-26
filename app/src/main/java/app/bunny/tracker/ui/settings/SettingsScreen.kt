@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -187,7 +188,11 @@ private fun PreservedCopies(
                                 copy.savedAt?.let { dateTimeLabel(it) }
                                     ?: stringResource(R.string.settings_preserved_undated),
                                 Formatter.formatShortFileSize(context, copy.totalBytes),
-                                copy.files.size,
+                                pluralStringResource(
+                                    R.plurals.settings_preserved_files,
+                                    copy.files.size,
+                                    copy.files.size,
+                                ),
                             ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

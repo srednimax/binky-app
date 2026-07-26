@@ -120,7 +120,12 @@
     <string name="settings_preserved_title">Preserved copies</string>
     <string name="settings_preserved_help">When an update cannot read the records already on this phone, a copy is saved here first. Share it somewhere safe — it cannot be loaded back in automatically.</string>
     <string name="settings_preserved_empty">No copies have been saved on this phone.</string>
-    <string name="settings_preserved_detail">Saved %1$s · %2$s · %3$d files</string>
+    <string name="settings_preserved_detail">Saved %1$s · %2$s · %3$s</string>
+    <!-- A copy with no sidecars really is one file, so the singular is reachable. -->
+    <plurals name="settings_preserved_files">
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
+    </plurals>
     <string name="settings_preserved_undated">date unknown</string>
     <string name="settings_preserved_share">Share this copy</string>
     <string name="settings_preserved_delete_title">Delete this copy?</string>
