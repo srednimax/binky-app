@@ -21,11 +21,19 @@ A static `include`/`exclude` XML rule cannot make that decision, so backup runs 
 unconditionally, then admits documents **newest-first up to a ceiling *below* 25 MB** (headroom for
 database growth between the OS-scheduled backups, which the app does not control). Because Auto Backup runs
 unattended with no UI, "surface honestly" cannot happen at backup time: the agent **persists a marker**
-(last-backup timestamp + excluded-document count) into **preferences** — not the database, which restore
-replaces — and the app surfaces it later as a permanent status line in Backup settings ("Last automatic
-backup: 3 days ago — 12 documents were too large to include; use manual export to keep them"), plus a
-single low-key notification the first time exclusion kicks in. It is never dropped silently. This content
-is fixed at build time and is not user-configurable.
+(last-backup timestamp + excluded-document count) **in a plain file under `filesDir`, outside the
+database** — which restore replaces — and the app surfaces it later as a permanent status line in Backup
+settings ("Last automatic backup: 3 days ago — 12 documents were too large to include; use manual export to
+keep them"), plus a single low-key notification the first time exclusion kicks in. It is never dropped
+silently. This content is fixed at build time and is not user-configurable.
+
+A file rather than the app's DataStore, because **the agent cannot assume the app exists around it**. When
+the system starts the process *for* backup it binds the base `android.app.Application` rather than this
+app's subclass, so `AppContainer` is absent — and reaching for it would in any case force the `lazy` that
+ADR-0007 makes the structural guard standing in front of a wipe. The agent therefore depends on **paths,
+not a `Context`**: the file set, the quota admission and the marker are all functions over `File`, which is
+also what makes the one piece of arithmetic in here testable on the JVM rather than only on a phone that
+happens to be idle and charging.
 
 ### The marker must not lie in either direction
 
@@ -40,12 +48,15 @@ explicitly, because each one produces a *reassuring* falsehood:
   looked. Backup settings therefore states the unknown case in words — *"No automatic backup has been
   recorded on this phone"* — with a button into system backup settings. Unknown is a state and gets its own
   copy.
-- **The marker must not survive onto a different phone.** It lives in preferences so that a *restore* does
-  not wipe it — but preferences are themselves inside the backup set, so a restore carries the old device's
-  marker onto the new one, which then reports a recent successful backup having never made one. The marker
-  is restored by the very event it describes. Because backup runs through a custom agent, the fix is a hook
-  already owned: **`onRestoreFinished()` clears the marker**, and the new device correctly reports none
-  recorded until its own first backup runs.
+- **The marker must not survive onto a different phone.** It lives outside the database so that a *restore*
+  does not wipe it — but anything inside the backup set is carried onto the new device by the very event it
+  describes, and would then report a recent successful backup having never made one. Because the agent
+  names its own file set, the marker is simply **never included**, and cannot travel at all.
+  **`onRestoreFinished()` clears it regardless**, for a second and different reason: after a restore the
+  phone no longer holds the data the old marker vouched for, so even a locally-earned marker is now
+  reassuring about something that is gone. Two mechanisms failing differently — the exclusion is a static
+  claim about a file set that a later edit could silently break, the clear is a runtime guarantee at the
+  exact event.
 
 A marker also **ages out**: past 14 days — against Auto Backup's roughly daily cadence — the status stops
 showing a bare date and says it is stale. A technically true timestamp from two months ago is a worse
@@ -79,9 +90,15 @@ of scope, so its photo rows line up with the surviving files; any file the resto
 is an invisible orphan, never rendered, cleanable later — it never resurrects stale data into the UI.
 
 Because a restore is an irreversible destructive replace, it is gated behind an **explicit confirmation**
-stating what it will replace ("[scope] backup from [date]"), and it **snapshots the current database aside**
-(timestamped, next to the media) first — the same recovery-artifact move ADR-0007 makes for a schema wipe.
-Restore is the same class of event and gets the same net.
+stating what it will replace ("[scope] backup from [date]"), and it takes an **automatic Essential-scope
+export of the current state** first, timestamped into the same directory as ADR-0007's wipe copies — the
+same recovery-artifact move, and a zip rather than a bare file so that undoing a bad restore is the
+ordinary restore path instead of a recovery procedure. Restore is the same class of event, gets the same
+net, and additionally gets a way back.
+
+The replace itself **stages, migrates, then swaps** rather than overwriting the live file and hoping
+(ADR-0023): a backup at an older released schema is migrated on the copy, one at a newer schema is refused
+outright since no migration runs backwards, and a failure lands before anything on the phone is touched.
 
 ## Consequences
 

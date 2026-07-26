@@ -560,23 +560,295 @@ policy before assuming the numbers.
 - Restore (ADR-0005): a full database replace but a **media merge** (keyed by relative uuid path, so an
   Essential restore keeps photos already on disk), gated behind an explicit confirmation and a pre-restore
   database snapshot, stating honestly what the file contains.
-- First-run setup: add first bunny (skippable) → backup scope → reminders opt-in (skippable), per ADR-0006.
-  The backup step also **asks whether system backup is switched on**, with a deep link into Android's
-  settings — the app cannot detect it, and this is the one moment the owner is already thinking about it.
+- First-run setup, **two steps at 1.0**: add first bunny (skippable) → backup scope. ADR-0006's reminders
+  opt-in moves to 1.1 with the reminders themselves — 1.0 has nothing that posts a notification, and Android
+  allows only two denials before the permission is refused for good. The backup step also **asks whether
+  system backup is switched on**, with a deep link into Android's settings — the app cannot detect it, and
+  this is the one moment the owner is already thinking about it.
 - Top-level destinations get their **visibility state** (`Hidden` / `ComingSoon` / `Live`) set for real
   before this ships — the enum was defined in Phase 1, so this is the one-value flip, not an introduction —
   since 1.0 is the first build real users see: Care & Meds is hidden rather than opening onto a stub, while
   unbuilt rows inside More may read "coming soon" (ADR-0019, ADR-0015).
+- **Polish, and the in-app language switcher** (ADR-0013). That ADR says Polish lands before the Play
+  release, and 1.0 *is* that release — so it lands here rather than being deferred with an amendment. Four
+  phases of "no user-facing string is hardcoded" exist to make the translation one new file with no code
+  changes; the switcher's *mechanism* lands a checkpoint earlier, because at `minSdk` 26 the AppCompat
+  backport may reach considerably further into the app than a Settings row.
 - Then attempt the remembered-folder destination and **verify on the real device** whether Google Drive's
   provider accepts writes. Still the plan's biggest unverified assumption — but with the evidential core
   now in Auto Backup (ADR-0005), it gates only the sentimental photo gallery, not vet evidence, so its
   failure is survivable.
 
-**Gate:** export at each scope, clear app data, restore, and confirm what should be present is present and
-what was excluded degrades gracefully; a device that has never run Auto Backup says so in words rather than
-showing a blank; a restore does not carry the source phone's backup timestamp onto the target; no
-bottom-navigation tab opens onto a stub. Then the 1.0 release itself — signed build on the internal testing
-track, and installable from Play on the Xiaomi.
+### Checkpoints
+
+Six again, and for the same reason as Phase 2 — but the **first one is not code at all**, and the ordering
+is deliberate twice over. ADR-0009's registration deadline and the closed-testing clock are calendar costs,
+not engineering ones: started now they run in parallel with the work, left to the end they block the
+release. And the two backup halves are built **provable-first** — manual export and restore before the
+unattended agent — because they share the WAL checkpoint and the scope-to-file-list, and that machinery is
+better built where a test can watch it. ADR-0019 gates 1.0 on *the data being safe*, which export and
+restore satisfy on their own; the agent is ADR-0005's effortless net **on top**, so an agent that turns into
+a swamp costs a release date rather than a release. Everything else runs one way: photos need the schema
+bump, restore needs an export to restore, first-run setup needs a backup scope to offer.
+
+**One schema bump, one wipe** — version 4 at 3b, and it is **the last free one** (ADR-0007). From 1.0
+onward every schema version that reaches a device carries a tested forward migration, so the bump happens
+before anyone else is on the testing track, and its exported JSON is the first that is git-tagged and
+load-bearing. What that costs mechanically is not "write migrations from now on" — the destructive
+fallback, the consent screen, the debug build and restore all have to move, which is **ADR-0023**, written
+because this phase is where those four come due.
+
+1. **3a — The release path, proven while the payload is boring.**
+   - Pay the $25, register the developer account, and **re-read the current closed-testing policy rather
+     than assuming 12 testers over 14 days** (ADR-0009) — that number decides *when to register*, not
+     merely how to ship, so a stale reading of it is expensive in a way a stale API reading is not.
+   - Keystore generated **once**, kept out of git, backed up off this machine; `signingConfigs` read from
+     `local.properties`, and a release build with no key **fails loudly** rather than falling back to the
+     debug key — a Play listing cannot change its signing key afterwards.
+   - **`applicationIdSuffix = ".debug"` and a distinct debug label** (ADR-0023). Without it, `installDebug`
+     stops working the day this checkpoint succeeds: the Play build is signed with the release key, a
+     locally-signed build of the same `applicationId` can neither sit beside it nor replace it, and the only
+     way through is uninstalling the Play build. ADR-0007 offered "or a separate DB name" as an
+     alternative; it is not one, since it does nothing about two builds being unable to coexist.
+     `FileProvider`'s authority already interpolates `${applicationId}`, so it follows; the instrumentation
+     package becomes `app.bunny.tracker.debug.test`, which is a correction owed to **CLAUDE.md**'s Xiaomi
+     fallback command.
+   - One signed build on the **internal testing track**, at Phase 2's feature set. Nothing about the payload
+     is new, which is the point: upload, track configuration, Play's review and install-from-Play on the
+     Xiaomi are each proven while none of them are entangled with a feature under review.
+   - That build is then **uninstalled**. It is a pipeline proof, not a dogfood build: leaving a release
+     build at schema 3 sitting on the phone would create a migration obligation for a version nobody used,
+     and 3b's wipe is spent on the debug app instead. The author's real bunny history starts at 1.0, which
+     is the moment ADR-0007 says it should.
+   - `versionName` / `versionCode` stay automated (release-please) and are never hand-edited. Two things to
+     verify: that the automated values reach a **release** build's manifest, which no debug build has ever
+     demonstrated, and that the `gitVersionCode` fallback to `1` **fails a release build** rather than
+     shipping — a Play track never forgets its highest `versionCode`.
+   - There is no test gate here. The gate is that the build is installable from Play on the Xiaomi, and that
+     the debug app installs beside it — and discovering both at 3a rather than at 3f is the entire reason
+     this checkpoint is first.
+2. **3b — Photos: the gallery, and the last free wipe.** Schema → **4**.
+   - `PhotoEntity` — `id`, `bunnyId` FK `CASCADE` indexed, `path` relative (`photos/<uuid>.jpg`), nullable
+     `caption`, nullable `capturedAt`, `createdAt`. Indexed on `(bunnyId, createdAt)`.
+   - **`capturedAt` is read before the strip, not after** (ADR-0020). `persist` returns `(path, capturedAt)`
+     instead of a bare path, taken from the same `ExifInterface` call site that already reads the
+     orientation tag; the one avatar caller ignores the second field. Stripping the file is about what a
+     file leaving the device carries, not a rule against the pipeline reading it on the way past — and
+     there is no going back for this one, since a column added later could never be backfilled from files
+     whose metadata this app has already removed. Ordering is `COALESCE(capturedAt, createdAt)`, because
+     screenshots and re-shared images routinely carry no EXIF date.
+   - The case that forces it: a bulk import from the camera roll lands twenty photos spanning two years
+     within the same millisecond, and ordering those by when they were *added* is arbitrary order for a
+     gallery whose whole point is a bunny growing up.
+   - `PhotoDao` / `PhotoRepository`: a bunny's photos as a `Flow`, newest first; add, edit caption, delete.
+     Add goes **file first, then the row**; delete is the mirror — row, commit, then the file best-effort
+     (ADR-0020).
+   - **`MediaKind.Photo`'s first real caller.** Its 2048 long-edge / q85 numbers were written in Phase 1 as
+     an unverified guess for exactly this screen; verify them against the full-screen pager on the phone,
+     and adjust the spec table rather than the call site.
+   - Multi-select from the Photo Picker plus a single "take a photo" through the existing `TakePicture` +
+     `FileProvider` plumbing — no CameraX, no new permission. Multi-select runs `persist` N times
+     **sequentially, with progress**: a twenty-photo import that decodes twenty full-resolution bitmaps at
+     once is precisely the failure the house rule about the media helper exists to prevent.
+   - `LazyVerticalGrid` with Coil 3, `HorizontalPager` for full screen, caption edited from the pager. A
+     missing file renders the placeholder, never a crash — and an Essential restore is exactly the case
+     that produces one (ADR-0005), so this is not a hypothetical branch.
+   - Reached from **More → Photos**, flipping that row from "coming soon" to live. Scoped to the selected
+     bunny; under **"All bunnies"** it asks which bunny first, reusing 2f's `ChooseBunnyDialog` rather than
+     inventing a combined gallery — photos are individual data, like weight (ADR-0015).
+   - In the `Archived(id)` scope the gallery renders read-only: no add, no caption edit, no delete
+     (ADR-0004).
+   - `recordCounts` gains its third contributor. Photos are **sole-owned**, so they land in the destroyed
+     bucket, and deleting a bunny must remove its photo **files** — the same best-effort-after-commit the
+     avatar already gets, over a list rather than one path.
+   - **The destructive fallback becomes debug-only here** (ADR-0023), in the same commit as the bump, because
+     this is the wipe that makes it the last one. A release build with no migration path throws at open
+     instead of deleting a bunny's history, and the release variant of the consent screen loses its forward
+     button: it states that this build cannot open the data, names the preserved copy, and offers **share**
+     and nothing else. The copy is still taken first in both builds — preserving before a *failure* rather
+     than before a wipe, which is a better reason than the one it was written for.
+   - Tests, instrumented: photos cascade with their bunny; editing a caption does not touch the path;
+     deleting a photo removes both row and file; `recordCounts` counts photos as sole-owned; `capturedAt`
+     survives a round trip and a photo with no EXIF date orders by `createdAt`. A JVM test asserts the
+     destructive fallback is gated on `BuildConfig.DEBUG` — a property that cannot be checked by hand on a
+     release build, since `run-as` does not work on one. The sample-data action gains a handful of photos,
+     so 3c and 3d have something real to include and exclude.
+3. **3c — Manual export, and restore.**
+   - Zip at three scopes — Essential (database + `avatars/`), **Records** (default; plus `documents/`),
+     Everything (plus `photos/`). A scope is **a list of `MediaKind`**, which is what ADR-0020 gave the enum
+     a `directory` for; no magic strings.
+   - The **WAL checkpoint and the scope-to-file-list are built here**, as the shared helper 3d will reuse.
+     An export that captures a mid-write database is the same bug as a backup that does, and it is written
+     once, in the checkpoint where a test can watch it happen.
+   - The scope is recorded in the filename — `bunny-<scope>-<timestamp>.zip` — so restore can state what the
+     file actually contains. Out through the **share sheet**, from a new `cache/exports` FileProvider path:
+     cache, so a share the owner abandons is reclaimed by the OS rather than doubling the app's footprint.
+   - Restore is gated behind an explicit confirmation naming *"[scope] backup from [date]"*, and first takes
+     an **automatic Essential-scope export of the current state** into the existing `preserved/` — a zip
+     rather than a bare `.db`, so **undoing a bad restore is the ordinary restore path** rather than a
+     recovery procedure with `adb` in it. Restore is the most destructive thing the app does; it is the one
+     operation that should have a way back built out of parts already tested.
+   - `preserved/` therefore holds two kinds of occupant with opposite properties — wipe copies (stale
+     schema, unrestorable by design) and restore snapshots (current schema, restorable in one tap). Settings
+     **names what each row is** and says which can be restored and which can only be shared; two files that
+     look alike and mean opposite things is exactly the ambiguity ADR-0007's list was not written for.
+   - **Stage, migrate, swap** (ADR-0023). Unzip to a staging database; refuse anything at a *newer* schema
+     outright, since no migration runs backwards; open the staged file with the real migrations, so it is
+     already at the current schema; then swap it in. A failure lands on the copy, before anything on the
+     phone has been touched. The staged builder **pins its own configuration**, or 3b's debug fallback would
+     quietly empty the very file it was asked to test.
+   - This replaces comparing version numbers, which only asserts that a migration exists and never that it
+     survives *this* file — and which, written as "refuse anything that isn't this build's version", would
+     make every existing backup unrestorable the day 1.1 bumps the schema, inverting ADR-0005's whole
+     promise.
+   - Database **replaced**, media **merged** by relative `<kind>/<uuid>.jpg` path (ADR-0005): an Essential
+     restore onto a phone that still holds its photo files keeps them instead of turning them all into
+     placeholders.
+   - The process then **restarts**. Half the app is holding `Flow`s over the file that was just replaced,
+     and reopening in place serves stale rows out of live caches.
+   - Tests, JVM, per the Verification section: the zip round-trip; what each scope's manifest contains; and
+     merge semantics as a pure function over two file lists — kept, overlaid, orphaned. The **newer-schema
+     refusal** is testable now; the older-schema migration path is not, because at 1.0 no older released
+     schema exists — it becomes a real test at 1.1, and the plan should not claim it before then.
+4. **3d — Auto Backup: the custom agent, and the marker that must not lie.**
+   - `BunnyBackupAgent` registered with `android:backupAgent` **and `android:fullBackupOnly="true"`** —
+     declaring an agent without it puts the app on the key/value path, which is not what ADR-0005 describes.
+   - The agent **takes paths, not a `Context`** (ADR-0005). When the system starts the process *for* backup
+     it binds the base `android.app.Application` rather than this app's subclass, so `AppContainer` is
+     absent and a cast to `BunnyTrackerApplication` is a `ClassCastException` — and reaching for the
+     container would in any case force the `lazy` that ADR-0007 makes the structural guard in front of a
+     wipe. The failure ordering is what makes this worth building structurally: Auto Backup runs when the
+     device is idle and charging, `bmgr backupnow` runs with the app on screen, so a container-dependent
+     agent passes every test done by hand and fails only in production, silently.
+   - So the file set, the quota admission and the marker are **functions over `File`**, in their own file
+     with no Android dependency, and the agent is a thin shell that calls them. "Cannot reach the container"
+     becomes a property of the types — the same move ADR-0007 made when it rejected a guard by discipline.
+   - `onFullBackup` checkpoints the WAL into a consistent copy via 3c's shared helper and backs up **that
+     copy**, never the live file with its sidecars — ADR-0005 names the alternative as a restore that comes
+     back corrupt.
+   - Unconditional: database, preferences, `avatars/`. Excluded: `photos/` (ADR-0005), and **`preserved/`**
+     — ADR-0007 left that question open for this phase and the answer is no. Not on quota grounds, which do
+     not hold at 1.0 where the whole set is under a megabyte, but because `preserved/` is the app's one
+     **unbounded, never-pruned** directory, and Android rejects the *entire* over-quota dataset rather than
+     trimming it. Admitting an unbounded set means one day losing the database and the avatars in order to
+     have protected a duplicate. The owner's **share** tap is what makes a preserved copy safe.
+   - Documents newest-first under a ceiling **below** ~25 MB. `documents/` is empty until Phase 5, so on
+     device this admits nothing — which is exactly why the selection is a **pure function** over
+     `(core bytes, documents newest-first, ceiling)` with a JVM test, rather than untested logic first
+     exercised in a phase whose failure mode is silence.
+   - The marker — last-backup instant plus excluded count — is a **plain file under `filesDir`**, written
+     temp-then-rename, behind a `(File) -> Marker?` helper that the agent and Settings both call. Not
+     DataStore: the agent cannot reach the app's instance without the container, and its writes are
+     `suspend` inside blocking backup callbacks. ADR-0005's requirement is *outside the database*, which
+     restore replaces; this satisfies it and stays readable from both sides.
+   - Because the agent names its own file set, the marker is **never included**, so it cannot travel to
+     another phone at all. `onRestoreFinished()` **clears it regardless**, for a second and different
+     reason: after a restore the phone no longer holds the data the old marker vouched for. Two mechanisms
+     failing differently — the exclusion is a static claim a later edit could break, the clear is a runtime
+     guarantee at the exact event.
+   - Settings gains the status line, with all three states **in words**: a date; **stale** past 14 days; and
+     *"No automatic backup has been recorded on this phone"* with a button into system backup settings.
+     A blank reads as a working net, which is ADR-0001's silence failure pointed at backup. The deep link is
+     best-effort with a `resolveActivity` fallback to top-level settings — HyperOS moves that screen — and
+     3e reuses it in first-run setup.
+   - The one-time exclusion notification and the app's first notification channel are built here, but
+     **cannot fire before Phase 5**, there being no documents to exclude. That is stated rather than
+     glossed, and it is why 3e asks for no notification permission (ADR-0006).
+   - The two template XML files resolve here. An agent that chooses its own file set makes
+     `backup_rules.xml` and `data_extraction_rules.xml` dead, so the expected outcome is **deleting both
+     along with their manifest attributes**, closing two of Phase 2's four standing lint warnings — but
+     confirmed against a real backup run rather than against the documentation.
+   - Driven with `adb shell bmgr backupnow app.bunny.tracker` and `bmgr restore`; if HyperOS will not drive
+     `bmgr`, the fallback evidence is the marker file appearing under `run-as`, plus `dumpsys backup` and
+     logcat around the callbacks. **If it cannot be observed at all, 1.0 still ships**: export and restore
+     already satisfy ADR-0019, and the marker design means an agent that never ran renders as *"No automatic
+     backup has been recorded on this phone"* — which is literally true. An unverifiable agent degrades into
+     an honest app rather than a lying one, and Play Console vitals become how it is found out, which is one
+     of the three reasons ADR-0009 chose Play.
+5. **3e — First-run setup, the visibility flip, and the switcher mechanism.**
+   - **Two steps at 1.0** (ADR-0006): add first bunny (skippable) → backup scope. Gated on a `setupComplete`
+     preference — `AppPreferences`' **third** key — alongside the chosen backup scope as its **fourth**,
+     which becomes 3c's export default and stays editable in Settings.
+   - The reminders step is **not built here**. It ships with 1.1, with the reminders: Android allows two
+     denials before the permission is refused permanently, 1.0 has nothing that posts a notification, and an
+     opt-in that cannot demonstrate anything is the most likely to be dismissed — which is the failure
+     ADR-0006 exists to prevent, arrived at from the other direction. ADR-0006's point-of-use ask becomes
+     the *first* ask rather than the second.
+   - The backup step **asks whether system backup is switched on**, using the deep link 3d already added.
+     The app cannot detect it (ADR-0005), and this is the one moment the owner is already thinking about it.
+   - **The visibility flip** (ADR-0015, ADR-0019) — the one-value change Phase 1 defined the enum for, not
+     an introduction. `CARE` → `Hidden`; every other tab stays `Live`; More's Photos row went live at 3b,
+     Documents and Support stay `ComingSoon`. The bottom bar renders from the non-`Hidden` entries, and a
+     `Hidden` key arriving on a **restored back stack** — a Nav3 stack saved by a build where that tab was
+     live — resolves to Home rather than to a blank destination.
+   - Checked here too: `StubScreen` has **no remaining top-level caller**. If it does, either that screen is
+     real or its tab is hidden; there is no third answer before a public 1.0.
+   - **The language switcher's mechanism**, with English alone in the list (ADR-0013): `locales_config.xml`,
+     the switcher row in Settings, and whatever AppCompat's pre-13 backport turns out to demand. At
+     `minSdk` 26 most of the supported range takes that backport rather than the platform API, and if it
+     wants `MainActivity` rebuilt as an `AppCompatActivity` with AppCompat theming under a pure Compose and
+     Material 3 app, that is an activity-and-theme change rather than a Settings row. Shipping a
+     one-language switcher is not the goal; finding out what it costs, a checkpoint before the translation
+     lands, is.
+6. **3f — 1.0: Polish, and the release.**
+   - `values-pl/strings.xml` — one new file, no code changes, which is what four phases of "no hardcoded
+     strings" bought. **250 strings and 10 plurals** stand today, before this phase's gallery, backup,
+     restore and setup copy; it lands last because that is when the strings stop moving, and translating
+     churn twice is the only way to make it more expensive.
+   - Polish's **four plural categories** against English's two is where the `<plurals>` discipline finally
+     becomes falsifiable: the delete ceremony's two buckets, the shared-observation participant counts and
+     the excluded-documents line all get read in both languages at 1, 2 and 5.
+   - Dates, numbers and weights already format through the platform, so `2,45 kg` is a **check rather than
+     work** — the two places to look are `WeightFormat` and the chart's axis labels.
+   - Release: `lint` clean, `test`, `connectedAndroidTest`, and the **schema-4 JSON committed and
+     git-tagged** (ADR-0007) — the first schema version that is load-bearing, and the one every later
+     migration is written from.
+   - Then the signed build up the pipeline 3a already proved. If the closed-testing requirement that has
+     been running since 3a is not yet met, 1.0 waits on the internal track until it is — which is exactly
+     why registration was 3a's first line rather than 3f's.
+
+`spotlessApply`, `assembleDebug` and `test` at every checkpoint; `connectedAndroidTest` at the end of 3b,
+the only one that adds instrumented tests, and again at the gate; `lint` at the gate. This is the phase
+where lint must reach **zero project-code warnings that are not a stated standing decision** — two of
+Phase 2's four are 3d's to close.
+
+Each checkpoint is meant to survive being picked up cold, so read its decisions first — **3a**: ADR-0009,
+0019, 0023. **3b**: ADR-0020, 0015, 0004, 0007, 0023. **3c**: ADR-0005, 0023, 0020. **3d**: ADR-0005, 0001,
+0007. **3e**: ADR-0006, 0015, 0019, 0013. **3f**: ADR-0013, 0009, 0007.
+
+**Gate:**
+
+- Export at **each** of the three scopes, clear app data, and restore each one: what the scope promised is
+  present, and what it excluded degrades gracefully — placeholders in the grid, the pager, the switcher and
+  Home's card, never a crash.
+- An **Essential** restore onto a phone that still holds its photo files **keeps those photos**, rather than
+  turning the gallery into placeholders.
+- A backup at a **newer** schema version than the build is refused with both versions named, and the
+  database on the phone is untouched.
+- A restore leaves a restorable Essential export of the replaced state in `preserved/`, listed in Settings
+  as what it is and distinguishable from a wipe copy, and **restoring it undoes the restore**.
+- A device that has never run Auto Backup **says so in words**, with a button into system backup settings;
+  a marker older than 14 days reads as **stale** rather than as a bare date.
+- A restore does not carry the source phone's backup timestamp onto the target.
+- A backup taken with a deliberately large photo gallery still **succeeds**: photos are out of the set, and
+  the database and avatars are in — the whole reason ADR-0005 excludes them. If `bmgr` cannot be driven on
+  the Xiaomi, this is recorded as **not observed** rather than as passed.
+- Deleting a bunny counts its photos in the destroyed bucket, with correct pluralisation, and removes the
+  files as well as the rows.
+- A bulk import of photos spanning years lands in **capture order**, not import order.
+- The gallery is read-only in the `Archived(id)` scope, and asks which bunny under "All bunnies".
+- The **debug and release apps are both installed on the Xiaomi at once**, holding separate data, and
+  `installDebug` still works with 1.0 on the phone.
+- A release build **cannot** destructively wipe: asserted by test, since `run-as` does not reach a release
+  build, and the release consent screen's no-forward-button variant is exercised by forcing it in a debug
+  build.
+- First run reaches **both** steps, the skippable one is genuinely skippable, and the backup scope chosen
+  there is what the export sheet defaults to afterwards. **No notification permission is requested.**
+- **No bottom-navigation tab opens onto a stub** — Care & Meds is absent, not "coming soon".
+- Every screen in Polish with no English left behind, and the switcher changes the app's language without
+  changing the phone's.
+- Then the 1.0 release itself — signed build on the internal testing track, and installable from Play on
+  the Xiaomi.
 
 ## Phase 4 — Care reminders and watch — ships as 1.1
 

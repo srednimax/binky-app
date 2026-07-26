@@ -10,8 +10,15 @@ provided nothing was ever hardcoded.
 Android selects the translation from the device language automatically. On top of that the app offers its
 own **language switcher**, so the app's language can differ from the phone's. This is native on Android
 13+ (`locales_config.xml` plus `setApplicationLocales()`, and it appears in system settings too); below 13
-it needs AppCompat's backport, which is the one dependency accepted purely for this feature. The switcher
-is built when Polish lands, not before — a switcher with one language in it is pointless.
+it needs AppCompat's backport, which is the one dependency accepted purely for this feature.
+
+The switcher **ships** when Polish lands — a switcher with one language in it is pointless. Its
+**mechanism** is built one checkpoint earlier, with English alone in the list, and that is not a
+contradiction: shipping it early is not the goal, finding out what the backport costs is. At `minSdk` 26
+most of the supported range takes that backport rather than the platform API, and if it requires the app's
+single `ComponentActivity` rebuilt as an `AppCompatActivity` with AppCompat theming beneath a pure Compose
+and Material 3 app, then this is not a Settings row — and that is not a thing to discover in the week the
+translation lands.
 
 ## Consequences
 
