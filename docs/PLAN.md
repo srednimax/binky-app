@@ -281,7 +281,7 @@ Phase 3 the phone's database is disposable, so weights worth keeping are written
      they caused; **editing an unrelated baseline discarding the acknowledgment and raising the dialog on an
      edit**; an archived bunny showing a year of history with no add/edit/delete and **no flag** across a
      −500 g drop; and a preserved copy listed, shared with its `-wal`, then deleted with it.
-4. **2d — The chart.** Vico enters `libs.versions.toml` here and nowhere earlier. Real `recordedAt` on the
+4. **2d — The chart.** ✅ Vico enters `libs.versions.toml` here and nowhere earlier. Real `recordedAt` on the
    x-axis; range selector 30 d / 90 d / 1 y / All defaulting to 90 d, held in the `ViewModel` and not
    persisted; **three** empty states, the third naming the last weighing's date and offering one tap to *All*;
    no auto-widening; range **display-only**, so the flag can render above an empty chart and that composition
@@ -292,6 +292,21 @@ Phase 3 the phone's database is disposable, so weights worth keeping are written
      index axis is rejected anyway (ADR-0022).
    - Its own checkpoint on purpose: a new charting dependency either drops straight in or eats a day, and
      neither outcome should be tangled up in the review of the entry flow.
+   - **Gate met:** `spotlessApply`, `assembleDebug`, `test` (73 unit tests, 9 new) and `lint` pass. Vico 2.1.3
+     is **accepted, not fallen back on** — its `series(xs, ys)` takes arbitrary `Number` x values, so this is a
+     real value axis and not an index one, and the pinned Compose BOM did **not** move (Vico's POM imports BOM
+     2025.05.01, ours outranks it, `compose.ui` still resolves to 1.11.2). Three of Vico's defaults had to be
+     overridden, each found by looking at the phone rather than by the compiler and each commented where it
+     lives: an explicit `getXStep` (the default GCD-of-gaps collapses on irregular timestamps, and the fixture's
+     tied `recordedAt` contributes a gap of 0), a y-axis that is **not** zero-anchored but fitted to the window
+     with a floor of 10 % of the heaviest reading (the default drew a real series as a flat line pinned to the
+     top, where a −40 g drop and a −2 g wobble looked identical), and x-domain padding so the newest weighing's
+     date label is not clipped at the plot edge.
+   - Exercised on the Xiaomi against 2c's fixture: at 90 d the acute −500 g drop and the fat-fingered entry are
+     both unmistakable, with real weekly date ticks; at *All* that same drop compresses to a wiggle over the
+     full year, which is exactly why the selector exists and proves the filtering; the `Archived(id)` scope
+     charts with no add / edit / delete affordances and **no flag**; and all three empty states, the third
+     naming the last weighing's date and its one tap to *All* switching the selector and redrawing.
 5. **2e — Observation data layer.** Schema → **3**.
    - `ObservationEntity`, one row per bunny (ADR-0008): `id`, `bunnyId` FK `CASCADE`, `groupId: String?`
      (non-null only when shared), `recordedAt`, `createdAt`, the tray-level fields (droppings amount / size /

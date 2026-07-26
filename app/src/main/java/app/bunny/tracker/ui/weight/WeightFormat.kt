@@ -110,6 +110,77 @@ fun weightChangeLabel(deltaGrams: Int): String {
     )
 }
 
+/**
+ * **Two** decimal places on a kilogram axis tick, not [KILOGRAM_DECIMALS]' three.
+ *
+ * A tick is a scale marker, never a number the owner reads back and retypes, so the third decimal
+ * is width spent on nothing. Two still resolves 10 g — comfortably finer than the ~125 g drop that
+ * turns the trend flag on for a 2.5 kg rabbit — so no gridline can round the signal away.
+ */
+private const val AXIS_KILOGRAM_DECIMALS = 2
+
+/**
+ * Takes a [Double] rather than [Int] grams because an axis tick is a position on a scale, not a
+ * stored weighing: the chart picks round values, and they need not land on a whole gram.
+ */
+private fun axisWeightNumber(
+    grams: Double,
+    unit: WeightUnit,
+    locale: Locale,
+): String =
+    when (unit) {
+        WeightUnit.GRAMS -> NumberFormat.getIntegerInstance(locale).format(grams)
+        WeightUnit.KILOGRAMS ->
+            NumberFormat
+                .getNumberInstance(locale)
+                .apply {
+                    minimumFractionDigits = AXIS_KILOGRAM_DECIMALS
+                    maximumFractionDigits = AXIS_KILOGRAM_DECIMALS
+                }.format(grams / GRAMS_PER_KILOGRAM)
+    }
+
+/**
+ * A y-axis tick in the display unit, as a plain function the chart can call while drawing.
+ *
+ * It is built here rather than in the chart so kg-vs-grams stays decided in this one file. The
+ * shape is a composable that *returns* a non-composable lambda, because the charting library
+ * formats ticks from its own draw pass, where `stringResource` cannot be called — so the locale and
+ * the unit template are read during composition and captured.
+ */
+@Composable
+fun rememberAxisWeightFormatter(unit: WeightUnit): (Double) -> String {
+    val locale = currentLocale()
+    // The bare template ("%1$s kg"), resolved with the value once the axis supplies one.
+    val template =
+        stringResource(
+            when (unit) {
+                WeightUnit.KILOGRAMS -> R.string.weight_in_kilograms
+                WeightUnit.GRAMS -> R.string.weight_in_grams
+            },
+        )
+    return remember(unit, locale, template) {
+        { grams -> template.format(locale, axisWeightNumber(grams, unit, locale)) }
+    }
+}
+
+/**
+ * An x-axis tick: the date a plotted weighing falls on, captured for the same draw-pass reason as
+ * [rememberAxisWeightFormatter]. The short localized form — the axis carries a handful of labels
+ * and the owner is reading the shape, not the minute.
+ */
+@Composable
+fun rememberAxisDateFormatter(): (Instant) -> String {
+    val locale = currentLocale()
+    return remember(locale) {
+        val formatter =
+            DateTimeFormatter
+                .ofLocalizedDate(FormatStyle.SHORT)
+                .withLocale(locale)
+                .withZone(ZoneId.systemDefault())
+        ({ instant -> formatter.format(instant) })
+    }
+}
+
 /** When a weighing was taken, in the reader's own locale. Date and time — back-dating is normal. */
 @Composable
 fun dateTimeLabel(instant: Instant): String {
