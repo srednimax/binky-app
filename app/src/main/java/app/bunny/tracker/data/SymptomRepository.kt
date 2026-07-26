@@ -22,8 +22,20 @@ class SymptomRepository(
      */
     val visibleSymptoms: Flow<List<SymptomEntity>> = symptomDao.visible()
 
+    /**
+     * Every symptom, retired ones included — what the timeline resolves ticks against. A hidden
+     * symptom still has to render on the observation that recorded it (ADR-0010).
+     */
+    val allSymptoms: Flow<List<SymptomEntity>> = symptomDao.all()
+
     /** What was ticked on one observation, including symptoms since retired. */
     fun symptomsFor(observationId: String): Flow<List<SymptomEntity>> = symptomDao.symptomsFor(observationId)
+
+    /**
+     * Every symptom as it stands right now, for the debug seeder — which needs a built-in's **id**
+     * and only knows its key, since a built-in's id is minted by the seed callback.
+     */
+    suspend fun allNow(): List<SymptomEntity> = symptomDao.allNow()
 
     /**
      * Adds an owner's symptom, or returns the existing one it duplicates.

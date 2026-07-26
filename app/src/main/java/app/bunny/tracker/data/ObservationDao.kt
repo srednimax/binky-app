@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 
 /**
  * Observations and their symptom links.
@@ -39,6 +40,30 @@ interface ObservationDao {
             "WHERE b.archivedAt IS NULL ORDER BY o.recordedAt DESC, o.createdAt DESC, o.id",
     )
     fun forActiveBunnies(): Flow<List<ObservationEntity>>
+
+    /**
+     * One bunny's timeline, **plus the other rows of any observation it took part in**.
+     *
+     * [forBunny] answers "what is recorded against this bunny", which is what every warning and count
+     * wants. A timeline wants something wider: a shared entry has to be able to *name who it covered*
+     * (ADR-0008), and this bunny's row alone cannot say. So the group is pulled back whole and the
+     * display function collapses it.
+     *
+     * Archived housemates are included here and excluded from [forActiveBunnies], and the difference
+     * is deliberate: this is one bunny's history, where "observed together with Hazel, since archived"
+     * is the true answer, while that one is the *current* fluffle's combined feed.
+     */
+    @Query(
+        """
+        SELECT * FROM observations
+        WHERE bunnyId = :bunnyId
+           OR groupId IN (
+               SELECT groupId FROM observations WHERE bunnyId = :bunnyId AND groupId IS NOT NULL
+           )
+        ORDER BY recordedAt DESC, createdAt DESC, id
+        """,
+    )
+    fun timelineForBunny(bunnyId: String): Flow<List<ObservationEntity>>
 
     @Query("SELECT * FROM observations WHERE id = :id")
     suspend fun observationNow(id: String): ObservationEntity?
@@ -94,6 +119,23 @@ interface ObservationDao {
         cecotropes: Cecotropes?,
     )
 
+    /**
+     * When it was noticed is a **group-wide** fact for the same reason the tray is: one real-world
+     * moment, however many bunnies were in the room. Correcting it on one row and not the others
+     * would split one observation into two at different times.
+     */
+    @Query("UPDATE observations SET recordedAt = :recordedAt WHERE groupId = :groupId")
+    suspend fun setRecordedAtForGroup(
+        groupId: String,
+        recordedAt: Instant,
+    )
+
+    @Query("UPDATE observations SET recordedAt = :recordedAt WHERE id = :id")
+    suspend fun setRecordedAtForObservation(
+        id: String,
+        recordedAt: Instant,
+    )
+
     /** The solo case of [updateTrayForGroup] — one row, because there is no group. */
     @Query(
         """
@@ -115,6 +157,17 @@ interface ObservationDao {
 
     @Query("SELECT symptomId FROM observation_symptoms WHERE observationId = :observationId")
     suspend fun symptomIdsNow(observationId: String): List<String>
+
+    /**
+     * Every tick in the database, for the timeline to index by observation.
+     *
+     * The whole table rather than a per-entry query, because the timeline renders many observations
+     * at once and one `Flow` per visible row would be a subscription storm on scrolling. The table is
+     * one short row per symptom noticed — daily observations for five years put it in the low
+     * thousands — so reading it whole is cheaper than the alternative, not a shortcut past it.
+     */
+    @Query("SELECT * FROM observation_symptoms")
+    fun allSymptomLinks(): Flow<List<ObservationSymptomEntity>>
 
     /**
      * `IGNORE` rather than `REPLACE`: the composite primary key already makes a symptom ticked twice

@@ -32,17 +32,35 @@
     <string name="action_unarchive">Unarchive</string>
     <string name="action_delete">Delete</string>
     <string name="action_ok">OK</string>
+    <string name="action_done">Done</string>
+    <string name="action_undo">Undo</string>
     <string name="add_a_bunny_first">Add a bunny first.</string>
+
+    <!-- The shared "when did this happen" field, used by weighings and observations alike. Named
+         for the field rather than for either screen, because the wording has to stay identical:
+         two different labels for the same control would read as two different controls. -->
+    <string name="recorded_at_pick_date">Change the date</string>
+    <string name="recorded_at_pick_time">Change the time</string>
+
+    <!-- The searchable picker, shared by symptoms and breed. It offers what is already known and
+         accepts what is not: a closed list the owner cannot add to would push them into the note
+         field, where nothing can ever be counted (ADR-0010). -->
+    <string name="picker_search_label">Search</string>
+    <string name="picker_no_matches">Nothing matches that.</string>
+    <string name="picker_add_symptom">Add “%1$s” as a symptom</string>
+    <string name="picker_use_breed">Use “%1$s”</string>
 
     <!-- Home -->
     <string name="home_empty_title">No bunnies yet</string>
     <string name="home_empty_body">Add your first bunny to start keeping records.</string>
-    <string name="home_observations_stub">Recent observations arrive in the next checkpoint.</string>
     <string name="home_all_bunnies_stub">Tap a bunny to open it.</string>
     <string name="home_last_weight_label">Last weighing</string>
     <string name="home_last_weight_value">%1$s on %2$s</string>
-    <!-- A statement about the record, never about the bunny: silence means nobody looked (ADR-0001). -->
+    <string name="home_last_observation_label">Last observation</string>
+    <!-- Two statements about the record, never about the bunny: silence means nobody looked,
+         not that all was well (ADR-0001). -->
     <string name="home_no_weighings">None recorded yet</string>
+    <string name="home_no_observations">None recorded yet</string>
 
     <!-- Weight -->
     <string name="weight_pick_a_bunny">Weight is recorded per bunny. Choose a bunny from the switcher to see its history.</string>
@@ -83,8 +101,6 @@
     <string name="weight_grams_required">Enter the weight in grams.</string>
     <string name="weight_grams_as_kilograms">That is %1$s.</string>
     <string name="weight_recorded_at_label">When the bunny was on the scale</string>
-    <string name="weight_pick_date">Change the date</string>
-    <string name="weight_pick_time">Change the time</string>
     <string name="weight_backdating_help">Defaults to now. Weigh in the morning and log it in the evening if that suits — the time you set is the one that counts.</string>
     <string name="weight_future_rejected">That is in the future. A weighing that has not happened yet cannot be recorded.</string>
 
@@ -156,15 +172,131 @@
 
     <!-- Debug builds only, and never shown in a release build. -->
     <string name="settings_sample_data">Sample data</string>
-    <string name="settings_sample_data_help">Debug builds only. Adds two bunnies and a year of uneven, back-dated weighings, so the chart and the trend flag can be reviewed against real history.</string>
+    <string name="settings_sample_data_help">Debug builds only. Adds two bonded bunnies, a year of uneven, back-dated weighings and a handful of observations, so the chart, the trend flag and the timeline can be reviewed against real history.</string>
     <string name="settings_sample_data_action">Add the sample data</string>
     <string name="settings_sample_data_seeded">Sample data added.</string>
     <string name="settings_sample_data_present">The sample bunnies are already here.</string>
 
-    <!-- Observations -->
-    <string name="observations_stub">The observation timeline arrives in Phase 2.</string>
-    <string name="observations_all_stub">The combined timeline across every bunny arrives in Phase 2.</string>
-    <string name="log_observation_stub">Logging an observation arrives in Phase 2.</string>
+    <!-- Observations: the vocabularies (ADR-0010). Every one of them has a "not checked" that is a
+         recorded fact in its own right — nobody looked — and never a polite word for "normal". -->
+    <string name="observation_not_checked">Not checked</string>
+
+    <string name="droppings_amount_none">None</string>
+    <string name="droppings_amount_few">Few</string>
+    <string name="droppings_amount_normal">Normal</string>
+    <string name="droppings_amount_many">Many</string>
+
+    <string name="droppings_size_small">Small</string>
+    <string name="droppings_size_normal">Normal</string>
+    <string name="droppings_size_large">Large</string>
+
+    <string name="droppings_form_round">Round</string>
+    <string name="droppings_form_misshapen">Misshapen</string>
+    <string name="droppings_form_strung_together">Strung together</string>
+    <string name="droppings_form_soft">Soft</string>
+    <string name="droppings_form_diarrhoea">Diarrhoea</string>
+
+    <string name="cecotropes_eaten">Eaten</string>
+    <string name="cecotropes_left_uneaten">Left uneaten</string>
+
+    <string name="appetite_none">Not eating</string>
+    <string name="appetite_reduced">Eating less</string>
+    <string name="appetite_normal">Normal</string>
+    <string name="appetite_eager">Eager</string>
+
+    <string name="mood_withdrawn">Withdrawn</string>
+    <string name="mood_subdued">Subdued</string>
+    <string name="mood_normal">Normal</string>
+    <string name="mood_bright">Bright</string>
+
+    <string name="activity_lethargic">Lethargic</string>
+    <string name="activity_quiet">Quiet</string>
+    <string name="activity_normal">Normal</string>
+    <string name="activity_active">Active</string>
+
+    <string name="water_none">Not drinking</string>
+    <string name="water_less">Drinking less</string>
+    <string name="water_normal">Normal</string>
+    <string name="water_more">Drinking more</string>
+
+    <!-- The built-in symptoms (ADR-0010). Each is something an owner can SEE, worded as the thing
+         observed and never as the condition it might mean — "head tilt", not "E. cuniculi". -->
+    <string name="symptom_head_tilt">Head tilt</string>
+    <string name="symptom_drooling_or_wet_chin">Drooling or wet chin</string>
+    <string name="symptom_sneezing_or_nasal_discharge">Sneezing or runny nose</string>
+    <string name="symptom_eye_discharge">Runny or crusty eyes</string>
+    <string name="symptom_dirty_bottom">Dirty bottom</string>
+    <!-- "Loud" is deliberate: rabbits purr by grinding their teeth softly, and a symptom that
+         catches contentment is worse than no symptom at all (ADR-0010). -->
+    <string name="symptom_loud_teeth_grinding">Loud teeth grinding</string>
+    <string name="symptom_hunched_posture">Sitting hunched</string>
+    <string name="symptom_laboured_breathing">Laboured breathing</string>
+    <string name="symptom_not_drinking">Not drinking</string>
+    <string name="symptom_limping">Limping</string>
+    <string name="symptom_ear_scratching">Scratching at ears</string>
+    <string name="symptom_blood_in_urine">Blood in urine</string>
+    <string name="symptom_hiding_more_than_usual">Hiding more than usual</string>
+
+    <!-- Recording an observation -->
+    <string name="observation_add_title">Record an observation</string>
+    <string name="observation_edit_title">Edit an observation</string>
+    <string name="observation_recorded_at_label">When you looked</string>
+    <string name="observation_backdating_help">Defaults to now. Checked the tray this morning and are writing it up tonight? Set the time you looked — that is the one that counts.</string>
+    <string name="observation_future_rejected">That is in the future. An observation that has not happened yet cannot be recorded.</string>
+
+    <!-- Who the observation covers (ADR-0008). Bonded bunnies share a tray, so the tray facts below
+         are recorded once for all of them. -->
+    <string name="observation_participants_label">Who this covers</string>
+    <string name="observation_participants_help">Bunnies who share a litter tray are ticked already. Untick anyone this does not describe.</string>
+    <string name="observation_participants_required">Choose at least one bunny.</string>
+    <string name="observation_excluded_archived">%1$s is archived, so this cannot cover them.</string>
+
+    <string name="observation_tray_heading">The litter tray</string>
+    <string name="observation_tray_shared_help">Recorded once, for everyone this covers — a shared tray cannot be told apart per bunny.</string>
+    <string name="observation_droppings_amount_label">How many droppings</string>
+    <string name="observation_droppings_size_label">Size</string>
+    <string name="observation_droppings_form_label">Shape</string>
+    <string name="observation_cecotropes_label">Cecotropes</string>
+
+    <string name="observation_individual_heading">This bunny</string>
+    <string name="observation_individual_heading_named">%1$s</string>
+    <string name="observation_appetite_label">Appetite</string>
+    <string name="observation_mood_label">Mood</string>
+    <string name="observation_activity_label">Activity</string>
+    <string name="observation_water_label">Water</string>
+
+    <string name="observation_symptoms_label">Symptoms</string>
+    <string name="observation_symptoms_none_selected">None picked</string>
+    <string name="observation_symptoms_pick">Pick symptoms</string>
+    <!-- "Looked, none seen" is the one state the symptom list cannot express by being empty, and it
+         is the more useful of the two records (ADR-0010, ADR-0001). -->
+    <string name="observation_symptoms_checked">I looked, and saw none of these</string>
+    <string name="observation_symptoms_checked_help">Worth ticking. An empty list on its own only means nobody checked.</string>
+
+    <string name="observation_note_label">Anything else</string>
+
+    <!-- The timeline -->
+    <string name="observations_empty">No observations recorded yet. Anything you notice — the tray, the mood, a symptom — belongs here.</string>
+    <string name="observation_observed_together">Observed together with %1$s</string>
+    <!-- The lone survivor: the bunny it was shared with has been deleted, or is archived and out of
+         this scope. It still reads as shared, and deliberately names nobody — ADR-0008 wants no
+         tombstone of the bunny who is gone. -->
+    <string name="observation_observed_together_alone">Observed together</string>
+    <string name="observation_no_symptoms_seen">Looked for symptoms, saw none</string>
+    <string name="observation_delete_title">Delete this observation?</string>
+    <string name="observation_delete_body">The observation recorded on %1$s is removed.</string>
+    <string name="observation_delete_body_shared">This observation covered %1$s. Deleting it removes it for all of them.</string>
+    <string name="observation_which_bunny">Which bunny is this about?</string>
+
+    <!-- The healthy-day shortcut: everything normal, recorded in one tap, with an Undo rather than
+         a confirmation — it is one row, and asking first would defeat the point of the shortcut. -->
+    <string name="healthy_day_action">Log a healthy day</string>
+    <string name="healthy_day_help">Records the ordinary day: droppings normal, eating and drinking as usual, bright and active.</string>
+    <string name="healthy_day_which_bunny">Whose day was it?</string>
+    <string name="healthy_day_logged">Healthy day recorded for %1$s.</string>
+    <!-- A flagged bunny is still offered — the owner is the one who looked, and the flag is about
+         the numbers, not about today (ADR-0001, ADR-0008). It is named, not withheld. -->
+    <string name="healthy_day_name_flagged">%1$s (weight flag)</string>
 
     <!-- Care &amp; Meds -->
     <string name="care_stub">Care reminders arrive in version 1.1, medications in 1.2.</string>
@@ -211,6 +343,9 @@
     <string name="neutered_no">No</string>
     <string name="neutered_unknown">Unknown</string>
     <string name="bunny_breed_label">Breed</string>
+    <string name="bunny_breed_none">Not set</string>
+    <string name="bunny_breed_choose">Choose a breed</string>
+    <string name="bunny_breed_clear">Clear the breed</string>
     <string name="bunny_colour_label">Colour and markings</string>
     <string name="bunny_lives_with_label">Lives with</string>
     <string name="bunny_lives_with_alone">Lives alone</string>
@@ -270,4 +405,67 @@
         <item quantity="one">%d shared entry stays, for the other bunnies it covered.</item>
         <item quantity="other">%d shared entries stay, for the other bunnies they covered.</item>
     </plurals>
+
+    <!-- Breed suggestions, not a closed vocabulary: the picker accepts anything typed, and what
+         owners have already entered is offered alongside these. Breed is descriptive here — it
+         feeds nothing, flags nothing, and is stored as free text (which is why it is an array of
+         labels and not an enum with converters).
+
+         "Mixed / unknown" is first on purpose rather than alphabetically: most pet rabbits are
+         rescues of no stated breed, so the commonest true answer should be the first one offered
+         instead of the one reached by scrolling past fifty pedigrees. -->
+    <string-array name="built_in_breeds">
+        <item>Mixed / unknown</item>
+        <item>American</item>
+        <item>American Fuzzy Lop</item>
+        <item>American Sable</item>
+        <item>Angora (English)</item>
+        <item>Angora (French)</item>
+        <item>Angora (Giant)</item>
+        <item>Angora (Satin)</item>
+        <item>Belgian Hare</item>
+        <item>Beveren</item>
+        <item>Blanc de Hotot</item>
+        <item>Britannia Petite</item>
+        <item>Californian</item>
+        <item>Champagne d\'Argent</item>
+        <item>Checkered Giant</item>
+        <item>Chinchilla (American)</item>
+        <item>Chinchilla (Giant)</item>
+        <item>Chinchilla (Standard)</item>
+        <item>Cinnamon</item>
+        <item>Continental Giant</item>
+        <item>Crème d\'Argent</item>
+        <item>Dutch</item>
+        <item>Dwarf Hotot</item>
+        <item>Dwarf Lop</item>
+        <item>English Lop</item>
+        <item>English Spot</item>
+        <item>Flemish Giant</item>
+        <item>Florida White</item>
+        <item>French Lop</item>
+        <item>Harlequin</item>
+        <item>Havana</item>
+        <item>Himalayan</item>
+        <item>Holland Lop</item>
+        <item>Jersey Wooly</item>
+        <item>Lilac</item>
+        <item>Lionhead</item>
+        <item>Mini Lop</item>
+        <item>Mini Rex</item>
+        <item>Mini Satin</item>
+        <item>Netherland Dwarf</item>
+        <item>New Zealand</item>
+        <item>Palomino</item>
+        <item>Polish</item>
+        <item>Rex</item>
+        <item>Rhinelander</item>
+        <item>Satin</item>
+        <item>Silver</item>
+        <item>Silver Fox</item>
+        <item>Silver Marten</item>
+        <item>Tan</item>
+        <item>Thrianta</item>
+        <item>Velveteen Lop</item>
+    </string-array>
 </resources>

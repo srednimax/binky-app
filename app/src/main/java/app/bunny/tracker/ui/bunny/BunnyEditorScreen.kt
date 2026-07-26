@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -50,6 +51,8 @@ import app.bunny.tracker.R
 import app.bunny.tracker.data.NeuterStatus
 import app.bunny.tracker.data.Sex
 import app.bunny.tracker.ui.appViewModelExtras
+import app.bunny.tracker.ui.common.PickerOption
+import app.bunny.tracker.ui.common.SearchablePickerDialog
 import java.io.File
 import java.time.Instant
 import java.time.LocalDate
@@ -184,13 +187,13 @@ fun BunnyEditorScreen(
                 onSelect = viewModel::onNeuteredChanged,
             )
 
-            OutlinedTextField(
-                value = state.breed,
-                onValueChange = viewModel::onBreedChanged,
-                label = { Text(stringResource(R.string.bunny_breed_label)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+            BreedField(
+                breed = state.breed,
+                suggestions = state.breedSuggestions,
+                onBreedChanged = viewModel::onBreedChanged,
             )
+            // Colour is the obvious second user of the picker and is deliberately **not** wired to
+            // it here: it is free description ("grey with a white blaze"), not a vocabulary.
             OutlinedTextField(
                 value = state.colour,
                 onValueChange = viewModel::onColourChanged,
@@ -311,6 +314,70 @@ private fun BirthDateField(
         ) {
             DatePicker(state = pickerState)
         }
+    }
+}
+
+/**
+ * Breed — the same searchable picker the symptoms use, single-select and **accepting an unmatched
+ * entry as typed**.
+ *
+ * The list is the built-in breeds from `strings.xml` ∪ every breed any bunny already carries,
+ * archived ones included, with "Mixed / unknown" first because that is most pet rabbits. Typing
+ * something the list does not have is not refused: it is stored literally, and it is then in the
+ * list for the next bunny — which is the whole of "add your own" for a field that earns no table.
+ *
+ * Two costs accepted in exchange for no schema bump and no `BreedEntity` (ADR-0010's test is whether
+ * a "how often?" count needs a stable id, and nothing counts breeds): a breed drops out of the
+ * suggestions once no bunny carries it, and a built-in name is stored as the literal text picked, so
+ * it does not follow a language switch (ADR-0013).
+ */
+@Composable
+private fun BreedField(
+    breed: String,
+    suggestions: List<String>,
+    onBreedChanged: (String) -> Unit,
+) {
+    var picking by rememberSaveable { mutableStateOf(false) }
+    val builtIn = stringArrayResource(R.array.built_in_breeds)
+
+    // Built-ins first, in their declared order — "Mixed / unknown" leads it — then anything an owner
+    // has typed that is not already there. Deduped case-insensitively so "Lionhead" typed once does
+    // not shadow the built-in.
+    val options =
+        remember(builtIn, suggestions) {
+            val seen = builtIn.map { it.lowercase() }.toMutableSet()
+            (
+                builtIn.toList() +
+                    suggestions.filter { seen.add(it.lowercase()) }.sortedBy { it.lowercase() }
+            ).map { PickerOption(id = it, label = it) }
+        }
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(text = stringResource(R.string.bunny_breed_label), style = MaterialTheme.typography.titleSmall)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = breed.ifBlank { stringResource(R.string.bunny_breed_none) },
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = { picking = true }) { Text(stringResource(R.string.bunny_breed_choose)) }
+            if (breed.isNotBlank()) {
+                TextButton(onClick = { onBreedChanged("") }) { Text(stringResource(R.string.bunny_breed_clear)) }
+            }
+        }
+    }
+
+    if (picking) {
+        SearchablePickerDialog(
+            title = stringResource(R.string.bunny_breed_label),
+            options = options,
+            selectedIds = setOfNotNull(options.firstOrNull { it.label.equals(breed, ignoreCase = true) }?.id),
+            multiSelect = false,
+            addLabelRes = R.string.picker_use_breed,
+            onToggle = { onBreedChanged(it.label) },
+            onAddTyped = onBreedChanged,
+            onDismiss = { picking = false },
+        )
     }
 }
 

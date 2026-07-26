@@ -30,11 +30,21 @@ import kotlinx.serialization.Serializable
 @Serializable data object More : NavKey
 
 /**
- * The global "+" observation entry (ADR-0015). The route and key exist from Phase 1, but **no FAB
- * renders** until observations exist in Phase 2: deciding the structure and rendering it are
- * different claims, and the app's primary write action is the worst one to teach the owner is inert.
+ * The global "+" observation entry (ADR-0015), and the edit path behind a timeline row.
+ *
+ * The route and key were settled in Phase 1 and deliberately left inert — deciding the structure and
+ * rendering it are different claims, and the app's primary write action is the worst one to teach the
+ * owner is dead. Phase 2f renders the FAB and gives the key its arguments.
+ *
+ * [bunnyId] is who the observation is about: the subject a new one pre-selects a fluffle from, or the
+ * owner of the row an edit is changing the individual facts of. `null` [observationId] adds,
+ * mirroring [BunnyEditor] and [WeightEntry].
  */
-@Serializable data object LogObservation : NavKey
+@Serializable
+data class LogObservation(
+    val bunnyId: String,
+    val observationId: String? = null,
+) : NavKey
 
 /** Add or edit a bunny. `null` adds. */
 @Serializable

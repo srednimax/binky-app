@@ -17,9 +17,6 @@ import kotlin.random.Random
  * It exists because 2d's chart review needs a year of uneven, back-dated history and hand-typing
  * that through a date picker is the toil that gets skimmed. The fixture is **deterministic** — a
  * fixed seed and fixed offsets — because 2d and 2f are meant to be reviewing the same chart.
- *
- * Checkpoint 2f adds the observation half: a shared observation across these two bunnies, and
- * symptom links.
  */
 private const val SAMPLE_SEED = 20260726L
 
@@ -31,6 +28,14 @@ private const val SAMPLE_HOUSEMATE = "Nugget"
 private val WEIGHING_TIME: LocalTime = LocalTime.of(8, 30)
 
 /**
+ * Observations land in the evening, well clear of [WEIGHING_TIME].
+ *
+ * Not cosmetic: it keeps a seeded observation and a seeded weighing on the same day from sharing a
+ * minute, so anything that reads "the latest record on this day" cannot pass by coincidence.
+ */
+private val OBSERVATION_TIME: LocalTime = LocalTime.of(18, 0)
+
+/**
  * Seeds the fixture, or returns false if it is already there.
  *
  * Not idempotent by merging — it simply declines to run twice, because "duplicates allowed" is a
@@ -40,6 +45,8 @@ suspend fun seedSampleData(
     bunnies: BunnyRepository,
     fluffles: FluffleRepository,
     weights: WeightRepository,
+    observations: ObservationRepository,
+    symptoms: SymptomRepository,
     now: Instant = Instant.now(),
 ): Boolean {
     val existing = bunnies.activeBunnies.first()
@@ -47,7 +54,7 @@ suspend fun seedSampleData(
 
     val bijou = bunnies.add(BunnyEntity(name = SAMPLE_BUNNY, sex = Sex.FEMALE, neutered = NeuterStatus.YES))
     val nugget = bunnies.add(BunnyEntity(name = SAMPLE_HOUSEMATE, sex = Sex.MALE, neutered = NeuterStatus.YES))
-    // A bonded pair, so 2f's shared observation has somewhere to land (ADR-0008).
+    // A bonded pair, so the shared observation below has somewhere to land (ADR-0008).
     fluffles.livesWith(bijou, nugget)
 
     for ((daysAgo, grams) in bijouSeries()) {
@@ -57,7 +64,81 @@ suspend fun seedSampleData(
     for ((daysAgo, grams) in listOf(28L to 1780, 21L to 1795, 14L to 1785, 7L to 1790, 1L to 1788)) {
         weights.add(WeightEntity(bunnyId = nugget, grams = grams, recordedAt = now.daysAgo(daysAgo)))
     }
+
+    seedObservations(observations, symptoms, bijou, nugget, now)
     return true
+}
+
+/**
+ * The observation half: three entries carrying the cases the timeline is reviewed against.
+ *
+ * - **A shared observation with individual facts that differ** — which is the whole tray/individual
+ *   split on one card: the droppings appear once, and only Bijou is subdued and hunched. Reviewing
+ *   the collapse needs a group whose participants genuinely disagree, or a bug that copied one
+ *   bunny's mood onto the other would look correct.
+ * - **A healthy day**, written through exactly the shortcut's own field set, so what the button
+ *   claims and what the timeline shows can be compared without tapping it.
+ * - **A solo observation recording "looked, none seen"** — `symptomsChecked` with no links, the one
+ *   state the join table cannot express (ADR-0010), and the only way to see that it renders as an
+ *   affirmative rather than as a blank.
+ */
+private suspend fun seedObservations(
+    observations: ObservationRepository,
+    symptoms: SymptomRepository,
+    bijou: String,
+    nugget: String,
+    now: Instant,
+) {
+    // A built-in's id is minted by the seed callback, so it can only be looked up by key here.
+    val symptomIdsByKey = symptoms.allNow().filter { it.key != null }.associate { it.key!! to it.id }
+
+    val shared =
+        observations.add(
+            participants = listOf(bijou, nugget),
+            recordedAt = now.daysAgo(1, OBSERVATION_TIME),
+            facts =
+                ObservationFacts(
+                    // One tray, one real-world fact — and a worrying one, matching the weight drop.
+                    tray =
+                        TrayFacts(
+                            droppingsAmount = DroppingsAmount.FEW,
+                            droppingsSize = DroppingsSize.SMALL,
+                            droppingsForm = DroppingsForm.ROUND,
+                            cecotropes = Cecotropes.LEFT_UNEATEN,
+                        ),
+                ),
+        )
+    // Individual facts for Bijou alone, through the path that touches exactly one row.
+    observations.updateIndividual(
+        observationId = shared.first(),
+        individual =
+            IndividualFacts(
+                appetite = Appetite.REDUCED,
+                mood = Mood.SUBDUED,
+                activity = ActivityLevel.QUIET,
+                water = WaterIntake.LESS,
+                note = "Sitting hunched in the corner, not interested in greens.",
+                symptomIds = setOfNotNull(symptomIdsByKey["hunched_posture"], symptomIdsByKey["loud_teeth_grinding"]),
+            ),
+    )
+
+    observations.add(
+        participants = listOf(bijou, nugget),
+        recordedAt = now.daysAgo(3, OBSERVATION_TIME),
+        facts = healthyDayFacts(),
+    )
+
+    observations.add(
+        participants = listOf(nugget),
+        recordedAt = now.daysAgo(5, OBSERVATION_TIME),
+        facts =
+            ObservationFacts(
+                tray = TrayFacts(droppingsAmount = DroppingsAmount.NORMAL),
+                // Looked, none seen — affirmative, and distinguishable in the database from never
+                // having opened the picker.
+                individual = IndividualFacts(mood = Mood.BRIGHT, symptomsChecked = true),
+            ),
+    )
 }
 
 /**
@@ -98,9 +179,18 @@ private fun bijouSeries(): List<Pair<Long, Int>> {
     return series
 }
 
-private fun Instant.daysAgo(days: Long): Instant =
+/**
+ * `n` days back, stamped at a fixed clock time in the phone's own zone.
+ *
+ * Kotlin note: `at` is a *defaulted* parameter, so every weighing call site stays `daysAgo(21)` and
+ * only the observations pass a second argument — no overload, and no call site to keep in step.
+ */
+private fun Instant.daysAgo(
+    days: Long,
+    at: LocalTime = WEIGHING_TIME,
+): Instant =
     atZone(ZoneId.systemDefault())
         .minusDays(days)
-        .with(WEIGHING_TIME)
+        .with(at)
         .toInstant()
         .truncatedTo(ChronoUnit.MINUTES)

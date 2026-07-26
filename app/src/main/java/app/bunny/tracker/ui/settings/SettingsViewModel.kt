@@ -101,6 +101,8 @@ class SettingsViewModel(
                     bunnies = container.bunnyRepository,
                     fluffles = container.fluffleRepository,
                     weights = container.weightRepository,
+                    observations = container.observationRepository,
+                    symptoms = container.symptomRepository,
                 )
             sampleData.value = if (seeded) SampleDataOutcome.SEEDED else SampleDataOutcome.ALREADY_PRESENT
         }

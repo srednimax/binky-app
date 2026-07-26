@@ -367,7 +367,7 @@ Phase 3 the phone's database is disposable, so weights worth keeping are written
      by emptying the table by hand; this is Room's own destructive migration, where `onCreate` provably never
      fired and the picker came back full anyway. Relaunching left the count at 13 and added no second
      preserved copy.
-6. **2f — Observation UI, the "+", and the healthy day.**
+6. **2f — Observation UI, the "+", and the healthy day.** ✅
    - The global "+" FAB **finally renders** — Phase 1 settled its route and deliberately left it inert. On Home
      and Observations, not on More.
    - The full form: every field optional, droppings amount landing on **not checked**, participants
@@ -413,6 +413,38 @@ Phase 3 the phone's database is disposable, so weights worth keeping are written
      edit or delete (ADR-0004).
    - Observations stops being a stub, and Home's card completes its growth into ADR-0015's vitals card: last
      weight, last observation, the flag.
+   - **Gate met:** `spotlessApply`, `assembleDebug`, `test` (97 unit tests, 18 new) and `lint` pass, lint with
+     zero issues. No instrumented tests are added here, so `connectedAndroidTest` is not a gate for 2f; 2e's
+     65 still stand, the repository changes being additive. The three new JVM suites are `buildTimeline`'s
+     collapse (a shared observation appearing **once** with both bunnies named, tray facts once and moods
+     apart, sharedness surviving down to a lone participant, day grouping preserving the query's order),
+     `preSelectParticipants` (the subject always a candidate — including when the subject is *itself*
+     archived, since the read-only scope is what stops that write, not this function — and an archived
+     housemate landing in `excluded` with a reason rather than silently missing), and the built-in symptom
+     keys against their labels in both directions.
+   - Three decisions worth naming, all three found by driving the app rather than by a test. First, **the
+     form writes its individual facts through `updateIndividual` and passes `add` the tray facts only.**
+     2e's `add` deliberately spreads individual facts across every participant, which is right for the
+     healthy day and wrong for the form: the form only ever showed the *subject's* individual fields, so a
+     shared observation was recording a mood for a housemate the owner had said nothing about. It rendered
+     perfectly — two bunnies, one mood, no error anywhere — which is exactly why it had to be caught on the
+     phone. Second, **the shell owns the snackbar host, not the screen.** With the "+" FAB in the shell
+     `Scaffold` and the host in the screen's own `Box`, the two laid out in ignorance of each other and the
+     FAB covered the healthy day's **Undo** — visible, unpressable, and the one control ADR-0008 puts behind
+     that shortcut. A Scaffold lifts its FAB clear of its own snackbar, which only helps if it owns both.
+     Third, **a card names the *other* participants, not everyone.** "Observed together with Bijou" on
+     Bijou's own timeline names her back to herself; and when nobody else resolves — the housemate deleted,
+     or archived and out of scope — it reads a plain, un-named **"Observed together"**, because ADR-0008
+     wants the marker without a tombstone of the bunny who is gone.
+   - Exercised on the Xiaomi against the sample fixture: a future-dated observation refused with its reason
+     while the form stayed put; an untouched tray recording nothing at all and the timeline printing no line
+     for it, rather than "not checked" on every row; the healthy day's snackbar reading *"Healthy day
+     recorded for Bijou (weight flag) & Nugget."* with an Undo that removed the whole entry; under "All
+     bunnies" the "+" asking which bunny and the seeded shared observation appearing once with the tray read
+     once and only Bijou hunched. The pair that has to differ, differs: **correcting** the participants down
+     to one left a solo entry reading just "Bijou", while **deleting** a participating bunny left the
+     survivor reading "Observed together". The breed picker took an unmatched *"Harlequin lop"* as typed. The
+     archived scope showed the banner, the timeline, and no "+", no healthy day and no per-row edit or delete.
 
 `spotlessApply`, `assembleDebug` and `test` at every checkpoint; `connectedAndroidTest` at the end of 2a and
 2e, the two that add instrumented tests; `lint` at the gate.
