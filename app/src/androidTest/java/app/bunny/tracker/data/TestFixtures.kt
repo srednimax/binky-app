@@ -8,13 +8,19 @@ import app.bunny.tracker.media.MediaFiles
 import java.io.File
 import java.util.UUID
 
-/** An in-memory database, so nothing leaks between tests and nothing touches the device's files. */
+/**
+ * An in-memory database, so nothing leaks between tests and nothing touches the device's files.
+ *
+ * Carries the symptom seed callback because the real builder does (ADR-0010): a fixture that skipped
+ * it would let a test pass against an empty vocabulary the app never actually has.
+ */
 fun inMemoryDatabase(): BunnyDatabase =
     Room
         .inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
             BunnyDatabase::class.java,
-        ).build()
+        ).addCallback(builtInSymptomSeedCallback())
+        .build()
 
 /** Real DataStore, on a throwaway file — DataStore allows only one instance per path. */
 fun temporaryPreferences(): AppPreferences {
