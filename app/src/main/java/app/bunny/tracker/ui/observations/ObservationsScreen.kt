@@ -28,7 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -146,7 +146,7 @@ private fun HealthyDaySnackbar(
     onUndo: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val resources = LocalContext.current.resources
+    val resources = LocalResources.current
     val message =
         receipt?.let {
             // The flag is named beside the bunny it belongs to rather than in a trailing clause, so
@@ -247,7 +247,7 @@ private fun EntryCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val resources = LocalContext.current.resources
+    val resources = LocalResources.current
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -391,7 +391,7 @@ private fun DeleteObservationDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val resources = LocalContext.current.resources
+    val resources = LocalResources.current
     val names = joinNames(resources, entry.participants.map { it.name })
     AlertDialog(
         onDismissRequest = onDismiss,

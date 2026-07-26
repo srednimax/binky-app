@@ -4,7 +4,7 @@ import android.content.res.Resources
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import app.bunny.tracker.R
@@ -53,7 +53,7 @@ fun dateLabel(date: LocalDate): String {
 @Composable
 fun housematesLabel(housemates: List<Housemate>): String? {
     if (housemates.isEmpty()) return null
-    val resources = LocalContext.current.resources
+    val resources = LocalResources.current
     val names =
         housemates.map { housemate ->
             if (housemate.archived) {
