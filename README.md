@@ -30,6 +30,17 @@ Free, no ads, and no account. Everything is stored on the phone — there is no 
 uploaded anywhere. Backups are exported to storage you choose, including your own cloud drive if you want
 one. Android only.
 
+**Licence**
+
+[PolyForm Noncommercial 1.0.0](LICENSE). Use it, change it, share it, build it for your own rabbits —
+for any noncommercial purpose. Selling it, or using it to run a business, is not permitted. That is not
+an OSI open source licence, and it is a deliberate choice: the app is free and ad-free, and the point is
+that it stays that way for whoever ends up with it.
+
+Sending a patch? By opening a pull request you agree that your contribution is licensed to the project
+owner under the [MIT licence](https://opensource.org/license/mit), so it can be relicensed along with the
+rest of the app. Everything you receive back is still PolyForm Noncommercial.
+
 ---
 
 Building it: [`CLAUDE.md`](CLAUDE.md) · Roadmap: [`docs/PLAN.md`](docs/PLAN.md) ·
