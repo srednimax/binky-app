@@ -657,6 +657,12 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      | Play short description (en) | `Track your rabbit's weight, health and care. Private, offline, no ads.` (70/80) |
      | Play title (pl) | `Binky: Zdrowie Królika` (22/30) |
 
+     The **full descriptions**, in both languages, live in [`docs/store-listing.md`](store-listing.md),
+     which is the paste-ready source for every listing field. They are scoped to **1.0** — weight,
+     observations, photos, backup — and deliberately describe no reminder, medication, vet or document
+     feature, because those ship at 1.1 and 1.2 and Play treats advertising absent features as a
+     listing violation rather than a rounding error.
+
      The **Polish listing needs its own keywords** — `królik`, `waga`, `dzienniczek zdrowia` — not a
      translation of the English ones, because each locale's listing is indexed separately and Polish
      owners search in Polish. English is the default listing language, matching ADR-0013's base language

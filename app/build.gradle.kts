@@ -89,6 +89,19 @@ android {
     }
 
     buildTypes {
+        debug {
+            // The debug build is a *separate app* from the Play one (ADR-0023). Once 1.0 is
+            // installed from Play, a locally-signed build sharing its applicationId can neither
+            // sit beside it nor replace it — Android refuses on the signature mismatch — and the
+            // only way through would be uninstalling the Play build, destroying the real bunny
+            // history it holds. The suffix makes them two installs that ignore each other.
+            //
+            // FileProvider's authority is already `${applicationId}.fileprovider` in the manifest,
+            // so it follows this automatically. The instrumentation package follows too, becoming
+            // app.binky.tracker.debug.test — see CLAUDE.md's Xiaomi fallback commands.
+            applicationIdSuffix = ".debug"
+        }
+
         release {
             // R8 stays off deliberately, not by template default: 1.0 already differs from any
             // tested build in several ways, and a sixth divergence whose failures are release-only,
