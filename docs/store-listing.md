@@ -29,6 +29,7 @@ Polish second-person forms are gendered, so the copy avoids them — `co został
 | Field | Value |
 | --- | --- |
 | Privacy policy URL | `https://srednimax.github.io/binky-app/privacy-policy.html` |
+| App icon (512²) | [`art/play-icon-512.png`](../art/play-icon-512.png) — placeholder, see [`art/README.md`](../art/README.md) |
 | App category | Lifestyle |
 | Contact email | the per-app support address, set in Store settings — not the account-level developer email |
 
@@ -162,7 +163,11 @@ Binky nie powie Ci, czy Twój królik jest chory, i nigdy nie wnioskuje problemu
 
 - **Screenshots** are placeholders until 3g. Two of whatever exists is what 3a calls for; real 1.0
   screenshots are taken once the app has stopped changing.
-- **Feature graphic** (1024×500) is still to be made, alongside the icon.
+- **Feature graphic** (1024×500) is still to be made.
+- **The icon is a placeholder and blocks the upload until the app can show a licence notice.** It is
+  Noto Emoji's rabbit under the OFL, which requires the licence text to reach the user; there is no
+  licences screen yet. Either that screen exists before the AAB goes up, or the art is replaced with
+  something original. [`art/README.md`](../art/README.md) has the reasoning.
 - **A roadmap line** naming 1.1 and 1.2 features was deliberately left out. It manages expectations
   for reviewers who might otherwise mark the app down for having no reminders, but it also puts
   unreleased features in indexed listing text. Add it later if reviews ask for it, not before.
