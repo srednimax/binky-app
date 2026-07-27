@@ -758,7 +758,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - There is no test gate here, and nothing in this checkpoint touches app code. The gate is that the build
      is installable from Play on the Xiaomi and that the debug app installs beside it — and discovering both
      now rather than at 3g is the entire reason this is first.
-2. **3b — The shell: AppCompat, and the switcher's mechanism.**
+2. **3b — The shell: AppCompat, and the switcher's mechanism.** ✅
    - `androidx.appcompat` enters `libs.versions.toml`; `MainActivity` becomes an `AppCompatActivity`;
      `Theme.Binky` is reparented from `android:Theme.Material.Light.NoActionBar` to
      **`Theme.AppCompat.DayNight.NoActionBar`**. Not a Material Components theme: `AppCompatActivity` only
@@ -776,6 +776,24 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - No new tests. The gate is `spotlessApply`, `assembleDebug`, `test`, and **every screen looked at on the
      Xiaomi**: edge-to-edge insets, the status bar, dialogs, the Photo Picker and the camera intent, all of
      which now compose under a theme they have never seen.
+   - **Gate met:** `spotlessApply`, `assembleDebug`, `test` and `lint` pass with no source change beyond the
+     four files above. **The information the timebox bought is that it drops straight in** — appcompat 1.7.1,
+     one base class, one theme parent, two manifest entries, and no Compose or Nav3 code touched at all. The
+     merged manifest carries `localeConfig="@xml/locales_config"`, the holder service and `autoStoreLocales`;
+     the platform accepts and reads back a per-app locale for `app.binky.tracker.debug`.
+   - Exercised on the Xiaomi: all five destinations, Settings, the bunny switcher's dropdown, the Edit form,
+     and the delete confirmation — insets, status bar and the dialog scrim all unchanged. Both media paths
+     survive the base-class change with their results intact: the Photo Picker returns a Uri that lands as an
+     avatar, and the camera intent's `FileProvider` round-trip still writes, reads back and downsamples.
+   - **`DayNight` is a real behaviour change, not just a rename.** The old parent was `Material.Light`, so the
+     window Android draws — background, and the frame before Compose composes — was light even while
+     `BinkyTheme` had already followed the system into dark. They now agree; verified by flipping the phone
+     both ways.
+   - **What the phone could not prove:** it runs Android 16, so this exercised the *platform* per-app locale
+     path, not AppCompat's pre-13 backport — which is the half `minSdk` 26 exists to serve and the reason the
+     dependency was taken at all. The shell cost is now known and paid; the backport's own behaviour stays
+     unverified until 3f puts a second language behind the switcher, and wants an API 30-ish emulator or
+     device then rather than the Xiaomi.
 3. **3c — Photos: the gallery, and the last planned wipe.** Schema → **4**.
    - `PhotoEntity` — `id`, `bunnyId` FK `CASCADE` indexed, `path` relative (`photos/<uuid>.jpg`), nullable
      `caption`, nullable `capturedAt`, `createdAt`. Indexed on `(bunnyId, createdAt)`.

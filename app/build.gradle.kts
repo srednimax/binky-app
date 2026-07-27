@@ -185,6 +185,13 @@ dependencies {
     androidTestImplementation(composeBom)
 
     // Core Android dependencies
+    //
+    // AppCompat is here for exactly one thing: the per-app language backport below Android 13
+    // (ADR-0013). None of its widgets are used — Compose M3 draws every pixel — but the backport is
+    // applied through AppCompatDelegate, which only exists inside an AppCompatActivity, which in
+    // turn only starts under an AppCompat-descended theme. That chain is why this costs a
+    // dependency, the activity's base class and the root theme rather than a Settings row.
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
