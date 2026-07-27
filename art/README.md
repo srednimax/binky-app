@@ -4,6 +4,15 @@ Source art for the launcher icon and the Play listing, plus the licence it carri
 in `app/src/main/res` that draws a rabbit is **generated from here** — edit the source and
 regenerate, don't hand-edit the path data in the `VectorDrawable`s.
 
+| Asset | Source | State |
+| --- | --- | --- |
+| `play-icon-512.png`, `mipmap-*`, `drawable/ic_launcher_*` | `noto-emoji-rabbit-1f407.svg` | placeholder, **blocks the upload** — see below |
+| `play-feature-graphic.png` (1024×500) | `make-feature-graphic.py` | usable; original art, unblocked |
+| `play-screenshot-{1-home,2-weight}.png` (1526×2713) | device capture + `pad-screenshot.py` | placeholder until 3g |
+
+Both scripts are committed, unlike the icon's two, because they are the ones that will be re-run:
+the feature graphic when the identity changes, and the padding when 3g retakes the screenshots.
+
 ## What the icon is
 
 `noto-emoji-rabbit-1f407.svg` — the rabbit (U+1F407) from Google's [Noto Emoji]
@@ -31,6 +40,35 @@ modification and redistribution, including as an application's identity. Two con
 > **Open, and blocking the Play upload:** the app has no licences screen yet, so the notice does
 > not currently reach anyone. That has to exist before this icon ships, or be sidestepped by
 > replacing the art with something original.
+
+## The feature graphic, and why it is not blocked
+
+`play-feature-graphic.png` is built by `make-feature-graphic.py` from **ellipses defined in that
+file** — not traced from Noto Emoji like the icon is. That is the whole point: it keeps the one
+asset that was still outstanding clear of the OFL obligation above, so replacing the icon is the
+only thing standing between here and an upload, rather than two things.
+
+The wordmark is *rendered* with Noto Sans, which is a different act from what the icon does. The
+OFL restricts redistributing glyph outlines as art; it explicitly does not restrict documents and
+images produced by rendering text. Tracing the rabbit into a `VectorDrawable` is the former.
+
+It reuses the icon's `#3D7A4F` ground so the two read as one identity, and carries a low-contrast
+weight-trend line with **irregular x spacing** — the same honesty the chart itself is held to.
+
+## Screenshots
+
+Two, from the debug build on the Xiaomi with its sample-data fixture: All-bunnies Home showing the
+trend flag, and the weight chart over 90 days. Placeholders, replaced at 3g once the app has stopped
+changing.
+
+The 90-day range is deliberate. The fixture seeds one 250 g typo among 2.4 kg weighings, on purpose,
+so the chart and trend flag can be reviewed against bad data — and over 1 year it dominates the axis
+and squashes everything else flat. The chart is right to draw it; a store listing is just the wrong
+place to show it.
+
+The device is 1220×2712 (2.22:1), taller than the 9:16 Play documents for phone screenshots, so
+`pad-screenshot.py` centres each on a 9:16 canvas filled with the screenshot's own edge colour. It
+pads rather than crops because cropping a 2.22:1 shot to 9:16 would cut a fifth of the screen off.
 
 ## Regenerating
 
