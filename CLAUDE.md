@@ -106,14 +106,15 @@ refusing, skip the split install entirely — install both APKs plain, then run 
 ```bash
 adb install -r -t app/build/outputs/apk/debug/app-debug.apk
 adb install -r -t app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-adb shell am instrument -w app.binky.tracker.test/androidx.test.runner.AndroidJUnitRunner
+adb shell am instrument -w app.binky.tracker.debug.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 Same APKs, same runner, same tests — it just asks for two ordinary install confirmations instead.
 
-From Phase 3's first checkpoint the debug build takes `applicationIdSuffix = ".debug"` (ADR-0023), so those
-commands change: the instrumentation package becomes **`app.binky.tracker.debug.test`**. Until that lands,
-the form above is the correct one.
+The debug build takes `applicationIdSuffix = ".debug"` (ADR-0023), which is why the instrumentation
+package above is `app.binky.tracker.debug.test` and not `app.binky.tracker.test`. The debug app installs
+alongside the Play one as a separate install labelled **Binky Debug**; the two never replace each other,
+which is the whole point — the Play build holds real bunny history.
 
 Xiaomi also kills background work aggressively; scheduled notifications need battery-optimisation
 exemption and autostart.

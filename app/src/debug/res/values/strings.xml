@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Debug-only override of the launcher label (ADR-0023). With applicationIdSuffix = ".debug" the
+    debug and Play builds are two separate installs that sit on the launcher side by side, so they
+    need to be told apart at a glance — otherwise the one holding real bunny history looks exactly
+    like the throwaway one.
+
+    Resources in src/debug/ override src/main/ for debug builds only; the release build never sees
+    this file. Deliberately not translated: it is a developer-facing marker, and ADR-0013 keeps the
+    brand name out of values-pl anyway.
+-->
+<resources>
+    <string name="app_name">Binky Debug</string>
+</resources>
