@@ -31,6 +31,25 @@ recruiting problem attached. ADR-0011 already says to re-read current Play polic
 the same instruction pointed at a different rule, and it needs checking **now**, because it changes *when to
 register*, not merely how to ship.
 
+Three things about that rule are easy to get wrong, and all three change the plan:
+
+- **The internal track runs no clock.** The prerequisite is satisfied by a **closed** test and by nothing
+  else, so opening an internal track early buys the pipeline proof and zero calendar progress.
+- **The clock cannot be started early anyway.** A closed track means real installs on other people's
+  phones, and ADR-0007 attaches the migration obligation the moment a schema version reaches a device
+  holding real data — an alpha tester included, as this ADR already says. Opening a closed track before the
+  schema settles costs either a hand-written migration on a moving target or a bricked install for every
+  tester the day the next version lands, since ADR-0023 makes a release build throw rather than wipe. The
+  clock therefore starts with the first build that is fit for someone else to keep.
+- **Google assigns nobody.** The twelve are people to recruit — distinct Google accounts that opt in through
+  the closed-track link and stay opted in continuously; tester-swap and paid-tester services are a policy
+  violation that can end the account. Opting out mid-run resets the streak, so the ask is "keep it installed
+  for a fortnight and glance at it", not a daily chore.
+
+What genuinely parallelises, then, is the **recruiting**, which is also the only part with someone else's
+lead time in it. That is what starts at the beginning of Phase 3. **1.0 ships to the internal track**;
+production access is a later decision costing twelve testers and a fortnight rather than any engineering.
+
 Two implementation choices follow from Play being the target, and both are made now because retrofitting
 them later is worse than adopting them early:
 
@@ -45,6 +64,19 @@ entirely; revisit only if open distribution becomes a goal.
 
 ## Consequences
 
-A signed release build and a keystore kept out of git are needed at the **end of Phase 3**, not at the end
-of the roadmap (ADR-0019). The signing key is then permanent — a Play listing cannot change it — so it is
-generated once, backed up off the machine, and never regenerated.
+A signed release build and a keystore kept out of git are needed at the **start of Phase 3**, not at the end
+of the roadmap (ADR-0019) and not at the end of the phase either — the pipeline is proved while the payload
+is still Phase 2's feature set, because every failure it can have is cheaper to meet then.
+
+The artifact is an **Android App Bundle**. Play requires one for new apps, so `bundleRelease` is the release
+command and `assembleRelease` exists only for automated checks — an `.aab` cannot be `adb install`ed, which
+makes the build Play delivers the only one ever installed, and also the only one signed the way a real user
+receives it.
+
+**Play App Signing** is likewise mandatory for new apps, and it changes what "the key is permanent" means.
+Google holds the permanent *app signing* key; what this project generates is an *upload* key, and an upload
+key can be **reset** through the Console if it is lost. Generating it once and backing it up off the machine
+is still right, but it is hygiene rather than a one-shot catastrophe. The consequence that does bite is a
+different one: the Play build carries Google's signature and a local release build carries the upload key's,
+so the two can never replace or sit beside each other under one `applicationId` — which is why ADR-0023's
+`applicationIdSuffix` is the only way the phone holds both.

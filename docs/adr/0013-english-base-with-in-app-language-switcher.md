@@ -13,12 +13,38 @@ own **language switcher**, so the app's language can differ from the phone's. Th
 it needs AppCompat's backport, which is the one dependency accepted purely for this feature.
 
 The switcher **ships** when Polish lands — a switcher with one language in it is pointless. Its
-**mechanism** is built one checkpoint earlier, with English alone in the list, and that is not a
-contradiction: shipping it early is not the goal, finding out what the backport costs is. At `minSdk` 26
-most of the supported range takes that backport rather than the platform API, and if it requires the app's
-single `ComponentActivity` rebuilt as an `AppCompatActivity` with AppCompat theming beneath a pure Compose
-and Material 3 app, then this is not a Settings row — and that is not a thing to discover in the week the
-translation lands.
+**mechanism** is built earlier, with English alone in the list, and that is not a contradiction: shipping it
+early is not the goal, finding out what the backport costs is. At `minSdk` 26 most of the supported range
+takes that backport rather than the platform API, and if it requires the app's single `ComponentActivity`
+rebuilt as an `AppCompatActivity` with AppCompat theming beneath a pure Compose and Material 3 app, then
+this is not a Settings row — and that is not a thing to discover in the week the translation lands.
+
+**It was checked, and it is the expensive answer.** AppCompat's pre-13 locale support is applied through
+`AppCompatDelegate`, which exists only inside an `AppCompatActivity`, which in turn requires an
+AppCompat-descended theme — and this app is one `ComponentActivity` under
+`android:Theme.Material.Light.NoActionBar` with no AppCompat in the dependency graph at all. So the cost is
+a new dependency, the app's only activity's base class, and the root theme.
+
+It is accepted anyway, which is what this ADR reserved in advance, with three consequences that follow from
+it being shell work rather than a Settings row:
+
+- The theme reparents to **`Theme.AppCompat.DayNight.NoActionBar`**, not a Material Components theme.
+  `AppCompatActivity` needs only an AppCompat-descended theme, and Compose M3 draws every pixel of real UI,
+  so pulling in `com.google.android.material` would add a second dependency that renders nothing.
+- Persistence uses AppCompat's own `AppLocalesMetadataHolderService` with `autoStoreLocales="true"` rather
+  than a DataStore key, because DataStore's asynchronous read would let the app draw a frame in the wrong
+  language before resolving.
+- It lands in **its own checkpoint near the front of Phase 3**, not beside the translation at the end. A
+  base-class and root-theme change is the cheapest thing in that phase to do early and among the most
+  expensive to do late; landing it first means every later checkpoint's hand-verification passes over it
+  for free, instead of a theme regression surfacing underneath the release.
+
+The alternatives were weighed and rejected on the record. The platform API alone (`LocaleManager` on 33+,
+no switcher below) is about ten lines and no dependency, and most Polish users would get Polish regardless
+because that is ordinary resource resolution rather than the switcher — but it abandons the pre-13 range
+that `minSdk` 26 exists to serve. A hand-rolled `attachBaseContext` override avoids the dependency and
+lands the same obligation permanently on every context that resolves strings outside the activity, which
+Phase 4's notifications and WorkManager would inherit.
 
 ## Consequences
 

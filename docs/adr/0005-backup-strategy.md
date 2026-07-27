@@ -19,7 +19,13 @@ inverting this ADR's own promise that the evidential core is safe. The size guar
 A static `include`/`exclude` XML rule cannot make that decision, so backup runs through a **custom
 `BackupAgent`**: it checkpoints the WAL into a consistent copy, includes database, preferences and avatars
 unconditionally, then admits documents **newest-first up to a ceiling *below* 25 MB** (headroom for
-database growth between the OS-scheduled backups, which the app does not control). Because Auto Backup runs
+database growth between the OS-scheduled backups, which the app does not control). The agent itself, the
+WAL checkpoint, the unconditional set and the marker land at 1.0; **the documents ceiling and the exclusion
+notification land with Phase 5**, because `documents/` is empty until then, so at 1.0 the admission function
+would admit nothing, the notification could not fire, and the app's first notification channel would be
+created in a release that deliberately asks for no notification permission. Building them beside the
+documents that exercise them costs nothing later — the file set is ordinary app code, and a backup written
+by 1.0 restores into 1.2 regardless. Because Auto Backup runs
 unattended with no UI, "surface honestly" cannot happen at backup time: the agent **persists a marker**
 (last-backup timestamp + excluded-document count) **in a plain file under `filesDir`, outside the
 database** — which restore replaces — and the app surfaces it later as a permanent status line in Backup
@@ -64,17 +70,37 @@ signal than an admission.
 
 **Manual export** writes a zip to a destination the owner picks, at one of three scopes:
 
-- **Essential** — database and bunny avatars.
+- **Essential** — database, preferences, and bunny avatars.
 - **Records** *(default)* — Essential plus scanned documents; everything the owner may need again.
 - **Everything** — Records plus the photo gallery; large and occasional.
 
+**Preferences ride in every scope, from Essential upward.** They are a few hundred bytes, Auto Backup
+already carries them, and their absence does not read as missing data — it reads as bugs: a restored phone
+showing kilograms when the owner chose grams, landing on the wrong bunny, and defaulting its next export to
+a scope the owner did not pick. The one asymmetry worth avoiding here is the automatic path promising
+something the manual path quietly drops.
+
 The export shares out through the system share sheet first (which cannot fail for provider reasons), with
 a remembered folder destination added afterwards, once writing to that provider has been verified on a
-real device. If the folder is a cloud provider's, the backup lands in the owner's own cloud.
+real device. If the folder is a cloud provider's, the backup lands in the owner's own cloud. That
+destination is **deferred to 1.1**, with the recurring export reminder: remembering a folder saves two taps
+and does not make export automatic, so at 1.0 it would buy convenience while carrying the plan's biggest
+unverified assumption into the release that exists to make backup trustworthy.
 
 The scope is chosen during first-run setup with a plain explanation of the trade-off — not hidden in
-settings — and can be changed in settings later. The scope is recorded in the export filename so a
-restore can state what the file actually contains.
+settings — and can be changed in settings later. The scope is recorded in the export filename so a person
+can tell two files apart, but the filename is **not** what restore reads: a **manifest inside the zip**
+carries the scope, the schema version, the creation instant and the per-kind counts, and that is the
+authority. A filename is the one part of a file an owner can trivially change, and the confirmation dialog
+makes a promise about what is inside — a promise must not be sourced from the outside of the envelope.
+
+Restore also **never builds a path out of archive input**. It extracts only entries matching known shapes —
+the database, the preferences file, and `<kind>/<uuid>.jpg` with both halves validated — and ignores
+anything else, which defeats a `../` traversal by construction rather than by sanitising after the fact. An
+archive with no manifest or no database is refused by name rather than partially applied. The threat is
+mild, since the file is normally the owner's own, but backups travel by mail and messenger, and an
+arbitrary write into app-private storage is not a thing to leave open in an app holding an animal's medical
+history.
 
 ## Restore replaces the database but merges media
 
@@ -104,7 +130,21 @@ outright since no migration runs backwards, and a failure lands before anything 
 
 A restore may legitimately arrive without media, and the app must show missing images as a placeholder
 rather than failing. SQLite `-wal`/`-shm` files must be excluded from Auto Backup or checkpointed, or a
-live database will be captured mid-write and restore corrupt.
+live database will be captured mid-write and restore corrupt. That last one is not hypothetical while
+`allowBackup="true"` stands in the manifest with no agent and no rules: the platform is already eligible to
+copy `filesDir` wholesale, sidecars included. Either the agent takes control of the file set or
+`allowBackup` goes to `false` — what cannot ship is the middle state, which produces a backup that appears
+to work and restores corrupt.
+
+**The photo gallery's exclusion has to be said out loud, not merely implemented.** Photos end up the least
+protected data in the app — outside Auto Backup, outside Essential and Records, present only in a manual
+"Everything" export — and an owner who has never been told that will reasonably assume the net covers
+everything. So first-run setup and Backup settings state it in words. This is the same rule as the missing
+marker: a gap the owner cannot see is worse than a gap they were told about, which is ADR-0001 pointed at
+the one directory the automatic path does not reach. The alternatives were weighed at Phase 3 and rejected —
+the shared MediaStore would fork ADR-0020's pipeline, break the uuid identity the media merge depends on
+and need a storage permission at `minSdk` 26; admitting photos to the agent's set would put an unbounded
+directory inside an all-or-nothing quota, risking the database to protect a copy.
 
 Because the evidential core (database, avatars, documents) is now covered by Auto Backup, the
 manual-export folder destination — the plan's biggest unverified assumption (Google Drive provider

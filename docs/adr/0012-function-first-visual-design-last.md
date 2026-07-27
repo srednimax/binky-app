@@ -23,5 +23,13 @@ are where the eventual design work lands.
 ## Consequences
 
 Deferred entirely to the design phase: custom components, animation, illustration, empty-state art,
-iconography, spacing refinement, visual identity. None of these may be used as a reason to restructure
-screens — if that becomes necessary, the split above was not respected.
+in-app iconography, spacing refinement, visual identity. None of these may be used as a reason to
+restructure screens — if that becomes necessary, the split above was not respected.
+
+**One stated exception: identity assets are due at the first release.** The launcher icon, the app name and
+the store listing's graphics are not "how the app looks" in the sense this ADR defers — they are how it is
+recognised, and unlike spacing or colour they cannot be changed later without changing what people already
+have on a home screen. They are also simply required: Play will not publish to any track without them. So
+the icon is designed at Phase 3's first checkpoint, alongside the developer account and the keystore rather
+than alongside the visual pass, and shipping the AGP template's green robot is not an available reading of
+"boring is accepted deliberately". Everything else in the list above stays deferred.
