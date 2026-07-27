@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Bunny Tracker</string>
+    <string name="app_name">Binky</string>
 
     <!-- Bottom-navigation destinations (ADR-0015) -->
     <string name="destination_home">Home</string>
@@ -358,7 +358,7 @@
          migration exists to read the old file back, so the screen states what is going and where
          the copy is rather than pretending there is a choice. One forward button, no cancel. -->
     <string name="wipe_title">This update has to clear the records on this phone</string>
-    <string name="wipe_body">Bunny Tracker is still being built, and this version changed how records are stored. It cannot read what is already on this phone, so that has to go.</string>
+    <string name="wipe_body">Binky is still being built, and this version changed how records are stored. It cannot read what is already on this phone, so that has to go.</string>
     <string name="wipe_versions">Records on this phone: format %1$d. This version: format %2$d.</string>
     <string name="wipe_copy_taken">A copy has already been saved on this phone before anything is deleted:</string>
     <string name="wipe_copy_reach">The copy cannot be loaded back in automatically — reading old records into the new format is a conversion that has to be written by hand. Keep any weights you care about written down somewhere else until backup arrives.</string>

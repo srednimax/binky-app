@@ -23,10 +23,10 @@ val gitVersionCode: Int =
     }.getOrDefault(1)
 
 android {
-    namespace = "app.bunny.tracker"
+    namespace = "app.binky.tracker"
     compileSdk = 36
     defaultConfig {
-        applicationId = "app.bunny.tracker"
+        applicationId = "app.binky.tracker"
         minSdk = 26
         targetSdk = 36
         versionCode = gitVersionCode

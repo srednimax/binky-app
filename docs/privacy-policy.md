@@ -1,18 +1,18 @@
 ---
 layout: default
-title: Privacy Policy — Bunny Tracker
+title: Privacy Policy — Binky
 ---
 
-# Privacy Policy — Bunny Tracker
+# Privacy Policy — Binky
 
 _Last updated: 27 July 2026_
 
-Bunny Tracker is an Android app for keeping track of a pet rabbit's health. This policy describes what the
+Binky is an Android app for keeping track of a pet rabbit's health. This policy describes what the
 app does with the information you put into it. It is short because the app does very little.
 
 ## The app collects nothing
 
-Bunny Tracker has no account, no sign-in, and no server. Nothing you enter is transmitted anywhere.
+Binky has no account, no sign-in, and no server. Nothing you enter is transmitted anywhere.
 
 Everything you record — your rabbits' profiles and photos, weights, observations, symptoms, vet visits,
 medications, scanned documents and reminders — is stored **only in the app's private storage on your own
@@ -58,7 +58,7 @@ there is nothing for us to delete on your behalf and no request you need to send
 
 ## Health information
 
-Bunny Tracker is a record-keeping tool for your own observations of an animal. It does not provide
+Binky is a record-keeping tool for your own observations of an animal. It does not provide
 veterinary or medical advice, and nothing it shows should be treated as a diagnosis.
 
 ## Changes

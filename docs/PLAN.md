@@ -22,7 +22,7 @@ phase of its own; it happens at the end of each of Phases 3, 4 and 5.
 
 JDK 21, Android SDK under `~/Android/Sdk`, `ANDROID_HOME` in `~/.zshrc`, Xiaomi device over USB.
 Compose project scaffolded with `android create` (AGP 9.0.1, Kotlin 2.3.20, Gradle 9.1.0, Navigation 3),
-package `app.bunny.tracker`.
+package `app.binky.tracker`.
 
 **Gate met:** `assembleDebug`, `test`, `lint`, and `connectedAndroidTest` all pass; the app runs on the phone.
 
@@ -128,7 +128,7 @@ Each checkpoint is meant to survive being picked up cold, so read its decisions 
   album-picked one.
 - Deleting a bunny asks **once**, names its avatar, and removes the file; the two-stage path passes an
   instrumented test fed fake counts.
-- A deliberately broken avatar path (`adb shell run-as app.bunny.tracker rm …`) renders the placeholder,
+- A deliberately broken avatar path (`adb shell run-as app.binky.tracker rm …`) renders the placeholder,
   never a crash.
 - All five top-level destinations exist; **switching bunny visibly changes every per-bunny stub**; Weight
   shows the pick-a-bunny prompt under "All bunnies" while Home and Observations do not; "All bunnies" is
@@ -664,7 +664,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      through is uninstalling the Play build. ADR-0007 offered "or a separate DB name" as an alternative; it
      is not one, since it does nothing about two builds being unable to coexist. `FileProvider`'s authority
      already interpolates `${applicationId}`, so it follows; the instrumentation package becomes
-     `app.bunny.tracker.debug.test`, which is a correction owed to **CLAUDE.md**'s Xiaomi fallback command.
+     `app.binky.tracker.debug.test`, which is a correction owed to **CLAUDE.md**'s Xiaomi fallback command.
    - **R8 stays off** — `isMinifyEnabled = false`, recorded as a decision rather than left as a template
      default. 1.0 already differs from any build that gets tested in five ways (application id, signature,
      ADR-0023's throw-instead-of-wipe, the consent screen's release variant, the `BuildConfig.DEBUG`
@@ -686,7 +686,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      now rather than at 3g is the entire reason this is first.
 2. **3b — The shell: AppCompat, and the switcher's mechanism.**
    - `androidx.appcompat` enters `libs.versions.toml`; `MainActivity` becomes an `AppCompatActivity`;
-     `Theme.BunnyTracker` is reparented from `android:Theme.Material.Light.NoActionBar` to
+     `Theme.Binky` is reparented from `android:Theme.Material.Light.NoActionBar` to
      **`Theme.AppCompat.DayNight.NoActionBar`**. Not a Material Components theme: `AppCompatActivity` only
      requires an AppCompat-descended one, and Compose M3 draws every pixel of actual UI, so pulling in
      `com.google.android.material` would add a second dependency that renders nothing.
@@ -770,7 +770,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - Restore **never builds a path out of archive input**. It extracts only entries matching known shapes —
      the database filename, the preferences filename, and `<MediaKind.directory>/<uuid>.jpg` with both
      halves validated — and ignores everything else, which defeats zip-slip by construction rather than by
-     sanitising after the fact. No manifest, or no database entry, means *"this file is not a Bunny Tracker
+     sanitising after the fact. No manifest, or no database entry, means *"this file is not a Binky
      backup"* by name. A total-bytes ceiling stops a malformed archive filling the device.
    - Restore is gated behind an explicit confirmation naming *"[scope] backup from [date]"*, and first takes
      an **automatic Essential-scope export of the current state** into the existing `preserved/` — a zip
@@ -798,7 +798,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      restore onto a phone that still holds its photo files keeps them instead of turning them all into
      placeholders.
    - The restore then ends on a **terminal screen** — what was restored, what the scope contained, where the
-     pre-restore snapshot went, and one button, *"Close Bunny Tracker"*, which calls `finishAffinity()` and
+     pre-restore snapshot went, and one button, *"Close Binky"*, which calls `finishAffinity()` and
      `exitProcess(0)`. Half the app is holding `Flow`s over the file that was just replaced, so the process
      has to go; and the obvious automatic version — schedule a `PendingIntent` and kill — is a **background
      activity start**, restricted since Android 10 and policed harder by HyperOS, so it would work on this
@@ -819,7 +819,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      declaring an agent without it puts the app on the key/value path, which is not what ADR-0005 describes.
    - The agent **takes paths, not a `Context`** (ADR-0005). When the system starts the process *for* backup
      it binds the base `android.app.Application` rather than this app's subclass, so `AppContainer` is
-     absent and a cast to `BunnyTrackerApplication` is a `ClassCastException` — and reaching for the
+     absent and a cast to `BinkyApplication` is a `ClassCastException` — and reaching for the
      container would in any case force the `lazy` that ADR-0007 makes the structural guard in front of a
      wipe. The failure ordering is what makes this worth building structurally: Auto Backup runs when the
      device is idle and charging, `bmgr backupnow` runs with the app on screen, so a container-dependent
@@ -866,7 +866,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      and `data_extraction_rules.xml` dead, so the expected outcome is **deleting both along with their
      manifest attributes**, closing two of Phase 2's four standing lint warnings — but confirmed against a
      real backup run rather than against the documentation.
-   - Driven with `adb shell bmgr backupnow app.bunny.tracker` and `bmgr restore`; if HyperOS will not drive
+   - Driven with `adb shell bmgr backupnow app.binky.tracker` and `bmgr restore`; if HyperOS will not drive
      `bmgr`, the fallback evidence is the marker file appearing under `run-as`, plus `dumpsys backup` and
      logcat around the callbacks. **If it cannot be observed at all, 1.0 still ships**: export and restore
      already satisfy ADR-0019, and the marker design means an agent that never ran renders as *"No automatic

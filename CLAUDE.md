@@ -73,7 +73,7 @@ adb devices                      # confirm the phone is attached
 ## Layout
 
 ```
-app/src/main/java/app/bunny/tracker/
+app/src/main/java/app/binky/tracker/
   MainActivity.kt, Navigation.kt, NavigationKeys.kt
                the app shell and Nav3 wiring stay at the package root, not under ui/ — they describe
                how the app hangs together rather than any one screen
@@ -106,13 +106,13 @@ refusing, skip the split install entirely — install both APKs plain, then run 
 ```bash
 adb install -r -t app/build/outputs/apk/debug/app-debug.apk
 adb install -r -t app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-adb shell am instrument -w app.bunny.tracker.test/androidx.test.runner.AndroidJUnitRunner
+adb shell am instrument -w app.binky.tracker.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 Same APKs, same runner, same tests — it just asks for two ordinary install confirmations instead.
 
 From Phase 3's first checkpoint the debug build takes `applicationIdSuffix = ".debug"` (ADR-0023), so those
-commands change: the instrumentation package becomes **`app.bunny.tracker.debug.test`**. Until that lands,
+commands change: the instrumentation package becomes **`app.binky.tracker.debug.test`**. Until that lands,
 the form above is the correct one.
 
 Xiaomi also kills background work aggressively; scheduled notifications need battery-optimisation
