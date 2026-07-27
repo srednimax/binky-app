@@ -111,5 +111,9 @@ adb shell am instrument -w app.bunny.tracker.test/androidx.test.runner.AndroidJU
 
 Same APKs, same runner, same tests — it just asks for two ordinary install confirmations instead.
 
+From Phase 3's first checkpoint the debug build takes `applicationIdSuffix = ".debug"` (ADR-0023), so those
+commands change: the instrumentation package becomes **`app.bunny.tracker.debug.test`**. Until that lands,
+the form above is the correct one.
+
 Xiaomi also kills background work aggressively; scheduled notifications need battery-optimisation
 exemption and autostart.

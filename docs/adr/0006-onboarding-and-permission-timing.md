@@ -19,9 +19,14 @@ Anyone who skips is asked again at point of use, when the first reminder or medi
 
 ## Consequences
 
-Setup is built in two stages. Phase 1 ships the welcome step alone, because the backup scope and reminders
-opt-in cannot exist before Phases 3 and 4 and would otherwise be shown as dead placeholders; it reaches all
-three steps in Phase 3.
+Setup is built in three stages, and **each step ships with the feature it is about**. Phase 1 ships the
+welcome step alone, because the backup scope and reminders opt-in cannot exist yet and would otherwise be
+dead placeholders. Phase 3 adds the backup scope. The **reminders step waits for 1.1**, with the reminders.
+
+Phase 3 looked like the obvious home for all three and is the wrong one: 1.0 has nothing that posts a
+notification, so its opt-in would spend one of the two available denials on a screen that cannot
+demonstrate anything — which is the exact failure this ADR was written about, arrived at from the other
+direction. The point-of-use ask below then becomes the *first* ask rather than the second.
 
 Battery-optimisation exemption is *not* part of onboarding. It is requested when something is first
 scheduled, where the reason is visible. Weight units and other preferences are likewise asked in context.

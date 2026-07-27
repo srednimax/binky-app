@@ -11,8 +11,10 @@ history once backup exists. Every such released version must have a **tested for
 released schema JSONs are committed and **git-tagged** so it is unambiguous which versions are load-bearing.
 It is *not* anchored to the calendar or to every edit: the author develops on the same physical phone that
 holds the real data, so the schema still churns during Phases 4-5 while the medication/vet tables are
-designed. That churn happens on a **throwaway debug build/database** (a `debug` `applicationId` suffix, or a
-separate DB name), where destructive wipes and rewriting pending migrations are still fair game; when a
+designed. That churn happens on a **throwaway debug build/database** — specifically a `debug`
+`applicationId` suffix, since a separate DB name turns out not to be an alternative once the release build
+is installed from Play (ADR-0023) — where destructive wipes and rewriting pending migrations are still fair
+game; when a
 feature's schema settles, a **single consolidated, tested** migration is written from the last released
 version, and only then does it reach the real-data app. Migration count tracks *releases*, not keystrokes,
 and no tester — or the author — loses history to a routine update.
@@ -60,10 +62,18 @@ exists to prevent. The copy is named from the database file's own `lastModified(
 panic, so a hesitating owner relaunching repeatedly overwrites one copy instead of minting a new one each
 time, and the name dates the *data*.
 
-Whether `preserved/` belongs inside the Auto Backup set is Phase 3's question (ADR-0005): a second full copy
-of the database, inside a quota where scanned documents are already being squeezed out.
+Whether `preserved/` belongs inside the Auto Backup set was left as Phase 3's question (ADR-0005), and the
+answer is **no**. Not on the quota argument — at 1.0 there are no documents and the whole backup set is
+under a megabyte — but because this is the app's one **unbounded, never-pruned** directory, by the design
+two paragraphs up. Android rejects the *entire* over-quota dataset rather than trimming it, so admitting an
+unbounded set means one day losing the database and the avatars in order to have protected a duplicate.
+The mechanism that makes a preserved copy safe is the owner's **share** tap, not an automatic net.
 
 ## Consequences
+
+This ADR says *when* the rule changes but not what changes mechanically, and the honest answer is not
+"write migrations from now on" — the destructive fallback, the consent screen, the debug build and restore
+all have to move. **ADR-0023** is that list.
 
 The preserved file is a recovery artifact, not a restore: reading old data into a new schema *is* a
 migration, so it cannot be re-imported automatically. It exists so the data can be recovered by hand, or

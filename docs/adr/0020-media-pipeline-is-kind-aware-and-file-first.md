@@ -28,6 +28,18 @@ re-encode **discards the tag and keeps the pixels sideways**, so camera-taken av
 album-picked ones do not. Stripping the rest is a bonus: camera EXIF carries GPS, and this app has no
 business copying the owner's home location into a backup that leaves the device.
 
+**Stripping the file is not a rule against reading it.** The reason above is about what a *file* leaving
+the device carries, not about what the pipeline may learn on the way past — and the two are easy to
+conflate into a prohibition that was never decided. So `persist` returns the **capture instant** alongside
+the relative path, read from the same `ExifInterface` call site that already reads the orientation tag,
+before the strip. Phase 3's gallery needs it: a bulk import from the camera roll lands twenty photos
+spanning two years within the same millisecond, and ordering those by when they were *added* is arbitrary
+order for a gallery whose whole point is a bunny growing up. A capture date is not a location.
+
+This is decided here rather than left to a later migration because there is no going back for it. Anything
+the pipeline does not read on the way past is gone from every file it has already written, so a column
+added later could never be backfilled.
+
 ## The file is written before the row
 
 The filesystem cannot join a Room transaction, so every write has a window where the two disagree, and which
