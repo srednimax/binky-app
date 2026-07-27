@@ -84,6 +84,12 @@ class AppContainer(
      */
     val preservedDir: File = File(appContext.filesDir, PRESERVED_DIRECTORY)
 
+    /**
+     * Scratch space. Whatever lands here is disposable by definition — the debug fixture's generated
+     * images go through the media pipeline like any other source and their originals are then rubbish.
+     */
+    val cacheDir: File = appContext.cacheDir
+
     /** The single path for persisting images (house rule, ADR-0020). */
     val mediaFiles = MediaFiles(appContext)
 

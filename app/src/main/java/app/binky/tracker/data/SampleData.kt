@@ -1,10 +1,18 @@
 package app.binky.tracker.data
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.net.Uri
+import androidx.exifinterface.media.ExifInterface
 import kotlinx.coroutines.flow.first
+import java.io.File
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import java.util.UUID
 import kotlin.random.Random
 
 /**
@@ -47,6 +55,8 @@ suspend fun seedSampleData(
     weights: WeightRepository,
     observations: ObservationRepository,
     symptoms: SymptomRepository,
+    photos: PhotoRepository,
+    cacheDir: File,
     now: Instant = Instant.now(),
 ): Boolean {
     val existing = bunnies.activeBunnies.first()
@@ -66,8 +76,97 @@ suspend fun seedSampleData(
     }
 
     seedObservations(observations, symptoms, bijou, nugget, now)
+    seedPhotos(photos, cacheDir, bijou, nugget, now)
     return true
 }
+
+/**
+ * A handful of pictures, generated rather than shipped as assets — an APK does not need to carry
+ * fake rabbits, and going through [PhotoRepository.add] means these land the same way an owner's do:
+ * downsampled, stripped, file before row (ADR-0020).
+ *
+ * The set is chosen for what it makes visible in the gallery:
+ *
+ * - **two EXIF dates, on the two *newest-added* photos**, back-dated by months. Ordering by
+ *   `COALESCE(capturedAt, createdAt)` puts them in the middle of the grid; ordering by insertion
+ *   would put them first, so a regression there is visible at a glance rather than by reading rows.
+ * - **both orientations**, because the grid crops to squares and the pager fits the whole frame —
+ *   a landscape photo is where those two disagree.
+ * - **captions on some and not others**, since the pager renders the two cases differently.
+ * - **a photo for the housemate too**, so deleting one bunny can be seen not to take the other's.
+ */
+private suspend fun seedPhotos(
+    photos: PhotoRepository,
+    cacheDir: File,
+    bijou: String,
+    nugget: String,
+    now: Instant,
+) {
+    val samples =
+        listOf(
+            SamplePhoto(bijou, 1600, 1200, 0xFF8D6E63.toInt(), takenDaysAgo = null, caption = "Flopped on the rug"),
+            SamplePhoto(bijou, 1200, 1600, 0xFF6D4C41.toInt(), takenDaysAgo = null),
+            SamplePhoto(nugget, 1600, 1200, 0xFF9E9D24.toInt(), takenDaysAgo = null),
+            // Added last, taken first: the two rows that prove the gallery orders by capture date.
+            SamplePhoto(bijou, 1600, 1200, 0xFF00796B.toInt(), takenDaysAgo = 200, caption = "First week home"),
+            SamplePhoto(bijou, 1200, 1600, 0xFF5D4037.toInt(), takenDaysAgo = 320),
+        )
+
+    samples.forEach { sample ->
+        val source = writeSampleJpeg(cacheDir, sample, now)
+        val id = photos.add(sample.bunnyId, source)
+        sample.caption?.let { photos.setCaption(id, it) }
+        // The original is rubbish the moment the pipeline has re-encoded it.
+        source.path?.let { File(it).delete() }
+    }
+}
+
+private data class SamplePhoto(
+    val bunnyId: String,
+    val width: Int,
+    val height: Int,
+    val colour: Int,
+    val takenDaysAgo: Long?,
+    val caption: String? = null,
+)
+
+/**
+ * One generated JPEG: a flat colour with a lighter band down one side, which is enough to tell the
+ * square grid crop apart from the pager's whole frame. A real `DateTimeOriginal` is written with
+ * `saveAttributes` when the sample carries one, so the media pipeline reads the same tag a camera
+ * would rather than a value handed to it directly.
+ */
+private fun writeSampleJpeg(
+    cacheDir: File,
+    sample: SamplePhoto,
+    now: Instant,
+): Uri {
+    val bitmap = Bitmap.createBitmap(sample.width, sample.height, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    canvas.drawColor(sample.colour)
+    canvas.drawRect(
+        0f,
+        0f,
+        sample.width / 4f,
+        sample.height.toFloat(),
+        Paint().apply { color = 0x33FFFFFF },
+    )
+
+    val file = File(cacheDir, "sample-${UUID.randomUUID()}.jpg")
+    file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }
+
+    sample.takenDaysAgo?.let { days ->
+        ExifInterface(file.path).apply {
+            setAttribute(ExifInterface.TAG_DATETIME_ORIGINAL, EXIF_DATE.format(now.daysAgo(days)))
+            saveAttributes()
+        }
+    }
+    return Uri.fromFile(file)
+}
+
+/** EXIF's own format: local wall time, no zone — which is why the pipeline has to assume one. */
+private val EXIF_DATE: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss").withZone(ZoneId.systemDefault())
 
 /**
  * The observation half: three entries carrying the cases the timeline is reviewed against.
