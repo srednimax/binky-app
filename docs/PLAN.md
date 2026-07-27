@@ -670,8 +670,14 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      The name was checked before it was committed to: Play requires unique **package names**, not unique
      titles, so the two unrelated apps already called Binky are no obstacle and neither is in this
      category. `BINKY` is a US trademark for pacifiers and teething rings — Nice class 10/28, not class 9
-     — and no class 9 registration was found. **Still to check by hand: TMview for an EUIPO or Polish
-     class 9 mark**, which is the register that would actually bite and the one gap in that search.
+     — and no class 9 registration was found. **TMview checked 2026-07-27 and the gap is closed:** no
+     Polish national mark contains "binky" at all, and the single live EUIPO class 9 registration for the
+     bare word (EM 016461519, Shenzhen Binky E-Commerce) is *figurative*, not a word mark, and specifies
+     only consumer-electronics hardware — earphones, camcorders, phone cases, baby monitors — with no
+     software or downloadable applications in it. Class number alone is not the test; similarity of goods
+     is, and hardware accessories are far from a pet-health app. The earlier EUIPO word mark `BINKY`
+     (EM 006459119) has **Ended** and covered produce. A register search is not legal clearance and says
+     nothing about unregistered rights, but nothing here blocks the name.
    - **A real app icon** — adaptive plus the 512² listing asset. This is ADR-0012's stated exception:
      identity assets are not the visual polish that comes last, because they cannot be deferred past the
      release the way spacing and colour can, and the template's green robot is not a thing to ship.
