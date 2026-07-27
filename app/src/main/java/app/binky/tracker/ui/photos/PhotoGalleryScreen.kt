@@ -179,21 +179,28 @@ fun PhotoGalleryScreen(
         }
     }
 
-    val open = state.photos.indexOfFirst { it.id == viewing }
-    if (viewing != null && open >= 0) {
-        PhotoViewer(
-            photos = state.photos,
-            initialIndex = open,
-            bunnyName = state.bunnyName,
-            readOnly = readOnly,
-            onSetCaption = viewModel::setCaption,
-            onDelete = viewModel::delete,
-            onClose = { viewing = null },
-        )
-    } else if (viewing != null) {
-        // The photo the viewer was open on is gone — deleted from inside it, and the last one at
-        // that. Nothing left to page through.
-        LaunchedEffect(state.photos.isEmpty()) { viewing = null }
+    val viewingId = viewing
+    when {
+        viewingId != null && state.photos.isNotEmpty() -> {
+            // Resolved **once**, when the viewer opens; after that the pager owns the position.
+            // Re-resolving every recomposition would mean deleting the photo the owner entered on
+            // dropped them back to the grid, while deleting one they had swiped to did not — the
+            // same gesture with two different outcomes.
+            val initialIndex =
+                remember(viewingId) { state.photos.indexOfFirst { it.id == viewingId }.coerceAtLeast(0) }
+            PhotoViewer(
+                photos = state.photos,
+                initialIndex = initialIndex,
+                bunnyName = state.bunnyName,
+                readOnly = readOnly,
+                onSetCaption = viewModel::setCaption,
+                onDelete = viewModel::delete,
+                onClose = { viewing = null },
+            )
+        }
+        // Nothing left to page through. Guarded on `loading` so a viewer restored after a process
+        // death is not closed by the empty list the screen has before its first query comes back.
+        viewingId != null && !state.loading -> LaunchedEffect(Unit) { viewing = null }
     }
 }
 
