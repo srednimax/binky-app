@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0](https://github.com/srednimax/bunny-app/compare/v0.3.0...v0.4.0) (2026-07-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* applicationId changes from app.bunny.tracker to app.binky.tracker, so an existing install is orphaned rather than upgraded and has to be uninstalled by hand.
+
+### Code Refactoring
+
+* rename the app to Binky ([30c871b](https://github.com/srednimax/bunny-app/commit/30c871be16dbfdc815b75439ef63d58125bb630b))
+
 ## [0.3.0](https://github.com/srednimax/bunny-app/compare/v0.2.0...v0.3.0) (2026-07-26)
 
 
