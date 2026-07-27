@@ -305,11 +305,41 @@
     <string name="more_archived_bunnies">Archived bunnies</string>
     <string name="more_archived_bunnies_summary">Bunnies you have archived. Their records are kept.</string>
     <string name="more_photos">Photos</string>
+    <string name="more_photos_summary">Pictures of one bunny, kept on this phone.</string>
     <string name="more_documents">Documents</string>
     <string name="more_settings">Settings</string>
     <string name="more_settings_summary">Weight units, and copies kept before an update cleared the records.</string>
     <string name="more_support">Support</string>
     <string name="more_coming_soon">Coming soon</string>
+
+    <!-- The photo gallery: one bunny's pictures, reached from More -->
+    <string name="photo_which_bunny">Whose photos?</string>
+    <string name="photo_gallery_title">Photos: %1$s</string>
+    <string name="photo_gallery_empty">No photos yet.</string>
+    <string name="photo_gallery_empty_help">Add pictures of %1$s from your gallery or the camera. They stay on this phone.</string>
+    <string name="photo_add">Add photos</string>
+    <string name="photo_add_choose">Choose from your gallery</string>
+    <string name="photo_add_take">Take a photo</string>
+    <string name="photo_import_progress">Adding %1$d of %2$d…</string>
+    <plurals name="photo_import_added">
+        <item quantity="one">%d photo added.</item>
+        <item quantity="other">%d photos added.</item>
+    </plurals>
+    <!-- Reported once at the end of an import, never once per bad file: "18 of 20 added, 2 could
+         not be read". Naming the failures beats silently landing fewer photos than were picked. -->
+    <string name="photo_import_partial">%1$d of %2$d added, %3$d could not be read.</string>
+    <string name="photo_description">Photo of %1$s</string>
+    <string name="photo_close">Close</string>
+    <!-- "Taken" only when the picture's own metadata said so; anything else is dated by when it
+         arrived here, and calling that "taken" would invent a fact. -->
+    <string name="photo_taken_on">Taken %1$s</string>
+    <string name="photo_added_on">Added %1$s</string>
+    <string name="photo_caption_label">Caption</string>
+    <string name="photo_caption_none">No caption</string>
+    <string name="photo_caption_add">Add one</string>
+    <string name="photo_caption_edit">Edit</string>
+    <string name="photo_delete">Delete photo</string>
+    <string name="photo_delete_body">Delete this photo? The picture is removed from this phone for good.</string>
 
     <!-- The archived list (ADR-0004): reachable, with unarchive, delete, and a read-only scope -->
     <string name="archived_title">Archived bunnies</string>
@@ -363,6 +393,14 @@
     <string name="wipe_copy_taken">A copy has already been saved on this phone before anything is deleted:</string>
     <string name="wipe_copy_reach">The copy cannot be loaded back in automatically — reading old records into the new format is a conversion that has to be written by hand. Keep any weights you care about written down somewhere else until backup arrives.</string>
     <string name="wipe_continue">Clear the records and continue</string>
+
+    <!-- ADR-0023's release half of the same screen. Nothing is going to be deleted here: the app
+         refuses to open records it cannot read, so this variant is a dead end that names the copy
+         and offers to share it. No forward button, because there is nowhere forward to go. -->
+    <string name="schema_refused_title">This version cannot open the records on this phone</string>
+    <string name="schema_refused_body">The records on this phone were saved by a different version of Binky, and this one cannot read them. Nothing has been deleted.</string>
+    <string name="schema_refused_copy_taken">A copy of them is saved on this phone, and stays there:</string>
+    <string name="schema_refused_reach">Installing the version that saved them should let you back in. Until then, share the copy somewhere safe — it is the only one.</string>
 
     <!-- Joining names into a list. Never concatenated with " &amp; ": other languages join lists
          differently, and this label appears in the switcher, on the profile and in Phase 2's

@@ -75,6 +75,18 @@ data class WeightEntry(
 @Serializable data object Settings : NavKey
 
 /**
+ * One bunny's photo gallery, reached from More. A detail route off a tab, like [ArchivedBunnies].
+ *
+ * Keyed by the bunny rather than reading the shell's selection, so the back stack records *whose*
+ * gallery is open: restoring after a process death has to reopen the same one, and under "All
+ * bunnies" there is no selection to fall back on — More asks which bunny before pushing this.
+ */
+@Serializable
+data class PhotoGallery(
+    val bunnyId: String,
+) : NavKey
+
+/**
  * Whether a top-level destination is shown, shown as unavailable, or absent (ADR-0015).
  *
  * Defined **here in Phase 1**, so Phase 3's decision to hide Care & Meds from real users is the

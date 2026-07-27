@@ -79,6 +79,8 @@ interface BunnyDao {
      * "what is lost?", not "where did this come from?". So:
      *
      * - Weighings are always sole-owned: a weight belongs to exactly one bunny and cascades with it.
+     * - Photos likewise: a photo is of one bunny, and deleting the bunny destroys it — the row by
+     *   cascade and the file by [BunnyRepository.delete], which is the only way a file goes.
      * - A grouped observation counts as **shared** only while at least one row belongs to a *different*
      *   bunny, because those rows survive the delete.
      * - A grouped observation where this bunny is the **last participant** is destroyed by the delete,
@@ -97,6 +99,7 @@ interface BunnyDao {
         """
         SELECT
             (SELECT COUNT(*) FROM weights WHERE bunnyId = :bunnyId)
+            + (SELECT COUNT(*) FROM photos WHERE bunnyId = :bunnyId)
             + (
                 SELECT COUNT(*) FROM observations o
                 WHERE o.bunnyId = :bunnyId

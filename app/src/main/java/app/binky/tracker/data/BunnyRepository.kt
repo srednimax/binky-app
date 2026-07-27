@@ -8,7 +8,7 @@ import java.time.Instant
 /**
  * Reads and writes bunnies. Thin over the DAO, and the owner of the things a DAO cannot own: the
  * fluffle dissolve predicate, clearing a deleted bunny out of the persisted selection, and removing
- * the avatar file a cascade cannot reach.
+ * the avatar and gallery files a cascade cannot reach.
  */
 class BunnyRepository(
     private val database: BunnyDatabase,
@@ -17,6 +17,9 @@ class BunnyRepository(
     private val media: MediaFiles,
 ) {
     private val bunnyDao = database.bunnyDao()
+
+    /** Only for the delete path: a cascade removes photo rows, and never their files. */
+    private val photoDao = database.photoDao()
 
     val activeBunnies: Flow<List<BunnyEntity>> = bunnyDao.activeBunnies()
 
@@ -79,9 +82,13 @@ class BunnyRepository(
      */
     suspend fun delete(id: String) {
         var avatarPath: String? = null
+        var photoPaths: List<String> = emptyList()
         database.withTransaction {
             val bunny = bunnyDao.bunnyNow(id) ?: return@withTransaction
             avatarPath = bunny.avatarPath
+            // Read while the rows still exist: the cascade is about to take them, and after that
+            // there is nothing left to ask where the files were.
+            photoPaths = photoDao.pathsOf(id)
             bunnyDao.deleteById(id)
             bunny.fluffleId?.let { fluffles.dissolveIfBelowTwo(it) }
         }
@@ -89,6 +96,7 @@ class BunnyRepository(
         // pointing at a file that is already gone, which is the failure ADR-0020's file-first rule
         // exists to avoid, in reverse.
         avatarPath?.let { media.delete(it) }
+        photoPaths.forEach(media::delete)
         preferences.clearSelectionIfSet(id)
     }
 

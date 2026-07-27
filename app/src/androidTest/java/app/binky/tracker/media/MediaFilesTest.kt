@@ -17,6 +17,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.UUID
 import kotlin.math.abs
 
@@ -49,7 +51,7 @@ class MediaFilesTest {
     @Test
     fun anAvatarIsStoredAsASquareJpegUnderItsOwnDirectory() =
         runTest {
-            val path = mediaFiles.persist(rotatedQuadrants(), MediaKind.Avatar)
+            val path = mediaFiles.persist(rotatedQuadrants(), MediaKind.Avatar).path
 
             assertTrue("expected avatars/<uuid>.jpg but was $path", path.matches(AVATAR_PATH))
             val written = mediaFiles.resolve(path)
@@ -69,7 +71,7 @@ class MediaFilesTest {
     @Test
     fun aCameraOrientationTagIsBakedIntoThePixels() =
         runTest {
-            val avatar = decode(mediaFiles.resolve(mediaFiles.persist(rotatedQuadrants(), MediaKind.Avatar)))
+            val avatar = decode(mediaFiles.resolve(mediaFiles.persist(rotatedQuadrants(), MediaKind.Avatar).path))
 
             // The upright fixture is 1200x800 in four flat quadrants; the centred square crop keeps
             // all four, so each quarter-point of the 512² result sits well inside one of them.
@@ -90,7 +92,7 @@ class MediaFilesTest {
             )
             assertTrue("fixture is not carrying GPS", source.hasAttribute(ExifInterface.TAG_GPS_LATITUDE))
 
-            val written = mediaFiles.resolve(mediaFiles.persist(rotatedQuadrants(), MediaKind.Avatar))
+            val written = mediaFiles.resolve(mediaFiles.persist(rotatedQuadrants(), MediaKind.Avatar).path)
 
             val stored = ExifInterface(written.path)
             // The platform JPEG encoder emits an orientation tag of its own, as UNDEFINED. Harmless:
@@ -114,7 +116,7 @@ class MediaFilesTest {
         runTest {
             val small = solidColourJpeg(width = 300, height = 200)
 
-            val avatar = decode(mediaFiles.resolve(mediaFiles.persist(small, MediaKind.Avatar)))
+            val avatar = decode(mediaFiles.resolve(mediaFiles.persist(small, MediaKind.Avatar).path))
 
             assertEquals(200, avatar.width)
             assertEquals(200, avatar.height)
@@ -123,7 +125,7 @@ class MediaFilesTest {
     @Test
     fun eachKindGetsItsOwnDirectory() =
         runTest {
-            val avatar = mediaFiles.persist(rotatedQuadrants(), MediaKind.Avatar)
+            val avatar = mediaFiles.persist(rotatedQuadrants(), MediaKind.Avatar).path
 
             assertTrue(avatar.startsWith("avatars/"))
             assertEquals(File(root, "avatars"), mediaFiles.directoryFor(MediaKind.Avatar))
@@ -131,11 +133,55 @@ class MediaFilesTest {
             assertEquals(File(root, "documents"), mediaFiles.directoryFor(MediaKind.Document))
         }
 
+    /**
+     * **Read before the strip** (ADR-0020). The date has to come off the source on the way past,
+     * because the file this pipeline writes no longer carries it — and a `capturedAt` column added
+     * later could never be backfilled from files whose metadata is already gone.
+     */
+    @Test
+    fun theCaptureDateIsReadBeforeTheMetadataIsStripped() =
+        runTest {
+            val dated = datedJpeg("2025:06:14 09:30:00")
+
+            val stored = mediaFiles.persist(dated, MediaKind.Photo)
+
+            assertEquals(
+                LocalDateTime.of(2025, 6, 14, 9, 30).atZone(ZoneId.systemDefault()).toInstant(),
+                stored.capturedAt,
+            )
+            // The other half of the same claim: what was read is not what was written.
+            val written = ExifInterface(mediaFiles.resolve(stored.path).path)
+            assertNull(
+                "the capture date survived into the stored file",
+                written.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL),
+            )
+        }
+
+    /**
+     * Null is the ordinary case, not a failure — screenshots and re-shared images carry no date, and
+     * the gallery falls back to `createdAt` for them.
+     */
+    @Test
+    fun aSourceWithNoDateHasNoCapturedAt() =
+        runTest {
+            assertNull(mediaFiles.persist(solidColourJpeg(300, 200), MediaKind.Photo).capturedAt)
+        }
+
+    /** A malformed date is a reason to fall back to `createdAt`, never to refuse the photo. */
+    @Test
+    fun anUnparseableDateIsIgnoredRatherThanThrown() =
+        runTest {
+            val stored = mediaFiles.persist(datedJpeg("not a date"), MediaKind.Photo)
+
+            assertNull(stored.capturedAt)
+            assertTrue("the photo itself must still land", mediaFiles.resolve(stored.path).exists())
+        }
+
     /** The delete-old half of a replace, and the cascade behind a deleted row (ADR-0020). */
     @Test
     fun deleteRemovesTheFileAndToleratesAMissingOne() =
         runTest {
-            val path = mediaFiles.persist(rotatedQuadrants(), MediaKind.Avatar)
+            val path = mediaFiles.persist(rotatedQuadrants(), MediaKind.Avatar).path
 
             assertTrue(mediaFiles.delete(path))
             assertFalse(mediaFiles.resolve(path).exists())
@@ -168,6 +214,19 @@ class MediaFilesTest {
         val file = File(targetContext.cacheDir, "solid-${UUID.randomUUID()}.jpg")
         file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }
         return Uri.fromFile(file)
+    }
+
+    /**
+     * A JPEG carrying [dateTimeOriginal], written the way a camera writes it — `saveAttributes`
+     * rewrites the file in place, so the tag is real rather than mocked.
+     */
+    private fun datedJpeg(dateTimeOriginal: String): Uri {
+        val uri = solidColourJpeg(width = 400, height = 300)
+        ExifInterface(uri.path!!).apply {
+            setAttribute(ExifInterface.TAG_DATETIME_ORIGINAL, dateTimeOriginal)
+            saveAttributes()
+        }
+        return uri
     }
 
     private fun decode(file: File): Bitmap =

@@ -794,7 +794,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      dependency was taken at all. The shell cost is now known and paid; the backport's own behaviour stays
      unverified until 3f puts a second language behind the switcher, and wants an API 30-ish emulator or
      device then rather than the Xiaomi.
-3. **3c — Photos: the gallery, and the last planned wipe.** Schema → **4**.
+3. **3c — Photos: the gallery, and the last planned wipe.** ✅ Schema → **4**.
    - `PhotoEntity` — `id`, `bunnyId` FK `CASCADE` indexed, `path` relative (`photos/<uuid>.jpg`), nullable
      `caption`, nullable `capturedAt`, `createdAt`. Indexed on `(bunnyId, createdAt)`.
    - **`capturedAt` is read before the strip, not after** (ADR-0020). `persist` returns `(path, capturedAt)`
@@ -860,6 +860,38 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      destructive fallback is gated on `BuildConfig.DEBUG` — a property that cannot be checked by hand on a
      release build, since `run-as` does not work on one. The sample-data action gains a handful of photos,
      so 3d and 3e have something real to include and exclude.
+   - **Gate met:** `spotlessApply`, `assembleDebug`, `test` and `lint` clean; **75 instrumented tests pass on
+     the Xiaomi**, seven of them the new `PhotoRepositoryTest`. Six commits, with the schema bump and
+     ADR-0023's gating in the same one as the plan requires.
+   - **`MediaKind.Photo`'s 2048/q85 guess holds — no change to the spec table.** Three real camera photos
+     imported through the Photo Picker: 2.3–3.7 MB sources land at 1536×2048 and 310–350 kB each. The phone
+     is 1220×2712, so a stored photo still carries 1.26× the pixels the pager can show in portrait and 1.68×
+     in landscape. Phase 1 guessed a number that turned out to have headroom rather than one that had to be
+     raised, which is the outcome that costs nothing.
+   - **`PendingWipe` became `SchemaMismatch`** while implementing ADR-0023: in a release build nothing is
+     pending and nothing is wiped, so the name described only half of what the type now carries. It gained a
+     `wipeOnConsent` flag and one screen renders both variants. The `ui/wipe` package name was left alone —
+     renaming a package for a type rename is churn.
+   - The gating is `.apply { if (allow) fallbackToDestructiveMigration(...) }` rather than a builder call
+     taking a boolean, so the release path leaves the builder **untouched** instead of configuring it to do
+     nothing. The parameter is also 3d's hook: the staged restore database has to pin its own configuration.
+   - `PhotoDao` deliberately has **no `@Update`**, only `setCaption`. A blanket `@Update` would let a future
+     caller rewrite `path` and point a row at a file it was never written for — the one failure ADR-0020's
+     file-first ordering cannot protect against.
+   - The import's `catch` rethrows `CancellationException` by hand. `runCatching` would swallow it, and
+     leaving the screen mid-import would then be counted and reported as a pile of unreadable files.
+   - **Device transfer keeps the photos**, cloud backup does not. The privacy policy's promise names the
+     Google-account upload, and ADR-0005's arithmetic is about that quota; a phone-to-phone transfer has
+     neither, and silently dropping a bunny's whole gallery on a phone upgrade is the worse failure.
+     `preserved/` is excluded from both (ADR-0007).
+   - The `-wal`/`-shm` sidecars were left alone deliberately, though ADR-0005 names them: excluding them
+     would lose committed transactions that have not been checkpointed, which is worse than the mid-write
+     capture it prevents. That wants the WAL checkpoint inside the custom `BackupAgent`, at 1.0.
+   - Exercised on the Xiaomi end to end: the schema-4 wipe and its preserved copy; the seeded gallery
+     ordering by capture date with the dated photos added *last*; the pager's "Taken" vs "Added" labels; a
+     caption edit round-tripping through the `Flow`; a delete taking row and file together and the pager
+     carrying on; Back closing the viewer rather than the screen; and the archived scope rendering with no
+     add action, no delete and no caption edit.
 4. **3d — Manual export, and restore.**
    - Zip at three scopes — Essential (database + preferences + `avatars/`), **Records** (default; plus
      `documents/`), Everything (plus `photos/`). A scope is **a list of `MediaKind`** plus the two fixed

@@ -27,11 +27,19 @@ import app.binky.tracker.R
 fun MoreScreen(
     onOpenArchived: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenPhotos: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     ) {
+        MoreRow(
+            title = stringResource(R.string.more_photos),
+            subtitle = stringResource(R.string.more_photos_summary),
+            // Inert while no bunny exists to have photos of, which is the same row as before with
+            // one fewer reason to tap it.
+            onClick = onOpenPhotos,
+        )
         MoreRow(
             title = stringResource(R.string.more_archived_bunnies),
             subtitle = stringResource(R.string.more_archived_bunnies_summary),
@@ -44,7 +52,6 @@ fun MoreScreen(
         )
         HorizontalDivider()
         val comingSoon = stringResource(R.string.more_coming_soon)
-        MoreRow(title = stringResource(R.string.more_photos), subtitle = comingSoon)
         MoreRow(title = stringResource(R.string.more_documents), subtitle = comingSoon)
         MoreRow(title = stringResource(R.string.more_support), subtitle = comingSoon)
     }
