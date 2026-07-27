@@ -364,6 +364,14 @@
     <string name="wipe_copy_reach">The copy cannot be loaded back in automatically — reading old records into the new format is a conversion that has to be written by hand. Keep any weights you care about written down somewhere else until backup arrives.</string>
     <string name="wipe_continue">Clear the records and continue</string>
 
+    <!-- ADR-0023's release half of the same screen. Nothing is going to be deleted here: the app
+         refuses to open records it cannot read, so this variant is a dead end that names the copy
+         and offers to share it. No forward button, because there is nowhere forward to go. -->
+    <string name="schema_refused_title">This version cannot open the records on this phone</string>
+    <string name="schema_refused_body">The records on this phone were saved by a different version of Binky, and this one cannot read them. Nothing has been deleted.</string>
+    <string name="schema_refused_copy_taken">A copy of them is saved on this phone, and stays there:</string>
+    <string name="schema_refused_reach">Installing the version that saved them should let you back in. Until then, share the copy somewhere safe — it is the only one.</string>
+
     <!-- Joining names into a list. Never concatenated with " &amp; ": other languages join lists
          differently, and this label appears in the switcher, on the profile and in Phase 2's
          healthy-day snackbar (ADR-0008, ADR-0013). -->

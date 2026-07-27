@@ -39,17 +39,26 @@ fun listPreservedCopies(preservedDir: File): List<PreservedCopy> {
     val entries = preservedDir.listFiles() ?: return emptyList()
     return entries
         .filter { it.isFile && it.name.startsWith(PRESERVED_PREFIX) && it.name.endsWith(PRESERVED_SUFFIX) }
-        .map { file ->
-            PreservedCopy(
-                file = file,
-                savedAt = savedAtFromName(file.name),
-                files = listOf(file) + PRESERVED_SIDECAR_SUFFIXES.map { File(file.path + it) }.filter { it.isFile },
-            )
-        }
+        .map(::preservedCopyOf)
         // The name sorts chronologically by construction, so this needs no date parsing to be right
         // — which also means a copy with an unparseable name still lands somewhere sensible.
         .sortedByDescending { it.name }
 }
+
+/**
+ * One `.db` described the way the listing describes it — sidecars gathered, date read back out of
+ * the name.
+ *
+ * Used by [listPreservedCopies] and by the schema-mismatch screen, which holds the single copy
+ * `preserveBeforeWipe` just took and has to offer the same shareable unit without listing the
+ * directory it landed in.
+ */
+fun preservedCopyOf(file: File): PreservedCopy =
+    PreservedCopy(
+        file = file,
+        savedAt = savedAtFromName(file.name),
+        files = listOf(file) + PRESERVED_SIDECAR_SUFFIXES.map { File(file.path + it) }.filter { it.isFile },
+    )
 
 /** Deletes a copy and its sidecars together. Silent about files already gone. */
 fun deletePreservedCopy(copy: PreservedCopy) {

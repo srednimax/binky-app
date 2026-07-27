@@ -1,7 +1,5 @@
 package app.binky.tracker.ui.settings
 
-import android.content.Context
-import android.content.Intent
 import android.text.format.Formatter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,7 +30,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.BuildConfig
@@ -40,6 +37,7 @@ import app.binky.tracker.R
 import app.binky.tracker.data.PreservedCopy
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.ui.appViewModelExtras
+import app.binky.tracker.ui.common.sharePreservedCopy
 import app.binky.tracker.ui.weight.dateTimeLabel
 
 /**
@@ -241,24 +239,4 @@ private fun SampleDataSetting(
             confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_ok)) } },
         )
     }
-}
-
-/**
- * Shares the `.db` **and its sidecars together**: in WAL mode the most recent writes may live only
- * in `-wal`, so handing over the `.db` alone can share a file missing the very data worth keeping.
- */
-private fun Context.sharePreservedCopy(copy: PreservedCopy) {
-    val uris =
-        ArrayList(
-            copy.files.map { file -> FileProvider.getUriForFile(this, "$packageName.fileprovider", file) },
-        )
-    val send =
-        Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-            // No MIME type describes a SQLite database, and octet-stream is what keeps mail and
-            // cloud-storage targets from re-encoding it.
-            type = "application/octet-stream"
-            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-    startActivity(Intent.createChooser(send, getString(R.string.settings_preserved_share)))
 }

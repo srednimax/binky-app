@@ -12,6 +12,7 @@ import app.binky.tracker.data.BunnySelection
 import app.binky.tracker.data.FluffleRepository
 import app.binky.tracker.data.ObservationRepository
 import app.binky.tracker.data.PRESERVED_DIRECTORY
+import app.binky.tracker.data.PhotoRepository
 import app.binky.tracker.data.StoredSelection
 import app.binky.tracker.data.SymptomRepository
 import app.binky.tracker.data.WeightRepository
@@ -95,6 +96,8 @@ class AppContainer(
     val observationRepository = ObservationRepository(database)
 
     val symptomRepository = SymptomRepository(database)
+
+    val photoRepository = PhotoRepository(database, mediaFiles)
 
     /**
      * The read-only scope onto an archived bunny. In memory only — a background kill must not

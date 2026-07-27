@@ -4,6 +4,7 @@ import android.app.Application
 import app.binky.tracker.data.BUNNY_DATABASE_FILE
 import app.binky.tracker.data.BUNNY_SCHEMA_VERSION
 import app.binky.tracker.data.PRESERVED_DIRECTORY
+import app.binky.tracker.data.destructiveMigrationAllowed
 import app.binky.tracker.data.preserveBeforeWipe
 import app.binky.tracker.data.readUserVersion
 import kotlinx.coroutines.CoroutineScope
@@ -16,17 +17,22 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 /**
- * A wipe that has been prepared but not yet consented to: the copy is already taken, and the
- * original is still on disk untouched, waiting for the owner to press the one button.
+ * A database this build cannot open as it stands. The copy is already taken and the original is
+ * still on disk untouched; what happens next depends on which build found it (ADR-0023).
  *
  * @param preservedCopy where the copy landed, under `filesDir`.
  * @param fromVersion the schema version the file on disk was written at.
  * @param toVersion the version this build expects.
+ * @param wipeOnConsent whether continuing would destroy the file and let the app through. True in a
+ *   debug build, where a schema bump is still free; false in a release build, where the open would
+ *   throw instead — so the screen is a dead end offering the copy, not a button that destroys a
+ *   bunny's history on a path where nothing was going to destroy it.
  */
-data class PendingWipe(
+data class SchemaMismatch(
     val preservedCopy: File,
     val fromVersion: Int,
     val toVersion: Int,
+    val wipeOnConsent: Boolean,
 )
 
 /**
@@ -50,10 +56,10 @@ data class PendingWipe(
 class BinkyApplication : Application() {
     val container: AppContainer by lazy { AppContainer(this) }
 
-    private val _pendingWipe = MutableStateFlow<PendingWipe?>(null)
+    private val _schemaMismatch = MutableStateFlow<SchemaMismatch?>(null)
 
-    /** Non-null while the blocking consent screen must be shown instead of the app. */
-    val pendingWipe: StateFlow<PendingWipe?> = _pendingWipe.asStateFlow()
+    /** Non-null while the blocking screen must be shown instead of the app. */
+    val schemaMismatch: StateFlow<SchemaMismatch?> = _schemaMismatch.asStateFlow()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -75,22 +81,27 @@ class BinkyApplication : Application() {
             // consent to, so the gate opens immediately.
             openDatabase()
         } else {
-            _pendingWipe.value =
-                PendingWipe(
+            // The copy is taken in **both** builds. In a release it is preserving before a
+            // *failure* rather than before a wipe, which is a better reason than the one
+            // `preserveBeforeWipe` was written for (ADR-0023).
+            _schemaMismatch.value =
+                SchemaMismatch(
                     preservedCopy = preserved,
                     fromVersion = onDiskVersion,
                     toVersion = BUNNY_SCHEMA_VERSION,
+                    wipeOnConsent = destructiveMigrationAllowed(),
                 )
         }
     }
 
     /**
-     * The consent screen's one forward button. Opens the database **explicitly**, so the destruction
-     * happens while the owner is still looking at the screen that described it rather than at
-     * whatever later moment some flow first collects (ADR-0007), then lets the app through.
+     * The consent screen's one forward button, which exists in a debug build only. Opens the
+     * database **explicitly**, so the destruction happens while the owner is still looking at the
+     * screen that described it rather than at whatever later moment some flow first collects
+     * (ADR-0007), then lets the app through.
      */
     fun consentToWipe() {
-        openDatabase { _pendingWipe.value = null }
+        openDatabase { _schemaMismatch.value = null }
     }
 
     /** Forces the container's `lazy` — the gate — and does the blocking open off the main thread. */

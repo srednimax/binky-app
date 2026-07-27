@@ -11,7 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.binky.tracker.theme.BinkyTheme
-import app.binky.tracker.ui.wipe.WipeConsentScreen
+import app.binky.tracker.ui.wipe.SchemaMismatchScreen
 
 // AppCompatActivity rather than ComponentActivity, and for one reason only: it is where
 // AppCompatDelegate lives, and AppCompatDelegate is what applies a per-app language on the
@@ -31,16 +31,16 @@ class MainActivity : AppCompatActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    val pendingWipe by app.pendingWipe.collectAsStateWithLifecycle()
+                    val schemaMismatch by app.schemaMismatch.collectAsStateWithLifecycle()
 
                     // Kotlin note: assigned to a local first because smart-casting a `var` read from
                     // another object is not allowed — the compiler cannot prove it has not changed
                     // between the null check and the use. A local `val` it can.
-                    val wipe = pendingWipe
-                    if (wipe != null) {
+                    val mismatch = schemaMismatch
+                    if (mismatch != null) {
                         // ADR-0007's guard is structural: `MainNavigation` is what first reads
                         // `AppContainer`, so not composing it is what keeps Room out of existence.
-                        WipeConsentScreen(pendingWipe = wipe, onContinue = app::consentToWipe)
+                        SchemaMismatchScreen(mismatch = mismatch, onContinue = app::consentToWipe)
                     } else {
                         MainNavigation()
                     }
