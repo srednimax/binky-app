@@ -815,6 +815,21 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - `recordCounts` gains its third contributor. Photos are **sole-owned**, so they land in the destroyed
      bucket, and deleting a bunny must remove its photo **files** — the same best-effort-after-commit the
      avatar already gets, over a list rather than one path.
+   - **Exclude `photos/` from Android Auto Backup — the privacy policy already promises this.** It says
+     *"Your photo gallery in the app is deliberately excluded from it"*, and that is **not implemented**:
+     `allowBackup` is `true` while the manifest references neither `android:dataExtractionRules` nor
+     `android:fullBackupContent`, and both files in `res/xml/` are still AGP template stubs with every
+     rule commented out. Auto Backup therefore takes all of `filesDir`, `avatars/` included. The claim is
+     not false *today* only because the gallery does not exist yet; it becomes false in this checkpoint,
+     against a policy that has been **published since 3a**. Either wire the rules up here or change that
+     sentence — and wiring them up is the right call, since a gallery is exactly the large, replaceable
+     data Auto Backup should skip, while the database that carries the actual history is not.
+
+     **Both attributes are needed, not one.** `fullBackupContent` governs API 30 and below,
+     `dataExtractionRules` API 31 and above; `minSdk` is 26, so setting only the modern one silently
+     leaves every device below API 31 backing the gallery up anyway. Verify against ADR-0005's export
+     scopes rather than reinventing the path list — the same split that makes an export scope a list of
+     directories makes this a list of exclusions.
    - **The destructive fallback becomes debug-only here** (ADR-0023), in the same commit as the bump, because
      this is the wipe that makes it the last one. A release build with no migration path throws at open
      instead of deleting a bunny's history, and the release variant of the consent screen loses its forward

@@ -120,6 +120,10 @@ to exclude and nothing to contradict. It becomes false the moment photos land. E
 up at 3c or change that sentence; the gallery is exactly the kind of large, replaceable data Auto
 Backup should skip.
 
+**Carried as an explicit item in [`PLAN.md`](PLAN.md) 3c**, including the detail that
+`fullBackupContent` and `dataExtractionRules` split at API 31 and both are needed at `minSdk` 26.
+Nothing here blocks the 3a upload.
+
 ## 8. Government apps
 
 > **No.**
