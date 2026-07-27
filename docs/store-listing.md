@@ -29,8 +29,13 @@ Polish second-person forms are gendered, so the copy avoids them — `co został
 | Field | Value |
 | --- | --- |
 | Privacy policy URL | `https://srednimax.github.io/binky-app/privacy-policy.html` |
-| App category | Health & Fitness |
+| App category | Lifestyle |
 | Contact email | the per-app support address, set in Store settings — not the account-level developer email |
+
+**Lifestyle, not Health & Fitness**, even though the app tracks health data. Health & Fitness is
+oriented at *human* health, where Play applies closer scrutiny to anything that reads as a medical
+claim — and this app deliberately makes none (ADR-0001). Pet-care apps conventionally sit in
+Lifestyle, so it is also where owners browsing for one will look.
 
 The privacy policy is served by GitHub Pages from `main` / `docs`, which is why `docs/_config.yml`
 exists at all: Play requires a *hosted* URL and the app has no server by design. It rebuilds on every
