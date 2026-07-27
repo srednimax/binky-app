@@ -172,7 +172,9 @@ class BunnyEditorViewModel(
             val previous = _uiState.value.avatarPath
             val path =
                 try {
-                    media.persist(source, MediaKind.Avatar)
+                    // The capture date is read on the way past and ignored here: an avatar is a
+                    // portrait of a bunny, not a dated record. The photo gallery is what wants it.
+                    media.persist(source, MediaKind.Avatar).path
                 } catch (e: IOException) {
                     _uiState.update { it.copy(avatarFailed = true) }
                     return@launch

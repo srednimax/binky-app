@@ -13,6 +13,11 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.util.UUID
 
 /**
@@ -73,6 +78,25 @@ enum class MediaKind(
 }
 
 /**
+ * What [MediaFiles.persist] hands back: where the file landed, and what the source said about
+ * itself before its metadata was stripped.
+ *
+ * [capturedAt] is read **before** the strip and returned rather than thrown away (ADR-0020).
+ * Stripping is about what a file leaving the device carries, not a rule against the pipeline
+ * reading it on the way past — and there is no going back for this one: a column added later could
+ * never be backfilled from files whose metadata this app has already removed.
+ *
+ * Null is the ordinary case, not a failure: screenshots, re-shared images and anything that has
+ * been through a messaging app routinely carry no date at all.
+ */
+data class PersistedMedia(
+    /** Relative, `<kind>/<uuid>.jpg` — what goes on the row. */
+    val path: String,
+    /** When the camera says the picture was taken, or null when the source did not say. */
+    val capturedAt: Instant?,
+)
+
+/**
  * The single path for persisting images (house rule). Every write goes through [persist], which
  * downsamples and re-encodes per kind — bypassing it puts full-resolution bitmaps in memory and
  * blows up the photo grid.
@@ -93,7 +117,8 @@ class MediaFiles(
 
     /**
      * Read [source], bake in its EXIF orientation, downsample per [kind], strip all metadata, and
-     * write it. Returns the relative path to store on the row.
+     * write it. Returns the relative path to store on the row, and the capture date read on the
+     * way past.
      *
      * **The file is written before the row** (ADR-0020) — that is the caller's half of the deal:
      * call this first, then write the path. A crash in between leaves an invisible orphan file;
@@ -107,9 +132,13 @@ class MediaFiles(
     suspend fun persist(
         source: Uri,
         kind: MediaKind,
-    ): String =
+    ): PersistedMedia =
         withContext(io) {
-            val decoded = decodeUpright(source, kind.spec)
+            // One EXIF read serves both halves: the orientation the pixels need and the date the
+            // row wants. Two reads of the same tags off the same stream would only be two chances
+            // to disagree.
+            val tags = readTags(source)
+            val decoded = decodeUpright(source, kind.spec, tags.orientation)
             val reduced = kind.spec.reduce(decoded)
             if (reduced !== decoded) decoded.recycle()
 
@@ -133,7 +162,7 @@ class MediaFiles(
             } finally {
                 reduced.recycle()
             }
-            relativePath
+            PersistedMedia(path = relativePath, capturedAt = tags.capturedAt)
         }
 
     /** Absolute location of a stored relative path. The file may legitimately be missing. */
@@ -150,7 +179,23 @@ class MediaFiles(
     fun directoryFor(kind: MediaKind): File = File(root, kind.directory)
 
     /**
-     * Decode at roughly the size we need, with the camera's orientation tag applied to the pixels.
+     * The two things the source's metadata is good for, read once before it is discarded.
+     */
+    private fun readTags(source: Uri): SourceTags =
+        openStream(source).use { stream ->
+            val exif = ExifInterface(stream)
+            SourceTags(
+                orientation =
+                    exif.getAttributeInt(
+                        ExifInterface.TAG_ORIENTATION,
+                        ExifInterface.ORIENTATION_NORMAL,
+                    ),
+                capturedAt = exif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL)?.let(::parseExifDateTime),
+            )
+        }
+
+    /**
+     * Decode at roughly the size we need, with the camera's [orientation] tag applied to the pixels.
      *
      * Cameras commonly leave pixels unrotated and record an orientation tag instead. Coil honours
      * that tag on an untouched file, but re-encoding discards the tag and keeps the pixels
@@ -160,6 +205,7 @@ class MediaFiles(
     private fun decodeUpright(
         source: Uri,
         spec: DownsampleSpec,
+        orientation: Int,
     ): Bitmap {
         val bounds =
             BitmapFactory.Options().apply { inJustDecodeBounds = true }.also { options ->
@@ -168,14 +214,6 @@ class MediaFiles(
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
             throw IOException("$source is not a decodable image")
         }
-
-        val orientation =
-            openStream(source).use { stream ->
-                ExifInterface(stream).getAttributeInt(
-                    ExifInterface.TAG_ORIENTATION,
-                    ExifInterface.ORIENTATION_NORMAL,
-                )
-            }
 
         val options =
             BitmapFactory.Options().apply {
@@ -194,6 +232,30 @@ class MediaFiles(
         appContext.contentResolver.openInputStream(uri)
             ?: throw IOException("Cannot open $uri")
 }
+
+/** What one EXIF read yields: the rotation the pixels need, and the date the row wants. */
+private data class SourceTags(
+    val orientation: Int,
+    val capturedAt: Instant?,
+)
+
+/**
+ * EXIF writes a date as `yyyy:MM:dd HH:mm:ss` **with no time zone at all**, so it has to be read
+ * against one. The phone's own zone is the honest guess: an owner photographing their bunny is in
+ * the zone their phone is set to, and the alternative — assuming UTC — is silently wrong by up to
+ * half a day for everyone who is not in London.
+ *
+ * Anything unparseable is null rather than an exception. A malformed date is a reason to fall back
+ * to `createdAt`, never a reason to refuse the photo.
+ */
+private fun parseExifDateTime(value: String): Instant? =
+    try {
+        LocalDateTime.parse(value, EXIF_DATE_TIME).atZone(ZoneId.systemDefault()).toInstant()
+    } catch (e: DateTimeParseException) {
+        null
+    }
+
+private val EXIF_DATE_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss")
 
 /**
  * The power-of-two subsample that gets us closest to the target without going under it —
