@@ -24,3 +24,6 @@ local.properties
 # second line of defence in case one is ever created in the working tree.
 *.jks
 *.keystore
+
+# Byte-code from the art generators in art/ — they are plain scripts, run in place.
+__pycache__/

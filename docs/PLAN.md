@@ -688,16 +688,22 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      identity assets are not the visual polish that comes last, because they cannot be deferred past the
      release the way spacing and colour can, and the template's green robot is not a thing to ship.
 
-     What is there now is **stock and deliberately temporary**: Noto Emoji's rabbit on a flat green,
-     adaptive foreground/background plus a monochrome layer for Android 13+, generated from
-     [`art/`](../art/). It reads as an emoji, which is the point at which it stops being good enough —
-     it exists so the release path can be proven with something that is not the robot.
+     **Done, and original.** The stock Noto Emoji rabbit that stood here first carried an obligation
+     that gated the upload — the OFL requires the licence notice to reach the user, and there is no
+     licences screen — so the art was replaced rather than the screen added, exactly as this
+     checkpoint preferred. Flaticon and the other stock libraries whose licences forbid using their
+     art as a logo were ruled out on the same basis, not on taste.
 
-     It carries **one obligation that gates the upload**: the OFL requires the licence notice to ship
-     with the app, and there is no licences screen. Drawing an original icon removes the obligation
-     along with the placeholder, which is the reason to prefer it over adding the screen for this alone.
-     Flaticon and the other stock libraries whose licences forbid using their art as a logo were ruled
-     out on that basis, not on taste.
+     The mark is now six ellipses declared in [`art/rabbit.py`](../art/rabbit.py), from which both
+     the adaptive icon (foreground, background, and a monochrome layer for Android 13+) and the
+     feature graphic are generated — one declaration, so the two cannot drift apart. The eye is a
+     hole wound against the other subpaths rather than a shape painted in the ground colour, which
+     is what lets it survive the monochrome layer's flat tint. Verified rendered by the system on
+     the Xiaomi, not just as committed XML.
+
+     **No third-party art remains in the repo**, so nothing here obliges a licences screen. That is
+     a reason to build one deliberately later if the Apache-2.0 dependencies warrant it, rather than
+     under release pressure for a single icon.
    - Keystore generated **once**, kept out of git, backed up off this machine; `signingConfigs` read from
      `local.properties`, and a release build with no key **fails loudly** rather than falling back to the
      debug key. Note what Play App Signing actually means (ADR-0009): Google holds the permanent *app

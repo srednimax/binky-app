@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 """Render the 1024x500 Play feature graphic to art/play-feature-graphic.png.
 
-Original art only, on purpose: the rabbit here is built from ellipses defined in this
-file, not traced from Noto Emoji like the launcher icon is. That keeps this asset clear
-of the OFL notice obligation that currently blocks the icon (see README.md). Text is
-*rendered* with Noto Sans, which the OFL explicitly permits without any notice — what it
-restricts is redistributing glyph outlines as art, which is exactly what the icon does
-and this does not.
+Original art only: the rabbit comes from `rabbit.py`, the same declaration the launcher
+icon is generated from, so the two assets cannot drift into being different rabbits. Text
+is *rendered* with Noto Sans, which the OFL explicitly permits without any notice — what
+it restricts is redistributing glyph outlines as art.
 
     python3 art/make-feature-graphic.py
 """
@@ -15,15 +13,14 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+import rabbit
+
 OUT = Path(__file__).parent / "play-feature-graphic.png"
 W, H = 1024, 500
 S = 4  # supersample factor; everything below is in final pixels, scaled by S at draw time
 
-# The icon's green is the one original colour decision in the identity (README.md), so the
-# graphic is built around it rather than introducing a second palette.
-GREEN = (0x3D, 0x7A, 0x4F)
-GREEN_DARK = (0x1E, 0x40, 0x2B)
-CREAM = (0xF6, 0xF3, 0xEA)  # the rabbit, and the wordmark
+# Shared with the launcher icon, so the two read as one identity.
+GREEN, GREEN_DARK, CREAM = rabbit.GREEN, rabbit.GREEN_DARK, rabbit.CREAM
 TAGLINE = (0xC8, 0xDD, 0xCD)
 SUBTLE = (0x9D, 0xC0, 0xA8)
 
@@ -45,50 +42,23 @@ def gradient(size, top_left, bottom_right):
     return img
 
 
-def ellipse(draw, cx, cy, rx, ry, fill):
-    draw.ellipse([(cx - rx) * S, (cy - ry) * S, (cx + rx) * S, (cy + ry) * S], fill=fill)
-
-
-def rotated_ellipse(base, cx, cy, rx, ry, angle, fill):
-    """An ellipse PIL cannot draw directly: drawn upright on its own layer, then rotated.
-
-    The layer is sized to the ellipse's bounding box plus slack so rotation cannot clip it.
-    """
-    pad = int(max(rx, ry) * S * 2)
-    layer = Image.new("RGBA", (pad * 2, pad * 2), (0, 0, 0, 0))
-    ld = ImageDraw.Draw(layer)
-    ld.ellipse(
-        [pad - rx * S, pad - ry * S, pad + rx * S, pad + ry * S],
-        fill=fill,
-    )
-    layer = layer.rotate(angle, resample=Image.BICUBIC, center=(pad, pad))
-    base.alpha_composite(layer, (int(cx * S) - pad, int(cy * S) - pad))
-
-
 def draw_rabbit(base, ox, oy):
-    """A sitting rabbit facing right, from six ellipses. Coordinates are relative to (ox, oy).
+    """The shared mark from `rabbit.py`, drawn at (ox, oy) in final pixels.
 
-    Deliberately simple and geometric rather than illustrative — this is a placeholder-grade
-    mark like the icon it sits beside, and something drawn to look hand-illustrated would
-    overpromise what the identity currently is.
+    Painted onto its own layer so the eye can be punched to full transparency rather than
+    filled with a guess at the ground colour — the background here is a gradient, so a
+    painted eye would only match at one height. The launcher icon gets the same hole from
+    the same declaration, by winding rather than by alpha.
     """
+    layer = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
 
-    def at(x, y):
-        return ox + x, oy + y
+    def tf(p):
+        return ((ox + p[0]) * S, (oy + p[1]) * S)
 
-    d = ImageDraw.Draw(base)
-
-    # ears first, so the head overlaps their bases and hides the joins
-    for dx, dy, angle in ((2, -106, 13), (36, -101, -9)):
-        cx, cy = at(dx, dy)
-        rotated_ellipse(base, cx, cy, 13, 46, angle, CREAM + (255,))
-
-    # The head is set high and well forward of the body's centre, and the two overlap by only
-    # about a quarter of the head. Sized closer together they merge into a single blob with ears.
-    ellipse(d, *at(-58, 76), 19, 19, CREAM + (255,))  # tail, at the back
-    ellipse(d, *at(0, 58), 62, 74, CREAM + (255,))  # body
-    ellipse(d, *at(18, -30), 42, 42, CREAM + (255,))  # head
-    ellipse(d, *at(37, -37), 7, 7, GREEN_DARK + (255,))  # eye, cut back to the ground colour
+    for e in rabbit.PARTS:
+        d.polygon(rabbit.outline(e, tf), fill=(0, 0, 0, 0) if e.hole else CREAM + (255,))
+    base.alpha_composite(layer)
 
 
 def draw_trend(base, points, colour, width):
