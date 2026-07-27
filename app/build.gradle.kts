@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
@@ -22,6 +24,41 @@ val gitVersionCode: Int =
             .toInt()
     }.getOrDefault(1)
 
+// Signing coordinates come from local.properties, which is gitignored; the keystore itself lives
+// outside the repo entirely so it cannot be committed by accident (ADR-0009). `Properties` is
+// Java's old key=value map, and `use {}` is Kotlin's try-with-resources — it closes the stream
+// however the block exits, success or throw. Roughly `try/finally` around a file handle.
+val localProperties =
+    Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) file.inputStream().use { load(it) }
+    }
+
+val uploadKeyProperties =
+    listOf(
+        "binky.upload.storeFile",
+        "binky.upload.storePassword",
+        "binky.upload.keyAlias",
+        "binky.upload.keyPassword",
+    )
+
+// `?.isNotBlank() == true` is the null-safe idiom: a missing property gives null, and null == true
+// is false, so absent and empty both count as "no key" without a separate null check.
+val hasUploadKey = uploadKeyProperties.all { localProperties.getProperty(it)?.isNotBlank() == true }
+
+// A release build with no key must fail loudly rather than quietly emitting an unsigned artifact
+// that only Play rejects, half an hour later. Inspecting the requested task names is deliberately
+// blunt: this is a single-module build, so anything with "Release" in it is ours, and the check
+// runs at configuration time — before Gradle does any work at all.
+val buildingRelease = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+if (buildingRelease && !hasUploadKey) {
+    error(
+        "Release build requested but the upload key is missing. Add to local.properties:\n" +
+            uploadKeyProperties.joinToString("\n") { "  $it=..." } +
+            "\nThe keystore belongs outside the repo and is never committed. See docs/PLAN.md 3a.",
+    )
+}
+
 android {
     namespace = "app.binky.tracker"
     compileSdk = 36
@@ -37,10 +74,34 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        // Created only when the coordinates are present, so a fresh checkout with no key can still
+        // run `assembleDebug` and the test suite. The guard above is what stops a *release* getting
+        // through unsigned — this block staying empty is not itself the error.
+        if (hasUploadKey) {
+            create("release") {
+                storeFile = file(localProperties.getProperty("binky.upload.storeFile"))
+                storePassword = localProperties.getProperty("binky.upload.storePassword")
+                keyAlias = localProperties.getProperty("binky.upload.keyAlias")
+                keyPassword = localProperties.getProperty("binky.upload.keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // R8 stays off deliberately, not by template default: 1.0 already differs from any
+            // tested build in several ways, and a sixth divergence whose failures are release-only,
+            // runtime and reflection-shaped is the opposite of what this checkpoint proves.
+            // Revisit at 1.1, against a known-good 1.0. See docs/PLAN.md 3a.
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Google holds the permanent *app signing* key; this is only the *upload* key proving
+            // the artifact came from us, and an upload key can be reset (ADR-0009). Losing it is
+            // an inconvenience, not the end of the listing.
+            if (hasUploadKey) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {
