@@ -726,10 +726,21 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - That build is then **uninstalled**. It is a pipeline proof, not a dogfood build: leaving a release build
      at schema 3 sitting on the phone would create a migration obligation for a version nobody used, and
      3c's wipe is spent on the debug app instead. The author's real bunny history starts at 1.0.
-   - `versionName` / `versionCode` stay automated (release-please) and are never hand-edited. Two things to
-     verify: that the automated values reach a **release** build's manifest, which no debug build has ever
-     demonstrated, and that the `gitVersionCode` fallback to `1` **fails a release build** rather than
-     shipping — a Play track never forgets its highest `versionCode`.
+   - `versionName` / `versionCode` stay automated (release-please) and are never hand-edited. Both halves
+     are **verified against a real `bundleRelease`**: the AAB's manifest carries `versionCode` 85, matching
+     `git rev-list --count HEAD`, alongside `versionName` `0.4.0`, and the bundle is signed by the upload
+     key. Reading that back needs a decoder — an AAB stores `base/manifest/AndroidManifest.xml` as protobuf,
+     not the binary XML `aapt2 dump` knows how to read.
+
+     The second half was **not true when it was written**. Built from a source archive with no `.git` — the
+     documented fallback case — the release produced a **signed AAB carrying `versionCode` 1**. The build
+     did fail, but only after packaging and signing it, and only because the configuration cache could not
+     serialise the failed `git` call; `--no-configuration-cache` removes that and leaves a clean success. So
+     the fallback shipped, which is exactly what a Play track never forgives. The guard now runs at
+     configuration time and leaves no artifact behind, and the exit code is inspected in our own code rather
+     than left to throw inside Gradle's value source — which is what deferred the failure past the artifact.
+     A debug build with no git history still falls back to 1 and still succeeds, which is the case the
+     fallback exists for.
    - There is no test gate here, and nothing in this checkpoint touches app code. The gate is that the build
      is installable from Play on the Xiaomi and that the debug app installs beside it — and discovering both
      now rather than at 3g is the entire reason this is first.

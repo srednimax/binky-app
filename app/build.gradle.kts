@@ -7,22 +7,54 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Whether this invocation is producing a release artifact. Two configuration-time guards depend on
+// it — the versionCode just below and the upload key further down — and both have to fire before
+// Gradle does any work, so it is computed here rather than inside a task. Inspecting the requested
+// task names is deliberately blunt: this is a single-module build, so anything with "Release" in it
+// is ours.
+val buildingRelease = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+
 // versionCode must strictly increase for every installable build. We derive it
 // from the git commit count so it climbs on its own and is never hand-edited.
 // (Unlike versionName below, this number is NOT semver — it only has to keep
 // going up, and the Play Store / installer rejects a build whose code didn't.)
-// runCatching falls back to 1 when git history isn't available — a shallow CI
-// checkout or a source archive — which only affects debug builds that don't care.
+//
+// When git history isn't available — a shallow CI checkout, a source archive — a debug build falls
+// back to 1 and doesn't care. A release must not, because the fallback is indistinguishable from a
+// genuine count of 1: a release built that way either collides with a code already uploaded, or
+// burns a low code that the real history will later produce again. Both fail at upload, after the
+// artifact is signed and the release notes are written.
+//
+// `isIgnoreExitValue` is load-bearing, not tidiness. Left at its default, a failing `git` makes
+// Gradle's own value source throw, and the configuration cache reports that as a build problem it
+// cannot serialise — which fails the build *after* the artifact has already been packaged and
+// signed. Swallowing the exit code hands us an empty string instead, so `toInt()` throws inside
+// `runCatching`, where the decision below is actually ours to make.
+//
+// `getOrElse` is `runCatching`'s catch clause — it receives the exception, so the release path can
+// rethrow with a reason. `error()` returns Kotlin's `Nothing`, a subtype of every type, which is
+// why throwing satisfies the `Int` this block otherwise has to produce.
 val gitVersionCode: Int =
     runCatching {
         providers
             .exec {
                 commandLine("git", "rev-list", "--count", "HEAD")
+                isIgnoreExitValue = true
             }.standardOutput.asText
             .get()
             .trim()
             .toInt()
-    }.getOrDefault(1)
+    }.getOrElse { cause ->
+        if (buildingRelease) {
+            error(
+                "Release build requested but the versionCode could not be derived from " +
+                    "`git rev-list --count HEAD` ($cause).\n" +
+                    "Falling back to 1 here would ship a version code that cannot climb. Build " +
+                    "releases from a full clone — not a shallow checkout or a source archive.",
+            )
+        }
+        1
+    }
 
 // Signing coordinates come from local.properties, which is gitignored; the keystore itself lives
 // outside the repo entirely so it cannot be committed by accident (ADR-0009). `Properties` is
@@ -47,10 +79,8 @@ val uploadKeyProperties =
 val hasUploadKey = uploadKeyProperties.all { localProperties.getProperty(it)?.isNotBlank() == true }
 
 // A release build with no key must fail loudly rather than quietly emitting an unsigned artifact
-// that only Play rejects, half an hour later. Inspecting the requested task names is deliberately
-// blunt: this is a single-module build, so anything with "Release" in it is ours, and the check
-// runs at configuration time — before Gradle does any work at all.
-val buildingRelease = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+// that only Play rejects, half an hour later. Same reasoning as the versionCode guard above, and
+// the same `buildingRelease` flag drives both.
 if (buildingRelease && !hasUploadKey) {
     error(
         "Release build requested but the upload key is missing. Add to local.properties:\n" +
