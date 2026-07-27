@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.0](https://github.com/srednimax/binky-app/compare/v0.4.0...v0.5.0) (2026-07-27)
+
+
+### Features
+
+* prove the release path, finish the listing assets, and draw an original icon ([100093e](https://github.com/srednimax/binky-app/commit/100093e6a3b918722314739b27777860fac3440d))
+* replace the Noto Emoji icon with original art ([6075bec](https://github.com/srednimax/binky-app/commit/6075bec1e9d583a736ab2f9a04e26bff71a1fe4a))
+* replace the template robot with a rabbit launcher icon ([025320f](https://github.com/srednimax/binky-app/commit/025320ffbe79a473963cab92e8e1dd7cb1b4efd6))
+* replace the template robot with a rabbit launcher icon ([369ac54](https://github.com/srednimax/binky-app/commit/369ac54b438564479bccf5538ca8a758293a7f1b))
+
 ## [0.4.0](https://github.com/srednimax/bunny-app/compare/v0.3.0...v0.4.0) (2026-07-27)
 
 
