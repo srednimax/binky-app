@@ -1,0 +1,354 @@
+package app.binky.tracker
+
+import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavEntryDecorator
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.ui.NavDisplay
+import app.binky.tracker.data.BunnySelection
+import app.binky.tracker.data.bunnyId
+import app.binky.tracker.ui.archive.ArchivedBunniesScreen
+import app.binky.tracker.ui.bunny.BunnyEditorScreen
+import app.binky.tracker.ui.care.CareAndMedsScreen
+import app.binky.tracker.ui.home.HomeScreen
+import app.binky.tracker.ui.more.MoreScreen
+import app.binky.tracker.ui.observations.ChooseBunnyDialog
+import app.binky.tracker.ui.observations.ObservationEntryScreen
+import app.binky.tracker.ui.observations.ObservationsScreen
+import app.binky.tracker.ui.settings.SettingsScreen
+import app.binky.tracker.ui.shell.AppShellViewModel
+import app.binky.tracker.ui.shell.BunnySwitcher
+import app.binky.tracker.ui.shell.ShellUiState
+import app.binky.tracker.ui.weight.WeightEntryScreen
+import app.binky.tracker.ui.weight.WeightScreen
+
+/**
+ * What every back-stack entry is wrapped in — above all, **one `ViewModelStore` per entry**.
+ *
+ * Nav3 does not do this on its own. The ViewModel decorator ships in a separate artifact
+ * (`lifecycle-viewmodel-navigation3`), which `navigation3-ui` does not depend on, so `NavDisplay`'s
+ * default list cannot contain it. Without it every `viewModel()` resolves to the *Activity's* store
+ * and outlives the screen that made it: the bunny editor came back with its `saved` flag still set
+ * and bounced straight out of the second "Add a bunny" of a session, and only killing the process
+ * cleared it.
+ *
+ * `rememberSaveableStateHolderNavEntryDecorator` is Nav3's own default, restated because passing
+ * the list replaces it. The scene-setup decorator is `internal` to Nav3 and applied by `NavDisplay`
+ * itself, so it is not ours to restate.
+ *
+ * Extracted from [MainNavigation] so `NavigationScopingTest` can assert the scoping directly.
+ */
+@Composable
+internal fun appEntryDecorators(): List<NavEntryDecorator<NavKey>> =
+    listOf(
+        rememberSaveableStateHolderNavEntryDecorator(),
+        rememberViewModelStoreNavEntryDecorator(),
+    )
+
+/**
+ * The app shell: the persistent bunny switcher, the bottom-navigation destinations, and the one
+ * back stack they share (ADR-0015).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainNavigation(modifier: Modifier = Modifier) {
+    val shellViewModel: AppShellViewModel = viewModel(factory = AppShellViewModel.Factory)
+    // Kotlin note: `by` unwraps the State object, so `state` reads as the value itself.
+    // `collectAsStateWithLifecycle` subscribes to the Flow only while the screen is on screen —
+    // the Compose equivalent of subscribing in an effect and unsubscribing on unmount.
+    val state by shellViewModel.uiState.collectAsStateWithLifecycle()
+
+    val backStack = rememberNavBackStack(Home)
+    val activity = LocalActivity.current
+
+    // A detail screen pushed on top of a destination keeps that destination selected below it.
+    val current = backStack.lastOrNull { it.asTopLevelDestination() != null }?.asTopLevelDestination()
+    val onDetailScreen = backStack.lastOrNull()?.asTopLevelDestination() == null
+
+    // The "which bunny?" step the global "+" takes under "All bunnies" (ADR-0008). Lives here rather
+    // than in a screen because the FAB does, and the FAB is in the shell precisely so it is the same
+    // button on Home and on Observations.
+    var choosingBunny by rememberSaveable { mutableStateOf(false) }
+
+    // The snackbar host belongs to the **same** Scaffold as the FAB, or the two lay out in ignorance
+    // of each other and the FAB covers the snackbar's action — which for the healthy day means an
+    // Undo the owner can see and cannot press. Material3's Scaffold lifts the FAB above whatever its
+    // own snackbar host is showing; that only works if it owns both.
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    Scaffold(
+        modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            if (!onDetailScreen) {
+                Column {
+                    TopAppBar(
+                        title = {
+                            BunnySwitcher(
+                                state = state,
+                                onSelectBunny = shellViewModel::selectBunny,
+                                onSelectAllBunnies = shellViewModel::selectAllBunnies,
+                                onAddBunny = { backStack.add(BunnyEditor()) },
+                            )
+                        },
+                    )
+                    if (state.readOnly) {
+                        ArchivedBanner(onLeave = shellViewModel::closeArchivedScope)
+                    }
+                }
+            }
+        },
+        bottomBar = {
+            if (!onDetailScreen) {
+                BunnyNavigationBar(
+                    current = current,
+                    onSelect = { destination -> backStack.showTopLevel(destination) },
+                )
+            }
+        },
+        floatingActionButton = {
+            if (!onDetailScreen && current.offersLogObservation && state.canLogObservation) {
+                FloatingActionButton(
+                    onClick = {
+                        // Under "All bunnies" there is no fluffle to pre-select from, so the scope
+                        // asks which bunny before opening the form (ADR-0008). One bunny in scope
+                        // goes straight there.
+                        val bunnyId = state.selection.bunnyId
+                        if (bunnyId != null) backStack.add(LogObservation(bunnyId)) else choosingBunny = true
+                    },
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = stringResource(R.string.observation_add_title),
+                    )
+                }
+            }
+        },
+    ) { insets ->
+        NavDisplay(
+            backStack = backStack,
+            modifier = Modifier.padding(insets),
+            entryDecorators = appEntryDecorators(),
+            onBack = {
+                // Back from a detail screen returns to its destination; back from any top-level
+                // destination returns to Home, which is always the bottom of the stack; back from
+                // Home exits (ADR-0015).
+                if (backStack.size > 1) backStack.removeLastOrNull() else activity?.finish()
+            },
+            // Kotlin note: this is a builder DSL, not a map literal — `entry<Home> { … }` registers
+            // the composable that renders that key, and the lambda receives the key itself, which
+            // is how a key carrying arguments passes them in.
+            entryProvider =
+                entryProvider {
+                    entry<Home> {
+                        HomeScreen(
+                            onAddBunny = { backStack.add(BunnyEditor()) },
+                            onEditBunny = { bunnyId -> backStack.add(BunnyEditor(bunnyId)) },
+                            onSelectBunny = shellViewModel::selectBunny,
+                        )
+                    }
+                    entry<Weight> {
+                        WeightScreen(
+                            onAddWeight = { bunnyId -> backStack.add(WeightEntry(bunnyId)) },
+                            onEditWeight = { bunnyId, weightId ->
+                                backStack.add(WeightEntry(bunnyId, weightId))
+                            },
+                        )
+                    }
+                    entry<Observations> {
+                        ObservationsScreen(
+                            shell = state,
+                            snackbarHostState = snackbarHostState,
+                            onEditObservation = { bunnyId, observationId ->
+                                backStack.add(LogObservation(bunnyId, observationId))
+                            },
+                        )
+                    }
+                    entry<CareAndMeds> { CareAndMedsScreen(state = state) }
+                    entry<More> {
+                        MoreScreen(
+                            onOpenArchived = { backStack.add(ArchivedBunnies) },
+                            onOpenSettings = { backStack.add(Settings) },
+                        )
+                    }
+                    entry<Settings> { SettingsScreen(onBack = { backStack.removeLastOrNull() }) }
+                    entry<WeightEntry> { key ->
+                        WeightEntryScreen(
+                            bunnyId = key.bunnyId,
+                            weightId = key.weightId,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
+                    entry<ArchivedBunnies> {
+                        ArchivedBunniesScreen(
+                            onBack = { backStack.removeLastOrNull() },
+                            onOpen = { bunnyId ->
+                                shellViewModel.openArchivedScope(bunnyId)
+                                // The read-only scope is a scope over the ordinary screens, not a
+                                // screen of its own, so entering it lands on Home.
+                                backStack.showTopLevel(TopLevelDestination.HOME)
+                            },
+                        )
+                    }
+                    entry<LogObservation> { key ->
+                        ObservationEntryScreen(
+                            bunnyId = key.bunnyId,
+                            observationId = key.observationId,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
+                    entry<BunnyEditor> { key ->
+                        BunnyEditorScreen(
+                            bunnyId = key.bunnyId,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
+                },
+        )
+    }
+
+    if (choosingBunny) {
+        ChooseBunnyDialog(
+            title = stringResource(R.string.observation_which_bunny),
+            bunnies = state.activeBunnies,
+            onPick = { bunnyId ->
+                choosingBunny = false
+                backStack.add(LogObservation(bunnyId))
+            },
+            onDismiss = { choosingBunny = false },
+        )
+    }
+}
+
+/**
+ * Where the global "+" renders (ADR-0015): the two destinations an observation belongs to.
+ *
+ * **Not on More**, which is a settings drawer, and not on Weight, whose own add button carries a
+ * bunny id the "+" deliberately does not — the global "+" stays observation-only.
+ */
+private val TopLevelDestination?.offersLogObservation: Boolean
+    get() = this == TopLevelDestination.HOME || this == TopLevelDestination.OBSERVATIONS
+
+/**
+ * Whether there is anything to log against: a real bunny in scope, and a scope that permits writing.
+ *
+ * An archived bunny is read-only, so the "+" is **absent** rather than present-and-refusing
+ * (ADR-0004).
+ */
+private val ShellUiState.canLogObservation: Boolean
+    get() =
+        !readOnly &&
+            selection != BunnySelection.Loading &&
+            selection != BunnySelection.Empty
+
+@Composable
+private fun BunnyNavigationBar(
+    current: TopLevelDestination?,
+    onSelect: (TopLevelDestination) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    NavigationBar(modifier = modifier) {
+        TopLevelDestination.entries
+            .filter { it.visibility != DestinationVisibility.Hidden }
+            .forEach { destination ->
+                NavigationBarItem(
+                    selected = destination == current,
+                    onClick = { onSelect(destination) },
+                    icon = {
+                        Icon(
+                            imageVector = destination.icon,
+                            // The label below carries the name; describing the icon too would only
+                            // make a screen reader say it twice.
+                            contentDescription = null,
+                        )
+                    },
+                    label = {
+                        // Five destinations on a phone leaves ~70dp per label, and "Observations"
+                        // has no break opportunity — left to wrap it splits mid-word and draws over
+                        // its neighbours. One line, ellipsised, at the smaller of the two label
+                        // styles.
+                        Text(
+                            text = stringResource(destination.labelRes),
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                )
+            }
+    }
+}
+
+/**
+ * The read-only scope onto an archived bunny (ADR-0015): a banner, and no write actions. Reachable
+ * from checkpoint 1d's archived list, and never persisted — a background kill must not reopen the
+ * app into a memorial.
+ */
+@Composable
+private fun ArchivedBanner(
+    onLeave: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = modifier.fillMaxWidth()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 16.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.archived_banner),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onLeave) { Text(stringResource(R.string.archived_banner_leave)) }
+        }
+    }
+}
+
+/**
+ * **One back stack, and switching top-level destination replaces rather than pushes** (ADR-0015).
+ *
+ * Home stays at the bottom, so back from Weight / Observations / Care & Meds / More returns to it
+ * and back from Home exits. Per-tab back stacks are where Nav3 wiring turns hairy, and this app's
+ * detail screens are shallow — pushing destinations would only turn Back into a history tour of the
+ * bottom bar.
+ */
+private fun NavBackStack<NavKey>.showTopLevel(destination: TopLevelDestination) {
+    while (size > 1) removeAt(size - 1)
+    if (destination.key != Home) add(destination.key)
+}

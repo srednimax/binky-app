@@ -8,5 +8,5 @@
 # — they are read on GitHub, not here, and giving them front matter would put planning documents on a
 # public site that is meant to serve one page.
 theme: jekyll-theme-minimal
-title: Bunny Tracker
+title: Binky
 description: An Android app for keeping track of a bunny's health.
