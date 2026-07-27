@@ -643,6 +643,14 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - Play's **App content** section: data safety, content rating, target audience, ads and news
      declarations. These gate publishing to **any** track, internal included, which is why they are here and
      not at 3g: the pipeline does not move until they are green.
+
+     Every answer is written out in [`docs/play-app-content.md`](play-app-content.md), verified against
+     the built release artifact rather than against intent — the app declares **no user-facing
+     permission at all**, which is what makes "collects nothing" a checkable claim rather than a
+     promise. Play cross-checks that form against the privacy policy, so the two move together or
+     neither does. Three answers are judgement calls and are marked as such: the 18+ target age, the
+     Health-apps declaration (Play's is written for *human* health), and Android Auto Backup, which is
+     disclosed but is not collection by the app.
    - A **minimum-viable store listing** — short and full description, feature graphic, two screenshots of
      whatever exists. It gets revisited at 3g with real 1.0 screenshots; taking them now would photograph an
      app that is about to change. The copy below is decided; only the screenshots are placeholders.
