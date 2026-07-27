@@ -687,6 +687,17 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - **A real app icon** — adaptive plus the 512² listing asset. This is ADR-0012's stated exception:
      identity assets are not the visual polish that comes last, because they cannot be deferred past the
      release the way spacing and colour can, and the template's green robot is not a thing to ship.
+
+     What is there now is **stock and deliberately temporary**: Noto Emoji's rabbit on a flat green,
+     adaptive foreground/background plus a monochrome layer for Android 13+, generated from
+     [`art/`](../art/). It reads as an emoji, which is the point at which it stops being good enough —
+     it exists so the release path can be proven with something that is not the robot.
+
+     It carries **one obligation that gates the upload**: the OFL requires the licence notice to ship
+     with the app, and there is no licences screen. Drawing an original icon removes the obligation
+     along with the placeholder, which is the reason to prefer it over adding the screen for this alone.
+     Flaticon and the other stock libraries whose licences forbid using their art as a logo were ruled
+     out on that basis, not on taste.
    - Keystore generated **once**, kept out of git, backed up off this machine; `signingConfigs` read from
      `local.properties`, and a release build with no key **fails loudly** rather than falling back to the
      debug key. Note what Play App Signing actually means (ADR-0009): Google holds the permanent *app
