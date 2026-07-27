@@ -643,6 +643,14 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - Play's **App content** section: data safety, content rating, target audience, ads and news
      declarations. These gate publishing to **any** track, internal included, which is why they are here and
      not at 3g: the pipeline does not move until they are green.
+
+     Every answer is written out in [`docs/play-app-content.md`](play-app-content.md), verified against
+     the built release artifact rather than against intent — the app declares **no user-facing
+     permission at all**, which is what makes "collects nothing" a checkable claim rather than a
+     promise. Play cross-checks that form against the privacy policy, so the two move together or
+     neither does. Three answers are judgement calls and are marked as such: the 18+ target age, the
+     Health-apps declaration (Play's is written for *human* health), and Android Auto Backup, which is
+     disclosed but is not collection by the app.
    - A **minimum-viable store listing** — short and full description, feature graphic, two screenshots of
      whatever exists. It gets revisited at 3g with real 1.0 screenshots; taking them now would photograph an
      app that is about to change. The copy below is decided; only the screenshots are placeholders.
@@ -688,16 +696,22 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      identity assets are not the visual polish that comes last, because they cannot be deferred past the
      release the way spacing and colour can, and the template's green robot is not a thing to ship.
 
-     What is there now is **stock and deliberately temporary**: Noto Emoji's rabbit on a flat green,
-     adaptive foreground/background plus a monochrome layer for Android 13+, generated from
-     [`art/`](../art/). It reads as an emoji, which is the point at which it stops being good enough —
-     it exists so the release path can be proven with something that is not the robot.
+     **Done, and original.** The stock Noto Emoji rabbit that stood here first carried an obligation
+     that gated the upload — the OFL requires the licence notice to reach the user, and there is no
+     licences screen — so the art was replaced rather than the screen added, exactly as this
+     checkpoint preferred. Flaticon and the other stock libraries whose licences forbid using their
+     art as a logo were ruled out on the same basis, not on taste.
 
-     It carries **one obligation that gates the upload**: the OFL requires the licence notice to ship
-     with the app, and there is no licences screen. Drawing an original icon removes the obligation
-     along with the placeholder, which is the reason to prefer it over adding the screen for this alone.
-     Flaticon and the other stock libraries whose licences forbid using their art as a logo were ruled
-     out on that basis, not on taste.
+     The mark is now six ellipses declared in [`art/rabbit.py`](../art/rabbit.py), from which both
+     the adaptive icon (foreground, background, and a monochrome layer for Android 13+) and the
+     feature graphic are generated — one declaration, so the two cannot drift apart. The eye is a
+     hole wound against the other subpaths rather than a shape painted in the ground colour, which
+     is what lets it survive the monochrome layer's flat tint. Verified rendered by the system on
+     the Xiaomi, not just as committed XML.
+
+     **No third-party art remains in the repo**, so nothing here obliges a licences screen. That is
+     a reason to build one deliberately later if the Apache-2.0 dependencies warrant it, rather than
+     under release pressure for a single icon.
    - Keystore generated **once**, kept out of git, backed up off this machine; `signingConfigs` read from
      `local.properties`, and a release build with no key **fails loudly** rather than falling back to the
      debug key. Note what Play App Signing actually means (ADR-0009): Google holds the permanent *app
@@ -726,10 +740,21 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - That build is then **uninstalled**. It is a pipeline proof, not a dogfood build: leaving a release build
      at schema 3 sitting on the phone would create a migration obligation for a version nobody used, and
      3c's wipe is spent on the debug app instead. The author's real bunny history starts at 1.0.
-   - `versionName` / `versionCode` stay automated (release-please) and are never hand-edited. Two things to
-     verify: that the automated values reach a **release** build's manifest, which no debug build has ever
-     demonstrated, and that the `gitVersionCode` fallback to `1` **fails a release build** rather than
-     shipping — a Play track never forgets its highest `versionCode`.
+   - `versionName` / `versionCode` stay automated (release-please) and are never hand-edited. Both halves
+     are **verified against a real `bundleRelease`**: the AAB's manifest carries `versionCode` 85, matching
+     `git rev-list --count HEAD`, alongside `versionName` `0.4.0`, and the bundle is signed by the upload
+     key. Reading that back needs a decoder — an AAB stores `base/manifest/AndroidManifest.xml` as protobuf,
+     not the binary XML `aapt2 dump` knows how to read.
+
+     The second half was **not true when it was written**. Built from a source archive with no `.git` — the
+     documented fallback case — the release produced a **signed AAB carrying `versionCode` 1**. The build
+     did fail, but only after packaging and signing it, and only because the configuration cache could not
+     serialise the failed `git` call; `--no-configuration-cache` removes that and leaves a clean success. So
+     the fallback shipped, which is exactly what a Play track never forgives. The guard now runs at
+     configuration time and leaves no artifact behind, and the exit code is inspected in our own code rather
+     than left to throw inside Gradle's value source — which is what deferred the failure past the artifact.
+     A debug build with no git history still falls back to 1 and still succeeds, which is the case the
+     fallback exists for.
    - There is no test gate here, and nothing in this checkpoint touches app code. The gate is that the build
      is installable from Play on the Xiaomi and that the debug app installs beside it — and discovering both
      now rather than at 3g is the entire reason this is first.
@@ -790,6 +815,21 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - `recordCounts` gains its third contributor. Photos are **sole-owned**, so they land in the destroyed
      bucket, and deleting a bunny must remove its photo **files** — the same best-effort-after-commit the
      avatar already gets, over a list rather than one path.
+   - **Exclude `photos/` from Android Auto Backup — the privacy policy already promises this.** It says
+     *"Your photo gallery in the app is deliberately excluded from it"*, and that is **not implemented**:
+     `allowBackup` is `true` while the manifest references neither `android:dataExtractionRules` nor
+     `android:fullBackupContent`, and both files in `res/xml/` are still AGP template stubs with every
+     rule commented out. Auto Backup therefore takes all of `filesDir`, `avatars/` included. The claim is
+     not false *today* only because the gallery does not exist yet; it becomes false in this checkpoint,
+     against a policy that has been **published since 3a**. Either wire the rules up here or change that
+     sentence — and wiring them up is the right call, since a gallery is exactly the large, replaceable
+     data Auto Backup should skip, while the database that carries the actual history is not.
+
+     **Both attributes are needed, not one.** `fullBackupContent` governs API 30 and below,
+     `dataExtractionRules` API 31 and above; `minSdk` is 26, so setting only the modern one silently
+     leaves every device below API 31 backing the gallery up anyway. Verify against ADR-0005's export
+     scopes rather than reinventing the path list — the same split that makes an export scope a list of
+     directories makes this a list of exclusions.
    - **The destructive fallback becomes debug-only here** (ADR-0023), in the same commit as the bump, because
      this is the wipe that makes it the last one. A release build with no migration path throws at open
      instead of deleting a bunny's history, and the release variant of the consent screen loses its forward
