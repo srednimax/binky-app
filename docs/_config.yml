@@ -1,0 +1,12 @@
+# GitHub Pages config for the docs/ folder.
+#
+# This exists for exactly one reason: Google Play requires a *hosted* privacy policy URL, and the app has
+# no server by design (ADR-0011). Pages serves it off the already-public repo for nothing.
+#
+# Jekyll only converts a Markdown file to HTML if it carries YAML front matter. privacy-policy.md has it;
+# PLAN.md, RELEASING.md and the ADRs deliberately do not, so they are copied verbatim rather than rendered
+# — they are read on GitHub, not here, and giving them front matter would put planning documents on a
+# public site that is meant to serve one page.
+theme: jekyll-theme-minimal
+title: Bunny Tracker
+description: An Android app for keeping track of a bunny's health.

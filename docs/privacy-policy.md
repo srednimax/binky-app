@@ -1,3 +1,8 @@
+---
+layout: default
+title: Privacy Policy — Bunny Tracker
+---
+
 # Privacy Policy — Bunny Tracker
 
 _Last updated: 27 July 2026_
