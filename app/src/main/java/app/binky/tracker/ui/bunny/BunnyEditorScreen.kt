@@ -1,6 +1,5 @@
 package app.binky.tracker.ui.bunny
 
-import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -44,7 +43,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
@@ -53,11 +51,10 @@ import app.binky.tracker.data.Sex
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.common.PickerOption
 import app.binky.tracker.ui.common.SearchablePickerDialog
-import java.io.File
+import app.binky.tracker.ui.common.newCameraTarget
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.UUID
 
 /**
  * Add or edit a bunny (ADR-0016). Reached from the switcher's "Add a bunny" and from the profile on
@@ -465,17 +462,6 @@ private fun <T : Enum<T>> ChoiceField(
             }
         }
     }
-}
-
-/**
- * A file for the camera to write into, behind a `content://` Uri — a `file://` one has been illegal
- * to hand another app since Android 7. It lands in the cache: MediaFiles re-encodes the shot into
- * `avatars/` and this copy is disposable.
- */
-private fun newCameraTarget(context: Context): Uri {
-    val directory = File(context.cacheDir, "camera").apply { mkdirs() }
-    val file = File(directory, "${UUID.randomUUID()}.jpg")
-    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 }
 
 // The date picker speaks epoch millis at UTC midnight; a birthday is a calendar date with no time

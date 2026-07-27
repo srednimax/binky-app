@@ -51,6 +51,7 @@ import app.binky.tracker.ui.more.MoreScreen
 import app.binky.tracker.ui.observations.ChooseBunnyDialog
 import app.binky.tracker.ui.observations.ObservationEntryScreen
 import app.binky.tracker.ui.observations.ObservationsScreen
+import app.binky.tracker.ui.photos.PhotoGalleryScreen
 import app.binky.tracker.ui.settings.SettingsScreen
 import app.binky.tracker.ui.shell.AppShellViewModel
 import app.binky.tracker.ui.shell.BunnySwitcher
@@ -105,6 +106,11 @@ fun MainNavigation(modifier: Modifier = Modifier) {
     // than in a screen because the FAB does, and the FAB is in the shell precisely so it is the same
     // button on Home and on Observations.
     var choosingBunny by rememberSaveable { mutableStateOf(false) }
+
+    // The same step for More's photo gallery, which is per-bunny for the same reason: "All bunnies"
+    // is not a gallery, it is several. Kept as its own flag rather than shared with the "+" so the
+    // two dialogs cannot answer each other's question.
+    var choosingGalleryBunny by rememberSaveable { mutableStateOf(false) }
 
     // The snackbar host belongs to the **same** Scaffold as the FAB, or the two lay out in ignorance
     // of each other and the FAB covers the snackbar's action — which for the healthy day means an
@@ -205,6 +211,21 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                         MoreScreen(
                             onOpenArchived = { backStack.add(ArchivedBunnies) },
                             onOpenSettings = { backStack.add(Settings) },
+                            // Null while there is no bunny to have photos of — the row is then one
+                            // of ADR-0015's inert entries rather than a way into an empty screen.
+                            onOpenPhotos =
+                                if (state.hasBunnyInScope) {
+                                    {
+                                        val bunnyId = state.selection.bunnyId
+                                        if (bunnyId != null) {
+                                            backStack.add(PhotoGallery(bunnyId))
+                                        } else {
+                                            choosingGalleryBunny = true
+                                        }
+                                    }
+                                } else {
+                                    null
+                                },
                         )
                     }
                     entry<Settings> { SettingsScreen(onBack = { backStack.removeLastOrNull() }) }
@@ -239,6 +260,16 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                             onBack = { backStack.removeLastOrNull() },
                         )
                     }
+                    entry<PhotoGallery> { key ->
+                        PhotoGalleryScreen(
+                            bunnyId = key.bunnyId,
+                            // The archived scope is the only read-only one, and it pins exactly the
+                            // bunny this key carries, so the shell's flag is the right answer here.
+                            readOnly = state.readOnly,
+                            snackbarHostState = snackbarHostState,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
                 },
         )
     }
@@ -254,7 +285,26 @@ fun MainNavigation(modifier: Modifier = Modifier) {
             onDismiss = { choosingBunny = false },
         )
     }
+
+    if (choosingGalleryBunny) {
+        ChooseBunnyDialog(
+            title = stringResource(R.string.photo_which_bunny),
+            bunnies = state.activeBunnies,
+            onPick = { bunnyId ->
+                choosingGalleryBunny = false
+                backStack.add(PhotoGallery(bunnyId))
+            },
+            onDismiss = { choosingGalleryBunny = false },
+        )
+    }
 }
+
+/**
+ * Whether there is a bunny whose photos there could be — a real selection, or "All bunnies", which
+ * is a choice away from one. [BunnySelection.Loading] and [BunnySelection.Empty] are not.
+ */
+private val ShellUiState.hasBunnyInScope: Boolean
+    get() = selection != BunnySelection.Loading && selection != BunnySelection.Empty
 
 /**
  * Where the global "+" renders (ADR-0015): the two destinations an observation belongs to.
@@ -272,10 +322,7 @@ private val TopLevelDestination?.offersLogObservation: Boolean
  * (ADR-0004).
  */
 private val ShellUiState.canLogObservation: Boolean
-    get() =
-        !readOnly &&
-            selection != BunnySelection.Loading &&
-            selection != BunnySelection.Empty
+    get() = !readOnly && hasBunnyInScope
 
 @Composable
 private fun BunnyNavigationBar(
