@@ -1,9 +1,9 @@
 package app.binky.tracker
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -13,7 +13,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.binky.tracker.theme.BinkyTheme
 import app.binky.tracker.ui.wipe.WipeConsentScreen
 
-class MainActivity : ComponentActivity() {
+// AppCompatActivity rather than ComponentActivity, and for one reason only: it is where
+// AppCompatDelegate lives, and AppCompatDelegate is what applies a per-app language on the
+// pre-13 half of the supported range (ADR-0013). Nothing else here uses AppCompat — no views,
+// no action bar, no AppCompat widgets — and AppCompatActivity is a ComponentActivity subclass,
+// so setContent, enableEdgeToEdge and the activity-result APIs all still work unchanged.
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

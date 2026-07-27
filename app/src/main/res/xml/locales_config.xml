@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The languages this app ships in. English alone for now; Polish joins it when
+    res/values-pl/strings.xml lands, and the Settings switcher row ships with it (ADR-0013) —
+    a switcher listing one language would be pointless furniture.
+
+    Android 13+ reads this list to build the app's entry in Settings › Apps › Binky › Language.
+    Below 13 the platform has no such screen and AppCompat's backport reads the same list.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+</locale-config>
