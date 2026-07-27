@@ -645,7 +645,33 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      not at 3g: the pipeline does not move until they are green.
    - A **minimum-viable store listing** — short and full description, feature graphic, two screenshots of
      whatever exists. It gets revisited at 3g with real 1.0 screenshots; taking them now would photograph an
-     app that is about to change.
+     app that is about to change. The copy below is decided; only the screenshots are placeholders.
+
+     Play has **no hidden keyword field** — the searchable surface is title, short description and full
+     description, in that order of weight. So the title carries the keywords and the brand leads:
+
+     | Field | Value |
+     | --- | --- |
+     | Launcher label (`app_name`) | `Binky` |
+     | Play title (en) | `Binky: Bunny & Rabbit Tracker` (29/30) |
+     | Play short description (en) | `Track your rabbit's weight, health and care. Private, offline, no ads.` (70/80) |
+     | Play title (pl) | `Binky: Zdrowie Królika` (22/30) |
+
+     The **Polish listing needs its own keywords** — `królik`, `waga`, `dzienniczek zdrowia` — not a
+     translation of the English ones, because each locale's listing is indexed separately and Polish
+     owners search in Polish. English is the default listing language, matching ADR-0013's base language
+     for the same reason: it is the fallback for every unmatched locale.
+
+     The **brand name is deliberately not translated**, so `app_name` stays out of `values-pl/strings.xml`
+     and falls back. A launcher label resolves against the **system** locale, not ADR-0013's per-app
+     switcher, so translating it would put a Polish name under an English UI — or the reverse — for
+     anyone whose app language differs from their phone's. Descriptions are what carry the language.
+
+     The name was checked before it was committed to: Play requires unique **package names**, not unique
+     titles, so the two unrelated apps already called Binky are no obstacle and neither is in this
+     category. `BINKY` is a US trademark for pacifiers and teething rings — Nice class 10/28, not class 9
+     — and no class 9 registration was found. **Still to check by hand: TMview for an EUIPO or Polish
+     class 9 mark**, which is the register that would actually bite and the one gap in that search.
    - **A real app icon** — adaptive plus the 512² listing asset. This is ADR-0012's stated exception:
      identity assets are not the visual polish that comes last, because they cannot be deferred past the
      release the way spacing and colour can, and the template's green robot is not a thing to ship.
