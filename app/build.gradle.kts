@@ -217,6 +217,12 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
 
+    // The export manifest inside a backup zip (ADR-0005). JSON rather than a hand-rolled format
+    // because the manifest is what a restore's promise is sourced from — a parser written here
+    // would be one more thing between an owner's archive and their bunny's history. Enums
+    // serialise by *name*, which is the same rule the database's converters follow.
+    implementation(libs.kotlinx.serialization.json)
+
     // Media: reading the camera's orientation tag so it can be baked into the pixels (ADR-0020).
     // The androidx one, not android.media.ExifInterface — it reads from an InputStream, which is
     // what a content:// Uri from the photo picker gives us.

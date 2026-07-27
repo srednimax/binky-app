@@ -124,7 +124,7 @@ fun SchemaMismatchScreen(
                 onClick = { context.sharePreservedCopy(preservedCopyOf(mismatch.preservedCopy)) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(stringResource(R.string.settings_preserved_share))
+                Text(stringResource(R.string.preserved_share))
             }
 
             if (mismatch.wipeOnConsent) {

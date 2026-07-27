@@ -16,6 +16,9 @@ import app.binky.tracker.data.PhotoRepository
 import app.binky.tracker.data.StoredSelection
 import app.binky.tracker.data.SymptomRepository
 import app.binky.tracker.data.WeightRepository
+import app.binky.tracker.data.backup.BackupExporter
+import app.binky.tracker.data.backup.BackupRestorer
+import app.binky.tracker.data.backup.EXPORTS_DIRECTORY
 import app.binky.tracker.data.buildBunnyDatabase
 import app.binky.tracker.data.resolveSelection
 import app.binky.tracker.media.MediaFiles
@@ -90,8 +93,36 @@ class AppContainer(
      */
     val cacheDir: File = appContext.cacheDir
 
+    /**
+     * Where an export lands on its way to the share sheet. **Cache**, deliberately: a share the owner
+     * abandons is reclaimed by the OS rather than doubling the app's footprint (ADR-0005).
+     */
+    val exportsDir: File = File(appContext.cacheDir, EXPORTS_DIRECTORY)
+
     /** The single path for persisting images (house rule, ADR-0020). */
     val mediaFiles = MediaFiles(appContext)
+
+    /**
+     * Manual export (ADR-0005). Built from paths rather than from this container, because 3e's
+     * backup agent needs the same pieces and cannot reach a container at all.
+     */
+    val backupExporter =
+        BackupExporter(
+            databaseFile = appContext.getDatabasePath(databaseName),
+            filesDir = appContext.filesDir,
+            scratchDir = appContext.cacheDir,
+        )
+
+    /** Restore, which is the most destructive thing the app does — see [BackupRestorer]. */
+    val backupRestorer =
+        BackupRestorer(
+            context = appContext,
+            filesDir = appContext.filesDir,
+            preservedDir = preservedDir,
+            scratchDir = appContext.cacheDir,
+            exporter = backupExporter,
+            databaseName = databaseName,
+        )
 
     val fluffleRepository = FluffleRepository(database)
 

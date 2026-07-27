@@ -44,6 +44,7 @@ import androidx.navigation3.ui.NavDisplay
 import app.binky.tracker.data.BunnySelection
 import app.binky.tracker.data.bunnyId
 import app.binky.tracker.ui.archive.ArchivedBunniesScreen
+import app.binky.tracker.ui.backup.BackupScreen
 import app.binky.tracker.ui.bunny.BunnyEditorScreen
 import app.binky.tracker.ui.care.CareAndMedsScreen
 import app.binky.tracker.ui.home.HomeScreen
@@ -228,7 +229,13 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                                 },
                         )
                     }
-                    entry<Settings> { SettingsScreen(onBack = { backStack.removeLastOrNull() }) }
+                    entry<Settings> {
+                        SettingsScreen(
+                            onBack = { backStack.removeLastOrNull() },
+                            onOpenBackup = { backStack.add(Backup) },
+                        )
+                    }
+                    entry<Backup> { BackupScreen(onBack = { backStack.removeLastOrNull() }) }
                     entry<WeightEntry> { key ->
                         WeightEntryScreen(
                             bunnyId = key.bunnyId,
