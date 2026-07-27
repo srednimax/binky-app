@@ -75,6 +75,15 @@ data class WeightEntry(
 @Serializable data object Settings : NavKey
 
 /**
+ * Backup and restore, reached from Settings (ADR-0005).
+ *
+ * Its own screen rather than a Settings section: it holds the export scope, the restore flow and
+ * every recovery artifact on the phone, and the last of those has to sit beside the restore that can
+ * load it back in.
+ */
+@Serializable data object Backup : NavKey
+
+/**
  * One bunny's photo gallery, reached from More. A detail route off a tab, like [ArchivedBunnies].
  *
  * Keyed by the bunny rather than reading the shell's selection, so the back stack records *whose*

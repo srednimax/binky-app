@@ -892,7 +892,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      caption edit round-tripping through the `Flow`; a delete taking row and file together and the pager
      carrying on; Back closing the viewer rather than the screen; and the archived scope rendering with no
      add action, no delete and no caption edit.
-4. **3d — Manual export, and restore.**
+4. **3d — Manual export, and restore.** ✅
    - Zip at three scopes — Essential (database + preferences + `avatars/`), **Records** (default; plus
      `documents/`), Everything (plus `photos/`). A scope is **a list of `MediaKind`** plus the two fixed
      members, which is what ADR-0020 gave the enum a `directory` for; no magic strings. Preferences ride from
@@ -953,6 +953,52 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      failure mode is silently destroying the backup the owner is trying to restore. The older-schema
      migration path is not testable here, because at 1.0 no older released schema exists — it becomes a real
      test at 1.1, and the plan should not claim it before then.
+   - **Three buckets, not two, and the scope is what splits them.** The merge was specified as a function
+     over two file lists, and two lists cannot tell the case ADR-0005 cares about from its opposite: a photo
+     on disk during an *Essential* restore is **kept**, because that archive never claimed to know about
+     `photos/`; the same photo during an *Everything* restore is **orphaned**, because that archive was
+     authoritative and did not carry it. So `planMediaMerge` takes the manifest's scope as a third argument.
+     Nothing is deleted either way — naming them apart is what lets the terminal screen report honestly.
+   - The **WAL checkpoint is a constructor parameter on the exporter**, defaulting to the real one.
+     `android.database.sqlite` does not exist on the JVM, so the archive's *layout* would otherwise have had
+     no test at all. The default is the production wiring, so the seam substitutes the checkpoint and cannot
+     skip it; the real one runs in the instrumented tests, which build their archives through the exporter.
+   - **The file's header outranks the manifest** on schema version. The manifest is the authority on what an
+     archive *contains* — scope, date, counts — but it is also data an owner could have edited, and Room is
+     about to be pointed at the file rather than at the claim. `readUserVersion` on the staged copy is what
+     actually refuses a newer database; the instrumented test proves it by shipping a manifest that lies.
+   - The pre-restore snapshot is taken **after** the staged copy has been opened and migrated, not before.
+     Nothing destructive has happened until the swap, and taking it earlier would litter `preserved/` with
+     snapshots of restores that never occurred — in the one directory this app never prunes.
+   - `preserved/` now holds two occupants, so `PreservedCopy` carries a `PreservedKind` and the listing sorts
+     on the parsed date rather than on the name: `bunny-before-restore-…` and `bunny-2026…` no longer sort
+     chronologically against each other, which the old name-only ordering had quietly relied on.
+   - The section **moved off Settings onto the new Backup screen**, and its strings moved from
+     `settings_preserved_*` to `preserved_*`. A restore snapshot has to sit beside the restore that can load
+     it back in, and the schema-mismatch screen shares the same share action, so the strings belong to
+     neither screen.
+   - Restore reads the archive **twice**, not three times: pass one lands the manifest, the database and the
+     preferences, counts every byte it would ever write and notes the media entry names; pass two extracts
+     the media straight into `filesDir`. The ceiling is therefore enforced before anything is touched, and a
+     large gallery is never held on disk twice.
+   - `kotlinx-serialization-json` added for the manifest. The serialization *plugin* was already present for
+     Nav3's `@Serializable` keys; the JSON format itself was not, and a hand-rolled parser between an owner's
+     archive and their bunny's history is not a saving worth making.
+   - Verified: `./gradlew test` (127 JVM), the full instrumented suite on the Xiaomi (84, via the plain-APK
+     fallback — `connectedAndroidTest`'s split install hit `INSTALL_FAILED_USER_RESTRICTED` again), and
+     `lint` clean of anything from this checkpoint.
+   - Exercised on the Xiaomi by hand: an Everything export off the seeded fixture, whose zip holds the
+     manifest, the database, the preferences and exactly the five seeded photos, with per-kind counts to
+     match; the FileProvider grant and the share sheet, showing the scope in the filename; then a restore
+     driven from a snapshot row — the confirmation naming *"Everything backup from …"* out of the manifest,
+     the terminal report, the pre-restore snapshot landing in `preserved/` at Essential scope (9 kB against
+     the archive's 14), and **"Close Binky" actually ending the process**.
+   - Two things that hand-verification caught and nothing else would have. *"Restored a Everything backup"* —
+     an article chosen at build time cannot agree with a scope name chosen at run time, and two of the three
+     start with a vowel, so the copy says "the". And the SAF picker on HyperOS **ignores injected input
+     entirely**, so the picker → confirm → restore chain was exercised through the `preserved/` snapshot path
+     instead; the picked-file path differs only in where the `InputStream` comes from, but it is the one link
+     no test on this device touches, and it is worth a deliberate tap before the release gate.
 5. **3e — Auto Backup: the agent, and the marker that must not lie.**
    - `BunnyBackupAgent` registered with `android:backupAgent` **and `android:fullBackupOnly="true"`** —
      declaring an agent without it puts the app on the key/value path, which is not what ADR-0005 describes.

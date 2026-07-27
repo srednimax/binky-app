@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import app.binky.tracker.data.backup.BackupScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -24,9 +25,13 @@ enum class WeightUnit { KILOGRAMS, GRAMS }
  * Owner preferences held outside the database, because ADR-0007 lets the database be wiped and
  * these must survive that.
  *
- * Two keys: which bunny is selected, and the weight display unit. The unit's toggle lands in 2c with
- * the Settings screen — a preference with no setter is a constant with a DataStore round-trip, so
- * the setter is here from the start even though nothing calls it yet.
+ * Three keys: which bunny is selected, the weight display unit, and the export scope. The unit's
+ * toggle lands in 2c with the Settings screen — a preference with no setter is a constant with a
+ * DataStore round-trip, so the setter is here from the start even though nothing calls it yet.
+ *
+ * These **travel in every export scope, from Essential upward** (ADR-0005). They are a few hundred
+ * bytes, and a restored phone that has forgotten its display unit, its selected bunny and its chosen
+ * backup scope does not read as missing data — it reads as bugs.
  */
 class AppPreferences(
     private val dataStore: DataStore<Preferences>,
@@ -47,6 +52,21 @@ class AppPreferences(
 
     suspend fun setWeightUnit(unit: WeightUnit) {
         dataStore.edit { preferences -> preferences[WEIGHT_UNIT] = unit.name }
+    }
+
+    /**
+     * What a manual export defaults to. **Records**, per ADR-0005: everything the owner may need
+     * again, without the gallery that makes an export large enough to put someone off running one.
+     *
+     * Chosen during first-run setup rather than hidden here, and changed in Backup settings later.
+     */
+    val backupScope: Flow<BackupScope> =
+        dataStore.data
+            .catch { cause -> if (cause is IOException) emit(emptyPreferences()) else throw cause }
+            .map { preferences -> decodeScope(preferences[BACKUP_SCOPE]) }
+
+    suspend fun setBackupScope(scope: BackupScope) {
+        dataStore.edit { preferences -> preferences[BACKUP_SCOPE] = scope.name }
     }
 
     suspend fun setSelection(selection: StoredSelection) {
@@ -73,6 +93,7 @@ class AppPreferences(
     private companion object {
         val SELECTED_BUNNY = stringPreferencesKey("selected_bunny")
         val WEIGHT_UNIT = stringPreferencesKey("weight_unit")
+        val BACKUP_SCOPE = stringPreferencesKey("backup_scope")
 
         /** Bunny ids are UUIDs, so this sentinel cannot collide with one. */
         const val ALL = "all"
@@ -88,5 +109,8 @@ class AppPreferences(
         // database's enums follow, for the same reason.
         fun decodeUnit(value: String?): WeightUnit =
             WeightUnit.entries.firstOrNull { it.name == value } ?: WeightUnit.KILOGRAMS
+
+        fun decodeScope(value: String?): BackupScope =
+            BackupScope.entries.firstOrNull { it.name == value } ?: BackupScope.Records
     }
 }

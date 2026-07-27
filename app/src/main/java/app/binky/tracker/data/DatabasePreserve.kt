@@ -14,6 +14,18 @@ internal const val PRESERVED_PREFIX = "bunny-"
 internal const val PRESERVED_SUFFIX = ".db"
 
 /**
+ * How a **pre-restore snapshot** is named (ADR-0005) — the other occupant of `preserved/`, and the
+ * one with the opposite properties: current schema, restorable in one tap, where a wipe copy is at a
+ * stale schema and unrestorable by design.
+ *
+ * Named for what it is rather than for its scope, so a listing can say which row is which. It sits
+ * beside the wipe copies deliberately: `preserved/` is the directory this app never prunes, and both
+ * occupants are recovery artifacts.
+ */
+internal const val SNAPSHOT_PREFIX = "bunny-before-restore-"
+internal const val SNAPSHOT_SUFFIX = ".zip"
+
+/**
  * In WAL mode the most recent writes may live only in a sidecar, so a copy of the `.db` alone can be
  * missing the very data worth preserving. Both travel with it, and both have to travel again when
  * the owner shares the copy off the phone.
