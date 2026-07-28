@@ -55,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -107,7 +108,10 @@ fun PhotoGalleryScreen(
 
     // The import result is announced once, through the shell's snackbar host — the same one the FAB
     // is laid out against, so this cannot end up underneath it.
-    val resources = context.resources
+    // LocalResources rather than context.resources: the composition is recomposed when the
+    // configuration changes (a language switch, ADR-0013), and reading through the context caches a
+    // Resources that the switch has already replaced.
+    val resources = LocalResources.current
     val onShown by rememberUpdatedState(viewModel::resultShown)
     LaunchedEffect(state.result) {
         val result = state.result ?: return@LaunchedEffect
@@ -115,8 +119,11 @@ fun PhotoGalleryScreen(
             if (result.unreadable == 0) {
                 resources.getQuantityString(R.plurals.photo_import_added, result.added, result.added)
             } else {
-                resources.getString(
-                    R.string.photo_import_partial,
+                // Pluralised on the *unreadable* count, not the added one: it is the number the
+                // trailing clause governs, and the clause is what inflects outside English.
+                resources.getQuantityString(
+                    R.plurals.photo_import_partial,
+                    result.unreadable,
                     result.added,
                     result.added + result.unreadable,
                     result.unreadable,

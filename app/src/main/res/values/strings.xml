@@ -417,8 +417,15 @@
         <item quantity="other">%d photos added.</item>
     </plurals>
     <!-- Reported once at the end of an import, never once per bad file: "18 of 20 added, 2 could
-         not be read". Naming the failures beats silently landing fewer photos than were picked. -->
-    <string name="photo_import_partial">%1$d of %2$d added, %3$d could not be read.</string>
+         not be read". Naming the failures beats silently landing fewer photos than were picked.
+         A <plurals> even though both English items are identical: the quantity is the *unreadable*
+         count, and the clause it governs inflects in Polish ("1 pliku" / "2 plików") where English
+         has nothing to vary. The structure has to exist before the translation lands, not after
+         it — ADR-0013. -->
+    <plurals name="photo_import_partial">
+        <item quantity="one">%1$d of %2$d added, %3$d could not be read.</item>
+        <item quantity="other">%1$d of %2$d added, %3$d could not be read.</item>
+    </plurals>
     <string name="photo_description">Photo of %1$s</string>
     <string name="photo_close">Close</string>
     <!-- "Taken" only when the picture's own metadata said so; anything else is dated by when it
