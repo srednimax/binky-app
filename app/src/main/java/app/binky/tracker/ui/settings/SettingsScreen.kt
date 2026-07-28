@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,13 +21,19 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -70,6 +78,8 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             WeightUnitSetting(unit = state.unit, onSelect = viewModel::setUnit)
+            HorizontalDivider()
+            LanguageSetting()
             HorizontalDivider()
             BackupSetting(onOpen = onOpenBackup)
 
@@ -118,6 +128,84 @@ private fun WeightUnitSetting(
             text = stringResource(R.string.settings_weight_unit_help),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * ADR-0013's language switcher — the Settings row that ADR originally hoped the whole thing would
+ * be, before checking found the mechanism to be an activity base class and a root theme.
+ *
+ * **English alone in the list at 1.0**, and that is not the pointless furniture ADR-0013 warned
+ * about. The mechanism landed at 3b, months before the translation it exists for; shipping the row
+ * on top of it means the switcher is exercised by hand on a real phone in 1.0 rather than for the
+ * first time in the week Polish arrives. At 3g the list grows by one entry and this code does not
+ * change at all — which is the claim being tested.
+ *
+ * No ViewModel: the chosen language lives in [AppCompatDelegate], not in this app's preferences,
+ * and routing it through one would be a second copy of an answer the system also owns.
+ */
+@Composable
+private fun LanguageSetting() {
+    // Local state, seeded from the delegate. Applying a language recreates the Activity, so this is
+    // thrown away and re-read almost immediately — it exists so the dialog's radio button moves
+    // under the finger rather than on the next frame after a recreation.
+    var chosen by remember { mutableStateOf(currentAppLanguage()) }
+    var picking by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier.fillMaxWidth().clickable { picking = true },
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(text = stringResource(R.string.settings_language), style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = chosen?.let { stringResource(it.labelRes) } ?: stringResource(R.string.settings_language_system),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            text = stringResource(R.string.settings_language_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    if (picking) {
+        AlertDialog(
+            onDismissRequest = { picking = false },
+            title = { Text(stringResource(R.string.settings_language)) },
+            text = {
+                // Kotlin note: `listOf(null) + entries` builds the offered list with the
+                // follow-the-phone case as a first-class member rather than a special row, so the
+                // radio group has one shape and one selection rule.
+                Column(modifier = Modifier.selectableGroup()) {
+                    (listOf(null) + AppLanguage.entries).forEach { option ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier =
+                                Modifier.fillMaxWidth().selectable(
+                                    selected = option == chosen,
+                                    role = Role.RadioButton,
+                                    onClick = {
+                                        chosen = option
+                                        picking = false
+                                        setAppLanguage(option)
+                                    },
+                                ),
+                        ) {
+                            RadioButton(selected = option == chosen, onClick = null)
+                            Text(
+                                text =
+                                    option?.let { stringResource(it.labelRes) }
+                                        ?: stringResource(R.string.settings_language_system),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { picking = false }) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 }

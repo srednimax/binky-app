@@ -25,9 +25,10 @@ enum class WeightUnit { KILOGRAMS, GRAMS }
  * Owner preferences held outside the database, because ADR-0007 lets the database be wiped and
  * these must survive that.
  *
- * Three keys: which bunny is selected, the weight display unit, and the export scope. The unit's
- * toggle lands in 2c with the Settings screen — a preference with no setter is a constant with a
- * DataStore round-trip, so the setter is here from the start even though nothing calls it yet.
+ * Four keys: which bunny is selected, the weight display unit, the export scope, and whether
+ * first-run setup has been through. The unit's toggle lands in 2c with the Settings screen — a
+ * preference with no setter is a constant with a DataStore round-trip, so the setter is here from
+ * the start even though nothing calls it yet.
  *
  * These **travel in every export scope, from Essential upward** (ADR-0005). They are a few hundred
  * bytes, and a restored phone that has forgotten its display unit, its selected bunny and its chosen
@@ -69,6 +70,38 @@ class AppPreferences(
         dataStore.edit { preferences -> preferences[BACKUP_SCOPE] = scope.name }
     }
 
+    /**
+     * How far first-run setup has got on this phone (ADR-0006) — **absent until it is first shown**.
+     *
+     * The absent case is deliberately not answered here. It is resolved against whether a bunny
+     * already exists by [resolveSetupState], which is where the reasoning lives; this flow only
+     * reports what was written, `null` included.
+     *
+     * Kotlin note: `Flow<SetupProgress?>` rather than a defaulted value — the nullable is
+     * load-bearing, and collapsing it here would throw away the only distinction that matters.
+     */
+    val setupProgress: Flow<SetupProgress?> =
+        dataStore.data
+            .catch { cause -> if (cause is IOException) emit(emptyPreferences()) else throw cause }
+            .map { preferences -> decodeProgress(preferences[SETUP_PROGRESS]) }
+
+    /**
+     * Recorded when the wizard is first put on screen, **not when it is finished**.
+     *
+     * Without this the wizard ends itself: its first step adds a bunny, an unrecorded install with
+     * a bunny resolves to complete, and the owner is dropped into the app before the backup step
+     * ADR-0006 exists to deliver. Writing it down at the start is also what carries the wizard
+     * across a process death halfway through it.
+     */
+    suspend fun markSetupStarted() {
+        dataStore.edit { preferences -> preferences[SETUP_PROGRESS] = SetupProgress.Started.name }
+    }
+
+    /** Written by the wizard's last step, and the only thing that ends it. */
+    suspend fun markSetupComplete() {
+        dataStore.edit { preferences -> preferences[SETUP_PROGRESS] = SetupProgress.Complete.name }
+    }
+
     suspend fun setSelection(selection: StoredSelection) {
         dataStore.edit { preferences ->
             when (selection) {
@@ -94,6 +127,7 @@ class AppPreferences(
         val SELECTED_BUNNY = stringPreferencesKey("selected_bunny")
         val WEIGHT_UNIT = stringPreferencesKey("weight_unit")
         val BACKUP_SCOPE = stringPreferencesKey("backup_scope")
+        val SETUP_PROGRESS = stringPreferencesKey("setup_progress")
 
         /** Bunny ids are UUIDs, so this sentinel cannot collide with one. */
         const val ALL = "all"
@@ -112,5 +146,11 @@ class AppPreferences(
 
         fun decodeScope(value: String?): BackupScope =
             BackupScope.entries.firstOrNull { it.name == value } ?: BackupScope.Records
+
+        // Null rather than a default, because "nothing recorded" is a real state here and not a
+        // missing value — see resolveSetupState. An unrecognised name reads as nothing recorded,
+        // which for a phone downgraded from a build with more states is the safe direction: at
+        // worst the owner is offered a two-step wizard again.
+        fun decodeProgress(value: String?): SetupProgress? = SetupProgress.entries.firstOrNull { it.name == value }
     }
 }

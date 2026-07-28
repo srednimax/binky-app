@@ -96,11 +96,27 @@ data class PhotoGallery(
 ) : NavKey
 
 /**
+ * First-run setup (ADR-0006), as two keys rather than one screen with a step counter.
+ *
+ * Two steps at 1.0: add your first bunny, then choose what a backup carries. The reminders step
+ * ADR-0006 describes ships with 1.1 and the reminders themselves — 1.0 has nothing that posts a
+ * notification, and an opt-in that cannot demonstrate anything spends one of Android's two
+ * permitted denials on a screen that has nothing to show for it.
+ *
+ * These are keys on their own back stack, not on the shell's — see `SetupNavigation`. The bunny
+ * step reaches [BunnyEditor], which is the whole reason for the shape: the editor keeps its own
+ * per-entry `ViewModelStore` inside setup exactly as it does inside the app.
+ */
+@Serializable data object SetupBunny : NavKey
+
+@Serializable data object SetupBackup : NavKey
+
+/**
  * Whether a top-level destination is shown, shown as unavailable, or absent (ADR-0015).
  *
  * Defined **here in Phase 1**, so Phase 3's decision to hide Care & Meds from real users is the
- * one-value flip ADR-0015 intends rather than an introduction. Through Phases 1-2 everything is
- * [Live] — there are no users to mislead yet.
+ * one-value flip ADR-0015 intends rather than an introduction. Through Phases 1-2 everything was
+ * [Live] — there were no users to mislead yet. At 3f the flip happened, and it was one value.
  *
  * A dead **tab** is [Hidden] — a fifth of primary navigation spent on a dead end. A dead **row**
  * inside More or Settings may be [ComingSoon], because it costs one line in a list.
@@ -126,9 +142,33 @@ enum class TopLevelDestination(
     HOME(Home, R.string.destination_home, Icons.Filled.Home),
     WEIGHT(Weight, R.string.destination_weight, Icons.Filled.Star),
     OBSERVATIONS(Observations, R.string.destination_observations, Icons.AutoMirrored.Filled.List),
-    CARE(CareAndMeds, R.string.destination_care, Icons.Filled.Favorite),
+
+    // Hidden at 1.0 (ADR-0015, ADR-0019). Care & Meds is the one tab whose screen is still a stub,
+    // and a fifth of primary navigation spent on a dead end is exactly what this enum exists to
+    // prevent. The key, the entry and the screen all stay — 1.1 flips this back and gets its tab
+    // returned with no navigation work at all.
+    CARE(CareAndMeds, R.string.destination_care, Icons.Filled.Favorite, DestinationVisibility.Hidden),
     MORE(More, R.string.destination_more, Icons.Filled.MoreVert),
 }
 
 /** The destination a key belongs to, or null for a detail screen pushed on top of one. */
 fun NavKey.asTopLevelDestination(): TopLevelDestination? = TopLevelDestination.entries.find { it.key == this }
+
+/**
+ * A restored back stack with this build's hidden destinations taken out of it (ADR-0015).
+ *
+ * Nav3 saves the back stack across process death, so a stack written by a build where Care & Meds
+ * was still [DestinationVisibility.Live] can be handed to a build that hides it — an app update
+ * over a running app is the ordinary way this happens, not an edge case. Left alone, the owner
+ * lands on a destination the bottom bar no longer offers: no tab appears selected, and the only way
+ * out is the system Back button.
+ *
+ * So a hidden key resolves to Home, which is the bottom of the stack and always present. A pure
+ * function over the list rather than a mutation, so the rule is provable on the JVM without a
+ * `NavBackStack` or a device anywhere near it.
+ */
+fun List<NavKey>.withoutHiddenDestinations(): List<NavKey> =
+    filterNot { key -> key.asTopLevelDestination()?.visibility == DestinationVisibility.Hidden }
+        // Defensive, and cheap: Home is the bottom of every stack this app builds, so this can only
+        // fire if Home itself is ever hidden — at which point landing nowhere is the worse failure.
+        .ifEmpty { listOf(Home) }

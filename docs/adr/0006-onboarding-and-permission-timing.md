@@ -28,5 +28,18 @@ notification, so its opt-in would spend one of the two available denials on a sc
 demonstrate anything — which is the exact failure this ADR was written about, arrived at from the other
 direction. The point-of-use ask below then becomes the *first* ask rather than the second.
 
+**What actually shipped, and one thing this ADR did not foresee.** Phase 1 shipped **no** setup at all
+rather than the welcome step alone — a welcome screen with nothing after it is a splash screen, and the
+staging above was written expecting more of Phase 1's UI to be real than turned out to be. Both steps
+landed together at 3f, which cost nothing: the bunny step is the ordinary bunny editor and the backup step
+is the scope picker Backup settings already had.
+
+The thing not foreseen is that **"has a bunny" cannot stand in for "has been set up" while the wizard is
+running**, because the wizard's own first step creates a bunny. Built that way it ended itself mid-flight
+and took the backup step with it — this ADR's central claim, deleted by its own first step. So what is
+stored is *how far setup got* (nothing recorded / started / complete), not a boolean, and showing the
+wizard is what records that it started. "Has a bunny" is only consulted when nothing has been recorded,
+where it answers the question it was actually written for: does this install predate the wizard.
+
 Battery-optimisation exemption is *not* part of onboarding. It is requested when something is first
 scheduled, where the reason is visible. Weight units and other preferences are likewise asked in context.
