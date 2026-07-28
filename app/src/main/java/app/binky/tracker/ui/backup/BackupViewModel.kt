@@ -10,11 +10,14 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import app.binky.tracker.AppContainer
 import app.binky.tracker.BinkyApplication
 import app.binky.tracker.data.PreservedCopy
+import app.binky.tracker.data.backup.AutoBackupStatus
 import app.binky.tracker.data.backup.BackupManifest
 import app.binky.tracker.data.backup.BackupScope
 import app.binky.tracker.data.backup.RestoreOutcome
 import app.binky.tracker.data.backup.RestoreRefusal
+import app.binky.tracker.data.backup.autoBackupStatus
 import app.binky.tracker.data.backup.exportFileName
+import app.binky.tracker.data.backup.readAutoBackupMarker
 import app.binky.tracker.data.deletePreservedCopy
 import app.binky.tracker.data.listPreservedCopies
 import kotlinx.coroutines.Dispatchers
@@ -59,6 +62,11 @@ data class PendingRestore(
 
 data class BackupUiState(
     val scope: BackupScope = BackupScope.Records,
+    /**
+     * What Android's automatic backup has recorded on this phone — **never a blank**, because a
+     * blank status line reads as a working net (ADR-0005).
+     */
+    val autoBackup: AutoBackupStatus = AutoBackupStatus.NeverRecorded,
     /** Both occupants of `preserved/`, newest first — wipe copies and restore snapshots. */
     val preserved: List<PreservedCopy> = emptyList(),
     val working: BackupWork? = null,
@@ -114,6 +122,11 @@ class BackupViewModel(
         ) { scope, _, now ->
             BackupUiState(
                 scope = scope,
+                // Read on every emission rather than watched: the marker is written by a process
+                // that is not this one, at a moment nobody is looking, and re-reading it whenever
+                // the screen re-collects is both cheap and enough. `now` is resolved here so the
+                // 14-day staleness is judged when the line is drawn, not when the file was written.
+                autoBackup = autoBackupStatus(readAutoBackupMarker(container.filesDir), Instant.now()),
                 preserved = listPreservedCopies(container.preservedDir),
                 working = now.working,
                 exported = now.exported,

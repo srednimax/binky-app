@@ -170,6 +170,18 @@
          least protected data in the app, and ADR-0001's rule about silence says a gap the owner
          cannot see is worse than one they were told about. -->
     <string name="backup_title">Backup &amp; restore</string>
+
+    <!-- The automatic net, stated in all three states (ADR-0005). Absence is spelled out rather than
+         left blank: Binky cannot ask Android whether it is actually being backed up, and an empty
+         line would read as a working net. Past a fortnight a bare date is a claim, not a comfort. -->
+    <string name="backup_auto_title">Automatic backup</string>
+    <string name="backup_auto_help">Android backs Binky up to your Google account on its own schedule — when the phone is idle, charging and online. Binky cannot switch that on or check it for you.</string>
+    <string name="backup_auto_never">No automatic backup has been recorded on this phone.</string>
+    <string name="backup_auto_recorded">Last automatic backup: %1$s.</string>
+    <string name="backup_auto_stale">The last automatic backup was on %1$s — more than two weeks ago. Something may have turned it off.</string>
+    <string name="backup_auto_photos">It covers your records, your settings and your bunny avatars. Your photo gallery is not in it.</string>
+    <string name="backup_auto_settings_action">Open Android backup settings</string>
+
     <string name="backup_scope_title">What an export includes</string>
     <string name="backup_scope_essential">Essential</string>
     <string name="backup_scope_records">Records</string>

@@ -8,11 +8,21 @@
         devices ignore the attribute and AppCompat's backport reads the same file instead, so the
         list of shipped languages stays in one place across the whole supported range (ADR-0013).
     -->
+    <!--
+        Auto Backup runs through BinkyBackupAgent, which names its own file set (ADR-0005) — so
+        `backup_rules.xml` and `data_extraction_rules.xml` are gone along with the attributes that
+        pointed at them. Static include/exclude XML cannot checkpoint the write-ahead log, and
+        without that the platform was eligible to copy the live database and its `-wal` sidecar
+        mid-write: a backup that appears to work and restores corrupt.
+
+        `fullBackupOnly` is not optional beside `backupAgent`. Declaring an agent without it puts
+        the app on the key/value path, where the agent's no-op onBackup would be what ran.
+    -->
     <application
         android:name=".BinkyApplication"
         android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
+        android:backupAgent=".BinkyBackupAgent"
+        android:fullBackupOnly="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"

@@ -1,5 +1,6 @@
 package app.binky.tracker.data.backup
 
+import app.binky.tracker.media.MediaKind
 import java.io.File
 
 /** One file as it will appear inside an archive: where it is now, and what it is called in there. */
@@ -28,8 +29,21 @@ data class ArchiveFile(
 fun mediaFilesFor(
     scope: BackupScope,
     mediaRoot: File,
+): List<ArchiveFile> = mediaFilesFor(scope.mediaKinds, mediaRoot)
+
+/**
+ * The same, for a list of kinds that is not a [BackupScope].
+ *
+ * Auto Backup's set is not a scope and must not become one: it carries avatars unconditionally,
+ * photos only on a device-to-device transfer, and documents behind Phase 5's admission ceiling — a
+ * combination no export scope offers. Overloading here keeps the uuid allowlist in one place while
+ * leaving the two callers free to disagree about *which* kinds they want.
+ */
+fun mediaFilesFor(
+    kinds: List<MediaKind>,
+    mediaRoot: File,
 ): List<ArchiveFile> =
-    scope.mediaKinds
+    kinds
         .flatMap { kind ->
             val directory = File(mediaRoot, kind.directory)
             (directory.listFiles() ?: emptyArray())

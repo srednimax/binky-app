@@ -4,6 +4,7 @@ import android.app.Application
 import app.binky.tracker.data.BUNNY_DATABASE_FILE
 import app.binky.tracker.data.BUNNY_SCHEMA_VERSION
 import app.binky.tracker.data.PRESERVED_DIRECTORY
+import app.binky.tracker.data.backup.adoptRestoredDatabase
 import app.binky.tracker.data.destructiveMigrationAllowed
 import app.binky.tracker.data.preserveBeforeWipe
 import app.binky.tracker.data.readUserVersion
@@ -67,6 +68,14 @@ class BinkyApplication : Application() {
         super.onCreate()
 
         val databaseFile = getDatabasePath(BUNNY_DATABASE_FILE)
+
+        // Before anything reads the file: a database restored by Auto Backup arrives in a staging
+        // directory and is normally moved into place by `BinkyBackupAgent.onRestoreFinished()`,
+        // long before this runs. This is the backstop for the callback never firing, and it has to
+        // happen *first* — the version check below would otherwise read a database that is not yet
+        // the one the owner restored (ADR-0005).
+        adoptRestoredDatabase(filesDir = filesDir, databaseFile = databaseFile)
+
         // Read before the copy: preserving does not change the file, but the order states the
         // intent — find out what is there, then protect it.
         val onDiskVersion = readUserVersion(databaseFile)

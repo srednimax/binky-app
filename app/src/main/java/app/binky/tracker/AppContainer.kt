@@ -88,6 +88,12 @@ class AppContainer(
     val preservedDir: File = File(appContext.filesDir, PRESERVED_DIRECTORY)
 
     /**
+     * The app's private files root — where the media directories, `preserved/` and Auto Backup's
+     * marker live. Held here so a screen can read the marker without a `Context` of its own.
+     */
+    val filesDir: File = appContext.filesDir
+
+    /**
      * Scratch space. Whatever lands here is disposable by definition — the debug fixture's generated
      * images go through the media pipeline like any other source and their originals are then rubbish.
      */
