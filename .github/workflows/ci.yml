@@ -66,13 +66,34 @@ jobs:
           retention-days: 14
 
   instrumented:
-    name: Instrumented tests (emulator)
+    name: Instrumented tests (API ${{ matrix.api-level }})
     runs-on: ubuntu-latest
     # Slow (~10-15 min), and deliberately unconditional now: the trigger list above is
     # what keeps it off feature-branch pushes. It used to carry an `if:` naming
     # pull_request and main, which every surviving trigger already satisfies — a
     # condition that is always true is worse than no condition, because it looks like
     # a gate. Restore it if `push` ever widens past main again.
+    strategy:
+      # Every level reports. Stopping the matrix at the first red would hide whether a
+      # failure is "this build is broken" or "this build is broken *below API 31*",
+      # which is the entire question the bottom of the matrix exists to answer.
+      fail-fast: false
+      matrix:
+        include:
+          # The `minSdk` floor. Three SDK_INT branches — the pre-S path into system
+          # backup settings, the pre-R agent branch and the pre-S theme — plus
+          # AppCompat's pre-13 locale backport (ADR-0013) run *only* down here, and a
+          # single modern emulator never executes any of them. `default` rather than
+          # `aosp_atd`: the slim ATD images start at API 30, so 26 has no such image.
+          - api-level: 26
+            target: default
+          # The long-standing leg, kept as-is.
+          - api-level: 34
+            target: aosp_atd
+          # `targetSdk`. Where the platform applies its newest behaviour changes to us
+          # rather than grandfathering them.
+          - api-level: 36
+            target: aosp_atd
     steps:
       - uses: actions/checkout@v7
 
@@ -97,16 +118,18 @@ jobs:
       - name: Run instrumented tests
         uses: ReactiveCircus/android-emulator-runner@v2.38.0
         with:
-          api-level: 34
-          target: aosp_atd
+          api-level: ${{ matrix.api-level }}
+          target: ${{ matrix.target }}
           arch: x86_64
           disable-animations: true
           script: ./gradlew connectedDebugAndroidTest
 
+      # The name has to carry the API level: upload-artifact refuses to write the same
+      # artifact name twice, so a shared name fails every leg after the first.
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: instrumented-reports
+          name: instrumented-reports-api${{ matrix.api-level }}
           path: app/build/reports/androidTests/
           retention-days: 14
