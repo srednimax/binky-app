@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.6.0](https://github.com/srednimax/binky-app/compare/v0.5.0...v0.6.0) (2026-07-28)
+
+
+### Features
+
+* add the per-bunny photo gallery ([2f4d615](https://github.com/srednimax/binky-app/commit/2f4d61568c57013dfb12eea65615755e52b2547b))
+* keep the photo gallery out of Android Auto Backup ([1e2d8b8](https://github.com/srednimax/binky-app/commit/1e2d8b851c98eda3e5056ad01ee40a5e28f649fb))
+* manual export at three scopes, and restore ([5d9099c](https://github.com/srednimax/binky-app/commit/5d9099cc156734489bbea6c0177d14087622fd57))
+* manual export at three scopes, and restore ([5612b7a](https://github.com/srednimax/binky-app/commit/5612b7a2ed973bcf1a19b075d2348d495a367e41))
+* photos — the gallery, schema 4, and the last planned wipe ([bee3bae](https://github.com/srednimax/binky-app/commit/bee3baebe52954514875334dae0741b7ca6e9654))
+* read the capture date out of the media pipeline ([d06ef8a](https://github.com/srednimax/binky-app/commit/d06ef8aa25a9104c13ca1fd88e35edba3a8e92e4))
+* rebuild the app shell on AppCompat for the locale backport ([6a52c22](https://github.com/srednimax/binky-app/commit/6a52c22e9c89d6525bab6c0f9988bd03f2204ea9))
+* rebuild the app shell on AppCompat for the locale backport ([26435e7](https://github.com/srednimax/binky-app/commit/26435e79aed64bfda537a4ac9208493bd120139a))
+* seed sample photos in the debug fixture ([557a9b9](https://github.com/srednimax/binky-app/commit/557a9b9e5a74d2e6a020091aa5594da5ce965408))
+* store a bunny's photos and stop wiping release databases ([f4d9121](https://github.com/srednimax/binky-app/commit/f4d91215937fe2cd3cfdf589c1c5b1b1ac5212f1))
+* take control of Android Auto Backup with a custom agent ([7e455d9](https://github.com/srednimax/binky-app/commit/7e455d908f458b1ba073754791050fe5f31391fc))
+* take control of Android Auto Backup with a custom agent ([e368212](https://github.com/srednimax/binky-app/commit/e368212beac93bd75293a9904aa306d5a4b5f1e2))
+
+
+### Bug Fixes
+
+* keep the photo viewer open when the photo it opened on is deleted ([f2c0370](https://github.com/srednimax/binky-app/commit/f2c037077afceb82f240be5b5ee60392a9e56f6f))
+
 ## [0.5.0](https://github.com/srednimax/binky-app/compare/v0.4.0...v0.5.0) (2026-07-27)
 
 
