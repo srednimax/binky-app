@@ -288,6 +288,45 @@ class RestoreStageMigrateSwapTest {
         }
 
     /**
+     * Zip-slip, and the reason this one cannot live in the JVM suite: from Android 14 the platform
+     * validates entry names inside `getNextEntry` itself and throws `ZipException` on a `../` path,
+     * *before* [archiveEntryFor]'s allowlist gets to skip it. Uncaught, that killed the process
+     * mid-restore rather than refusing the file — on a device, while the owner watched. Desktop
+     * `ZipInputStream` has no such validator, so `ArchiveEntriesTest` passes either way.
+     *
+     * The traversal entry is written **last, after a valid manifest and database**, which is the
+     * ordering that makes the difference load-bearing: a walk that failed *quietly* at that point
+     * would have left a manifest and a staged database behind and looked like a complete archive.
+     */
+    @Test
+    fun anArchiveCarryingATraversalEntryIsRefusedAndNothingEscapes() =
+        runTest {
+            val sourceName = databaseHolding("Restored")
+            val archive =
+                zipOf(
+                    BACKUP_MANIFEST_ENTRY to manifestBytes(),
+                    BACKUP_DATABASE_ENTRY to context.getDatabasePath(sourceName).readBytes(),
+                    "../escaped.txt" to "this must never be written".toByteArray(),
+                )
+
+            val liveName = databaseHolding("Already here")
+            val outcome = restorerFor(liveName).restore(open = { archive.inputStream() })
+
+            assertEquals(RestoreOutcome.Refused(RestoreRefusal.NotABinkyBackup), outcome)
+            assertEquals(listOf("Already here"), bunnyNamesIn(liveName))
+            // Nothing written anywhere under the test root, not merely "not in the media directory".
+            val root = outDir.parentFile!!
+            assertTrue(
+                root
+                    .walkTopDown()
+                    .filter { it.name == "escaped.txt" }
+                    .toList()
+                    .toString(),
+                root.walkTopDown().none { it.name == "escaped.txt" },
+            )
+        }
+
+    /**
      * The media merge, end to end: an Essential restore keeps a photo that was already on the phone,
      * because its scope never claimed to know about `photos/`.
      */

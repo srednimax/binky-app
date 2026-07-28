@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import java.io.InputStream
 import java.time.Instant
 import java.util.zip.ZipInputStream
@@ -104,12 +105,15 @@ class BackupRestorer(
     suspend fun readManifest(open: () -> InputStream): BackupManifest? =
         withContext(io) {
             var manifest: BackupManifest? = null
-            forEachEntry(open) { entry, stream ->
-                if (entry is ArchiveEntry.Manifest) manifest = decodeManifest(stream.readBytes().decodeToString())
-                // The manifest is written first, so an archive of ours stops here on entry one.
-                manifest == null
-            }
-            manifest
+            val walked =
+                forEachEntry(open) { entry, stream ->
+                    if (entry is ArchiveEntry.Manifest) manifest = decodeManifest(stream.readBytes().decodeToString())
+                    // The manifest is written first, so an archive of ours stops here on entry one.
+                    manifest == null
+                }
+            // An archive that cannot be walked has nothing trustworthy to say about itself, so the
+            // confirmation dialog must not describe it — the caller reads null as "not a backup".
+            if (walked) manifest else null
         }
 
     suspend fun restore(
@@ -131,30 +135,34 @@ class BackupRestorer(
             var totalBytes = 0L
             var tooLarge = false
 
-            forEachEntry(open) { entry, stream ->
-                when (entry) {
-                    is ArchiveEntry.Manifest ->
-                        stream.readBytes().let { bytes ->
-                            totalBytes += bytes.size
-                            manifest = decodeManifest(bytes.decodeToString())
+            val walked =
+                forEachEntry(open) { entry, stream ->
+                    when (entry) {
+                        is ArchiveEntry.Manifest ->
+                            stream.readBytes().let { bytes ->
+                                totalBytes += bytes.size
+                                manifest = decodeManifest(bytes.decodeToString())
+                            }
+
+                        is ArchiveEntry.Database -> {
+                            sawDatabase = true
+                            totalBytes += stream.drainTo(stagedDatabase)
                         }
 
-                    is ArchiveEntry.Database -> {
-                        sawDatabase = true
-                        totalBytes += stream.drainTo(stagedDatabase)
-                    }
+                        is ArchiveEntry.Preferences -> totalBytes += stream.drainTo(stagedPreferences)
 
-                    is ArchiveEntry.Preferences -> totalBytes += stream.drainTo(stagedPreferences)
-
-                    is ArchiveEntry.Media -> {
-                        mediaEntries += entry.relativePath
-                        totalBytes += stream.discard()
+                        is ArchiveEntry.Media -> {
+                            mediaEntries += entry.relativePath
+                            totalBytes += stream.discard()
+                        }
                     }
+                    if (totalBytes > RESTORE_MAX_TOTAL_BYTES) tooLarge = true
+                    !tooLarge
                 }
-                if (totalBytes > RESTORE_MAX_TOTAL_BYTES) tooLarge = true
-                !tooLarge
-            }
 
+            // Checked before anything else the archive claims: an archive the platform stopped us
+            // reading is not a backup, whatever its manifest managed to say before the bad entry.
+            if (!walked) return@withContext refuse(RestoreRefusal.NotABinkyBackup, stagedPreferences)
             if (tooLarge) return@withContext refuse(RestoreRefusal.TooLarge, stagedPreferences)
             // No manifest, or no database, means *"this file is not a Binky backup"* — refused by
             // name rather than partially applied.
@@ -296,21 +304,38 @@ class BackupRestorer(
  * [onEntry] returns false to stop early. `ZipInputStream` is sequential and the entry's own stream
  * must be consumed or skipped before the next one is asked for, which is why the body is a callback
  * rather than a sequence the caller could hold on to past its turn.
+ *
+ * Returns **false if the archive could not be walked to the end** — truncated, not a zip at all, or
+ * carrying an entry the platform itself refuses to hand over. That last case is the one worth
+ * knowing about: from Android 14, `getNextEntry` validates entry names and throws `ZipException` on
+ * a `../` traversal *before* [archiveEntryFor]'s allowlist ever sees the name. So the allowlist is
+ * still the guard below 14 — it rejects `..` as a media directory like any other unknown one — and
+ * this is the only place the 14+ decision can be caught. Uncaught, it killed the process instead of
+ * refusing the file (the JVM tests cannot see it: desktop `ZipInputStream` has no such validator).
+ *
+ * The failure must not be swallowed as "nothing more to read" either. A hostile entry appended
+ * *after* a valid manifest and database would then look like a complete archive and be applied.
  */
 private inline fun forEachEntry(
     open: () -> InputStream,
     onEntry: (ArchiveEntry, InputStream) -> Boolean,
-) {
-    ZipInputStream(open().buffered()).use { zip ->
-        while (true) {
-            val next = zip.nextEntry ?: return
-            if (!next.isDirectory) {
-                val entry = archiveEntryFor(next.name)
-                if (entry != null && !onEntry(entry, zip)) return
+): Boolean {
+    try {
+        ZipInputStream(open().buffered()).use { zip ->
+            while (true) {
+                val next = zip.nextEntry ?: break
+                if (!next.isDirectory) {
+                    val entry = archiveEntryFor(next.name)
+                    if (entry != null && !onEntry(entry, zip)) break
+                }
+                zip.closeEntry()
             }
-            zip.closeEntry()
         }
+    } catch (_: IOException) {
+        // ZipException extends IOException, and so does a stream that stops mid-entry.
+        return false
     }
+    return true
 }
 
 /** Writes the entry to [target], creating its directory, and returns how many bytes that was. */
