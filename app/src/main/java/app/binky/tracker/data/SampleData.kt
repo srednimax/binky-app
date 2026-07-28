@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.net.Uri
+import androidx.core.graphics.createBitmap
 import androidx.exifinterface.media.ExifInterface
 import kotlinx.coroutines.flow.first
 import java.io.File
@@ -141,7 +142,7 @@ private fun writeSampleJpeg(
     sample: SamplePhoto,
     now: Instant,
 ): Uri {
-    val bitmap = Bitmap.createBitmap(sample.width, sample.height, Bitmap.Config.ARGB_8888)
+    val bitmap = createBitmap(sample.width, sample.height)
     val canvas = Canvas(bitmap)
     canvas.drawColor(sample.colour)
     canvas.drawRect(
