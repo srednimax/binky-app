@@ -45,10 +45,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
 import app.binky.tracker.data.PreservedCopy
 import app.binky.tracker.data.PreservedKind
+import app.binky.tracker.data.backup.AutoBackupStatus
 import app.binky.tracker.data.backup.BackupScope
 import app.binky.tracker.data.backup.RestoreOutcome
 import app.binky.tracker.data.backup.RestoreRefusal
 import app.binky.tracker.ui.appViewModelExtras
+import app.binky.tracker.ui.common.openSystemBackupSettings
 import app.binky.tracker.ui.common.shareBackupArchive
 import app.binky.tracker.ui.common.sharePreservedCopy
 import app.binky.tracker.ui.weight.dateTimeLabel
@@ -113,6 +115,11 @@ fun BackupScreen(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            AutomaticBackup(
+                status = state.autoBackup,
+                onOpenSystemSettings = { context.openSystemBackupSettings() },
+            )
+            HorizontalDivider()
             ExportSection(
                 scope = state.scope,
                 working = state.working,
@@ -181,6 +188,57 @@ fun BackupScreen(
                 TextButton(onClick = viewModel::cancelDelete) { Text(stringResource(R.string.action_cancel)) }
             },
         )
+    }
+}
+
+/**
+ * The status line that **must not lie in either direction** (ADR-0005).
+ *
+ * Every state is words. Absence is the one that matters: Auto Backup runs only with backup switched
+ * on, an account signed in, and the phone idle, charging and online, and there is no reliable way to
+ * ask Android whether this app is actually included — so a blank line here would read as a working
+ * net, which is ADR-0001's silence failure pointed at backup. Past a fortnight a bare date stops
+ * being reassuring and starts being a claim, so it says so.
+ *
+ * The button appears in both of the states the owner can act on, and not beside a fresh date, where
+ * it would only invite fiddling with a setting that is working.
+ */
+@Composable
+private fun AutomaticBackup(
+    status: AutoBackupStatus,
+    onOpenSystemSettings: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(text = stringResource(R.string.backup_auto_title), style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = stringResource(R.string.backup_auto_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        val line =
+            when (status) {
+                AutoBackupStatus.NeverRecorded -> stringResource(R.string.backup_auto_never)
+                is AutoBackupStatus.Recorded ->
+                    stringResource(
+                        if (status.stale) R.string.backup_auto_stale else R.string.backup_auto_recorded,
+                        dateTimeLabel(status.at),
+                    )
+            }
+        Text(text = line, style = MaterialTheme.typography.bodyMedium)
+
+        Text(
+            text = stringResource(R.string.backup_auto_photos),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        val actionable = status !is AutoBackupStatus.Recorded || status.stale
+        if (actionable) {
+            OutlinedButton(onClick = onOpenSystemSettings) {
+                Text(stringResource(R.string.backup_auto_settings_action))
+            }
+        }
     }
 }
 

@@ -146,6 +146,13 @@ the shared MediaStore would fork ADR-0020's pipeline, break the uuid identity th
 and need a storage permission at `minSdk` 26; admitting photos to the agent's set would put an unbounded
 directory inside an all-or-nothing quota, risking the database to protect a copy.
 
+**One exception, because the reason above is about the quota and not about photos:** on a *device-to-device
+transfer* there is no cloud account and no quota, so neither the size argument nor the privacy policy's
+promise applies — and silently dropping a whole gallery on a phone upgrade would be the worse failure. The
+agent therefore admits `photos/` when the transport reports `FLAG_DEVICE_TO_DEVICE_TRANSFER`, and only then.
+That flag exists from API 30; below it the answer is no, which is the same line the old `backup_rules.xml`
+drew for "API 30 and below".
+
 Because the evidential core (database, avatars, documents) is now covered by Auto Backup, the
 manual-export folder destination — the plan's biggest unverified assumption (Google Drive provider
 writes) — gates only the **sentimental photo gallery**, not vet evidence. That lowers the cost of that

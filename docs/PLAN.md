@@ -999,7 +999,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      entirely**, so the picker → confirm → restore chain was exercised through the `preserved/` snapshot path
      instead; the picked-file path differs only in where the `InputStream` comes from, but it is the one link
      no test on this device touches, and it is worth a deliberate tap before the release gate.
-5. **3e — Auto Backup: the agent, and the marker that must not lie.**
+5. **3e — Auto Backup: the agent, and the marker that must not lie.** ✅
    - `BunnyBackupAgent` registered with `android:backupAgent` **and `android:fullBackupOnly="true"`** —
      declaring an agent without it puts the app on the key/value path, which is not what ADR-0005 describes.
    - The agent **takes paths, not a `Context`** (ADR-0005). When the system starts the process *for* backup
@@ -1058,6 +1058,50 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      backup has been recorded on this phone"* — which is literally true. An unverifiable agent degrades into
      an honest app rather than a lying one, and Play Console vitals become how it is found out, which is one
      of the three reasons ADR-0009 chose Play.
+   - **Gate met:** `spotlessApply`, `assembleDebug`, `test` (141 unit tests, 14 new) and `lint` pass. Lint is
+     down to **0 errors and no new warnings**: the two `UnusedResources` warnings Phase 2 left standing —
+     `backup_rules.xml` and `data_extraction_rules.xml` read as unused — are gone, because both files are,
+     which is the resolution Phase 2 predicted rather than a suppression. No instrumented tests are added;
+     the agent's every decision is a function over `File`, so it is proven on the JVM and then on the phone,
+     with nothing in between that a device test could reach.
+   - `bmgr` **did** drive on HyperOS, so the fallback evidence was not needed. The full loop, on the local
+     transport: `bmgr backupnow` moved **145,920 bytes** — the 131 kB database, the preferences and one
+     avatar, and demonstrably *not* the five seeded photos — then `pm clear` wiped the app and `bmgr restore`
+     brought it back. The app opened on the restored history: Bijou, the fluffle, the year of weighings and
+     the trend flag. On disk afterwards: `databases/bunny.db` in place with no `-wal`/`-shm`, `avatars/` and
+     the preferences restored, and **no `photos/`, no `preserved/` and no marker** — the exclusions proved by
+     what did not arrive. The Google transport was put back afterwards.
+   - **A backup is only half a design; the restore path is the other half, and it dictated the staging.**
+     `fullBackupFile` records a file's domain and relative path, and the far end puts it back at exactly that
+     path — so the checkpointed copy cannot be handed over from `cacheDir` (which the OS may empty, and which
+     comes back as cache), and it cannot pretend to be `databases/bunny.db`. It is staged at
+     `filesDir/autobackup/bunny.db`, and `onRestoreFinished()` moves it into place. Backing up the live file
+     instead would have made all of this go away and walked straight into the trap ADR-0005 names.
+   - So the move gets **two mechanisms, like the marker**: `onRestoreFinished()` normally does it before the
+     app is ever launched, and `adoptRestoredDatabase` runs again at the head of `BinkyApplication.onCreate`,
+     ahead of ADR-0007's version read. It adopts **only when there is no live database**, which is exactly the
+     post-restore state; a staged copy found beside a real one is discarded, because overwriting records with
+     a stale copy is by far the more expensive mistake. A restore that silently lands nowhere is the failure
+     this whole phase exists to prevent, and it is one platform callback away.
+   - The **device-to-device carve-out survives the XML deletion**. `data_extraction_rules.xml` deliberately
+     let photos ride along on a phone-to-phone transfer — no cloud account, no quota, and losing a gallery on
+     an upgrade is the worse failure — and that decision is now `includePhotos`, read off
+     `FLAG_DEVICE_TO_DEVICE_TRANSFER`. The flag arrived in API 30, so below that it is false and the gallery
+     stays out, which is precisely what `backup_rules.xml` did for "API 30 and below". Deleting the two files
+     was meant to close two lint warnings; it would also have quietly dropped a decision.
+   - The class is **`BinkyBackupAgent`**, not the plan's `BunnyBackupAgent`: the Android components are named
+     for the app (`BinkyApplication`, `MainActivity`) while `Bunny*` names the animal's data.
+   - Two things about the deep link that only tapping it could find, both on the Xiaomi. First,
+     `ACTION_PRIVACY_SETTINGS` — the obvious choice, and the *only* one of four candidate actions that
+     resolves on this phone — opens the Android 12 **Privacy dashboard**, which is permissions and has no
+     backup switch anywhere on it. That is worse than the top-level fallback, because it looks like the
+     destination; it is now used below API 31 only, where it really was Backup & reset. Second, the intent
+     needs **`FLAG_ACTIVITY_NEW_TASK`**: without it Settings is pushed onto Binky's own task, and the owner's
+     back stack becomes Binky-then-three-Settings-screens with no way to bring the app forward. With it,
+     Settings opens in its own task and one Back returns to the Backup screen.
+   - Incidental, and worth having seen: the restored phone renders the photo gallery it no longer has files
+     for as **placeholders, with no crash** — the house rule holding on the path Auto Backup's exclusion
+     creates, which is the one that will actually happen to someone.
 6. **3f — First-run setup, the visibility flip, and the switcher row.**
    - **Two steps at 1.0** (ADR-0006): add first bunny (skippable) → backup scope. The chosen scope becomes
      `AppPreferences`' **third** key, is 3d's export default, and stays editable in Settings.
