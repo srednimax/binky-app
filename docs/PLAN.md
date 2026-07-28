@@ -1102,7 +1102,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - Incidental, and worth having seen: the restored phone renders the photo gallery it no longer has files
      for as **placeholders, with no crash** — the house rule holding on the path Auto Backup's exclusion
      creates, which is the one that will actually happen to someone.
-6. **3f — First-run setup, the visibility flip, and the switcher row.**
+6. **3f — First-run setup, the visibility flip, and the switcher row.** ✅
    - **Two steps at 1.0** (ADR-0006): add first bunny (skippable) → backup scope. The chosen scope becomes
      `AppPreferences`' **third** key, is 3d's export default, and stays editable in Settings.
    - `setupComplete` is **resolved on read, not merely stored**: absent means *complete if any bunny already
@@ -1127,6 +1127,63 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      real or its tab is hidden; there is no third answer before 1.0.
    - **The switcher row** in Settings, with English alone in the list. Its mechanism landed at 3b, so this is
      the Settings row ADR-0013 originally hoped the whole thing would be.
+   - **`setupComplete` became `setupProgress`, and that was not a rename — it was the checkpoint's one real
+     bug, found by tapping.** As planned, the flag was a `Boolean?` resolved on read: absent meant *complete
+     if any bunny already exists*. Run by hand, saving the first bunny **ended the wizard mid-flight** and
+     dropped the owner straight into the app, because the wizard's own first step is what makes a bunny
+     exist. The backup step — the one thing ADR-0006 puts in setup rather than in settings, on the grounds
+     that a backup buried in settings never gets made — was unreachable for anyone who did not skip.
+   - The fix is that `hasBunny` answers a question about the **past** (did this install exist before the
+     wizard did), so it may only be asked while nothing has been recorded. The record therefore has three
+     states, not two: absent, `Started`, `Complete`, stored by name like every other enum here. Showing the
+     wizard writes `Started`, which is what makes it survive both its own first step and a process death
+     halfway through — the same failure twice, and one written-down fact closes both. Nothing in composition
+     could have: a latch held in `remember` dies with the process.
+   - Two mechanisms again, and this is the pair: the flag is a preference and preferences travel in every
+     export scope (3d), so a restore normally carries the answer; the resolver's absent-branch covers the
+     restore that does not — an Auto Backup arriving without it, or an archive written before this release.
+   - The screens are **two Nav3 keys on a back stack of their own**, not two more keys on the shell's. The
+     shell's stack is rooted at Home, so Back out of step one would land on an app that is not set up and
+     take the wizard's key with it. Rooted at `SetupBunny`, Back out of step one exits, which is what a
+     first screen should do — and reusing `appEntryDecorators` means `BunnyEditorScreen` is composed
+     **verbatim**, arguments and all, with the per-entry `ViewModelStore` it has in the shell. A
+     wizard-shaped copy of the bunny form would have been a second place for ADR-0016's fields to drift.
+   - There is no `onFinish` callback anywhere: the last step writes the preference, `setupState` flips, the
+     gate swaps the shell in. One mechanism, so the screen and the stored answer cannot disagree.
+   - The visibility flip was the one value ADR-0015 promised. `CARE` gained
+     `DestinationVisibility.Hidden` and the bottom bar went to four tabs; the key, the entry and
+     `CareAndMedsScreen` all stay, so 1.1 flips it back with no navigation work. `StubScreen`'s only
+     top-level caller is that screen, and its tab is now hidden — which is one of the two answers the
+     checkpoint allowed.
+   - The restored-back-stack rule is a **pure function over `List<NavKey>`** in `NavigationKeys.kt`, applied
+     during composition rather than from an effect: `NavDisplay` is a child, so it reads the repaired list
+     and no frame of a hidden destination is ever drawn. Compose lint rejected the first attempt — a
+     `remember` returning `Unit` — and was right to; the helper now returns the stack it repaired.
+   - The scope picker and the photos warning were **extracted and shared** with the Backup screen rather
+     than copied. There are exactly two places an owner picks a scope, and one set of words for them.
+   - Hand-verification caught a second thing that only a finger finds: in the scope picker **only the radio
+     circle was tappable**, not the two-line description beside it that plainly reads as part of the
+     control. Pre-existing from 3d and harmless in settings; on the first-run path it is the first control
+     the owner ever touches. The row is now `selectable` with `RadioButton(onClick = null)`, which also
+     makes a screen reader announce one radio button rather than two things.
+   - The switcher row ships with English alone, and that is not the pointless furniture ADR-0013 warned
+     about: it means the switcher is exercised by hand on a real phone at 1.0 rather than for the first time
+     in the week Polish lands. `AppLanguage` and `locales_config.xml` are the same claim in two files, so
+     `AppLanguageTest` parses the XML and asserts they agree — the drift it prevents is silent, and 3g is
+     the worst week to find it.
+   - **Gate met:** `spotlessApply`, `assembleDebug`, `test` (153 unit tests, 12 new) and `lint` pass, at
+     **0 errors** with no new warnings — the four project-code warnings standing are 3c's and earlier, and
+     are 3g's to close. No instrumented tests: the setup rule, the visibility flip and the back-stack repair
+     are all pure functions, proven on the JVM and then on the phone.
+   - Driven on the Xiaomi, and the full loop was watched: the existing debug install with a year of history
+     **never met the wizard** (the absent-record branch doing its job); a cleared install opened on step 1,
+     chrome-free and correctly inset; the editor saved Clover and came **back to step 1**, now reading
+     "Clover is in"; a force-stop mid-wizard came back to step 1 rather than into the app; the skip path
+     finished with no bunny at all and did not re-ask. On disk afterwards, `setup_progress Complete` and
+     `backup_scope Everything` — the scope chosen in the wizard, stored as it was picked rather than at the
+     Finish button, because an owner who says what they want and then leaves has still said it. The language
+     row was taken to English and back: `cmd locale get-app-locales` reported `[en]` and then `[]`, and the
+     app came back on the same screen both times.
 7. **3g — 1.0 English, then Polish, then 1.0.1 and the closed track.**
    - **1.0 goes to the internal track the moment the gate passes**, in English. That is the moment ADR-0019
      actually cares about — the data is safe — and nothing is served by holding it behind a translation.

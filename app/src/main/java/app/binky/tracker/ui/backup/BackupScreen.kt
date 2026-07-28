@@ -12,14 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -27,14 +25,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -252,34 +248,8 @@ private fun ExportSection(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(text = stringResource(R.string.backup_scope_title), style = MaterialTheme.typography.titleMedium)
 
-        // selectableGroup is what makes a screen reader announce these as one set of radio buttons
-        // rather than three unrelated toggles.
-        Column(modifier = Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            BackupScope.entries.forEach { option ->
-                Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
-                    RadioButton(selected = option == scope, onClick = { onSelectScope(option) })
-                    Column(modifier = Modifier.padding(top = 12.dp)) {
-                        Text(text = stringResource(option.labelRes), style = MaterialTheme.typography.bodyLarge)
-                        Text(
-                            text = stringResource(option.helpRes),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-        }
-
-        // Said out loud, not merely implemented (ADR-0005). Photos are outside Auto Backup, outside
-        // Essential and outside Records, and an owner who was never told that will reasonably assume
-        // the net covers everything.
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-            Text(
-                text = stringResource(R.string.backup_photos_warning),
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(12.dp),
-            )
-        }
+        BackupScopePicker(scope = scope, onSelect = onSelectScope)
+        PhotosNotProtectedNote()
 
         Button(onClick = onExport, enabled = working == null) {
             Text(stringResource(R.string.backup_export_action))
@@ -453,22 +423,6 @@ private fun RestoreFinished(restored: RestoreOutcome.Restored) {
         }
     }
 }
-
-private val BackupScope.labelRes: Int
-    get() =
-        when (this) {
-            BackupScope.Essential -> R.string.backup_scope_essential
-            BackupScope.Records -> R.string.backup_scope_records
-            BackupScope.Everything -> R.string.backup_scope_everything
-        }
-
-private val BackupScope.helpRes: Int
-    get() =
-        when (this) {
-            BackupScope.Essential -> R.string.backup_scope_essential_help
-            BackupScope.Records -> R.string.backup_scope_records_help
-            BackupScope.Everything -> R.string.backup_scope_everything_help
-        }
 
 private val PreservedKind.labelRes: Int
     get() =

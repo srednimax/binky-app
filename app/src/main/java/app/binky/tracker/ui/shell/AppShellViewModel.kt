@@ -9,6 +9,7 @@ import app.binky.tracker.AppContainer
 import app.binky.tracker.BinkyApplication
 import app.binky.tracker.data.BunnyEntity
 import app.binky.tracker.data.BunnySelection
+import app.binky.tracker.data.SetupState
 import app.binky.tracker.media.MediaFiles
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -52,6 +53,31 @@ class AppShellViewModel(
                 scopedBunny = (active + archived).find { it.id == scopedId }?.toSummary(container.mediaFiles),
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ShellUiState())
+
+    /**
+     * Whether first-run setup still owes the owner a run (ADR-0006). Passed straight through: the
+     * resolving happens on [AppContainer], because the answer outlives any one screen the way the
+     * selection does, and the navigation gate is only its first reader.
+     *
+     * Deliberately *not* folded into [ShellUiState]. That class is the shell's own state — the
+     * switcher, the bar, the scope line — and this decides whether the shell is drawn at all.
+     */
+    val setupState: StateFlow<SetupState> = container.setupState
+
+    /**
+     * Records that the wizard was actually put on screen (ADR-0006).
+     *
+     * Called by the gate at the moment it shows setup, not by any step. That is what makes the
+     * wizard survive its own first step adding a bunny, and what makes it survive a process death
+     * halfway through — both of which otherwise resolve to "this install has a bunny, so it must
+     * predate the wizard".
+     *
+     * Safe to call more than once: it writes the same value, and the only composition that calls it
+     * is the one that exists while setup is still owed.
+     */
+    fun markSetupStarted() {
+        viewModelScope.launch { container.preferences.markSetupStarted() }
+    }
 
     /**
      * Kotlin note: the container's setters are `suspend` (they write to DataStore), so they need a

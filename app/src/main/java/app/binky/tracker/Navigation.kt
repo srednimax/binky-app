@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +43,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import app.binky.tracker.data.BunnySelection
+import app.binky.tracker.data.SetupState
 import app.binky.tracker.data.bunnyId
 import app.binky.tracker.ui.archive.ArchivedBunniesScreen
 import app.binky.tracker.ui.backup.BackupScreen
@@ -54,6 +56,8 @@ import app.binky.tracker.ui.observations.ObservationEntryScreen
 import app.binky.tracker.ui.observations.ObservationsScreen
 import app.binky.tracker.ui.photos.PhotoGalleryScreen
 import app.binky.tracker.ui.settings.SettingsScreen
+import app.binky.tracker.ui.setup.SetupBackupStep
+import app.binky.tracker.ui.setup.SetupBunnyStep
 import app.binky.tracker.ui.shell.AppShellViewModel
 import app.binky.tracker.ui.shell.BunnySwitcher
 import app.binky.tracker.ui.shell.ShellUiState
@@ -84,10 +88,12 @@ internal fun appEntryDecorators(): List<NavEntryDecorator<NavKey>> =
     )
 
 /**
- * The app shell: the persistent bunny switcher, the bottom-navigation destinations, and the one
- * back stack they share (ADR-0015).
+ * The app, or the wizard that has to run before there is an app to show (ADR-0006).
+ *
+ * The two are alternatives, each with its own back stack, and neither is drawn until the question
+ * is settled — a frame of the shell in front of the wizard that is about to cover it up is the one
+ * thing a first run must not do.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainNavigation(modifier: Modifier = Modifier) {
     val shellViewModel: AppShellViewModel = viewModel(factory = AppShellViewModel.Factory)
@@ -95,8 +101,103 @@ fun MainNavigation(modifier: Modifier = Modifier) {
     // `collectAsStateWithLifecycle` subscribes to the Flow only while the screen is on screen —
     // the Compose equivalent of subscribing in an effect and unsubscribing on unmount.
     val state by shellViewModel.uiState.collectAsStateWithLifecycle()
+    val setup by shellViewModel.setupState.collectAsStateWithLifecycle()
 
-    val backStack = rememberNavBackStack(Home)
+    // Kotlin note: `when` over an enum is exhaustive when it is used as an expression or covers
+    // every entry — adding a fourth SetupState would stop this compiling, which is the point.
+    when (setup) {
+        SetupState.Loading -> Unit
+        SetupState.Required -> {
+            // Recorded here rather than by any step: showing the wizard is the event, and it is the
+            // showing that has to be remembered. Kotlin note: `LaunchedEffect(Unit)` runs its block
+            // once when this branch enters composition and cancels it if the branch leaves — the
+            // dependency-free `useEffect` of the pair.
+            LaunchedEffect(Unit) { shellViewModel.markSetupStarted() }
+            SetupNavigation(state = state, modifier = modifier)
+        }
+        SetupState.Complete -> AppShell(shellViewModel = shellViewModel, state = state, modifier = modifier)
+    }
+}
+
+/**
+ * First-run setup (ADR-0006), on a back stack of its own.
+ *
+ * **Its own stack, not two more keys on the shell's.** The shell's stack is rooted at Home, so Back
+ * out of the first setup step would land on an app that is not set up yet — and with the wizard's
+ * key gone from the stack, nothing would bring it back until the next launch. Rooted at
+ * [SetupBunny] instead, Back out of the first step exits the app, which is what a first screen
+ * should do.
+ *
+ * The stack is what makes reusing [BunnyEditorScreen] free: [appEntryDecorators] gives its entry a
+ * `ViewModelStore` that dies with the entry, exactly as in the shell. Composed outside a
+ * `NavDisplay` it would resolve to the Activity's store instead, and come back to a second visit
+ * with its `saved` flag still set — the bug `appEntryDecorators` was written for.
+ *
+ * There is no `onFinish` callback: the last step writes the preference, `setupState` flips, and
+ * [MainNavigation] swaps in the shell. One mechanism, and no way for the screen and the stored
+ * answer to disagree.
+ */
+@Composable
+private fun SetupNavigation(
+    state: ShellUiState,
+    modifier: Modifier = Modifier,
+) {
+    val backStack = rememberNavBackStack(SetupBunny)
+    val activity = LocalActivity.current
+
+    // A bare Scaffold, for its insets alone: the app draws edge to edge, and every screen in here —
+    // the bunny editor above all — is written expecting its caller to have already padded past the
+    // status bar, the way the shell's Scaffold does.
+    Scaffold(modifier = modifier) { insets ->
+        NavDisplay(
+            backStack = backStack,
+            modifier = Modifier.padding(insets),
+            entryDecorators = appEntryDecorators(),
+            onBack = {
+                if (backStack.size > 1) backStack.removeLastOrNull() else activity?.finish()
+            },
+            entryProvider =
+                entryProvider {
+                    entry<SetupBunny> {
+                        SetupBunnyStep(
+                            bunnies = state.activeBunnies,
+                            onAddBunny = { backStack.add(BunnyEditor()) },
+                            onContinue = { backStack.add(SetupBackup) },
+                        )
+                    }
+                    // The editor verbatim, arguments and all. A wizard-shaped copy of the bunny
+                    // form would be a second place for ADR-0016's fields to drift out of.
+                    entry<BunnyEditor> { key ->
+                        BunnyEditorScreen(
+                            bunnyId = key.bunnyId,
+                            // Fired on save *and* on cancel, and the step needs no help telling
+                            // them apart — it reads whether a bunny now exists.
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
+                    entry<SetupBackup> { SetupBackupStep(onBack = { backStack.removeLastOrNull() }) }
+                },
+        )
+    }
+}
+
+/**
+ * The app shell: the persistent bunny switcher, the bottom-navigation destinations, and the one
+ * back stack they share (ADR-0015).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AppShell(
+    shellViewModel: AppShellViewModel,
+    state: ShellUiState,
+    modifier: Modifier = Modifier,
+) {
+    // A stack restored from a build where Care & Meds was still a live tab comes back naming a
+    // destination this build hides (ADR-0015). Repaired during composition, before `NavDisplay` —
+    // a child, composed after this line — first reads the list, so the hidden key never reaches the
+    // entry provider and no frame of it is ever drawn. An effect would run one frame too late.
+    val restored = rememberNavBackStack(Home)
+    val backStack = remember(restored) { restored.withoutHiddenDestinationsInPlace() }
     val activity = LocalActivity.current
 
     // A detail screen pushed on top of a destination keeps that destination selected below it.
@@ -353,10 +454,11 @@ private fun BunnyNavigationBar(
                         )
                     },
                     label = {
-                        // Five destinations on a phone leaves ~70dp per label, and "Observations"
-                        // has no break opportunity — left to wrap it splits mid-word and draws over
-                        // its neighbours. One line, ellipsised, at the smaller of the two label
-                        // styles.
+                        // Four destinations at 1.0 and five again when Care & Meds returns, which
+                        // is ~70dp per label at its tightest; "Observations" has no break
+                        // opportunity, and left to wrap it splits mid-word and draws over its
+                        // neighbours. One line, ellipsised, at the smaller of the two label styles
+                        // — sized for the five-tab case so 1.1 does not have to rediscover this.
                         Text(
                             text = stringResource(destination.labelRes),
                             style = MaterialTheme.typography.labelSmall,
@@ -405,4 +507,22 @@ private fun ArchivedBanner(
 private fun NavBackStack<NavKey>.showTopLevel(destination: TopLevelDestination) {
     while (size > 1) removeAt(size - 1)
     if (destination.key != Home) add(destination.key)
+}
+
+/**
+ * Applies [withoutHiddenDestinations] to a live back stack, and hands the same stack back.
+ *
+ * The rule itself is the pure function in `NavigationKeys.kt`, where it is provable on the JVM;
+ * this is only the part that has to touch a `NavBackStack`. It returns the receiver so the call
+ * site is a `remember` that produces a value rather than one that performs a side effect — Compose
+ * lint rejects the latter, and it is right to: a `remember` returning `Unit` is a hook that exists
+ * only for what it did on the way past, which is the hardest kind to reason about.
+ */
+private fun NavBackStack<NavKey>.withoutHiddenDestinationsInPlace(): NavBackStack<NavKey> {
+    val kept = withoutHiddenDestinations()
+    if (kept != toList()) {
+        clear()
+        addAll(kept)
+    }
+    return this
 }

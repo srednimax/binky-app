@@ -158,6 +158,29 @@
     <string name="settings_weight_unit_help">This changes how weights are shown, not how they are entered — entry is always in grams, and changes are always shown in grams.</string>
     <string name="settings_backup">Backup &amp; restore</string>
     <string name="settings_backup_summary">Export your records to a file, restore them from one, and see the copies kept on this phone.</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">Same as this phone</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_help">Binky can use a different language from the rest of the phone. Changing this restarts the app.</string>
+
+    <!-- First-run setup (ADR-0006). Two steps at 1.0: the first bunny, then backup. The reminders
+         step ships with 1.1 and the reminders themselves. -->
+    <string name="setup_step">Step %1$d of %2$d</string>
+    <string name="setup_continue">Continue</string>
+    <string name="setup_back">Back a step</string>
+    <string name="setup_bunny_title">Welcome to Binky</string>
+    <string name="setup_bunny_body">Binky keeps your bunnies\' health history on this phone — weights, observations, vet visits, photos and reminders. There is no account and no server: nothing you record here is sent anywhere.\n\nTwo quick questions, and then it is yours.</string>
+    <string name="setup_bunny_action">Add your first bunny</string>
+    <string name="setup_bunny_add_another">Add another bunny</string>
+    <string name="setup_bunny_skip">Skip for now</string>
+    <string name="setup_bunny_added_one">%1$s is in. You can add more bunnies at any time from the switcher at the top of the screen.</string>
+    <string name="setup_bunny_added_many">Your bunnies are in. You can add more at any time from the switcher at the top of the screen.</string>
+    <string name="setup_backup_title">Keeping your records safe</string>
+    <string name="setup_backup_body">Everything lives on this phone, which means a lost phone is a lost history unless something is copying it. Two different things can, and neither one covers everything.</string>
+    <string name="setup_backup_auto_ask">Binky cannot tell whether it is switched on, and cannot switch it on for you. Now is a good moment to check.</string>
+    <string name="setup_backup_scope_help">This is what an export you make yourself will contain. It is also the default you can change later.</string>
+    <string name="setup_backup_changeable">All of this stays editable in Settings › Backup &amp; restore.</string>
+    <string name="setup_finish">Finish setup</string>
 
     <!-- Debug builds only, and never shown in a release build. -->
     <string name="settings_sample_data">Sample data</string>
@@ -376,7 +399,7 @@
     <string name="more_photos_summary">Pictures of one bunny, kept on this phone.</string>
     <string name="more_documents">Documents</string>
     <string name="more_settings">Settings</string>
-    <string name="more_settings_summary">Weight units, backup and restore.</string>
+    <string name="more_settings_summary">Weight units, language, backup and restore.</string>
     <string name="more_support">Support</string>
     <string name="more_coming_soon">Coming soon</string>
 

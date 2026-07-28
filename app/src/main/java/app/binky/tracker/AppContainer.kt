@@ -13,6 +13,7 @@ import app.binky.tracker.data.FluffleRepository
 import app.binky.tracker.data.ObservationRepository
 import app.binky.tracker.data.PRESERVED_DIRECTORY
 import app.binky.tracker.data.PhotoRepository
+import app.binky.tracker.data.SetupState
 import app.binky.tracker.data.StoredSelection
 import app.binky.tracker.data.SymptomRepository
 import app.binky.tracker.data.WeightRepository
@@ -21,6 +22,7 @@ import app.binky.tracker.data.backup.BackupRestorer
 import app.binky.tracker.data.backup.EXPORTS_DIRECTORY
 import app.binky.tracker.data.buildBunnyDatabase
 import app.binky.tracker.data.resolveSelection
+import app.binky.tracker.data.resolveSetupState
 import app.binky.tracker.media.MediaFiles
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -163,6 +165,28 @@ class AppContainer(
             archivedScope,
         ) { stored, activeIds, archived -> resolveSelection(stored, activeIds, archived) }
             .stateIn(scope, SharingStarted.Eagerly, BunnySelection.Loading)
+
+    /**
+     * Whether first-run setup still has to run (ADR-0006) — the same resolve-on-read shape as
+     * [selectedBunny] above, and for the same reason: what was stored is only half the answer.
+     *
+     * Archived bunnies are counted too. An owner whose only bunny is archived has plainly used the
+     * app before, and being walked through "add your first bunny" after a bereavement would be the
+     * worst possible time for it (ADR-0004).
+     *
+     * `WhileSubscribed` rather than [selectedBunny]'s `Eagerly`: only the navigation gate reads
+     * this, so there is no always-readable value to keep warm — and `stateIn` holds the last value
+     * across a resubscription, so returning from the background does not flash the gate's blank
+     * loading state.
+     */
+    val setupState: StateFlow<SetupState> =
+        combine(
+            preferences.setupProgress,
+            bunnyRepository.activeBunnies,
+            bunnyRepository.archivedBunnies,
+        ) { progress, active, archived ->
+            resolveSetupState(progress, hasBunny = active.isNotEmpty() || archived.isNotEmpty())
+        }.stateIn(scope, SharingStarted.WhileSubscribed(5_000), SetupState.Loading)
 
     suspend fun select(bunnyId: String) = preferences.setSelection(StoredSelection.Bunny(bunnyId))
 
