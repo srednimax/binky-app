@@ -1201,7 +1201,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      Finish button, because an owner who says what they want and then leaves has still said it. The language
      row was taken to English and back: `cmd locale get-app-locales` reported `[en]` and then `[]`, and the
      app came back on the same screen both times.
-7. **3g — The gate pass, and what it is allowed to find.**
+7. **3g — The gate pass, and what it is allowed to find.** ✅
    - **What landed between 3f and here, unplanned and load-bearing for this checkpoint.** Three things, none
      of them a checkpoint. The four standing lint warnings were **closed rather than restated** — and one was
      a real defect, not a lint opinion: the gallery read strings through `LocalContext.current.resources`, and
@@ -1253,9 +1253,30 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - **A release build cannot destructively wipe** is asserted by a JVM test (3c), because `run-as` does not
      reach a release build. The half a phone *can* show is driven here: force the release variant of the
      schema-mismatch screen in a debug build and confirm it offers **share and no forward button**.
-   - **Gate:** Phase 3's gate list, every bullet either passed or recorded as **not observed with its
-     reason**. Not-observed is pre-authorised exactly once, for the `bmgr` case ADR-0005 already names — and
-     3e drove even that. Anything else unobserved is unfinished, not passed.
+   - **Gate met:** every bullet passed and **nothing was recorded as not observed** — the one
+     pre-authorised exception went unused, because `bmgr backupnow` ran on the Xiaomi with **60 MB** of
+     files in `files/photos` and still transferred only the database, which is ADR-0005's exclusion
+     demonstrated rather than argued. The picked-file restore was driven by hand, through Google Drive
+     and back. `spotlessApply`, `assembleDebug`, `test`, `lint` at **0 errors and 0 warnings**, one
+     `bundleRelease`, the matrix green at 26/34/36, and schema 4 tagged `schema-4`.
+   - **What it found.** Three defects, all fixed here. The **too-new-backup refusal named neither
+     version**, so an owner met a file they could not open and no way to say how far ahead it was;
+     `RestoreRefusal` became a sealed interface so that one case can carry the pair. The **photo import
+     swallowed the reason a file failed**, which turned a corrupt fixture into a half-day's suspicion of
+     the media pipeline — the count still goes to the owner, the reason now goes to logcat. And the new
+     locale test **left the phone in French**: on 33+ AppCompat drops `setApplicationLocales` when no
+     activity is registered while the getter still reads back empty, so its teardown asserted clean over
+     a device that was not.
+   - **The matrix earned its keep on the first run.** The locale probe passed at API 26 and failed at 34
+     and 36: `fr` is not in `locales_config.xml`, and the platform declines an app locale the app does
+     not declare, while the backport — and HyperOS — apply it regardless. The probe is now gated below
+     33, which is where this checkpoint asked for it. **At 3i that gate should come off**: `pl` is a
+     locale the app will declare, and the same assertions should then hold on every leg.
+   - **Deferred, and not out of convenience:** *debug beside release, with `installDebug` still working*
+     is a bullet about 1.0 being installed from Play, so there is nothing to observe until **3h**.
+     Written down for 1.1 (ADR-0012): the missing-photo placeholder is near-invisible in dark theme — it
+     renders and does not crash, but a restored Essential gallery reads as a black screen rather than as
+     "this photo is not on this phone".
 8. **3h — 1.0 to the internal track.**
    - **3a's deferred half lands here, minus the property it was bought for.** The de-risking is bought back by
      ordering *inside* this checkpoint: the **first upload is a release candidate at whatever version
