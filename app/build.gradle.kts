@@ -90,10 +90,19 @@ if (buildingRelease && !hasUploadKey) {
 }
 
 android {
+    // namespace and applicationId are different things and here they deliberately disagree.
+    // namespace is compile-time: it's the package R and BuildConfig are generated into, and it
+    // matches the source tree under app/src/main/java. applicationId is install-time identity —
+    // the string Play, the package manager and the Store URL know the app by, and it is permanent
+    // once published. Nothing requires them to match; only convention usually makes them.
+    //
+    // They diverge because the Play Console entry was created with the package name it suggests
+    // from the app title, and a Console package name cannot be changed afterwards. Bending the
+    // build to Play was chosen over recreating the listing. See docs/PLAN.md 3h.
     namespace = "app.binky.tracker"
     compileSdk = 36
     defaultConfig {
-        applicationId = "app.binky.tracker"
+        applicationId = "binky.bunny.and.rabbit.tracker"
         minSdk = 26
         targetSdk = 36
         versionCode = gitVersionCode
@@ -128,7 +137,7 @@ android {
             //
             // FileProvider's authority is already `${applicationId}.fileprovider` in the manifest,
             // so it follows this automatically. The instrumentation package follows too, becoming
-            // app.binky.tracker.debug.test — see CLAUDE.md's Xiaomi fallback commands.
+            // binky.bunny.and.rabbit.tracker.debug.test — see CLAUDE.md's Xiaomi fallback commands.
             applicationIdSuffix = ".debug"
         }
 
