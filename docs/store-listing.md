@@ -38,7 +38,7 @@ Polish second-person forms are gendered, so the copy avoids them — `co został
 | Privacy policy URL | `https://srednimax.github.io/binky-app/privacy-policy.html` |
 | App icon (512²) | [`art/play-icon-512.png`](../art/play-icon-512.png) |
 | Feature graphic (1024×500) | [`art/play-feature-graphic.png`](../art/play-feature-graphic.png) |
-| Phone screenshots (1526×2713) | [`art/play-screenshot-1-home.png`](../art/play-screenshot-1-home.png), [`art/play-screenshot-2-weight.png`](../art/play-screenshot-2-weight.png) — placeholders until 3h |
+| Phone screenshots (1526×2713) | [`1-home`](../art/play-screenshot-1-home.png), [`2-weight`](../art/play-screenshot-2-weight.png), [`3-observations`](../art/play-screenshot-3-observations.png), [`4-backup`](../art/play-screenshot-4-backup.png) — real, from the Play build at 3h |
 | App category | Lifestyle |
 | Contact email | the per-app support address, set in Store settings — not the account-level developer email |
 
@@ -168,10 +168,21 @@ Binky nie powie Ci, czy Twój królik jest chory, i nigdy nie wnioskuje problemu
 
 ## Open
 
-- **Screenshots** are still 3a's two placeholders. 3g deferred the real ones to **3h**, where five are
-  taken from the release build carrying the debug fixture's data: Home's vitals card with the trend
-  flag, the chart at 90 d, the observation timeline with a shared entry, the gallery, and the backup
-  screen. Polish ones are a separate set that lands with the Polish listing at 3j — each locale's
+- **Screenshots are real as of 3h** — captured from the build Play delivered, running the debug
+  fixture's data restored into it through the picked-file path. Not from a locally signed build and
+  not from an emulator. Captured at the phone's native 1220×2712 and padded to 1526×2713, which is
+  exactly 9:16; Play's screenshot aspect limit is 2:1 and the raw capture is 2.22:1, so the padding is
+  a requirement rather than a style choice. The fill is `#121318`, the app's own dark surface, so the
+  side bars are invisible.
+
+  **Four, not the five 3h planned.** The gallery shot was dropped: the sample seeder writes
+  solid-colour JPEGs (`SampleData.writeSampleJpeg`) because the fixture exists to exercise the media
+  pipeline, not to look like anything, so the gallery photographs as four flat rectangles. Shipping
+  that would read as a broken app; staging it would have meant putting real photos in. Play requires a
+  minimum of two. Revisit when there are real photos worth showing — the full description's PHOTOS
+  section is currently the only place that claim is made.
+
+  Polish screenshots are a separate set that lands with the Polish listing at 3j — each locale's
   screenshots are uploaded per listing.
 - **One sentence comes back at 3j**, in the English description, after `• Free, with no paid tier and
   nothing locked`:
