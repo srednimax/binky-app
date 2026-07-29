@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/srednimax/binky-app/compare/v1.0.0...v1.0.1) (2026-07-29)
+
+
+### Bug Fixes
+
+* ship Polish, so the device language actually reaches the app ([a537e51](https://github.com/srednimax/binky-app/commit/a537e51e2139adbebf8c28dea8e60b4d401d7501))
+* ship Polish, so the device language actually reaches the app ([1a6be8f](https://github.com/srednimax/binky-app/commit/1a6be8f912b8c8cba0f746ae8b1a552afe7f0aef))
+
 ## [1.0.0](https://github.com/srednimax/binky-app/compare/v0.8.1...v1.0.0) (2026-07-29)
 
 
