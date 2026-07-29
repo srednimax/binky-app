@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The languages this app ships in. English alone for now; Polish joins it when
-    res/values-pl/strings.xml lands, and the Settings switcher row ships with it (ADR-0013) —
-    a switcher listing one language would be pointless furniture.
+    The languages this app ships in. English is the base and the fallback for every unmatched
+    locale; Polish joined it at 3i, with res/values-pl/strings.xml.
 
     Android 13+ reads this list to build the app's entry in Settings › Apps › Binky › Language.
     Below 13 the platform has no such screen and AppCompat's backport reads the same list.
+
+    It is also what the platform checks before honouring setApplicationLocales(): on 13+ an app
+    locale outside this list is declined outright, which is why the instrumented probe could not
+    use `fr` and now uses `pl` (LocaleBackportTest). Every entry here needs a matching AppLanguage
+    constant — AppLanguageTest parses this file and asserts the two agree.
 -->
 <locale-config xmlns:android="http://schemas.android.com/apk/res/android">
     <locale android:name="en" />
+    <locale android:name="pl" />
 </locale-config>

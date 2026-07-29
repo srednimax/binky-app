@@ -1,5 +1,10 @@
 <resources>
-    <string name="app_name">Binky</string>
+    <!-- `translatable="false"` is the point, not boilerplate: a launcher label resolves against the
+         *system* locale, never the app's, so a values-pl copy would rename the icon on a Polish
+         phone whose owner had set Binky to English (ADR-0013). Saying so here is what stops lint
+         reading the deliberate absence of a Polish app_name as a missed translation. The debug
+         build still overrides it — src/debug wins over src/main by variant, not by locale. -->
+    <string name="app_name" translatable="false">Binky</string>
 
     <!-- Bottom-navigation destinations (ADR-0015) -->
     <string name="destination_home">Home</string>
@@ -160,7 +165,10 @@
     <string name="settings_backup_summary">Export your records to a file, restore them from one, and see the copies kept on this phone.</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_system">Same as this phone</string>
+    <!-- Endonyms: each language named in itself, in every locale. Someone who has landed in a
+         language they cannot read finds their own by the name they would recognise. -->
     <string name="settings_language_english">English</string>
+    <string name="settings_language_polish">Polski</string>
     <string name="settings_language_help">Binky can use a different language from the rest of the phone. Changing this restarts the app.</string>
 
     <!-- First-run setup (ADR-0006). Two steps at 1.0: the first bunny, then backup. The reminders
