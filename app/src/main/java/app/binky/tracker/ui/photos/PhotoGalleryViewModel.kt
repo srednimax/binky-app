@@ -1,6 +1,7 @@
 package app.binky.tracker.ui.photos
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -22,6 +23,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import java.time.Instant
+
+/** Short enough for logcat's tag column, specific enough to filter on. */
+private const val IMPORT_LOG_TAG = "BinkyPhotoImport"
 
 /**
  * One tile in the grid, and one page in the viewer.
@@ -135,6 +139,10 @@ class PhotoGalleryViewModel(
                     // which is why this is a hand-written try/catch.
                     throw cancelled
                 } catch (failed: Exception) {
+                    // Counted for the owner, logged for us. Swallowing it entirely made a real
+                    // import failure indistinguishable from a corrupt file — the count says one
+                    // photo could not be read, and nothing anywhere says why.
+                    Log.w(IMPORT_LOG_TAG, "Could not import $source", failed)
                     unreadable++
                 }
                 local.update { it.copy(importing = ImportProgress(done = index + 1, total = sources.size)) }
