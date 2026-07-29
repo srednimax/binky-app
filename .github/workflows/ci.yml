@@ -140,3 +140,30 @@ jobs:
           name: instrumented-reports-api${{ matrix.api-level }}
           path: app/build/reports/androidTests/
           retention-days: 14
+
+  # The stable name the branch ruleset requires, and the whole reason this job exists.
+  #
+  # A required status check is matched **by name**. The matrix above names its legs after
+  # the API level, so the names change whenever the matrix does — and the day that
+  # happened, the ruleset sat waiting for a check nobody reports any more and the PR
+  # could not be merged with three green legs on it. Requiring this one instead means an
+  # API level can be added or dropped without anyone remembering to edit repository
+  # settings to match.
+  instrumented-gate:
+    name: Instrumented tests
+    needs: [instrumented]
+    # Without `always()` this is skipped when a leg fails, and a skipped required check
+    # is one that never reports — the exact hang it exists to prevent, arriving by a
+    # different road.
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      # `needs.<job>.result` for a matrix is a single verdict over every leg: `success`
+      # only if they all succeeded. Testing for that rather than for `failure` is what
+      # makes a **cancelled** or **skipped** leg fail the gate too, instead of quietly
+      # passing it.
+      - name: Fail unless every matrix leg succeeded
+        if: needs.instrumented.result != 'success'
+        run: |
+          echo "instrumented matrix result: ${{ needs.instrumented.result }}"
+          exit 1
