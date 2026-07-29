@@ -35,19 +35,34 @@ import java.util.Locale
  * are load-bearing; on the 34 and 36 legs the same assertions hold with the platform doing the work,
  * which is worth having but is not what this file is for.
  *
- * Deliberately **not** gated on `SDK_INT < 33`: a test that only ever runs on one emulator leg is a
- * test nobody can reproduce by hand. The claim is the same on every leg — *setting an app locale
- * changes the configuration the app's own `getString` resolves against* — and only the machinery
- * underneath it differs.
- *
  * French is the probe rather than Polish because 1.0 ships English alone (ADR-0013 puts the
- * translation at 3i). That is a feature here: it separates "the configuration changed" from "we have
- * a second `values-` folder", and the fallback assertion below checks the case an owner of an
- * unshipped language actually gets.
+ * translation at 3i). That separates "the configuration changed" from "we have a second `values-`
+ * folder", and the fallback assertion below checks the case an owner of an unshipped language
+ * actually gets.
+ *
+ * **The probe runs below 33 only**, and that is not tidiness — it is what the matrix found. `fr` is
+ * not in `locales_config.xml`, and the two platform legs decline to apply an app locale the app does
+ * not declare: on API 34 and 36 the activity stayed on `en` and never resolved against `fr` at all.
+ * AppCompat's backport applies it regardless, and so, for what it is worth, does the HyperOS phone on
+ * the desk — the same request, three different answers, none of which is this app's code. Above 33
+ * the per-app locale is the platform's to honour and the only thing that is ours is the declaration,
+ * so that is all this file asserts there.
+ *
+ * The practical consequence for **3i**: once Polish is declared, `pl` is a locale the app *does*
+ * claim, and the same probe should hold on every leg. Worth re-running these without the gate then.
  */
 @RunWith(AndroidJUnit4::class)
 class LocaleBackportTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
+
+    /** Below 13 the backport applies the override; at 13+ the platform decides, and may decline. */
+    private val backportLeg = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+
+    private fun assumeTheProbeIsApplied() =
+        assumeTrue(
+            "above API 32 the platform declines an app locale outside locales_config.xml",
+            backportLeg,
+        )
 
     @After
     fun clearTheOverride() {
@@ -69,6 +84,7 @@ class LocaleBackportTest {
 
     @Test
     fun settingAnAppLocaleChangesTheConfigurationTheActivityResolvesStringsAgainst() {
+        assumeTheProbeIsApplied()
         val deviceDefault = deviceDefaultLanguage()
         assumeTrue(
             "the probe locale has to differ from the device's own, or the assertion proves nothing",
@@ -100,6 +116,7 @@ class LocaleBackportTest {
 
     @Test
     fun theActivityResolvesAPlatformStringThroughTheOverriddenConfiguration() {
+        assumeTheProbeIsApplied()
         val english = platformCancelIn(Locale.ENGLISH)
         val french = platformCancelIn(Locale.FRENCH)
         // A stripped system image ships one language of platform resources, and then this assertion
@@ -124,6 +141,7 @@ class LocaleBackportTest {
 
     @Test
     fun anUnshippedLanguageFallsBackToEnglishRatherThanFailingToResolve() {
+        assumeTheProbeIsApplied()
         ActivityScenario.launch(MainActivity::class.java).use {
             setApplicationLocales("fr")
             val activity = awaitActivityResolving("fr")
