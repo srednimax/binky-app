@@ -1278,7 +1278,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      Written down for 1.1 (ADR-0012): the missing-photo placeholder is near-invisible in dark theme — it
      renders and does not crash, but a restored Essential gallery reads as a black screen rather than as
      "this photo is not on this phone".
-8. **3h — 1.0 to the internal track.**
+8. **3h — 1.0 to the internal track.** ✅
    - **The `applicationId` moved, and it moved because of an irreversible form field.** Play Console's
      *Create app* screen suggests a package name derived from the app *title*, and the suggestion was
      accepted: the entry was created as `binky.bunny.and.rabbit.tracker` while the app built as
@@ -1325,6 +1325,18 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - **Gate:** 1.0 is installable from Play on the Xiaomi, sits beside the debug build with its own data, and
      the listing describes only what 1.0 does. ADR-0019's condition is met at this point — the data is safe
      and it is in someone's hands — and everything after this is additive.
+   - **Gate met.** `1.0.0`, `versionCode` **154**, on the Xiaomi with
+     `installerPackageName=com.android.vending` — delivered by Play, not sideloaded. It sits beside
+     `binky.bunny.and.rabbit.tracker.debug` with its own `dataDir`, and the listing carries four real
+     screenshots and describes only what 1.0 does. The `versionCode` was read back out of the AAB's
+     protobuf manifest and matched `git rev-list --count HEAD` before upload.
+     **ADR-0019's condition is satisfied: the data is safe and it is in someone's hands.**
+   - **The update path was proven in the same motion, unplanned.** 1.0 arrived on the phone as an
+     **update over the 0.8.0 RC**, not a fresh install, and the restored fixture survived it intact —
+     bunnies, weighings, observations, the trend flag. That is the project's first real Play update, and
+     it carried a schema-4 database across versions on a build `run-as` cannot reach. It was available
+     only because this checkpoint chose to install an RC first; a plan that uploaded 1.0 directly would
+     have had to wait until 1.1 to learn anything about updating at all.
    - **What the RC proved, and it is the whole reason for ordering it first.** Every property this gate
      tests was demonstrated on the release candidate before 1.0 had a number anyone keeps: installed
      **from Play** (`installerPackageName=com.android.vending`, not a sideload); `installDebug` succeeding
