@@ -169,7 +169,7 @@
     <string name="setup_continue">Continue</string>
     <string name="setup_back">Back a step</string>
     <string name="setup_bunny_title">Welcome to Binky</string>
-    <string name="setup_bunny_body">Binky keeps your bunnies\' health history on this phone — weights, observations, vet visits, photos and reminders. There is no account and no server: nothing you record here is sent anywhere.\n\nTwo quick questions, and then it is yours.</string>
+    <string name="setup_bunny_body">Binky keeps your bunnies\' health history on this phone — weights, observations and photos. There is no account and no server: nothing you record here is sent anywhere.\n\nTwo quick questions, and then it is yours.</string>
     <string name="setup_bunny_action">Add your first bunny</string>
     <string name="setup_bunny_add_another">Add another bunny</string>
     <string name="setup_bunny_skip">Skip for now</string>
