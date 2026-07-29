@@ -11,11 +11,14 @@ Two rules for keeping this honest:
 - **Every factual claim below was verified against the built release artifact**, not against
   intent. Where a claim is a judgement call rather than a fact, it is marked ⚠ and says why.
 
-Verified on the `app-release.apk` built at `versionCode` 88:
+First verified at `versionCode` 88, and **re-verified at 3h on `versionCode` 136** — the build that
+actually goes up. That re-check matters: photos, backup, first-run setup and the language switcher all
+landed in between, and any one of them could have pulled in a permission. None did.
 
 | Claim | How it was checked |
 | --- | --- |
-| No user-facing permissions | `aapt2 dump badging` lists exactly one, `app.binky.tracker.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` — a signature-level permission AndroidX defines for its own non-exported receivers. Not user-visible, not a Play sensitive permission, nothing to declare. |
+| No user-facing permissions | `aapt2 dump badging` lists exactly one, `binky.bunny.and.rabbit.tracker.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` — a signature-level permission AndroidX defines for its own non-exported receivers. Not user-visible, not a Play sensitive permission, nothing to declare. |
+| No notification permission | No `POST_NOTIFICATIONS`, which is 3f's promise surviving into the artifact rather than staying an intention. The Photo Picker and `TakePicture` route means no `CAMERA` and no media permission either. |
 | No advertising ID | No `com.google.android.gms.permission.AD_ID` in the artifact. |
 | No network code of our own | No `INTERNET` permission is declared. |
 
@@ -107,22 +110,17 @@ This is **not** collection by the app: it is a service between the user and Goog
 sees nor receives it, and Play's guidance treats it that way. It is disclosed in the privacy policy
 already, which is the right posture — disclosed and correctly categorised beats undisclosed.
 
-### ⚠ A discrepancy to fix before 3c, not before the upload
+### The photo-gallery exclusion — closed, and demonstrated
 
-The privacy policy says *"Your photo gallery in the app is deliberately excluded from it."*
-**That is not implemented.** The manifest sets `allowBackup="true"` but references neither
-`android:dataExtractionRules` nor `android:fullBackupContent`, and `res/xml/backup_rules.xml` and
-`data_extraction_rules.xml` are still the AGP template stubs with every rule commented out. Auto
-Backup therefore takes everything in `filesDir`, `avatars/` included.
+The privacy policy says *"Your photo gallery in the app is deliberately excluded from it."* When this
+file was written at 3a that was a promise about unwritten code: the manifest referenced neither
+`android:dataExtractionRules` nor `android:fullBackupContent`, and both XML files were still AGP
+template stubs with every rule commented out.
 
-It is not a false statement *today* — the photo gallery does not exist until 3c, so there is nothing
-to exclude and nothing to contradict. It becomes false the moment photos land. Either wire the rules
-up at 3c or change that sentence; the gallery is exactly the kind of large, replaceable data Auto
-Backup should skip.
-
-**Carried as an explicit item in [`PLAN.md`](PLAN.md) 3c**, including the detail that
-`fullBackupContent` and `dataExtractionRules` split at API 31 and both are needed at `minSdk` 26.
-Nothing here blocks the 3a upload.
+The rules were wired up at 3c/3e — `fullBackupContent` and `dataExtractionRules` split at API 31 and
+`minSdk` 26 needs both — and **3g proved it on the phone**: `bmgr backupnow` ran with **60 MB** in
+`files/photos` and transferred only the database. The policy sentence is now a demonstrated fact
+rather than an intention, which is the state Play's cross-check wants it in.
 
 ## 8. Government apps
 

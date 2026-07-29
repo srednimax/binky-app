@@ -22,7 +22,8 @@ phase of its own; it happens at the end of each of Phases 3, 4 and 5.
 
 JDK 21, Android SDK under `~/Android/Sdk`, `ANDROID_HOME` in `~/.zshrc`, Xiaomi device over USB.
 Compose project scaffolded with `android create` (AGP 9.0.1, Kotlin 2.3.20, Gradle 9.1.0, Navigation 3),
-package `app.binky.tracker`.
+package `app.binky.tracker` — which remains the `namespace` and the source tree, but **stopped being the
+`applicationId` at 3h**, where the install identity became `binky.bunny.and.rabbit.tracker`.
 
 **Gate met:** `assembleDebug`, `test`, `lint`, and `connectedAndroidTest` all pass; the app runs on the phone.
 
@@ -1278,6 +1279,24 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      renders and does not crash, but a restored Essential gallery reads as a black screen rather than as
      "this photo is not on this phone".
 8. **3h — 1.0 to the internal track.**
+   - **The `applicationId` moved, and it moved because of an irreversible form field.** Play Console's
+     *Create app* screen suggests a package name derived from the app *title*, and the suggestion was
+     accepted: the entry was created as `binky.bunny.and.rabbit.tracker` while the app built as
+     `app.binky.tracker`. A Console package name cannot be changed afterwards, so the choice was to
+     recreate the listing or to move the app. **The app moved** — `applicationId` is now
+     `binky.bunny.and.rabbit.tracker` and `namespace` stays `app.binky.tracker`, which is legal because
+     the two are different things: one is install identity, the other is where `R` and `BuildConfig` are
+     generated. No Kotlin source moved.
+   - What that costs, recorded rather than glossed: the Store URL is `?id=binky.bunny.and.rabbit.tracker`
+     permanently, a keyword-stuffed *title* is now fossilised in an *identifier* that outlives any title
+     change, and it is not reverse-DNS. What it bought: not re-entering App content, Data safety, the
+     content rating questionnaire and the listing. The trade was made deliberately with those terms
+     stated. It is also the second time this project has moved its `applicationId` — `app.bunny.tracker`
+     → `app.binky.tracker` at 0.4.0 — and, unlike that one, this is the last chance: the next move after
+     a Play release is not a move, it is a different app with a different listing and stranded users.
+   - **The find is the checkpoint working.** Discovered on the upload attempt, at the one moment it was
+     still free: nothing published, no tester, no version number anyone keeps. This is precisely the
+     class of failure 3a existed to catch and deferred, and the reason 3h orders the RC before 1.0.
    - **3a's deferred half lands here, minus the property it was bought for.** The de-risking is bought back by
      ordering *inside* this checkpoint: the **first upload is a release candidate at whatever version
      release-please has**, not 1.0. It proves the upload key against Play App Signing, the App content answers
