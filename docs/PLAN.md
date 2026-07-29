@@ -1430,6 +1430,15 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      that route was never what the fallback depended on. One assertion was added that the old probe could not
      make at all: the app's own strings resolve in Polish, which is what distinguishes a translation in the
      APK from a configuration that merely changed.
+   - **Ungating it immediately found a third answer, and the matrix earned its keep twice in two
+     checkpoints.** 3f's finding was that 26 applies an undeclared locale and 34 and 36 decline it. With `pl`
+     declared, 26 and 36 went green and **34 did not**: the running activity did not pick the locale up
+     inside the ten seconds this file allowed, twice — while a later test in the same run resolved Polish in
+     1.4 seconds, having *inherited* the override the timed-out test had set. So the change does land on 34;
+     what varies is whether it reaches an activity already on screen, and how fast. Two fixes, and the second
+     matters more than the first: the wait is now two-stage (in place, then an activity launched fresh), and
+     the override is cleared **before** each test as well as after — because that 1.4-second pass was a green
+     test that asserted nothing, and would have gone on being one.
    - **`PolishTranslationTest`** holds the parity mechanically from here: every translatable resource has a
      counterpart, `values-pl` declares nothing extra, every plural carries all four categories, every format
      argument survives, and the breed lists are the same length. "Read every screen once" is a person's job

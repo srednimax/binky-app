@@ -20,6 +20,7 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Locale
@@ -47,22 +48,53 @@ import java.util.Locale
  * [anUnshippedLanguageFallsBackToEnglishRatherThanFailingToResolve] — but through a configuration
  * context rather than through an app locale, precisely because the platform will not hand out an
  * undeclared one.
+ *
+ * **Removing the gate then found a third answer, at API 34.** The declaration was enough for 36 and
+ * the backport was never in doubt at 26, but on 34 the running activity did not pick the locale up
+ * within the ten seconds this file used to allow — twice — while a later test in the same run
+ * resolved Polish in 1.4 seconds, having inherited the override the timed-out test had set. So the
+ * change lands; what varies is whether it reaches an activity that is already on screen, and how
+ * fast. Two things follow, and both are in the code below rather than in this comment: the wait is
+ * two-stage (in place, then a freshly launched activity — see [awaitActivityResolving]), and the
+ * override is cleared **before** each test as well as after, because that inherited-override pass
+ * was a green test that asserted nothing.
  */
 @RunWith(AndroidJUnit4::class)
 class LocaleBackportTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
+
+    /** Held so [awaitActivityResolving]'s relaunch can be closed; see the comment there. */
+    private var relaunched: ActivityScenario<MainActivity>? = null
+
+    /**
+     * Cleared **before** as well as after, and that is not belt-and-braces.
+     *
+     * The override persists between tests by design, so a test that inherits one from the test
+     * before it can pass without ever exercising the thing it names — `awaitActivityResolving("pl")`
+     * returns on its first poll because the app was already Polish. That is a green test asserting
+     * nothing, and API 34 produced exactly one of them (see the class comment).
+     */
+    @Before
+    fun startFollowingThePhone() = clearTheOverride()
 
     @After
     fun clearTheOverride() {
         // The override persists — that is the whole point of it — so leaving it set hands every test
         // that runs after this class a Polish app, and on a real phone leaves the app Polish until
         // someone notices.
-        //
+        resetToFollowThePhone()
+        // Closed here rather than left to the next test, so only one activity is ever resumed when
+        // a test starts polling for one.
+        relaunched?.close()
+        relaunched = null
+    }
+
+    private fun resetToFollowThePhone() {
         // It has to be cleared **with an activity alive**, which is why this launches one rather than
         // just calling through. On API 33+ AppCompat forwards the call to the platform's
         // LocaleManager and reaches the Context to do that through a registered activity delegate;
         // with none registered the call is dropped and `getApplicationLocales()` still reads back
-        // empty from AppCompat's own field. A bare `@After` therefore looks like it worked, asserts
+        // empty from AppCompat's own field. A bare teardown therefore looks like it worked, asserts
         // clean, and leaves the device set — which is exactly how this was found.
         ActivityScenario.launch(MainActivity::class.java).use {
             instrumentation.runOnMainSync { setAppLanguage(null) }
@@ -89,8 +121,10 @@ class LocaleBackportTest {
 
             setApplicationLocales(PROBE)
 
-            // Not `before` — applying a locale **recreates the activity**, on both implementations,
-            // so the instance that answers now is a different object than the one launched above.
+            // Not `before` — applying a locale recreates the activity wherever it is applied in
+            // place, so the instance that answers now is a different object than the one launched
+            // above. On API 34 it may be a fresh one the wait had to launch itself; either way it
+            // is not `before`.
             val after = awaitActivityResolving(PROBE)
             assertEquals(
                 "the app locale should reach the activity's own resources, not just a stored setting",
@@ -239,37 +273,69 @@ class LocaleBackportTest {
     }
 
     /**
-     * Polls until a resumed activity reports [language], because the recreate is asynchronous.
+     * Waits until an activity reports [language], in two stages, because "the activity is recreated
+     * in place" turned out not to be true everywhere.
+     *
+     * The **first** stage is the one this file was written around: applying an app locale recreates
+     * the running activity, and polling the resumed one eventually sees the new configuration. That
+     * is what the backport does below 13 and what API 36 does above it.
+     *
+     * API 34 does not reliably do it inside ten seconds. What it does do — proven by a test that
+     * passed in 1.4s on the same run, having inherited an override set by the test before it — is
+     * end up applying it. Whether that is latency in AppCompat's hand-off to `LocaleManager` or the
+     * platform declining to recreate a foreground activity and applying on next launch is not
+     * something this file can tell apart from CI, and the difference does not change what Binky
+     * owes anyone: a **launched** activity resolves its strings against the app locale. So the
+     * **second** stage launches one and asks again. If the first stage answers, nothing else runs.
      *
      * Kotlin note: this is the shape a JS test would write as `await waitFor(() => ...)` — there is
      * no promise to await here, so the wait is an explicit loop over the main thread's idle state.
      */
-    private fun awaitActivityResolving(
+    private fun awaitActivityResolving(language: String): Activity {
+        pollForActivityResolving(language, IN_PLACE_TIMEOUT_MS)?.let { return it }
+
+        // Not `.use { }`: the activity has to outlive this call for the caller to assert on it, so
+        // the scenario is closed in teardown instead.
+        relaunched?.close()
+        relaunched = ActivityScenario.launch(MainActivity::class.java)
+        pollForActivityResolving(language, AFTER_RELAUNCH_TIMEOUT_MS)?.let { return it }
+
+        throw AssertionError(
+            "no activity resolved against '$language' (last seen '$lastResolved') on API " +
+                "${Build.VERSION.SDK_INT}, including one launched fresh after the change",
+        )
+    }
+
+    private var lastResolved: String? = null
+
+    private fun pollForActivityResolving(
         language: String,
-        timeoutMs: Long = 10_000,
-    ): Activity {
+        timeoutMs: Long,
+    ): Activity? {
         val deadline = System.currentTimeMillis() + timeoutMs
-        var last: String? = null
         while (System.currentTimeMillis() < deadline) {
             instrumentation.waitForIdleSync()
             val activity = runCatching { resumedActivity() }.getOrNull()
             if (activity != null) {
-                last =
+                lastResolved =
                     activity.resources.configuration.locales[0]
                         .language
-                if (last == language) return activity
+                if (lastResolved == language) return activity
             }
             Thread.sleep(POLL_INTERVAL_MS)
         }
-        throw AssertionError(
-            "activity never resolved against '$language' (last seen '$last') " +
-                "on API ${Build.VERSION.SDK_INT}",
-        )
+        return null
     }
 
     private companion object {
         /** The declared language that is not the base one — see the class comment for why it matters. */
         const val PROBE = "pl"
         const val POLL_INTERVAL_MS = 100L
+
+        /** How long the running activity is given to be recreated under the new locale. */
+        const val IN_PLACE_TIMEOUT_MS = 10_000L
+
+        /** And how long a freshly launched one is, once the first stage has given up. */
+        const val AFTER_RELAUNCH_TIMEOUT_MS = 15_000L
     }
 }
