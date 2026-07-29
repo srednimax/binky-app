@@ -111,6 +111,14 @@ adb shell am instrument -w binky.bunny.and.rabbit.tracker.debug.test/androidx.te
 
 Same APKs, same runner, same tests — it just asks for two ordinary install confirmations instead.
 
+**A brand-new `applicationId` is a different failure with the same error string.** HyperOS refuses the
+*first* install of a package outright — `INSTALL_FAILED_USER_RESTRICTED` returns immediately with no
+dialog to miss, where a missed prompt takes a few seconds first. Updates to a package that already
+exists are fine, which is why this only bites after an `applicationId` change (3h). Either enable
+*Ustawienia → Dodatkowe ustawienia → Opcje programisty → Instalowanie przez USB* (needs a Mi account),
+or sidestep it entirely — `adb push` the APK to `/sdcard/Download/` and tap it in the phone's file
+manager, which is an ordinary user install and not USB-gated.
+
 The debug build takes `applicationIdSuffix = ".debug"` (ADR-0023), which is why the instrumentation
 package above is `binky.bunny.and.rabbit.tracker.debug.test`. Note the **`applicationId` is
 `binky.bunny.and.rabbit.tracker` while the `namespace` stays `app.binky.tracker`** — install identity and
