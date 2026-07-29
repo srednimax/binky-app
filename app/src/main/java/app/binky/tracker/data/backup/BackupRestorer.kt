@@ -54,18 +54,31 @@ sealed interface RestoreOutcome {
  * Why a restore declined. Each maps to one sentence the owner can act on — there is deliberately no
  * "unknown error", because a restore that fails vaguely is a restore nobody trusts again.
  */
-enum class RestoreRefusal {
+sealed interface RestoreRefusal {
     /** No manifest, or no database inside. Refused **by name**, not partially applied. */
-    NotABinkyBackup,
+    data object NotABinkyBackup : RestoreRefusal
 
-    /** A newer archive format or a newer schema. No migration runs backwards. */
-    MadeByANewerBinky,
+    /**
+     * A newer archive format or a newer schema. No migration runs backwards.
+     *
+     * **Carries both numbers**, and that is the whole reason this is not a bare entry like the
+     * others: "a newer version" alone leaves the owner with a file they cannot open and no way to
+     * say how far ahead it is, or which Binky to go and find. The two numbers are the difference
+     * between a dead end and an actionable one.
+     *
+     * Kotlin note: a sealed interface rather than an enum precisely so one case can carry data and
+     * the rest stay bare — the discriminated-union shape, where `when` still checks exhaustively.
+     */
+    data class MadeByANewerBinky(
+        val fileVersion: Int,
+        val readableVersion: Int,
+    ) : RestoreRefusal
 
     /** Over [RESTORE_MAX_TOTAL_BYTES]. */
-    TooLarge,
+    data object TooLarge : RestoreRefusal
 
     /** The database inside could not be opened by this build. The live one is untouched. */
-    Unreadable,
+    data object Unreadable : RestoreRefusal
 }
 
 /**
@@ -171,14 +184,21 @@ class BackupRestorer(
                 return@withContext refuse(RestoreRefusal.NotABinkyBackup, stagedPreferences)
             }
             if (declared.format > BACKUP_FORMAT_VERSION) {
-                return@withContext refuse(RestoreRefusal.MadeByANewerBinky, stagedPreferences)
+                return@withContext refuse(
+                    RestoreRefusal.MadeByANewerBinky(declared.format, BACKUP_FORMAT_VERSION),
+                    stagedPreferences,
+                )
             }
 
             // The *file's* header is the authority on its schema, not the manifest's claim about it:
             // the manifest is data an owner could have edited, and Room is about to be pointed at
             // the file either way. A newer version is refused outright — no migration runs backwards.
-            if (readUserVersion(stagedDatabase) > BUNNY_SCHEMA_VERSION) {
-                return@withContext refuse(RestoreRefusal.MadeByANewerBinky, stagedPreferences)
+            val fileSchemaVersion = readUserVersion(stagedDatabase)
+            if (fileSchemaVersion > BUNNY_SCHEMA_VERSION) {
+                return@withContext refuse(
+                    RestoreRefusal.MadeByANewerBinky(fileSchemaVersion, BUNNY_SCHEMA_VERSION),
+                    stagedPreferences,
+                )
             }
 
             if (!migrateStagedDatabase()) return@withContext refuse(RestoreRefusal.Unreadable, stagedPreferences)

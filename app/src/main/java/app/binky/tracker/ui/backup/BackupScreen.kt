@@ -165,7 +165,7 @@ fun BackupScreen(
         AlertDialog(
             onDismissRequest = viewModel::dismissRefusal,
             title = { Text(stringResource(R.string.backup_refused_title)) },
-            text = { Text(stringResource(refusal.messageRes)) },
+            text = { Text(refusal.message()) },
             confirmButton = {
                 TextButton(onClick = viewModel::dismissRefusal) { Text(stringResource(R.string.action_ok)) }
             },
@@ -431,12 +431,18 @@ private val PreservedKind.labelRes: Int
             PreservedKind.RestoreSnapshot -> R.string.preserved_kind_snapshot
         }
 
-/** One sentence per refusal, each of which ends by saying nothing on the phone was changed. */
-private val RestoreRefusal.messageRes: Int
-    get() =
-        when (this) {
-            RestoreRefusal.NotABinkyBackup -> R.string.backup_refused_not_a_backup
-            RestoreRefusal.MadeByANewerBinky -> R.string.backup_refused_newer
-            RestoreRefusal.TooLarge -> R.string.backup_refused_too_large
-            RestoreRefusal.Unreadable -> R.string.backup_refused_unreadable
-        }
+/**
+ * One sentence per refusal, each of which ends by saying nothing on the phone was changed.
+ *
+ * A `@Composable` returning a `String` rather than a `@StringRes Int`, because the newer-backup case
+ * names both versions and so needs its arguments formatted in — and a resource id cannot carry them.
+ */
+@Composable
+private fun RestoreRefusal.message(): String =
+    when (this) {
+        RestoreRefusal.NotABinkyBackup -> stringResource(R.string.backup_refused_not_a_backup)
+        is RestoreRefusal.MadeByANewerBinky ->
+            stringResource(R.string.backup_refused_newer, fileVersion, readableVersion)
+        RestoreRefusal.TooLarge -> stringResource(R.string.backup_refused_too_large)
+        RestoreRefusal.Unreadable -> stringResource(R.string.backup_refused_unreadable)
+    }
