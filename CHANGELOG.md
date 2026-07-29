@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0](https://github.com/srednimax/binky-app/compare/v0.8.1...v1.0.0) (2026-07-29)
+
+
+### Documentation
+
+* record what 3h proved and found, and cut 1.0 ([e8f36ad](https://github.com/srednimax/binky-app/commit/e8f36adeeee7a2b0a4a84309606c00ed289d0ba6))
+
 ## [0.8.1](https://github.com/srednimax/binky-app/compare/v0.8.0...v0.8.1) (2026-07-29)
 
 
