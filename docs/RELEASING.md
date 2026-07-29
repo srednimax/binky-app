@@ -47,6 +47,26 @@ git config core.hooksPath .githooks
 Config lives in `release-please-config.json` + `.release-please-manifest.json`
 (the manifest holds the current version — release-please rewrites it).
 
+## Checking the artifact before it reaches Play
+
+`bundleRelease`, never `assembleRelease` — Play wants an AAB and an AAB can't be
+`adb install`ed, so the only build ever put on the phone is the one Play delivers.
+Then read the version fields back **out of the artifact**, not out of the config
+that was supposed to produce it:
+
+```bash
+./gradlew bundleRelease
+python3 scripts/aab-version.py        # exits non-zero on a mismatch
+keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab
+```
+
+Don't reach for `aapt2 dump xmltree` here. An AAB stores its manifest as
+**protobuf**, not the binary XML aapt2 reads, so it prints nothing and exits `0` —
+it doesn't fail, it just declines to answer. That silence is how PLAN.md 3a
+produced a *signed* bundle carrying `versionCode` 1 and didn't find out until
+later. `scripts/aab-version.py` decodes the protobuf and asserts the count matches
+`git rev-list --count HEAD`.
+
 ## Gotchas
 
 - **`versionCode` in CI debug builds is `1`.** GitHub's checkout is shallow, so the
