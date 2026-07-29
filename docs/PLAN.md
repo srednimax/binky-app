@@ -1325,6 +1325,58 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - **Gate:** 1.0 is installable from Play on the Xiaomi, sits beside the debug build with its own data, and
      the listing describes only what 1.0 does. ADR-0019's condition is met at this point — the data is safe
      and it is in someone's hands — and everything after this is additive.
+   - **What the RC proved, and it is the whole reason for ordering it first.** Every property this gate
+     tests was demonstrated on the release candidate before 1.0 had a number anyone keeps: installed
+     **from Play** (`installerPackageName=com.android.vending`, not a sideload); `installDebug` succeeding
+     **with the Play build present**, the two holding separate `dataDir`s — ADR-0023's central claim, and
+     the first moment in the project it could be tested at all; the schema-4 backup **restored into a
+     Play-delivered artifact** through the SAF picked-file path, which is 3d's link that nothing had
+     exercised; and `BuildConfig.DEBUG`'s sample-data gate holding in release, confirmed by the Sample data
+     row being **absent** from the Play build's Settings.
+   - **The find that justifies the checkpoint: the `applicationId` was wrong, and it was permanent.**
+     Play Console's *Create app* screen suggests a package name derived from the app *title*, the
+     suggestion was accepted, and the entry was created as `binky.bunny.and.rabbit.tracker` against an app
+     built as `app.binky.tracker`. The upload refused. A Console package name cannot be changed, so the
+     choice was recreate the listing or move the app; **the app moved**, with the costs recorded above.
+     Discovered on the upload attempt, with nothing published, no tester and a throwaway version number —
+     the single cheapest moment it could have surfaced. The same mismatch found after a production release
+     is not fixable: a package name change is a different app, a different listing and stranded users.
+   - **What else it found.** The welcome screen told a new owner the app keeps "vet visits" and "reminders",
+     which are 1.2 and 1.1 — the one surface holding a different standard from the More tab's *Coming soon*
+     labels and `care_stub`'s explicit version numbers. The listing claimed **two languages** when 1.0 is
+     English-only, Polish being 3i; the Polish listing was held back to 3j with it, rather than put in front
+     of an English-only app. And the Data safety answer for the advertising ID turned out to rest on a fact
+     with an expiry date — it is safe because **no Play Services SDK is on the release classpath at all**,
+     and ML Kit brings GMS in at 1.2, so the answer now carries a re-check trigger instead of being
+     inherited.
+   - **Four screenshots, not five.** The gallery was dropped: `SampleData.writeSampleJpeg` writes
+     solid-colour JPEGs, because the fixture exists to exercise the media pipeline rather than to look like
+     anything, so the gallery photographs as four flat rectangles. Shipping that reads as a broken app.
+     Play's minimum is two. Captured at the phone's native 1220×2712 and padded to 1526×2713 — Play caps
+     screenshot aspect at 2:1 and the raw capture is 2.22:1, so the padding is a requirement rather than a
+     style choice.
+   - **Deviations from this checkpoint as written, both deliberate.** The RC went to the **closed** track
+     rather than internal. Nothing the gate tests depends on which track delivered the build, and the
+     12-testers-for-14-days clock does not begin merely because a closed track exists — it counts days with
+     twelve testers opted in, so nothing was spent. And the RC's version is **0.8.0, not 0.7.0**: the
+     `applicationId` move carried `BREAKING CHANGE`, and while the major is 0 release-please bumps the
+     minor. That is the checkpoint working as designed — "whatever version release-please has" is exactly
+     the point of not fixing the number in advance.
+   - **Two toolchain facts worth not rediscovering.** `aapt2 dump xmltree` cannot read an AAB's manifest —
+     it is protobuf, not binary XML — and prints **nothing while exiting 0**, which is how 3a shipped a
+     signed artifact carrying `versionCode` 1. `scripts/aab-version.py` now decodes it and asserts against
+     `git rev-list --count HEAD`. Separately, the APK Play delivers carries a **v3.2 signature block with
+     an ML-DSA hybrid post-quantum signer**, and `apksigner` from build-tools 37.0.0 on JDK 21 cannot
+     verify it (`ML-DSA KeyFactory not available`). The device installs it fine; this is a local toolchain
+     gap, and any later step that assumes the Play artifact's signature can be checked on this machine will
+     fail confusingly. Reading it back over `adb` is the route that works.
+   - **Reproduced from 3g, so it is a property rather than a flake:** HyperOS's SAF picker does not accept
+     injected input for the roots drawer or search, though it does accept filter-chip taps. The
+     picked-file restore needs a human tap, on every invocation, and any plan step assuming otherwise is
+     wrong. Separately, a **first** install of a new `applicationId` over USB is refused outright by
+     HyperOS — `INSTALL_FAILED_USER_RESTRICTED` returns instantly with no dialog, which reads exactly like
+     the documented missed-prompt case and is not it. Updates were always fine, which is why it only
+     surfaced here.
 9. **3i — Polish.**
    - `values-pl/strings.xml` — one new file, no code changes, which is what four phases of "no hardcoded
      strings" bought. The real count is **335 strings and 15 plurals**, not the ~400 this was estimated at,
