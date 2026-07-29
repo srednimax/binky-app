@@ -99,7 +99,30 @@ That single answer collapses most of the form. What may still be asked:
 | --- | --- |
 | Is all user data encrypted in transit? | **N/A** — no data is ever in transit. If the form forces a choice, the honest reading is Yes-by-vacuity; prefer N/A where offered. |
 | Do you provide a way for users to request their data be deleted? | Records are deletable individually in the app, and uninstalling removes everything. Because nothing is ever received, there is no deletion request to send anyone. |
-| Does your app use an advertising ID? | **No.** |
+| Does your app use an advertising ID? | **No** — see the re-check trigger below. |
+
+#### The advertising-ID answer has an expiry date
+
+Play's own warning on that question is that a transitive SDK can merge
+`com.google.android.gms.permission.AD_ID` into the merged manifest without the app ever declaring it.
+So it is answered from the **artifact**, and at 3h (`versionCode` 140) the artifact says: no `AD_ID`
+string in the merged manifest, no ads SDK in the bundle, and — the load-bearing one — **no Play
+Services on `releaseRuntimeClasspath` at all**. There is no SDK present that could merge it.
+
+That last fact is what makes the answer safe, and it is exactly what **changes at 1.2**: ML Kit's
+document scanner needs Play services (ADR-0009). When that dependency lands, GMS enters the classpath
+and this answer must be **re-verified against the artifact rather than inherited**:
+
+```bash
+unzip -p app/build/outputs/bundle/release/app-release.aab base/manifest/AndroidManifest.xml \
+  | strings | grep -i AD_ID
+./gradlew -q app:dependencies --configuration releaseRuntimeClasspath | grep -i play-services
+```
+
+A related non-finding worth writing down so it is not re-investigated: `android.permission.DUMP`
+appears in the merged manifest as `android:permission` on `androidx.profileinstaller`'s
+`ProfileInstallReceiver`. That is a guard on who may *call* the receiver — shell and system — not a
+permission the app requests. `aapt2 dump badging` lists no `uses-permission` for it.
 
 ### ⚠ Android Auto Backup — the one a reviewer may query
 
