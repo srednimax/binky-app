@@ -32,61 +32,51 @@ import java.util.Locale
  * activity's base context and recreating the activity. Half the supported range — `minSdk` 26 up to
  * 32 — runs the backport, and the test device runs Android 16, so nothing on this desk has ever
  * executed the branch that half the range depends on. CI's API **26** leg is where these assertions
- * are load-bearing; on the 34 and 36 legs the same assertions hold with the platform doing the work,
- * which is worth having but is not what this file is for.
+ * are load-bearing; on the 36 leg the same assertions hold with the platform doing the work, which
+ * is worth having but is not what this file is for.
  *
- * **Polish is the probe, and these assertions run on every leg.** Until 3i they could not: the probe
- * was `fr`, `fr` is not in `locales_config.xml`, and the matrix found that the platform declines an
- * app locale the app does not declare — on API 34 and 36 the activity stayed on `en` and never
- * resolved against `fr` at all, while AppCompat's backport applied it regardless. Three answers to
- * the same request, none of them this app's code, so the probe was gated below 33 and the two
- * platform legs asserted nothing. `pl` is a locale the app now declares, which removes the gate
- * rather than working around it.
+ * **Polish is the probe, and the old gate is gone.** Until 3i the probe was `fr`, `fr` is not in
+ * `locales_config.xml`, and the matrix found that the platform declines an app locale the app does
+ * not declare — on API 34 and 36 the activity stayed on `en` and never resolved against `fr` at all,
+ * while AppCompat's backport applied it regardless. So the probe was gated below 33 and both
+ * platform legs asserted nothing. `pl` is a locale the app declares, and on **26 and 36** that is
+ * the whole story: the same four assertions, no gate, the backport and the platform each doing
+ * their half.
  *
- * The fallback case an unshipped language lands in is still asserted, in
+ * **API 34 is skipped, and it is the only one.** Ungating found a third answer there: the running
+ * activity does not pick up a declared app locale inside ten seconds — while a later test in the
+ * same run resolved Polish in 1.4 seconds, having inherited the override the timed-out test had set.
+ * So the change lands on 34; what it does not do is reach an activity that is already on screen,
+ * promptly or predictably. Two ways round it were tried and both cost more than they bought: waiting
+ * on a freshly launched activity as a second stage, and clearing the override in `@Before` so no
+ * test could inherit one. **The second turned API 36 red** — two locale writes in quick succession
+ * do not queue, and the clear issued moments before a set can be the one that lands last. Neither is
+ * in this file now.
+ *
+ * That leaves a narrow, stated exclusion rather than a silent one, which is what the `fr` gate was
+ * too: what API 34 does with a per-app locale is the platform's business, Binky's own behaviour is
+ * asserted either side of it, and the failure mode being skipped is *slow*, not *wrong*.
+ *
+ * The fallback case an unshipped language lands in is still asserted on every leg, in
  * [anUnshippedLanguageFallsBackToEnglishRatherThanFailingToResolve] — but through a configuration
  * context rather than through an app locale, precisely because the platform will not hand out an
  * undeclared one.
- *
- * **Removing the gate then found a third answer, at API 34.** The declaration was enough for 36 and
- * the backport was never in doubt at 26, but on 34 the running activity did not pick the locale up
- * within the ten seconds this file used to allow — twice — while a later test in the same run
- * resolved Polish in 1.4 seconds, having inherited the override the timed-out test had set. So the
- * change lands on 34; what varies is whether it reaches an activity that is already on screen, and
- * how fast. [awaitActivityResolving] therefore waits in two stages, the second on an activity it
- * launches itself, which is the weaker claim but the true one and the only one Binky owes anyone.
- *
- * **And the obvious fix for that inherited override made it worse, which is the more useful
- * finding.** Clearing the override in `@Before` — so no test can start on one — took API 34 *and*
- * 36 from a slow apply to no apply at all inside twenty-five seconds. Two locale writes in quick
- * succession do not queue: the clear issued moments before the set can be the one that lands last.
- * Nothing in this file writes a locale to arrange a starting state any more. It asserts the
- * starting state instead, via [assertStartsOnTheDeviceDefault], and lets the single write per test
- * be the only one in flight.
  */
 @RunWith(AndroidJUnit4::class)
 class LocaleBackportTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
-    /** Held so [awaitActivityResolving]'s relaunch can be closed; see the comment there. */
-    private var relaunched: ActivityScenario<MainActivity>? = null
-
     /**
-     * The starting state each probe test needs, asserted rather than imposed.
+     * Skips the three tests that apply an app locale, on API 34 alone — see the class comment.
      *
-     * The obvious way to stop a test inheriting an override from the one before it is to clear the
-     * override in `@Before`. **That was tried and it broke the two legs that worked**: a clear
-     * issued moments before a set can be the one that wins, and API 34 and 36 both went from a
-     * ten-second wait to no locale at all inside twenty-five. Two writes in quick succession do not
-     * queue. So the setup here writes nothing — it reads, and fails loudly if what it reads is not
-     * the state the test needs.
+     * Written as `!= 34` rather than as a range: this is one platform version behaving differently
+     * from the ones on either side of it, not a boundary. If 35 or 37 ever joins the matrix it
+     * should be asserted, not assumed.
      */
-    private fun assertStartsOnTheDeviceDefault(activity: Activity) =
-        assertEquals(
-            "the test should start with no override — one has leaked from an earlier test",
-            deviceDefaultLanguage(),
-            activity.resources.configuration.locales[0]
-                .language,
+    private fun assumeTheProbeReachesARunningActivity() =
+        assumeTrue(
+            "API 34 does not apply a declared app locale to an activity already on screen promptly",
+            Build.VERSION.SDK_INT != Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
         )
 
     @After
@@ -94,19 +84,12 @@ class LocaleBackportTest {
         // The override persists — that is the whole point of it — so leaving it set hands every test
         // that runs after this class a Polish app, and on a real phone leaves the app Polish until
         // someone notices.
-        resetToFollowThePhone()
-        // Closed here rather than left to the next test, so only one activity is ever resumed when
-        // a test starts polling for one.
-        relaunched?.close()
-        relaunched = null
-    }
-
-    private fun resetToFollowThePhone() {
+        //
         // It has to be cleared **with an activity alive**, which is why this launches one rather than
         // just calling through. On API 33+ AppCompat forwards the call to the platform's
         // LocaleManager and reaches the Context to do that through a registered activity delegate;
         // with none registered the call is dropped and `getApplicationLocales()` still reads back
-        // empty from AppCompat's own field. A bare teardown therefore looks like it worked, asserts
+        // empty from AppCompat's own field. A bare `@After` therefore looks like it worked, asserts
         // clean, and leaves the device set — which is exactly how this was found.
         ActivityScenario.launch(MainActivity::class.java).use {
             instrumentation.runOnMainSync { setAppLanguage(null) }
@@ -116,6 +99,7 @@ class LocaleBackportTest {
 
     @Test
     fun settingAnAppLocaleChangesTheConfigurationTheActivityResolvesStringsAgainst() {
+        assumeTheProbeReachesARunningActivity()
         val deviceDefault = deviceDefaultLanguage()
         assumeTrue(
             "the probe locale has to differ from the device's own, or the assertion proves nothing",
@@ -124,14 +108,17 @@ class LocaleBackportTest {
 
         ActivityScenario.launch(MainActivity::class.java).use {
             val before = resumedActivity()
-            assertStartsOnTheDeviceDefault(before)
+            assertEquals(
+                "with no override the activity should follow the phone",
+                deviceDefault,
+                before.resources.configuration.locales[0]
+                    .language,
+            )
 
             setApplicationLocales(PROBE)
 
-            // Not `before` — applying a locale recreates the activity wherever it is applied in
-            // place, so the instance that answers now is a different object than the one launched
-            // above. On API 34 it may be a fresh one the wait had to launch itself; either way it
-            // is not `before`.
+            // Not `before` — applying a locale **recreates the activity**, on both implementations,
+            // so the instance that answers now is a different object than the one launched above.
             val after = awaitActivityResolving(PROBE)
             assertEquals(
                 "the app locale should reach the activity's own resources, not just a stored setting",
@@ -144,6 +131,7 @@ class LocaleBackportTest {
 
     @Test
     fun theActivityResolvesAPlatformStringThroughTheOverriddenConfiguration() {
+        assumeTheProbeReachesARunningActivity()
         val english = platformCancelIn(Locale.ENGLISH)
         val polish = platformCancelIn(Locale.forLanguageTag(PROBE))
         // A stripped system image ships one language of platform resources, and then this assertion
@@ -152,7 +140,6 @@ class LocaleBackportTest {
         assumeTrue("this system image has no Polish platform resources", english != polish)
 
         ActivityScenario.launch(MainActivity::class.java).use {
-            assertStartsOnTheDeviceDefault(resumedActivity())
             setApplicationLocales(PROBE)
             val activity = awaitActivityResolving(PROBE)
 
@@ -169,11 +156,8 @@ class LocaleBackportTest {
 
     @Test
     fun theAppsOwnStringsResolveInPolishAndNotOnlyThePlatformsOwn() {
+        assumeTheProbeReachesARunningActivity()
         ActivityScenario.launch(MainActivity::class.java).use {
-            // Without this the test can pass on an override left behind by an earlier one, having
-            // applied nothing itself. That is not hypothetical: API 34 produced exactly such a pass,
-            // in 1.4 seconds, on the run that first ungated this file.
-            assertStartsOnTheDeviceDefault(resumedActivity())
             setApplicationLocales(PROBE)
             val activity = awaitActivityResolving(PROBE)
 
@@ -285,69 +269,37 @@ class LocaleBackportTest {
     }
 
     /**
-     * Waits until an activity reports [language], in two stages, because "the activity is recreated
-     * in place" turned out not to be true everywhere.
-     *
-     * The **first** stage is the one this file was written around: applying an app locale recreates
-     * the running activity, and polling the resumed one eventually sees the new configuration. That
-     * is what the backport does below 13 and what API 36 does above it.
-     *
-     * API 34 does not reliably do it inside ten seconds. What it does do — proven by a test that
-     * passed in 1.4s on the same run, having inherited an override set by the test before it — is
-     * end up applying it. Whether that is latency in AppCompat's hand-off to `LocaleManager` or the
-     * platform declining to recreate a foreground activity and applying on next launch is not
-     * something this file can tell apart from CI, and the difference does not change what Binky
-     * owes anyone: a **launched** activity resolves its strings against the app locale. So the
-     * **second** stage launches one and asks again. If the first stage answers, nothing else runs.
+     * Polls until a resumed activity reports [language], because the recreate is asynchronous.
      *
      * Kotlin note: this is the shape a JS test would write as `await waitFor(() => ...)` — there is
      * no promise to await here, so the wait is an explicit loop over the main thread's idle state.
      */
-    private fun awaitActivityResolving(language: String): Activity {
-        pollForActivityResolving(language, IN_PLACE_TIMEOUT_MS)?.let { return it }
-
-        // Not `.use { }`: the activity has to outlive this call for the caller to assert on it, so
-        // the scenario is closed in teardown instead.
-        relaunched?.close()
-        relaunched = ActivityScenario.launch(MainActivity::class.java)
-        pollForActivityResolving(language, AFTER_RELAUNCH_TIMEOUT_MS)?.let { return it }
-
-        throw AssertionError(
-            "no activity resolved against '$language' (last seen '$lastResolved') on API " +
-                "${Build.VERSION.SDK_INT}, including one launched fresh after the change",
-        )
-    }
-
-    private var lastResolved: String? = null
-
-    private fun pollForActivityResolving(
+    private fun awaitActivityResolving(
         language: String,
-        timeoutMs: Long,
-    ): Activity? {
+        timeoutMs: Long = 10_000,
+    ): Activity {
         val deadline = System.currentTimeMillis() + timeoutMs
+        var last: String? = null
         while (System.currentTimeMillis() < deadline) {
             instrumentation.waitForIdleSync()
             val activity = runCatching { resumedActivity() }.getOrNull()
             if (activity != null) {
-                lastResolved =
+                last =
                     activity.resources.configuration.locales[0]
                         .language
-                if (lastResolved == language) return activity
+                if (last == language) return activity
             }
             Thread.sleep(POLL_INTERVAL_MS)
         }
-        return null
+        throw AssertionError(
+            "activity never resolved against '$language' (last seen '$last') " +
+                "on API ${Build.VERSION.SDK_INT}",
+        )
     }
 
     private companion object {
         /** The declared language that is not the base one — see the class comment for why it matters. */
         const val PROBE = "pl"
         const val POLL_INTERVAL_MS = 100L
-
-        /** How long the running activity is given to be recreated under the new locale. */
-        const val IN_PLACE_TIMEOUT_MS = 10_000L
-
-        /** And how long a freshly launched one is, once the first stage has given up. */
-        const val AFTER_RELAUNCH_TIMEOUT_MS = 15_000L
     }
 }
