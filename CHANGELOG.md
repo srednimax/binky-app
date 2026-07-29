@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.7.0](https://github.com/srednimax/binky-app/compare/v0.6.0...v0.7.0) (2026-07-29)
+
+
+### Features
+
+* first-run setup, hide Care & Meds, add the language switcher ([32b28e9](https://github.com/srednimax/binky-app/commit/32b28e9d79ac8d6d2e77a88fa2648e2be9dea058))
+* first-run setup, hide Care & Meds, add the language switcher ([375ff08](https://github.com/srednimax/binky-app/commit/375ff08eeeb8a36d1e1757ea19198757133db234))
+
+
+### Bug Fixes
+
+* name both versions when a backup is too new to read ([1ac9970](https://github.com/srednimax/binky-app/commit/1ac9970ef3b6c8226441343cdb0972d233083d30))
+* name both versions when a backup is too new to read ([969a164](https://github.com/srednimax/binky-app/commit/969a164e3f718e42ab7b5322e15af9e63d3b896b))
+* refuse a backup carrying a traversal entry instead of crashing ([2e5e5ff](https://github.com/srednimax/binky-app/commit/2e5e5ff8b95bc0357b8e092f721f67520a1d1a4f))
+* refuse a traversal entry on every API, not just 14+ ([c908f6f](https://github.com/srednimax/binky-app/commit/c908f6f04f6067c5f4a36a7b677f1838cfeb8899))
+* say why a photo could not be imported ([4db3d12](https://github.com/srednimax/binky-app/commit/4db3d12399f6554656c248271e12d02c56dfec1f))
+* say why a photo could not be imported ([0b1f840](https://github.com/srednimax/binky-app/commit/0b1f840ace750d1e5357c898396856ef5e2ba696))
+* **test:** clear the app locale where the clear can actually land ([35be671](https://github.com/srednimax/binky-app/commit/35be6718241efc8d94441f390b8d223866530a33))
+
 ## [0.6.0](https://github.com/srednimax/binky-app/compare/v0.5.0...v0.6.0) (2026-07-28)
 
 
