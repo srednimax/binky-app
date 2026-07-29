@@ -14,13 +14,18 @@ import app.binky.tracker.R
  * `AppLanguageTest` parses the XML and asserts the two match, because "remember to edit both" is
  * exactly the kind of promise that survives right up until the translation lands and nobody does.
  *
- * English alone at 1.0. Polish joins it at 3i, as one entry here and one line of XML.
+ * English alone at 1.0; Polish joined it at 3i, as one entry here and one line of XML.
+ *
+ * The labels are **endonyms** — each language named in its own language, in every locale — so an
+ * owner who has landed somewhere they cannot read finds their way out by a name they recognise.
+ * That is why `settings_language_english` reads "English" in `values-pl` too.
  */
 enum class AppLanguage(
     val tag: String,
     @param:StringRes val labelRes: Int,
 ) {
     ENGLISH("en", R.string.settings_language_english),
+    POLISH("pl", R.string.settings_language_polish),
 }
 
 /**

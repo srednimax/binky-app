@@ -1389,33 +1389,79 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      HyperOS — `INSTALL_FAILED_USER_RESTRICTED` returns instantly with no dialog, which reads exactly like
      the documented missed-prompt case and is not it. Updates were always fine, which is why it only
      surfaced here.
-9. **3i — Polish.**
-   - `values-pl/strings.xml` — one new file, no code changes, which is what four phases of "no hardcoded
-     strings" bought. The real count is **335 strings and 15 plurals**, not the ~400 this was estimated at,
-     and it is countable now precisely because the strings have stopped moving.
-   - It lands **after** 1.0 is on the track, deliberately: translating churn twice is the only way to make it
-     more expensive, and a multi-session writing task must not be what sets a release date.
-   - Polish's **four plural categories** against English's two are where the `<plurals>` discipline becomes
-     falsifiable rather than merely observed. Read at **1, 2 and 5**: the delete ceremony's two buckets, the
-     shared-observation participant counts, and the import result line — which is keyed on the *unreadable*
-     count, and whose structure was fixed before this file for exactly this moment.
-   - Dates, numbers and weights already format through the platform, so `2,45 kg` is a **check rather than
-     work** — the two places to look are `WeightFormat` and the chart's axis labels.
-   - **The switcher finally has a second language**, which is what makes 3b's backport checkable by a person:
-     on a pre-13 device or emulator, switch to Polish, confirm the app changes language while the **phone
-     does not**, and confirm the launcher label stays English — `app_name` is deliberately absent from
-     `values-pl` (3a), because a launcher label resolves against the *system* locale.
-   - `AppLanguage` gains `pl` and `locales_config.xml` gains its entry. They are the same claim in two files,
-     and `AppLanguageTest` already parses the XML and asserts they agree — which is what catches the file
-     being added in one place and not the other, a drift that is otherwise silent.
-   - **Voice, not translation.** [`docs/store-listing.md`](store-listing.md) already set the register and the
-     reason: Polish second-person forms are gendered, so the copy uses `co zostało zapisane` rather than
-     `co zapisałeś`, which addresses half the audience. The same applies to every screen. Two things must
-     survive the crossing intact — ADR-0001's framing (*worth a closer look* must not become a diagnosis in
-     Polish, where the medical register is easy to fall into) and ADR-0004's delete ceremony, whose whole
-     force is in its wording.
-   - Every screen read in Polish with **no English left behind**, dialogs, snackbars, the wizard and the
-     terminal restore screen included — the three surfaces least likely to be revisited by hand.
+9. **3i — Polish.** *(the file has landed; one hand check is still owed — last bullet)*
+   - `values-pl/strings.xml` — **335 strings, 14 plurals** and the breed array, not the ~400 this was
+     estimated at and not the 15 plurals counted above either. It lands after 1.0 is on the track,
+     deliberately: translating churn twice is the only way to make it more expensive.
+   - **"One new file, no code changes" was very nearly true, and the exception is the interesting part.**
+     `AppLanguage` gained `POLISH` and `locales_config.xml` gained `pl` — both expected, both the same
+     claim in two files that `AppLanguageTest` already guards. The third edit was not expected: `app_name`
+     had to be marked **`translatable="false"`**. Leaving the launcher label out of `values-pl` is a
+     decision (a launcher label resolves against the *system* locale, so a Polish `app_name` would rename
+     the icon on a Polish phone whose owner set Binky to English), but an omission and an oversight look
+     identical to lint. The deliberate absence had to be *declared*, not merely left.
+   - **The constraint that actually shaped the file was gender, not plurals.** Polish predicate adjectives
+     and past-tense verbs inflect, and a bunny's name arrives from the owner in the nominative and cannot be
+     declined — so `zdjęcia królicy Zosi` is unreachable when the app can only substitute `Zosia`. Every
+     string that interpolates a name now reaches it through a colon, a comma or brackets (`Mieszka z: %1$s`,
+     `Przenieść do archiwum: %1$s?`) rather than through a preposition that governs a case, and the same
+     trick carries the backup scope names as quoted `„%1$s”`. Predicate adjectives went with it:
+     `Mieszka samotnie`, never `Mieszka sam`. This is a deeper version of store-listing.md's rule about
+     `co zostało zapisane` — that one is about not addressing half the audience, this one is about not
+     guessing at a name the owner chose.
+   - **The four plural categories paid off exactly where 3g said they would.** `photo_import_partial` is the
+     falsifiable case: its English items are identical and its Polish ones are not — *nie udało się odczytać
+     **1 pliku*** against *… **2 plików***, the negated infinitive pulling the count into the genitive. The
+     delete ceremony and the participant counts inflect as expected.
+   - **Two things came out of the crossing that the English file had already got right for reasons only
+     visible here.** The chart's four window strings are in the **locative** in Polish (`ostatnich 30 dniach`)
+     and cannot double as the selector's labels — English keeps them as separate resources for a milder
+     reason and would have survived merging them; Polish would not. Conversely `gap_*` and `age_*` **collapse
+     entirely** — both are `2 lata` — so the distinction English draws between "2 years" and "2 years old"
+     has no Polish reflex at all. Kept separate anyway: the English difference is real and the next language
+     may reinstate it.
+   - **Dates, numbers and weights were a check rather than work, and the check passed.** `WeightFormat` takes
+     its locale from `LocalConfiguration` and formats through `NumberFormat`/`DateTimeFormatter`; the chart's
+     axis labels go through the same helpers, so `2,45 kg` needs nothing.
+   - **3b's locale gate came off, and it came off cleanly.** `LocaleBackportTest`'s probe moved `fr` → `pl`
+     and the `assumeTrue` below API 33 is gone, so the same assertions now run on all three CI legs instead
+     of one. The fallback claim — an unshipped language resolves to English rather than to nothing — moved to
+     a `createConfigurationContext`, because the platform declines an *app locale* it does not declare, and
+     that route was never what the fallback depended on. One assertion was added that the old probe could not
+     make at all: the app's own strings resolve in Polish, which is what distinguishes a translation in the
+     APK from a configuration that merely changed.
+   - **Ungating it immediately found a third answer, and the matrix earned its keep twice in two
+     checkpoints.** 3f's finding was that 26 applies an undeclared locale and 34 and 36 decline it. With `pl`
+     declared, 26 and 36 went green and **34 did not**: the running activity did not pick the locale up
+     inside the ten seconds this file allowed, twice — while a later test in the same run resolved Polish in
+     1.4 seconds, having *inherited* the override the timed-out test had set. Then **36 went red too**, on a
+     run whose only change was a comment — one test, the same ten-second wait, `last seen 'en'`. The
+     platform legs are not deterministic here: 34 fails almost always, 36 intermittently, 26 never.
+     Applying a per-app locale on 13+ is a request to a system service that recreates the activity when it
+     gets to it, and *when it gets to it* is not something a test can wait on honestly.
+   - **Two fixes were tried against that and both were reverted, which is the more useful record.** Waiting
+     on a freshly launched activity as a second stage did not help. Clearing the override in `@Before`, so
+     that no test could start on one, took both platform legs from a slow apply to **no apply at all**
+     inside twenty-five seconds: two locale writes in quick succession do not queue, and the clear issued
+     moments before the set can be the one that lands last. That is a trap with no symptom other than the
+     wrong locale, the same shape as 3f's teardown that asserted clean over a device that was not.
+   - **So the gate moved rather than came off, and the file is sharper for it.** The recreate-in-place
+     assertions now run **below 13 only** — the backport's own branch, which no hardware here can reach and
+     which is the reason the file exists; chasing them on the platform legs was chasing the platform's
+     scheduler. What the app actually owes is asserted on **every** leg instead, and directly: that
+     `values-pl` is in the APK and resolves, through a configuration context with no app-locale machinery
+     in the way. 1.0 could not make that assertion at all, so the platform legs now assert strictly more
+     than they did — just not via a wait. Four CI cycles went into learning that, which is the argument for
+     writing it down rather than rediscovering it at 1.1.
+   - **`PolishTranslationTest`** holds the parity mechanically from here: every translatable resource has a
+     counterpart, `values-pl` declares nothing extra, every plural carries all four categories, every format
+     argument survives, and the breed lists are the same length. "Read every screen once" is a person's job
+     done once; this is the part of it a machine can keep holding afterwards.
+   - **Still owed, and it is a person's job:** every screen read in Polish with no English left behind —
+     dialogs, snackbars, the wizard and the terminal restore screen included, the three least likely to be
+     revisited by hand. The pre-13 half of that (switch to Polish, app changes language while the *phone*
+     does not, launcher label stays English) is now covered mechanically by the ungated probe on the API 26
+     leg, so what remains is a read for register rather than for mechanism.
 10. **3j — 1.0.1, and the closed track.**
     - 1.0.1 goes up with Polish, and **that build opens the closed track**. The internal track does not satisfy
       Play's prerequisite; a closed one does, which is the whole reason this is a separate release.

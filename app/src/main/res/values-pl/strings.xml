@@ -1,0 +1,651 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Polish (ADR-0013, PLAN 3i). One file, no code changes — which is what four phases of "no
+    hardcoded strings" bought.
+
+    Three rules this file follows, and they are not stylistic preferences:
+
+    1. **No gendered second person, and no gendered agreement with a bunny's name.** Polish past
+       tense and predicate adjectives inflect for gender, so `zapisałeś` addresses half the audience
+       and `zarchiwizowany` guesses at a name the owner chose. Imperatives (`Dodaj`), the present
+       tense (`nie może`) and impersonal forms (`zapisano`, `nie udało się`) carry no gender, and
+       this file uses them throughout. Same decision as docs/store-listing.md, same reason.
+    2. **Owner-supplied names are never declined.** A bunny is called whatever the owner typed, in
+       the nominative, and Polish would want `zdjęcia królicy Zosi` where the app can only ever
+       substitute `Zosia`. Every string that interpolates a name therefore reaches it through a
+       colon, a comma or brackets — `Mieszka z: %1$s` — rather than through a preposition that
+       governs a case. The same trick carries the backup scope names, which are quoted (`„%1$s”`)
+       for exactly this reason.
+    3. **ADR-0001 and ADR-0004 survive the crossing.** The trend flag stays an observation about
+       numbers (`Warto się przyjrzeć`, `spostrzeżenie o liczbach, nie diagnoza`) and never slides
+       into the medical register Polish makes easy. The delete ceremony keeps its force: `zniszczony`
+       rather than a softer `usunięty`, because the English says *destroyed* and means it.
+
+    `app_name` is deliberately absent: a launcher label resolves against the *system* locale, not the
+    app's, so translating it would rename the icon on a Polish phone whose owner set Binky to
+    English. It is marked `translatable="false"` in values/strings.xml so lint agrees.
+
+    Plural note: Polish has four categories (one/few/many/other) against English's two. `other` is
+    reached only by fractional counts, which nothing here produces, but it is the fallback Android
+    resolves against and is required — so it carries the `many` form.
+-->
+<resources>
+
+    <!-- Bottom-navigation destinations (ADR-0015) -->
+    <string name="destination_home">Start</string>
+    <string name="destination_weight">Waga</string>
+    <string name="destination_observations">Obserwacje</string>
+    <string name="destination_care">Opieka i leki</string>
+    <string name="destination_more">Więcej</string>
+
+    <!-- The bunny switcher -->
+    <string name="switcher_open">Wybierz, którego królika pokazać</string>
+    <string name="switcher_all_bunnies">Wszystkie króliki</string>
+    <string name="switcher_add_bunny">Dodaj królika</string>
+    <string name="switcher_no_bunnies">Nie ma jeszcze królików</string>
+
+    <!-- "Widok:" rather than a verb, so the bunny's name needs no case and no gender. -->
+    <string name="scope_all_bunnies">Widok: wszystkie króliki</string>
+    <string name="scope_bunny">Widok: %1$s</string>
+    <string name="scope_bunny_archived">Widok: %1$s, w archiwum</string>
+
+    <!-- The read-only scope onto an archived bunny -->
+    <string name="archived_banner">W archiwum. Zapisy można czytać, ale nie zmieniać.</string>
+    <string name="archived_banner_leave">Wyjdź</string>
+
+    <string name="action_back">Wstecz</string>
+    <string name="action_save">Zapisz</string>
+    <string name="action_cancel">Anuluj</string>
+    <string name="action_edit">Edytuj</string>
+    <string name="action_archive">Archiwizuj</string>
+    <string name="action_unarchive">Przywróć z archiwum</string>
+    <string name="action_delete">Usuń</string>
+    <string name="action_ok">OK</string>
+    <string name="action_done">Gotowe</string>
+    <string name="action_undo">Cofnij</string>
+    <string name="add_a_bunny_first">Najpierw dodaj królika.</string>
+
+    <!-- The shared "when did this happen" field -->
+    <string name="recorded_at_pick_date">Zmień datę</string>
+    <string name="recorded_at_pick_time">Zmień godzinę</string>
+
+    <!-- The searchable picker, shared by symptoms and breed (ADR-0010) -->
+    <string name="picker_search_label">Szukaj</string>
+    <string name="picker_no_matches">Nic nie pasuje.</string>
+    <string name="picker_add_symptom">Dodaj „%1$s” jako objaw</string>
+    <string name="picker_use_breed">Użyj „%1$s”</string>
+
+    <!-- Home -->
+    <string name="home_empty_title">Nie ma jeszcze królików</string>
+    <string name="home_empty_body">Dodaj pierwszego królika, żeby zacząć prowadzić zapisy.</string>
+    <string name="home_all_bunnies_stub">Dotknij królika, żeby go otworzyć.</string>
+    <string name="home_last_weight_label">Ostatnie ważenie</string>
+    <string name="home_last_weight_value">%1$s, %2$s</string>
+    <string name="home_last_observation_label">Ostatnia obserwacja</string>
+    <!-- Two statements about the record, never about the bunny (ADR-0001). -->
+    <string name="home_no_weighings">Jeszcze nic nie zapisano</string>
+    <string name="home_no_observations">Jeszcze nic nie zapisano</string>
+
+    <!-- Weight -->
+    <string name="weight_pick_a_bunny">Waga zapisywana jest osobno dla każdego królika. Wybierz królika z listy u góry, żeby zobaczyć jego historię.</string>
+    <string name="weight_add">Zapisz ważenie</string>
+    <string name="weight_history_empty">Nie zapisano jeszcze żadnego ważenia. Zanim w ogóle da się ocenić trend, potrzebne są trzy.</string>
+    <string name="weight_delete_title">Usunąć to ważenie?</string>
+    <string name="weight_delete_body">%1$s z %2$s zniknie z historii, a trend zostanie policzony na nowo, bez niego.</string>
+
+    <!-- The chart's range selector (ADR-0022) -->
+    <string name="weight_chart_range_30d">30 dni</string>
+    <string name="weight_chart_range_90d">90 dni</string>
+    <string name="weight_chart_range_1y">1 rok</string>
+    <string name="weight_chart_range_all">Wszystko</string>
+
+    <!-- The same windows as they read inside a sentence. Both call sites put them after "w", so
+         these are in the locative and cannot be reused as standalone labels — which is exactly why
+         the English file keeps them separate from the selector strings above. -->
+    <string name="weight_chart_window_30d">ostatnich 30 dniach</string>
+    <string name="weight_chart_window_90d">ostatnich 90 dniach</string>
+    <string name="weight_chart_window_1y">ostatnim roku</string>
+    <string name="weight_chart_window_all">całej historii</string>
+
+    <!-- Three empty states, not two — the third names a date rather than claiming emptiness. -->
+    <string name="weight_chart_no_weighings">Nie ma jeszcze czego narysować. Wykres potrzebuje co najmniej dwóch ważeń.</string>
+    <string name="weight_chart_single_point">Na razie jedno ważenie. Drugie da wykresowi linię do narysowania.</string>
+    <string name="weight_chart_single_in_range">W %1$s jest tylko jedno ważenie, więc nie ma z czego rysować linii. Wcześniejsze są zapisane.</string>
+    <string name="weight_chart_none_in_range">Brak ważeń w %1$s. Ostatnie było %2$s.</string>
+    <string name="weight_chart_show_all">Pokaż wszystkie ważenia</string>
+
+    <!-- Adding or editing a weighing. Entry is always in grams (house rule). -->
+    <string name="weight_entry_add_title">Zapisz ważenie</string>
+    <string name="weight_entry_edit_title">Edytuj ważenie</string>
+    <string name="weight_grams_label">Waga w gramach</string>
+    <string name="weight_grams_help">Pełne gramy, tak jak pokazuje waga.</string>
+    <string name="weight_grams_required">Wpisz wagę w gramach.</string>
+    <string name="weight_grams_as_kilograms">To %1$s.</string>
+    <string name="weight_recorded_at_label">Kiedy królik był na wadze</string>
+    <string name="weight_backdating_help">Domyślnie teraz. Można zważyć rano, a zapisać wieczorem — liczy się godzina ustawiona tutaj.</string>
+    <string name="weight_future_rejected">To jest w przyszłości. Nie można zapisać ważenia, które się jeszcze nie odbyło.</string>
+
+    <!-- The exact-timestamp collision prompt (ADR-0021) -->
+    <string name="weight_collision_title">O tej porze jest już zapisane ważenie</string>
+    <plurals name="weight_collision_body">
+        <item quantity="one">Ten królik ma już %d ważenie zapisane dokładnie w tej dacie i o tej godzinie. Zastąpienie zostawi jeden pomiar na ten moment, dodanie drugiego zachowa oba.</item>
+        <item quantity="few">Ten królik ma już %d ważenia zapisane dokładnie w tej dacie i o tej godzinie. Zastąpienie zostawi jeden pomiar na ten moment, dodanie kolejnego zachowa wszystkie.</item>
+        <item quantity="many">Ten królik ma już %d ważeń zapisanych dokładnie w tej dacie i o tej godzinie. Zastąpienie zostawi jeden pomiar na ten moment, dodanie kolejnego zachowa wszystkie.</item>
+        <item quantity="other">Ten królik ma już %d ważeń zapisanych dokładnie w tej dacie i o tej godzinie. Zastąpienie zostawi jeden pomiar na ten moment, dodanie kolejnego zachowa wszystkie.</item>
+    </plurals>
+    <string name="weight_collision_replace">Zastąp je</string>
+    <string name="weight_collision_add_second">Dodaj drugie</string>
+
+    <!-- How a stored weight is rendered. The number itself is formatted by the platform, so a
+         Polish locale already gives 2,45 rather than 2.45 — only the unit lives here. -->
+    <string name="weight_in_kilograms">%1$s kg</string>
+    <string name="weight_in_grams">%1$s g</string>
+    <string name="weight_change_down">−%1$s g</string>
+    <string name="weight_change_up">+%1$s g</string>
+    <string name="weight_change_none">bez zmian</string>
+
+    <!-- The trend flag (ADR-0001). "spostrzeżenie", never "objaw" or "rozpoznanie": Polish makes
+         the medical register easy to fall into, and this text is not allowed to be a diagnosis.
+         "%1$s: spadek o …" rather than "%1$s schudł o …", because the verb would be gendered. -->
+    <string name="trend_flag_title">Warto się przyjrzeć</string>
+    <string name="trend_flag_drop">%1$s: spadek o %2$s od %3$s.</string>
+    <string name="trend_flag_readings">Wtedy %1$s, teraz %2$s.</string>
+    <string name="trend_flag_long_gap">Te dwa ważenia dzieli %1$s, więc jest to zmiana rozłożona na dłuższy czas, a nie nagła.</string>
+    <string name="trend_flag_not_advice">To spostrzeżenie o liczbach, nie diagnoza. Jeśli się martwisz, zapytaj weterynarza.</string>
+    <string name="trend_flag_vet_diet">Dieta zalecona przez weterynarza? Wtedy właśnie o taki spadek chodzi i można to pominąć.</string>
+    <string name="trend_flag_acknowledge">Widzę to</string>
+    <string name="trend_flag_acknowledged">Odnotowano %1$s.</string>
+    <string name="trend_flag_close">Zamknij</string>
+
+    <!-- How far apart two weighings are. In English these differ from the age plurals below
+         ("2 years" against "2 years old"); in Polish both are "2 lata" and the two sets come out
+         identical. Kept as separate resources anyway — the English distinction is real, and
+         collapsing them here would delete it for every future language too. -->
+    <plurals name="gap_years">
+        <item quantity="one">%d rok</item>
+        <item quantity="few">%d lata</item>
+        <item quantity="many">%d lat</item>
+        <item quantity="other">%d lat</item>
+    </plurals>
+    <plurals name="gap_months">
+        <item quantity="one">%d miesiąc</item>
+        <item quantity="few">%d miesiące</item>
+        <item quantity="many">%d miesięcy</item>
+        <item quantity="other">%d miesięcy</item>
+    </plurals>
+    <plurals name="gap_weeks">
+        <item quantity="one">%d tydzień</item>
+        <item quantity="few">%d tygodnie</item>
+        <item quantity="many">%d tygodni</item>
+        <item quantity="other">%d tygodni</item>
+    </plurals>
+
+    <!-- Settings -->
+    <string name="settings_title">Ustawienia</string>
+    <!-- A noun rather than English's "Show weights in", because the options below it are radio
+         labels in the nominative and would have to agree with the preposition otherwise. -->
+    <string name="settings_weight_unit">Jednostka wagi</string>
+    <string name="settings_unit_kilograms">Kilogramy</string>
+    <string name="settings_unit_grams">Gramy</string>
+    <string name="settings_weight_unit_help">To zmienia sposób wyświetlania wagi, a nie jej wpisywania — wpisuje się zawsze w gramach, a zmiany zawsze pokazywane są w gramach.</string>
+    <string name="settings_backup">Kopia zapasowa i przywracanie</string>
+    <string name="settings_backup_summary">Wyeksportuj zapisy do pliku, przywróć je z pliku i zobacz kopie trzymane na tym telefonie.</string>
+    <string name="settings_language">Język</string>
+    <string name="settings_language_system">Tak jak w telefonie</string>
+    <!-- Endonyms, identical in every locale on purpose: someone stuck in a language they cannot
+         read finds their own by its own name, not by its English one. Repeated here rather than
+         left to fall back, so the switcher's list reads as one deliberate set. -->
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_polish">Polski</string>
+    <string name="settings_language_help">Binky może działać w innym języku niż reszta telefonu. Zmiana tego ustawienia uruchamia aplikację ponownie.</string>
+
+    <!-- First-run setup (ADR-0006) -->
+    <string name="setup_step">Krok %1$d z %2$d</string>
+    <string name="setup_continue">Dalej</string>
+    <string name="setup_back">Krok wstecz</string>
+    <string name="setup_bunny_title">Witaj w Binky</string>
+    <string name="setup_bunny_body">Binky trzyma historię zdrowia Twoich królików na tym telefonie — wagi, obserwacje i zdjęcia. Nie ma konta ani serwera: nic, co tu zapiszesz, nigdzie nie jest wysyłane.\n\nDwa krótkie pytania i aplikacja jest Twoja.</string>
+    <string name="setup_bunny_action">Dodaj pierwszego królika</string>
+    <string name="setup_bunny_add_another">Dodaj kolejnego królika</string>
+    <string name="setup_bunny_skip">Pomiń na razie</string>
+    <string name="setup_bunny_added_one">%1$s już jest. Kolejne króliki możesz dodać w każdej chwili z listy u góry ekranu.</string>
+    <string name="setup_bunny_added_many">Twoje króliki już są. Kolejne możesz dodać w każdej chwili z listy u góry ekranu.</string>
+    <string name="setup_backup_title">Bezpieczeństwo Twoich zapisów</string>
+    <string name="setup_backup_body">Wszystko jest na tym telefonie, więc zgubiony telefon to stracona historia, o ile nic jej nie kopiuje. Mogą to robić dwie różne rzeczy i żadna z nich nie obejmuje wszystkiego.</string>
+    <string name="setup_backup_auto_ask">Binky nie potrafi sprawdzić, czy jest włączona, ani jej za Ciebie włączyć. To dobry moment, żeby to sprawdzić.</string>
+    <string name="setup_backup_scope_help">To będzie zawartość eksportu robionego samodzielnie. To także ustawienie domyślne, które można później zmienić.</string>
+    <string name="setup_backup_changeable">Wszystko to można zmienić w Ustawieniach › Kopia zapasowa i przywracanie.</string>
+    <string name="setup_finish">Zakończ konfigurację</string>
+
+    <!-- Debug builds only, and never shown in a release build. -->
+    <string name="settings_sample_data">Dane przykładowe</string>
+    <string name="settings_sample_data_help">Tylko w wersji deweloperskiej. Dodaje dwa zaprzyjaźnione króliki, rok nierównomiernych, wstecznie datowanych ważeń i kilka obserwacji, żeby wykres, ostrzeżenie o trendzie i oś czasu dało się obejrzeć na prawdziwej historii.</string>
+    <string name="settings_sample_data_action">Dodaj dane przykładowe</string>
+    <string name="settings_sample_data_seeded">Dane przykładowe dodane.</string>
+    <string name="settings_sample_data_present">Przykładowe króliki już tu są.</string>
+
+    <!-- Backup and restore (ADR-0005) -->
+    <string name="backup_title">Kopia zapasowa i przywracanie</string>
+
+    <!-- The automatic net, stated in all three states (ADR-0005) -->
+    <string name="backup_auto_title">Automatyczna kopia zapasowa</string>
+    <string name="backup_auto_help">Android sam kopiuje Binky na Twoje konto Google, według własnego harmonogramu — gdy telefon jest bezczynny, ładuje się i ma internet. Binky nie potrafi tego włączyć ani za Ciebie sprawdzić.</string>
+    <string name="backup_auto_never">Na tym telefonie nie odnotowano żadnej automatycznej kopii zapasowej.</string>
+    <string name="backup_auto_recorded">Ostatnia automatyczna kopia zapasowa: %1$s.</string>
+    <string name="backup_auto_stale">Ostatnia automatyczna kopia zapasowa powstała %1$s — ponad dwa tygodnie temu. Coś mogło ją wyłączyć.</string>
+    <string name="backup_auto_photos">Obejmuje zapisy, ustawienia i zdjęcia profilowe królików. Galerii zdjęć w niej nie ma.</string>
+    <string name="backup_auto_settings_action">Otwórz ustawienia kopii zapasowej Androida</string>
+
+    <!-- The scope names are quoted wherever they appear inside a sentence below, so that a name
+         chosen at run time never has to agree with anything around it. -->
+    <string name="backup_scope_title">Co obejmuje eksport</string>
+    <string name="backup_scope_essential">Podstawa</string>
+    <string name="backup_scope_records">Zapisy</string>
+    <string name="backup_scope_everything">Wszystko</string>
+    <string name="backup_scope_essential_help">Zapisy, ustawienia i zdjęcia profilowe królików. Najmniejsza użyteczna kopia.</string>
+    <string name="backup_scope_records_help">Wszystko z „Podstawy”, plus zeskanowane dokumenty — wszystko, co może się jeszcze przydać.</string>
+    <string name="backup_scope_everything_help">Wszystko z „Zapisów”, plus galeria zdjęć. Dużo większa i jedyna kopia, jaką kiedykolwiek dostaną zdjęcia.</string>
+    <string name="backup_photos_warning">Zdjęcia są najsłabiej chronioną rzeczą w Binky. Automatyczna kopia Androida pomija galerię, tak samo jak „Podstawa” i „Zapisy”. Eksport „Wszystko” to jedyna kopia, jaką Twoje zdjęcia kiedykolwiek dostaną.</string>
+    <string name="backup_export_action">Wyeksportuj kopię zapasową</string>
+    <string name="backup_exporting">Tworzenie kopii zapasowej…</string>
+    <string name="backup_export_share">Udostępnij tę kopię</string>
+
+    <string name="backup_restore_title">Przywracanie</string>
+    <string name="backup_restore_help">Przywracanie zastępuje wszystko, co Binky teraz przechowuje, zawartością pliku. Najpierw na tym telefonie zapisywana jest kopia obecnych zapisów, więc przywracanie da się cofnąć.</string>
+    <string name="backup_restore_action">Przywróć z pliku</string>
+    <string name="backup_restore_confirm_title">Przywrócić tę kopię?</string>
+    <!-- Scope and date both come from the manifest inside the zip, never from the filename. -->
+    <string name="backup_restore_confirm_body">Kopia „%1$s” z %2$s.\n\nWszystko, co Binky teraz przechowuje, zostanie zastąpione. Najpierw na tym telefonie zapisywana jest kopia obecnych zapisów.</string>
+    <string name="backup_restore_confirm_action">Zastąp wszystko</string>
+    <string name="backup_restoring">Przywracanie…</string>
+
+    <string name="backup_refused_title">Nic nie zostało przywrócone</string>
+    <string name="backup_refused_not_a_backup">Ten plik nie jest kopią zapasową Binky. Nic na tym telefonie nie zostało zmienione.</string>
+    <string name="backup_refused_newer">Ta kopia powstała w nowszej wersji Binky, której ta wersja nie potrafi odczytać. Zapisano ją w formacie %1$d, a ta aplikacja czyta do formatu %2$d. Nic na tym telefonie nie zostało zmienione.</string>
+    <string name="backup_refused_too_large">Ten plik jest o wiele za duży jak na kopię zapasową Binky. Nic na tym telefonie nie zostało zmienione.</string>
+    <string name="backup_refused_unreadable">Nie udało się otworzyć zapisów w tej kopii, więc nic nie zostało zmienione. Plik może być uszkodzony.</string>
+
+    <string name="backup_restored_title">Przywracanie zakończone</string>
+    <string name="backup_restored_scope">Przywrócono kopię „%1$s” z %2$s.</string>
+    <plurals name="backup_restored_overlaid">
+        <item quantity="one">%d obraz pochodzi z kopii zapasowej.</item>
+        <item quantity="few">%d obrazy pochodzą z kopii zapasowej.</item>
+        <item quantity="many">%d obrazów pochodzi z kopii zapasowej.</item>
+        <item quantity="other">%d obrazów pochodzi z kopii zapasowej.</item>
+    </plurals>
+    <plurals name="backup_restored_kept">
+        <item quantity="one">%d obraz, który był już na tym telefonie, znalazł się poza zakresem tej kopii i został zachowany.</item>
+        <item quantity="few">%d obrazy, które były już na tym telefonie, znalazły się poza zakresem tej kopii i zostały zachowane.</item>
+        <item quantity="many">%d obrazów, które były już na tym telefonie, znalazło się poza zakresem tej kopii i zostało zachowanych.</item>
+        <item quantity="other">%d obrazów, które były już na tym telefonie, znalazło się poza zakresem tej kopii i zostało zachowanych.</item>
+    </plurals>
+    <string name="backup_restored_snapshot">Zapisy sprzed tego przywracania zostały zachowane jako %1$s, w sekcji „Kopie na tym telefonie”.</string>
+    <string name="backup_restored_close">Zamknij Binky</string>
+    <string name="backup_restored_close_help">Binky musi się zamknąć, żeby otworzyć się na przywróconych zapisach. Uruchom aplikację ponownie z ekranu głównego telefonu.</string>
+
+    <!-- The two occupants of preserved/, shared by the Backup screen and ADR-0023's
+         schema-mismatch screen. -->
+    <string name="preserved_title">Kopie na tym telefonie</string>
+    <string name="preserved_help">Binky zapisuje kopię przed każdą operacją, która zastąpiłaby Twoje zapisy. Nic z tego nie jest nigdy usuwane automatycznie.</string>
+    <string name="preserved_empty">Na tym telefonie nie zapisano żadnych kopii.</string>
+    <string name="preserved_detail">Zapisano %1$s · %2$s · %3$s</string>
+    <plurals name="preserved_files">
+        <item quantity="one">%d plik</item>
+        <item quantity="few">%d pliki</item>
+        <item quantity="many">%d plików</item>
+        <item quantity="other">%d plików</item>
+    </plurals>
+    <string name="preserved_undated">data nieznana</string>
+    <string name="preserved_share">Udostępnij tę kopię</string>
+    <string name="preserved_delete_title">Usunąć tę kopię?</string>
+    <!-- The file name is bracketed rather than made the subject: "kopia" is what the sentence
+         agrees with, and it is a word this file chose, not one the owner typed. -->
+    <string name="preserved_delete_body">Ta kopia (%1$s) zniknie z tego telefonu na dobre. Jeśli nie została udostępniona gdzieś indziej, przepadnie.</string>
+    <string name="preserved_kind_wipe">Zapisano, zanim aktualizacja wyczyściła zapisy</string>
+    <string name="preserved_kind_snapshot">Zapisano przed przywracaniem</string>
+    <string name="preserved_not_restorable">Zapisana przez starszą wersję Binky, więc można ją tylko udostępnić — nie da się jej wczytać z powrotem.</string>
+    <string name="preserved_restore">Przywróć tę kopię</string>
+
+    <!-- Observations: the vocabularies (ADR-0010). Every one has a "not checked" that is a recorded
+         fact in its own right, and never a polite word for "normal". -->
+    <string name="observation_not_checked">Nie sprawdzono</string>
+
+    <string name="droppings_amount_none">Brak</string>
+    <string name="droppings_amount_few">Mało</string>
+    <string name="droppings_amount_normal">Normalnie</string>
+    <string name="droppings_amount_many">Dużo</string>
+
+    <string name="droppings_size_small">Małe</string>
+    <string name="droppings_size_normal">Normalne</string>
+    <string name="droppings_size_large">Duże</string>
+
+    <string name="droppings_form_round">Okrągłe</string>
+    <string name="droppings_form_misshapen">Zniekształcone</string>
+    <string name="droppings_form_strung_together">Połączone sierścią</string>
+    <string name="droppings_form_soft">Miękkie</string>
+    <string name="droppings_form_diarrhoea">Biegunka</string>
+
+    <string name="cecotropes_eaten">Zjedzone</string>
+    <string name="cecotropes_left_uneaten">Zostawione</string>
+
+    <string name="appetite_none">Nie je</string>
+    <string name="appetite_reduced">Je mniej</string>
+    <string name="appetite_normal">Normalny</string>
+    <string name="appetite_eager">Łapczywy</string>
+
+    <!-- Mood and activity describe the bunny, so both sets agree with "królik" (masculine) rather
+         than with the feminine label above them. Chosen once, applied to both. -->
+    <string name="mood_withdrawn">Wycofany</string>
+    <string name="mood_subdued">Przygaszony</string>
+    <string name="mood_normal">Normalny</string>
+    <string name="mood_bright">Żywy</string>
+
+    <string name="activity_lethargic">Ospały</string>
+    <string name="activity_quiet">Spokojny</string>
+    <string name="activity_normal">Normalny</string>
+    <string name="activity_active">Aktywny</string>
+
+    <string name="water_none">Nie pije</string>
+    <string name="water_less">Pije mniej</string>
+    <string name="water_normal">Normalnie</string>
+    <string name="water_more">Pije więcej</string>
+
+    <!-- The built-in symptoms (ADR-0010): the thing observed, never the condition it might mean. -->
+    <string name="symptom_head_tilt">Przekrzywienie głowy</string>
+    <string name="symptom_drooling_or_wet_chin">Ślinienie lub mokry podbródek</string>
+    <string name="symptom_sneezing_or_nasal_discharge">Kichanie lub katar</string>
+    <string name="symptom_eye_discharge">Łzawiące lub zaropiałe oczy</string>
+    <string name="symptom_dirty_bottom">Zabrudzony zad</string>
+    <!-- "Głośne" is deliberate, exactly as "Loud" is in English: rabbits grind their teeth softly
+         when content, and a symptom that catches contentment is worse than no symptom. -->
+    <string name="symptom_loud_teeth_grinding">Głośne zgrzytanie zębami</string>
+    <string name="symptom_hunched_posture">Zgarbiona postawa</string>
+    <string name="symptom_laboured_breathing">Utrudniony oddech</string>
+    <string name="symptom_not_drinking">Nie pije</string>
+    <string name="symptom_limping">Utykanie</string>
+    <string name="symptom_ear_scratching">Drapanie uszu</string>
+    <string name="symptom_blood_in_urine">Krew w moczu</string>
+    <string name="symptom_hiding_more_than_usual">Chowa się bardziej niż zwykle</string>
+
+    <!-- Recording an observation -->
+    <string name="observation_add_title">Zapisz obserwację</string>
+    <string name="observation_edit_title">Edytuj obserwację</string>
+    <!-- English says "When you looked". The Polish past tense would have to pick a gender, so this
+         is a noun phrase instead. -->
+    <string name="observation_recorded_at_label">Moment obserwacji</string>
+    <string name="observation_backdating_help">Domyślnie teraz. Kuweta sprawdzona rano, a wpis powstaje wieczorem? Ustaw godzinę, o której było to sprawdzane — liczy się właśnie ona.</string>
+    <string name="observation_future_rejected">To jest w przyszłości. Nie można zapisać obserwacji, która się jeszcze nie odbyła.</string>
+
+    <!-- Who the observation covers (ADR-0008) -->
+    <string name="observation_participants_label">Kogo to dotyczy</string>
+    <string name="observation_participants_help">Króliki dzielące kuwetę są już zaznaczone. Odznacz każdego, kogo to nie dotyczy.</string>
+    <string name="observation_participants_required">Wybierz co najmniej jednego królika.</string>
+    <string name="observation_excluded_archived">%1$s jest w archiwum, więc ta obserwacja tego królika nie obejmie.</string>
+
+    <string name="observation_tray_heading">Kuweta</string>
+    <string name="observation_tray_shared_help">Zapisywane raz, dla wszystkich, których to dotyczy — wspólnej kuwety nie da się rozdzielić między króliki.</string>
+    <string name="observation_droppings_amount_label">Ile bobków</string>
+    <string name="observation_droppings_size_label">Wielkość</string>
+    <string name="observation_droppings_form_label">Kształt</string>
+    <string name="observation_cecotropes_label">Cekotrofy</string>
+
+    <string name="observation_individual_heading">Ten królik</string>
+    <string name="observation_individual_heading_named">%1$s</string>
+    <string name="observation_appetite_label">Apetyt</string>
+    <string name="observation_mood_label">Nastrój</string>
+    <string name="observation_activity_label">Aktywność</string>
+    <string name="observation_water_label">Woda</string>
+
+    <string name="observation_symptoms_label">Objawy</string>
+    <string name="observation_symptoms_none_selected">Nic nie wybrano</string>
+    <string name="observation_symptoms_pick">Wybierz objawy</string>
+    <!-- "Looked, none seen" is the one state an empty list cannot express (ADR-0010, ADR-0001).
+         Impersonal, because "sprawdziłem" and "sprawdziłam" are not the same word. -->
+    <string name="observation_symptoms_checked">Sprawdzone — żadnego z nich nie widać</string>
+    <string name="observation_symptoms_checked_help">Warto zaznaczyć. Sama pusta lista znaczy tylko tyle, że nikt nie sprawdzał.</string>
+
+    <string name="observation_note_label">Coś jeszcze</string>
+
+    <!-- The timeline -->
+    <string name="observations_empty">Nie zapisano jeszcze żadnej obserwacji. Wszystko, co zwróci uwagę — kuweta, nastrój, objaw — należy tutaj.</string>
+    <!-- A colon rather than "z", which would want the instrumental of a name the app cannot decline. -->
+    <string name="observation_observed_together">Wspólna obserwacja, obejmuje też: %1$s</string>
+    <!-- The lone survivor: names nobody, deliberately (ADR-0008). -->
+    <string name="observation_observed_together_alone">Wspólna obserwacja</string>
+    <string name="observation_no_symptoms_seen">Objawy sprawdzone, żadnego nie widać</string>
+    <string name="observation_delete_title">Usunąć tę obserwację?</string>
+    <string name="observation_delete_body">Obserwacja zapisana %1$s zostanie usunięta.</string>
+    <string name="observation_delete_body_shared">Ta obserwacja obejmowała: %1$s. Usunięcie jej usuwa ją dla nich wszystkich.</string>
+    <string name="observation_which_bunny">Którego królika to dotyczy?</string>
+
+    <!-- The healthy-day shortcut -->
+    <string name="healthy_day_action">Zapisz zdrowy dzień</string>
+    <string name="healthy_day_help">Zapisuje zwyczajny dzień: bobki normalne, je i pije jak zwykle, żywy i aktywny.</string>
+    <string name="healthy_day_which_bunny">Czyj to był dzień?</string>
+    <string name="healthy_day_logged">Zdrowy dzień zapisany dla: %1$s.</string>
+    <!-- A flagged bunny is still offered, and named (ADR-0001, ADR-0008). -->
+    <string name="healthy_day_name_flagged">%1$s (ostrzeżenie o wadze)</string>
+
+    <!-- Care &amp; Meds -->
+    <string name="care_stub">Przypomnienia o opiece pojawią się w wersji 1.1, leki w 1.2.</string>
+
+    <!-- More -->
+    <string name="more_archived_bunnies">Króliki w archiwum</string>
+    <string name="more_archived_bunnies_summary">Króliki przeniesione do archiwum. Ich zapisy zostają.</string>
+    <string name="more_photos">Zdjęcia</string>
+    <string name="more_photos_summary">Zdjęcia jednego królika, trzymane na tym telefonie.</string>
+    <string name="more_documents">Dokumenty</string>
+    <string name="more_settings">Ustawienia</string>
+    <string name="more_settings_summary">Jednostki wagi, język, kopia zapasowa i przywracanie.</string>
+    <string name="more_support">Wsparcie</string>
+    <string name="more_coming_soon">Wkrótce</string>
+
+    <!-- The photo gallery: one bunny's pictures, reached from More -->
+    <string name="photo_which_bunny">Czyje zdjęcia?</string>
+    <string name="photo_gallery_title">Zdjęcia: %1$s</string>
+    <string name="photo_gallery_empty">Nie ma jeszcze zdjęć.</string>
+    <string name="photo_gallery_empty_help">Dodaj zdjęcia z galerii albo zrób je aparatem. Zostaną na tym telefonie, w galerii: %1$s.</string>
+    <string name="photo_add">Dodaj zdjęcia</string>
+    <string name="photo_add_choose">Wybierz z galerii</string>
+    <string name="photo_add_take">Zrób zdjęcie</string>
+    <string name="photo_import_progress">Dodawanie %1$d z %2$d…</string>
+    <plurals name="photo_import_added">
+        <item quantity="one">Dodano %d zdjęcie.</item>
+        <item quantity="few">Dodano %d zdjęcia.</item>
+        <item quantity="many">Dodano %d zdjęć.</item>
+        <item quantity="other">Dodano %d zdjęć.</item>
+    </plurals>
+    <!-- Keyed on the *unreadable* count, which is the number the trailing clause governs. This is
+         the plural whose English items are identical and whose Polish items are not: "nie udało się
+         odczytać 1 pliku" against "… 2 plików". The structure existed before this file (3g) so the
+         translation had somewhere to land. -->
+    <plurals name="photo_import_partial">
+        <item quantity="one">Dodano %1$d z %2$d, nie udało się odczytać %3$d pliku.</item>
+        <item quantity="few">Dodano %1$d z %2$d, nie udało się odczytać %3$d plików.</item>
+        <item quantity="many">Dodano %1$d z %2$d, nie udało się odczytać %3$d plików.</item>
+        <item quantity="other">Dodano %1$d z %2$d, nie udało się odczytać %3$d plików.</item>
+    </plurals>
+    <string name="photo_description">Zdjęcie: %1$s</string>
+    <string name="photo_close">Zamknij</string>
+    <!-- "Zrobione" only when the picture's own metadata said so. -->
+    <string name="photo_taken_on">Zrobione %1$s</string>
+    <string name="photo_added_on">Dodane %1$s</string>
+    <string name="photo_caption_label">Podpis</string>
+    <string name="photo_caption_none">Bez podpisu</string>
+    <string name="photo_caption_add">Dodaj</string>
+    <string name="photo_caption_edit">Edytuj</string>
+    <string name="photo_delete">Usuń zdjęcie</string>
+    <string name="photo_delete_body">Usunąć to zdjęcie? Zniknie z tego telefonu na dobre.</string>
+
+    <!-- The archived list (ADR-0004) -->
+    <string name="archived_title">Króliki w archiwum</string>
+    <string name="archived_empty">Archiwum jest puste. Archiwizacja usuwa królika z listy u góry i zachowuje wszystkie zapisy.</string>
+    <string name="archived_on">Zarchiwizowano %1$s</string>
+    <string name="archived_open">Otwórz</string>
+
+    <!-- Bunny profile -->
+    <string name="bunny_editor_add_title">Dodaj królika</string>
+    <string name="bunny_editor_edit_title">Edytuj królika</string>
+    <string name="bunny_name_label">Imię</string>
+    <string name="bunny_name_required">Królik potrzebuje imienia.</string>
+    <string name="bunny_avatar_take">Zrób zdjęcie</string>
+    <string name="bunny_avatar_choose">Wybierz zdjęcie</string>
+    <string name="bunny_avatar_remove">Usuń zdjęcie</string>
+    <string name="bunny_avatar_failed">Nie udało się odczytać tego zdjęcia. Spróbuj innego.</string>
+    <string name="bunny_avatar_description">Zdjęcie: %1$s</string>
+    <string name="bunny_avatar_placeholder">Nie ma jeszcze zdjęcia</string>
+    <string name="bunny_birthdate_label">Data urodzenia</string>
+    <string name="bunny_birthdate_none">Nieznana</string>
+    <string name="bunny_birthdate_set">Ustaw datę urodzenia</string>
+    <string name="bunny_birthdate_clear">Wyczyść datę urodzenia</string>
+    <string name="bunny_birthdate_approximate">Przybliżona</string>
+    <string name="bunny_birthdate_approximate_help">Króliki z adopcji często trafiają do domu z szacowanym wiekiem. Przybliżona data urodzenia pokazywana jest jako wiek, nigdy jako data.</string>
+    <string name="bunny_sex_label">Płeć</string>
+    <string name="sex_male">Samiec</string>
+    <string name="sex_female">Samica</string>
+    <string name="sex_unknown">Nieznana</string>
+    <string name="bunny_neutered_label">Kastracja</string>
+    <string name="neutered_yes">Tak</string>
+    <string name="neutered_no">Nie</string>
+    <string name="neutered_unknown">Nie wiadomo</string>
+    <string name="bunny_breed_label">Rasa</string>
+    <string name="bunny_breed_none">Nie podano</string>
+    <string name="bunny_breed_choose">Wybierz rasę</string>
+    <string name="bunny_breed_clear">Wyczyść rasę</string>
+    <string name="bunny_colour_label">Umaszczenie i znaczenia</string>
+    <string name="bunny_lives_with_label">Mieszka z</string>
+    <!-- An adverb, not "sam": the adjective would have to guess the bunny's gender. -->
+    <string name="bunny_lives_with_alone">Mieszka samotnie</string>
+    <string name="bunny_lives_with_nobody_yet">Dodaj drugiego królika, żeby zapisać, z kim mieszka.</string>
+    <string name="bunny_lives_with_help">Króliki dzielące kuwetę mieszkają razem, więc jedna obserwacja może objąć je wszystkie.</string>
+    <string name="bunny_lives_with_value">Mieszka z: %1$s</string>
+    <string name="bunny_archived_name">%1$s (w archiwum)</string>
+
+    <!-- ADR-0007's consent half. One forward button, no cancel. -->
+    <string name="wipe_title">Ta aktualizacja musi wyczyścić zapisy na tym telefonie</string>
+    <string name="wipe_body">Binky wciąż powstaje, a ta wersja zmieniła sposób przechowywania zapisów. Nie potrafi odczytać tego, co jest już na tym telefonie, więc to musi zniknąć.</string>
+    <string name="wipe_versions">Zapisy na tym telefonie: format %1$d. Ta wersja: format %2$d.</string>
+    <string name="wipe_copy_taken">Zanim cokolwiek zostanie usunięte, na tym telefonie zapisano już kopię:</string>
+    <string name="wipe_copy_reach">Kopii nie da się wczytać z powrotem automatycznie — przeniesienie starych zapisów do nowego formatu to konwersja, którą trzeba napisać ręcznie. Zanim pojawi się kopia zapasowa, zapisz gdzie indziej te wagi, na których Ci zależy.</string>
+    <string name="wipe_continue">Wyczyść zapisy i kontynuuj</string>
+
+    <!-- ADR-0023's release half of the same screen. Nothing is deleted here, and there is no
+         forward button, because there is nowhere forward to go. -->
+    <string name="schema_refused_title">Ta wersja nie potrafi otworzyć zapisów na tym telefonie</string>
+    <string name="schema_refused_body">Zapisy na tym telefonie zostały zapisane przez inną wersję Binky, a ta nie potrafi ich odczytać. Nic nie zostało usunięte.</string>
+    <string name="schema_refused_copy_taken">Ich kopia jest zapisana na tym telefonie i tam zostaje:</string>
+    <string name="schema_refused_reach">Zainstalowanie wersji, która je zapisała, powinno przywrócić dostęp. Do tego czasu udostępnij tę kopię w bezpieczne miejsce — innej nie ma.</string>
+
+    <!-- Joining names into a list (ADR-0008, ADR-0013). -->
+    <string name="list_join_pair">%1$s i %2$s</string>
+    <string name="list_join_more">%1$s, %2$s</string>
+
+    <!-- Age (ADR-0016). Polish states an age as a bare count of years, so these read the same as
+         the gap plurals above — see the note there. -->
+    <string name="age_approximate">~%1$s</string>
+    <plurals name="age_years">
+        <item quantity="one">%d rok</item>
+        <item quantity="few">%d lata</item>
+        <item quantity="many">%d lat</item>
+        <item quantity="other">%d lat</item>
+    </plurals>
+    <plurals name="age_months">
+        <item quantity="one">%d miesiąc</item>
+        <item quantity="few">%d miesiące</item>
+        <item quantity="many">%d miesięcy</item>
+        <item quantity="other">%d miesięcy</item>
+    </plurals>
+    <plurals name="age_weeks">
+        <item quantity="one">%d tydzień</item>
+        <item quantity="few">%d tygodnie</item>
+        <item quantity="many">%d tygodni</item>
+        <item quantity="other">%d tygodni</item>
+    </plurals>
+
+    <!-- Archiving asks once and says plainly that nothing is lost (ADR-0004) -->
+    <string name="archive_dialog_title">Przenieść do archiwum: %1$s?</string>
+    <string name="archive_dialog_body">Wszystkie zapisy zostają i nadal można je czytać w sekcji Więcej. %1$s znika z listy królików u góry, ale powrót z archiwum jest możliwy w każdej chwili.</string>
+
+    <!-- Deleting is the explicit escape hatch (ADR-0004). "Zniszczony", not a softer word: the
+         English says destroyed, and the whole force of this ceremony is in its wording. -->
+    <string name="delete_dialog_title">Usunąć: %1$s?</string>
+    <string name="delete_dialog_body">To usuwa królika z aplikacji. Archiwizacja zamiast tego zachowuje wszystko i tylko ukrywa.</string>
+    <string name="delete_dialog_avatar_note">Zdjęcie też zostanie usunięte z tego telefonu.</string>
+    <string name="delete_dialog_second_title">Usunąć: %1$s wraz z zapisami?</string>
+    <string name="delete_dialog_second_body">Tego nie da się cofnąć.</string>
+    <plurals name="delete_records_sole_owned">
+        <item quantity="one">%d zapis prowadzony tylko dla tego królika zostanie zniszczony.</item>
+        <item quantity="few">%d zapisy prowadzone tylko dla tego królika zostaną zniszczone.</item>
+        <item quantity="many">%d zapisów prowadzonych tylko dla tego królika zostanie zniszczonych.</item>
+        <item quantity="other">%d zapisów prowadzonych tylko dla tego królika zostanie zniszczonych.</item>
+    </plurals>
+    <plurals name="delete_records_shared">
+        <item quantity="one">%d wspólny wpis zostaje, dla pozostałych królików, których dotyczył.</item>
+        <item quantity="few">%d wspólne wpisy zostają, dla pozostałych królików, których dotyczyły.</item>
+        <item quantity="many">%d wspólnych wpisów zostaje, dla pozostałych królików, których dotyczyły.</item>
+        <item quantity="other">%d wspólnych wpisów zostaje, dla pozostałych królików, których dotyczyły.</item>
+    </plurals>
+
+    <!-- Breed suggestions, not a closed vocabulary — the picker accepts anything typed, and breed
+         is stored as the free text that was picked. Established Polish names are used where the
+         breed has one in circulation here (`Baran francuski`, `Olbrzym belgijski`, `Karzełek
+         holenderski`); the rest keep their international name, because inventing a Polish name for
+         a breed nobody calls that would make it unsearchable in both languages.
+
+         "Mieszaniec / nieznana" stays first for the same reason it is first in English: most pet
+         rabbits are rescues of no stated breed. -->
+    <string-array name="built_in_breeds">
+        <item>Mieszaniec / nieznana</item>
+        <item>American</item>
+        <item>American Fuzzy Lop</item>
+        <item>American Sable</item>
+        <item>Angora angielska</item>
+        <item>Angora francuska</item>
+        <item>Angora olbrzymia</item>
+        <item>Angora satynowa</item>
+        <item>Zając belgijski</item>
+        <item>Beveren</item>
+        <item>Blanc de Hotot</item>
+        <item>Britannia Petite</item>
+        <item>Kalifornijski</item>
+        <item>Champagne d\'Argent</item>
+        <item>Olbrzym srokacz</item>
+        <item>Szynszylowy (amerykański)</item>
+        <item>Szynszylowy (olbrzymi)</item>
+        <item>Szynszylowy (standardowy)</item>
+        <item>Cinnamon</item>
+        <item>Olbrzym kontynentalny</item>
+        <item>Crème d\'Argent</item>
+        <item>Holenderski</item>
+        <item>Hotot karłowaty</item>
+        <item>Baran karłowaty</item>
+        <item>Baran angielski</item>
+        <item>Srokacz angielski</item>
+        <item>Olbrzym belgijski</item>
+        <item>Florida White</item>
+        <item>Baran francuski</item>
+        <item>Harlekin</item>
+        <item>Hawana</item>
+        <item>Himalajski</item>
+        <item>Baran holenderski</item>
+        <item>Jersey Wooly</item>
+        <item>Liliowy</item>
+        <item>Lwia główka</item>
+        <item>Baran miniaturowy</item>
+        <item>Mini Rex</item>
+        <item>Mini Satin</item>
+        <item>Karzełek holenderski</item>
+        <item>Nowozelandzki</item>
+        <item>Palomino</item>
+        <item>Hermelin (Polish)</item>
+        <item>Rex</item>
+        <item>Rhinelander</item>
+        <item>Satynowy</item>
+        <item>Srebrzysty</item>
+        <item>Silver Fox</item>
+        <item>Silver Marten</item>
+        <item>Tan</item>
+        <item>Thrianta</item>
+        <item>Velveteen Lop</item>
+    </string-array>
+</resources>

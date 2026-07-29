@@ -32,42 +32,60 @@ import java.util.Locale
  * activity's base context and recreating the activity. Half the supported range — `minSdk` 26 up to
  * 32 — runs the backport, and the test device runs Android 16, so nothing on this desk has ever
  * executed the branch that half the range depends on. CI's API **26** leg is where these assertions
- * are load-bearing; on the 34 and 36 legs the same assertions hold with the platform doing the work,
- * which is worth having but is not what this file is for.
+ * are load-bearing, and after 3i it is the only leg that runs them — which is a change, and the
+ * reason for it is the rest of this comment.
  *
- * French is the probe rather than Polish because 1.0 ships English alone (ADR-0013 puts the
- * translation at 3i). That separates "the configuration changed" from "we have a second `values-`
- * folder", and the fallback assertion below checks the case an owner of an unshipped language
- * actually gets.
+ * **3i set out to remove a gate and ended up moving it.** The gate was there because the probe was
+ * `fr`, `fr` is not in `locales_config.xml`, and the platform declines an app locale the app does
+ * not declare, so 34 and 36 never resolved against it while the backport applied it regardless.
+ * Declaring `pl` fixed exactly that, and 36 went green. Then it went red, on a run whose only
+ * change was a comment — one test, the same ten-second wait, `last seen 'en'`. **So the platform
+ * legs are not deterministic here**: 34 fails almost always, 36 intermittently, 26 never. Applying
+ * a per-app locale on 13+ is a request to a system service that recreates the activity when it gets
+ * to it, and "when it gets to it" is not a thing a test can wait on honestly.
  *
- * **The probe runs below 33 only**, and that is not tidiness — it is what the matrix found. `fr` is
- * not in `locales_config.xml`, and the two platform legs decline to apply an app locale the app does
- * not declare: on API 34 and 36 the activity stayed on `en` and never resolved against `fr` at all.
- * AppCompat's backport applies it regardless, and so, for what it is worth, does the HyperOS phone on
- * the desk — the same request, three different answers, none of which is this app's code. Above 33
- * the per-app locale is the platform's to honour and the only thing that is ours is the declaration,
- * so that is all this file asserts there.
+ * Two ways round it were tried and both are reverted. Waiting on a freshly launched activity as a
+ * second stage did not help. Clearing the override in `@Before`, so no test could inherit one,
+ * **turned 36 red on every probe test** — two locale writes in quick succession do not queue, and
+ * the clear issued moments before a set can be the one that lands last.
  *
- * The practical consequence for **3i**: once Polish is declared, `pl` is a locale the app *does*
- * claim, and the same probe should hold on every leg. Worth re-running these without the gate then.
+ * What is left is a sharper division than the one 3i planned:
+ * - The **recreate-in-place** assertions run below 13, where AppCompat does the work synchronously
+ *   enough to assert on. That is the branch no hardware here can reach and the reason this file
+ *   exists; it was never the platform legs' job.
+ * - What the app owes on **every** leg is that `values-pl` is in the APK and resolves — asserted
+ *   directly, through a configuration context, in
+ *   [theAppsOwnStringsResolveInPolishAndNotOnlyThePlatformsOwn]. 1.0 could not make that assertion
+ *   at all, so the platform legs assert strictly more than they used to, just not via a wait.
+ * - That the app *declares* `pl`, which is the only part of the 13+ path that is ours, is asserted
+ *   off-device by `AppLanguageTest`.
+ *
+ * The fallback case an unshipped language lands in is asserted the same way, in
+ * [anUnshippedLanguageFallsBackToEnglishRatherThanFailingToResolve] — through a configuration
+ * context, because the platform will not hand out an undeclared app locale at all.
  */
 @RunWith(AndroidJUnit4::class)
 class LocaleBackportTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
-    /** Below 13 the backport applies the override; at 13+ the platform decides, and may decline. */
-    private val backportLeg = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
-
-    private fun assumeTheProbeIsApplied() =
+    /**
+     * Restricts the two *recreate-in-place* assertions to the legs where the backport owns them.
+     *
+     * Not a workaround for a slow emulator — see the class comment. Below 13 AppCompat recreates the
+     * activity itself, synchronously enough to assert on, and that branch is what this file exists
+     * to cover. On 13+ the same wait is intermittent, and what the app owes there is asserted
+     * without it.
+     */
+    private fun assumeTheBackportOwnsTheOverride() =
         assumeTrue(
-            "above API 32 the platform declines an app locale outside locales_config.xml",
-            backportLeg,
+            "on 13+ the platform applies the app locale on its own schedule, not on an assertable one",
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU,
         )
 
     @After
     fun clearTheOverride() {
         // The override persists — that is the whole point of it — so leaving it set hands every test
-        // that runs after this class a French app, and on a real phone leaves the app French until
+        // that runs after this class a Polish app, and on a real phone leaves the app Polish until
         // someone notices.
         //
         // It has to be cleared **with an activity alive**, which is why this launches one rather than
@@ -84,11 +102,11 @@ class LocaleBackportTest {
 
     @Test
     fun settingAnAppLocaleChangesTheConfigurationTheActivityResolvesStringsAgainst() {
-        assumeTheProbeIsApplied()
+        assumeTheBackportOwnsTheOverride()
         val deviceDefault = deviceDefaultLanguage()
         assumeTrue(
             "the probe locale has to differ from the device's own, or the assertion proves nothing",
-            deviceDefault != "fr",
+            deviceDefault != PROBE,
         )
 
         ActivityScenario.launch(MainActivity::class.java).use {
@@ -100,14 +118,14 @@ class LocaleBackportTest {
                     .language,
             )
 
-            setApplicationLocales("fr")
+            setApplicationLocales(PROBE)
 
-            // Not `before` — applying a locale **recreates the activity**, on both implementations,
-            // so the instance that answers now is a different object than the one launched above.
-            val after = awaitActivityResolving("fr")
+            // Not `before` — the backport applies a locale by **recreating the activity**, so the
+            // instance that answers now is a different object than the one launched above.
+            val after = awaitActivityResolving(PROBE)
             assertEquals(
                 "the app locale should reach the activity's own resources, not just a stored setting",
-                "fr",
+                PROBE,
                 after.resources.configuration.locales[0]
                     .language,
             )
@@ -116,42 +134,56 @@ class LocaleBackportTest {
 
     @Test
     fun theActivityResolvesAPlatformStringThroughTheOverriddenConfiguration() {
-        assumeTheProbeIsApplied()
+        assumeTheBackportOwnsTheOverride()
         val english = platformCancelIn(Locale.ENGLISH)
-        val french = platformCancelIn(Locale.FRENCH)
+        val polish = platformCancelIn(Locale.forLanguageTag(PROBE))
         // A stripped system image ships one language of platform resources, and then this assertion
         // would compare "Cancel" with "Cancel" and pass while proving nothing. Skipped rather than
         // silently vacuous — the configuration assertion above still runs on such an image.
-        assumeTrue("this system image has no French platform resources", english != french)
+        assumeTrue("this system image has no Polish platform resources", english != polish)
 
         ActivityScenario.launch(MainActivity::class.java).use {
-            setApplicationLocales("fr")
-            val activity = awaitActivityResolving("fr")
+            setApplicationLocales(PROBE)
+            val activity = awaitActivityResolving(PROBE)
 
             // The end-to-end claim: `getString` on the activity — which is what every
             // `stringResource` in the Compose tree ultimately calls — goes through the override.
             assertEquals(
                 "the activity should resolve strings against the app locale",
-                french,
+                polish,
                 activity.getString(android.R.string.cancel),
             )
-            assertNotEquals(french, english)
+            assertNotEquals(polish, english)
         }
     }
 
     @Test
-    fun anUnshippedLanguageFallsBackToEnglishRatherThanFailingToResolve() {
-        assumeTheProbeIsApplied()
-        ActivityScenario.launch(MainActivity::class.java).use {
-            setApplicationLocales("fr")
-            val activity = awaitActivityResolving("fr")
+    fun theAppsOwnStringsResolveInPolishAndNotOnlyThePlatformsOwn() {
+        // Through a configuration context, and ungated, for the same reason the fallback test below
+        // is: resource *resolution* is ours and is deterministic, while getting the platform to
+        // apply an app locale to a running activity is neither. This is the assertion that fails if
+        // `values-pl` is missing from the APK — the one 1.0 had no way to make at all.
+        val polish = contextIn(Locale.forLanguageTag(PROBE))
+        assertEquals("Ustawienia", polish.getString(R.string.settings_title))
 
-            // Binky has no `values-fr`, so its own strings fall back to the default folder. This is
-            // the state ADR-0013 leaves a French owner in at 1.0, and it has to be plain English
-            // rather than an empty string or a resource-not-found crash.
-            assertEquals("Settings", activity.getString(R.string.settings_title))
-            assertTrue(activity.getString(R.string.settings_language_help).isNotEmpty())
-        }
+        // The launcher label is deliberately NOT translated: it resolves against the system locale,
+        // so a Polish app on an English phone would still have to say "Binky". Asserted rather than
+        // trusted, because `values-pl` is exactly where someone would add it.
+        assertEquals("Binky", polish.getString(R.string.app_name).removeSuffix(" Debug"))
+    }
+
+    @Test
+    fun anUnshippedLanguageFallsBackToEnglishRatherThanFailingToResolve() {
+        // Through a configuration context rather than an app locale: `fr` is not in
+        // `locales_config.xml`, and 13+ declines to apply an app locale the app does not declare
+        // (see the class comment). Resource *resolution* is not gated that way, so this is the same
+        // fallback a French phone gets, asked directly and on every leg.
+        val french = contextIn(Locale.FRENCH)
+
+        // Binky has no `values-fr`, so its own strings fall back to the default folder — plain
+        // English, rather than an empty string or a resource-not-found crash.
+        assertEquals("Settings", french.getString(R.string.settings_title))
+        assertTrue(french.getString(R.string.settings_language_help).isNotEmpty())
     }
 
     @Test
@@ -203,6 +235,13 @@ class LocaleBackportTest {
         instrumentation.runOnMainSync {
             AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
         }
+    }
+
+    /** The app's resources as [locale] would resolve them, with no app locale involved. */
+    private fun contextIn(locale: Locale): android.content.Context {
+        val context = appContext()
+        val configuration = Configuration(context.resources.configuration).apply { setLocale(locale) }
+        return context.createConfigurationContext(configuration)
     }
 
     /** The platform's own translation of a string every Android build ships, resolved by hand. */
@@ -261,6 +300,8 @@ class LocaleBackportTest {
     }
 
     private companion object {
+        /** The declared language that is not the base one — see the class comment for why it matters. */
+        const val PROBE = "pl"
         const val POLL_INTERVAL_MS = 100L
     }
 }
