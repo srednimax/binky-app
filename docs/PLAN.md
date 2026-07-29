@@ -1473,12 +1473,32 @@ prompt on easy ground, so dose reminders later add only the exact-alarm path.
   the recurring reminder this phase adds, which is also the thing that turns a manual export into a habit
   the owner does not have to hold. The share sheet remains the path that cannot fail for provider reasons.
 
+- **Edge-to-edge, verified rather than implemented — its own checkpoint.** Play Console raises this against
+  every app targeting SDK 35+, and the notice is generic advice rather than a detected defect: `MainActivity`
+  already calls `enableEdgeToEdge()`, every screen's `Scaffold` owns the insets with its `TopAppBar` passing
+  `WindowInsets(0, 0, 0, 0)` so they are not applied twice, and `SchemaMismatchScreen` — the one screen that
+  lives outside a `Scaffold` — uses `safeDrawingPadding()`. The mechanism is in place. What is owed is
+  evidence, which is why this is a checkpoint of its own and not a line item inside another.
+
+  What has actually been *looked at* is one device, portrait, gesture navigation — 1.0's screenshots, which
+  render correctly. That is evidence for one cell of the matrix. Untested: **landscape**, where a punch-hole
+  or notch stops being a top-edge concern and `displayCutout` arrives on a side; nothing locks orientation
+  (there is no `screenOrientation` in the manifest), so landscape is in scope whether or not anyone holds
+  the phone that way. Also untested: **three-button navigation**, whose bottom inset is far taller than the
+  gesture pill's, and therefore the configuration most likely to put a nav bar over a button.
+
+  It cannot be deferred behind a compatibility flag. `targetSdk` is **36**, and Android 16 removed
+  `windowOptOutEdgeToEdgeEnforcement` — the enforcement is already live on the test device. The only
+  question left is whether every screen survives it, not whether to adopt it.
+
 **Gate:** a reminder set for +2 minutes fires while backgrounded and still fires after a reboot; a reminder
 also fires after the phone has sat idle in Doze **overnight** (screen off, app unopened) on the real
 Xiaomi — the +2-minute happy path is not sufficient evidence of reliability (ADR-0003); tapping
 *Add to calendar* on an annual reminder opens the calendar app with the date and yearly repeat already
 filled in; a short-duration watch stops nagging once it auto-expires; a trend flag offers to start a watch
-and "Log a healthy day" refuses to cover a watched bunny. Then the 1.1 release.
+and "Log a healthy day" refuses to cover a watched bunny; **every screen renders correctly edge-to-edge in
+both orientations under both gesture and three-button navigation**, with nothing drawn under the status bar,
+the navigation bar or a display cutout. Then the 1.1 release.
 
 ## Phase 5 — Vet, medications, documents, dose reminders — ships as 1.2
 
