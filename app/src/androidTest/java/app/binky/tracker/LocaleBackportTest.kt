@@ -2,6 +2,7 @@ package app.binky.tracker
 
 import android.app.Activity
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
@@ -50,26 +51,35 @@ class LocaleBackportTest {
 
     @After
     fun clearTheOverride() {
-        // The override persists — that is the whole point of it — so leaving it set would hand the
-        // next test in the run a French app. Cleared on the main thread, like every other call into
-        // AppCompatDelegate.
-        instrumentation.runOnMainSync { setAppLanguage(null) }
-        instrumentation.waitForIdleSync()
+        // The override persists — that is the whole point of it — so leaving it set hands every test
+        // that runs after this class a French app, and on a real phone leaves the app French until
+        // someone notices.
+        //
+        // It has to be cleared **with an activity alive**, which is why this launches one rather than
+        // just calling through. On API 33+ AppCompat forwards the call to the platform's
+        // LocaleManager and reaches the Context to do that through a registered activity delegate;
+        // with none registered the call is dropped and `getApplicationLocales()` still reads back
+        // empty from AppCompat's own field. A bare `@After` therefore looks like it worked, asserts
+        // clean, and leaves the device set — which is exactly how this was found.
+        ActivityScenario.launch(MainActivity::class.java).use {
+            instrumentation.runOnMainSync { setAppLanguage(null) }
+            awaitActivityResolving(deviceDefaultLanguage())
+        }
     }
 
     @Test
     fun settingAnAppLocaleChangesTheConfigurationTheActivityResolvesStringsAgainst() {
-        val deviceDefault = appContext().resources.configuration.locales[0]
+        val deviceDefault = deviceDefaultLanguage()
         assumeTrue(
             "the probe locale has to differ from the device's own, or the assertion proves nothing",
-            deviceDefault.language != "fr",
+            deviceDefault != "fr",
         )
 
         ActivityScenario.launch(MainActivity::class.java).use {
             val before = resumedActivity()
             assertEquals(
                 "with no override the activity should follow the phone",
-                deviceDefault.language,
+                deviceDefault,
                 before.resources.configuration.locales[0]
                     .language,
             )
@@ -137,16 +147,38 @@ class LocaleBackportTest {
             assertEquals(AppLanguage.ENGLISH, currentAppLanguage())
 
             instrumentation.runOnMainSync { setAppLanguage(null) }
-            instrumentation.waitForIdleSync()
+
+            // Asserted against the **configuration the activity ended up with**, not against
+            // `getApplicationLocales()`. That getter answers from AppCompat's own field, so it
+            // reports a cleared override whether or not the clear reached the device — see
+            // `clearTheOverride` for the case where it does not.
+            val cleared = awaitActivityResolving(deviceDefaultLanguage())
+            assertEquals(
+                "clearing the override should put the activity back on the phone's language",
+                deviceDefaultLanguage(),
+                cleared.resources.configuration.locales[0]
+                    .language,
+            )
 
             // Null is "follow the phone", not "unset and broken" — the ordinary state for an owner
             // who never opens the switcher.
             assertNull("clearing the override should read back as following the phone", currentAppLanguage())
-            assertTrue(AppCompatDelegate.getApplicationLocales().isEmpty)
         }
     }
 
     private fun appContext() = instrumentation.targetContext
+
+    /**
+     * The phone's own language, read from the **system** resources rather than the app's.
+     *
+     * On 13+ the platform applies a per-app locale to the app's whole configuration, so asking the
+     * app context "what is the default" during an active override answers with the override.
+     */
+    private fun deviceDefaultLanguage(): String =
+        Resources
+            .getSystem()
+            .configuration.locales[0]
+            .language
 
     private fun setApplicationLocales(tag: String) {
         // AppCompatDelegate is main-thread only; below 13 this is also what triggers the recreate.
