@@ -288,11 +288,19 @@ class RestoreStageMigrateSwapTest {
         }
 
     /**
-     * Zip-slip, and the reason this one cannot live in the JVM suite: from Android 14 the platform
-     * validates entry names inside `getNextEntry` itself and throws `ZipException` on a `../` path,
-     * *before* [archiveEntryFor]'s allowlist gets to skip it. Uncaught, that killed the process
-     * mid-restore rather than refusing the file — on a device, while the owner watched. Desktop
-     * `ZipInputStream` has no such validator, so `ArchiveEntriesTest` passes either way.
+     * Zip-slip, and the reason this one stays instrumented: the two Android versions refuse this file
+     * for *different reasons*, and only a device shows both. From Android 14 the platform validates
+     * entry names inside `getNextEntry` itself and throws `ZipException` on a `../` path, *before*
+     * [archiveEntryFor]'s allowlist gets to skip it. Uncaught, that killed the process mid-restore
+     * rather than refusing the file — on a device, while the owner watched. Below 14 there is no
+     * validator, and [isPathTraversal] is what refuses it.
+     *
+     * That second half is why this test earns its place twice over. It passed on API 34 and **failed
+     * on API 26** the first time the emulator matrix ran, because the refusal was borrowed from the
+     * platform: below 14 the entry was skipped like any unknown name and the archive restored without
+     * it. Nothing escaped — that is the allowlist's job and it did it — but "restored, minus the part
+     * we quietly dropped" is the wrong answer to a hostile file, and it was the answer across most of
+     * this app's supported range.
      *
      * The traversal entry is written **last, after a valid manifest and database**, which is the
      * ordering that makes the difference load-bearing: a walk that failed *quietly* at that point

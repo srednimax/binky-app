@@ -2,7 +2,9 @@ package app.binky.tracker.data.backup
 
 import app.binky.tracker.media.MediaKind
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -37,6 +39,42 @@ class ArchiveEntriesTest {
         assertNull(archiveEntryFor("../secrets.txt"))
         assertNull(archiveEntryFor("../../data/data/app.binky.tracker/x.jpg"))
         assertNull(archiveEntryFor("photos/../../x.jpg"))
+    }
+
+    /**
+     * The second answer, and the reason it is separate from the first: these names are not merely
+     * unrecognised, they are **hostile**, and the archive carrying one is refused whole rather than
+     * restored with the entry skipped.
+     *
+     * Below Android 14 the platform hands these through without complaint, so this predicate — not
+     * `getNextEntry` — is what refuses them across the supported range.
+     */
+    @Test
+    fun aTraversalIsRefusedRatherThanSkipped() {
+        assertTrue(isPathTraversal("../escaped.txt"))
+        assertTrue(isPathTraversal("../../data/data/app.binky.tracker/x.jpg"))
+        assertTrue(isPathTraversal("photos/../../x.jpg"))
+        assertTrue(isPathTraversal("/photos/$uuid.jpg"))
+        // Harmless on Android, which does not treat a backslash as a separator — refused anyway, so
+        // the rule stays "no `..` anywhere" rather than "no `..` on the platforms where it bites".
+        assertTrue(isPathTraversal("..\\escaped.txt"))
+        // A directory entry makes the same claim as a file and gets the same answer.
+        assertTrue(isPathTraversal("../"))
+    }
+
+    /**
+     * The other half, and the one a too-eager rule would break: an archive from a **later** version
+     * carrying entries this build has never heard of must still restore. Unknown is skipped; only
+     * hostile is refused.
+     */
+    @Test
+    fun anOrdinaryUnknownEntryIsNotATraversal() {
+        assertFalse(isPathTraversal(BACKUP_MANIFEST_ENTRY))
+        assertFalse(isPathTraversal(BACKUP_DATABASE_ENTRY))
+        assertFalse(isPathTraversal("photos/$uuid.jpg"))
+        assertFalse(isPathTraversal("videos/$uuid.mp4"))
+        assertFalse(isPathTraversal("notes/..hidden.txt"))
+        assertFalse(isPathTraversal("photos/2026/$uuid.jpg"))
     }
 
     @Test

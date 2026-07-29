@@ -306,12 +306,15 @@ class BackupRestorer(
  * rather than a sequence the caller could hold on to past its turn.
  *
  * Returns **false if the archive could not be walked to the end** — truncated, not a zip at all, or
- * carrying an entry the platform itself refuses to hand over. That last case is the one worth
- * knowing about: from Android 14, `getNextEntry` validates entry names and throws `ZipException` on
- * a `../` traversal *before* [archiveEntryFor]'s allowlist ever sees the name. So the allowlist is
- * still the guard below 14 — it rejects `..` as a media directory like any other unknown one — and
- * this is the only place the 14+ decision can be caught. Uncaught, it killed the process instead of
- * refusing the file (the JVM tests cannot see it: desktop `ZipInputStream` has no such validator).
+ * carrying a traversal entry.
+ *
+ * That last case is refused **here, on every API**, by [isPathTraversal] rather than by the platform.
+ * From Android 14 `getNextEntry` validates entry names itself and throws `ZipException` on a `../`
+ * path before [archiveEntryFor] ever sees it, so 14+ refuses the file either way — and uncaught,
+ * that throw killed the process mid-restore instead of refusing the file, which is why the `catch`
+ * below matters. Below 14 there is no validator, and leaving it to the allowlist meant the entry was
+ * skipped like any unknown name and *the rest of the archive was applied*. Safe, in that nothing
+ * escaped, but the wrong answer to a hostile file — and the answer on most of this app's range.
  *
  * The failure must not be swallowed as "nothing more to read" either. A hostile entry appended
  * *after* a valid manifest and database would then look like a complete archive and be applied.
@@ -324,6 +327,9 @@ private inline fun forEachEntry(
         ZipInputStream(open().buffered()).use { zip ->
             while (true) {
                 val next = zip.nextEntry ?: break
+                // Before the allowlist, and before `isDirectory`: a `../` directory entry is making
+                // the same claim as a `../` file and gets the same answer.
+                if (isPathTraversal(next.name)) return false
                 if (!next.isDirectory) {
                     val entry = archiveEntryFor(next.name)
                     if (entry != null && !onEntry(entry, zip)) break

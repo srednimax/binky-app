@@ -56,6 +56,31 @@ private val MEDIA_FILE_NAME =
     Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\.jpg")
 
 /**
+ * Whether [name] is trying to climb out of the directory it would be joined onto.
+ *
+ * Separate from [archiveEntryFor] because the two answers are different in kind. An unrecognised
+ * name is **skipped** — an archive from a later version carrying entries this build has never heard
+ * of must still restore — whereas a traversal means the file is hostile, and a hostile file is
+ * refused whole.
+ *
+ * This exists because the refusal was, until now, **borrowed from the platform**. From Android 14
+ * `ZipInputStream.getNextEntry` validates entry names itself and throws, which is what made the
+ * archive refusable. Below 14 there is no such validator: the name came through, the allowlist above
+ * skipped it, and the restore carried on and applied the rest of the archive. Nothing escaped —
+ * that part was never in doubt, and is what the allowlist is for — but "restored, minus the part we
+ * quietly dropped" is the wrong answer to a file that tried this, and it was the answer on API 26
+ * through 33, which is most of the range this app supports.
+ *
+ * Backslashes are folded first. Android does not treat `\` as a separator, so `..\x` is a harmless
+ * one-segment filename here — but it costs nothing to refuse, and a rule that reads "no `..`
+ * anywhere" is one the next reader can hold in their head.
+ */
+fun isPathTraversal(name: String): Boolean {
+    val separated = name.replace('\\', '/')
+    return separated.startsWith("/") || separated.split('/').any { it == ".." }
+}
+
+/**
  * The entry [name] describes, or null for anything a restore will not touch.
  *
  * **Restore never builds a path out of archive input** (ADR-0005). This is an allowlist: three exact
