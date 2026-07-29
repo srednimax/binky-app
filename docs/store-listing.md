@@ -3,10 +3,11 @@
 The paste-ready source of truth for every Play Console listing field. `docs/PLAN.md` 3a records *why*
 the title and short description are what they are; this file is what actually gets copied in.
 
-**Scope is 1.0 — the end of Phase 3.** Weight, observations, photos, backup, two languages. Care
-reminders are 1.1 and vet visits, medications and documents are 1.2, so they must not be described as
-present. Play treats "advertises features the app does not have" as a listing violation, not a
-rounding error.
+**Scope is 1.0, cut at 3h** — not the end of Phase 3, which runs to 1.0.1. Weight, observations,
+photos, backup, **in English**. Polish is 3i and ships in **1.0.1** (3j), so 1.0 must not describe the
+app as bilingual. Care reminders are 1.1 and vet visits, medications and documents are 1.2, so they
+must not be described as present. Play treats "advertises features the app does not have" as a listing
+violation, not a rounding error.
 
 Two rules bend on purpose here:
 
@@ -16,6 +17,12 @@ Two rules bend on purpose here:
 - **Nothing implies diagnosis.** The closing paragraph is not boilerplate — it is ADR-0001 stated to
   the person deciding whether to install, and it is also what keeps the listing clear of Play's
   medical-claims policy.
+
+**The Polish listing is written but does not go up until 1.0.1**, with the release that gives the app
+Polish strings. A Polish listing in front of an English-only app converts badly and earns "nie ma
+polskiego" one-stars at exactly the moment the app has no ratings to absorb them — and 1.0 sits on the
+internal track, which nobody browses. The copy is kept here finished so 3j is a paste, not a writing
+task.
 
 Polish is not a translation. Each locale is indexed separately, so the Polish copy carries its own
 keywords (`królik`, `waga`, `bobki`, `dzienniczek zdrowia`, `weterynarz`) and its own phrasing.
@@ -31,7 +38,7 @@ Polish second-person forms are gendered, so the copy avoids them — `co został
 | Privacy policy URL | `https://srednimax.github.io/binky-app/privacy-policy.html` |
 | App icon (512²) | [`art/play-icon-512.png`](../art/play-icon-512.png) |
 | Feature graphic (1024×500) | [`art/play-feature-graphic.png`](../art/play-feature-graphic.png) |
-| Phone screenshots (1526×2713) | [`art/play-screenshot-1-home.png`](../art/play-screenshot-1-home.png), [`art/play-screenshot-2-weight.png`](../art/play-screenshot-2-weight.png) — placeholders until 3g |
+| Phone screenshots (1526×2713) | [`art/play-screenshot-1-home.png`](../art/play-screenshot-1-home.png), [`art/play-screenshot-2-weight.png`](../art/play-screenshot-2-weight.png) — placeholders until 3h |
 | App category | Lifestyle |
 | Contact email | the per-app support address, set in Store settings — not the account-level developer email |
 
@@ -61,7 +68,7 @@ Binky: Bunny & Rabbit Tracker
 Track your rabbit's weight, health and care. Private, offline, no ads.
 ```
 
-### Full description — 2396/4000
+### Full description — 2348/4000
 
 ```
 Binky keeps a trustworthy record of your rabbit's health, so you and your vet can see what actually changed, and when.
@@ -95,8 +102,6 @@ YOUR DATA STAYS YOURS
 • Works fully offline, permanently
 • Export a backup whenever you want and restore it. Your records are portable, not trapped
 • Free, with no paid tier and nothing locked
-
-English and Polish, switchable inside the app.
 
 A RECORD, NOT A DIAGNOSIS
 Binky will not tell you whether your rabbit is ill, and it never infers a problem from missing entries. Silence means nobody looked, not that everything is fine. It shows you what you recorded, clearly enough to notice a change and take it to someone qualified. If you are worried about your rabbit, see a vet experienced with rabbits.
@@ -163,9 +168,21 @@ Binky nie powie Ci, czy Twój królik jest chory, i nigdy nie wnioskuje problemu
 
 ## Open
 
-- **Screenshots** are placeholders until 3g, as 3a intends — two of whatever exists, from the debug
-  build's sample data. Real 1.0 screenshots are taken once the app has stopped changing, and Polish
-  ones are a separate set: each locale's screenshots are uploaded per listing.
+- **Screenshots** are still 3a's two placeholders. 3g deferred the real ones to **3h**, where five are
+  taken from the release build carrying the debug fixture's data: Home's vitals card with the trend
+  flag, the chart at 90 d, the observation timeline with a shared entry, the gallery, and the backup
+  screen. Polish ones are a separate set that lands with the Polish listing at 3j — each locale's
+  screenshots are uploaded per listing.
+- **One sentence comes back at 3j**, in the English description, after `• Free, with no paid tier and
+  nothing locked`:
+
+  ```
+  English and Polish, switchable inside the app.
+  ```
+
+  It was true of the app this file was written against and is not true of 1.0. The Polish description
+  below keeps its equivalent line, because the release that publishes that listing is the release that
+  makes it true.
 - **Nothing else is outstanding.** The icon was the last blocker and is now original art generated
   from [`art/rabbit.py`](../art/rabbit.py), so no third-party licence notice has to reach the user
   and no licences screen gates the upload. [`art/README.md`](../art/README.md) has the reasoning.
