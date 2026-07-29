@@ -14,7 +14,7 @@ import app.binky.tracker.R
  * `AppLanguageTest` parses the XML and asserts the two match, because "remember to edit both" is
  * exactly the kind of promise that survives right up until the translation lands and nobody does.
  *
- * English alone at 1.0. Polish joins it at 3g, as one entry here and one line of XML.
+ * English alone at 1.0. Polish joins it at 3i, as one entry here and one line of XML.
  */
 enum class AppLanguage(
     val tag: String,
