@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.8.0](https://github.com/srednimax/binky-app/compare/v0.7.0...v0.8.0) (2026-07-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* applicationId changes from app.binky.tracker to binky.bunny.and.rabbit.tracker, so an existing debug install is orphaned rather than upgraded and has to be uninstalled by hand. Nothing has been published to Play under either id, which is the only reason this is still free.
+
+### Build System
+
+* move the applicationId to binky.bunny.and.rabbit.tracker ([c4e3753](https://github.com/srednimax/binky-app/commit/c4e375328227911e98cda6daee5672deed4be74d))
+
 ## [0.7.0](https://github.com/srednimax/binky-app/compare/v0.6.0...v0.7.0) (2026-07-29)
 
 
