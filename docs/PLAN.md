@@ -1434,21 +1434,25 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      checkpoints.** 3f's finding was that 26 applies an undeclared locale and 34 and 36 decline it. With `pl`
      declared, 26 and 36 went green and **34 did not**: the running activity did not pick the locale up
      inside the ten seconds this file allowed, twice — while a later test in the same run resolved Polish in
-     1.4 seconds, having *inherited* the override the timed-out test had set. So the change does land on 34;
-     what it does not do is reach an activity already on screen, promptly or predictably.
+     1.4 seconds, having *inherited* the override the timed-out test had set. Then **36 went red too**, on a
+     run whose only change was a comment — one test, the same ten-second wait, `last seen 'en'`. The
+     platform legs are not deterministic here: 34 fails almost always, 36 intermittently, 26 never.
+     Applying a per-app locale on 13+ is a request to a system service that recreates the activity when it
+     gets to it, and *when it gets to it* is not something a test can wait on honestly.
    - **Two fixes were tried against that and both were reverted, which is the more useful record.** Waiting
      on a freshly launched activity as a second stage did not help. Clearing the override in `@Before`, so
-     that no test could start on one, **turned API 36 red** — a leg that had been green — taking both
-     platform legs from a slow apply to no apply at all inside twenty-five seconds: two locale writes in
-     quick succession do not queue, and the clear issued moments before the set can be the one that lands
-     last. That is a trap with no symptom other than the wrong locale, the same shape as 3f's teardown that
-     asserted clean over a device that was not.
-   - **So API 34 is skipped, alone and out loud**, and 26 and 36 assert ungated. That is a narrower version
-     of the gate this checkpoint set out to remove rather than the clean sweep it planned, and it is the
-     honest one: what API 34 does with a per-app locale is the platform's business, Binky's behaviour is
-     asserted either side of it, and the skipped failure mode is *slow*, not *wrong*. Three CI cycles went
-     into establishing that, which is itself the argument for the exclusion being stated in the file rather
-     than rediscovered.
+     that no test could start on one, took both platform legs from a slow apply to **no apply at all**
+     inside twenty-five seconds: two locale writes in quick succession do not queue, and the clear issued
+     moments before the set can be the one that lands last. That is a trap with no symptom other than the
+     wrong locale, the same shape as 3f's teardown that asserted clean over a device that was not.
+   - **So the gate moved rather than came off, and the file is sharper for it.** The recreate-in-place
+     assertions now run **below 13 only** — the backport's own branch, which no hardware here can reach and
+     which is the reason the file exists; chasing them on the platform legs was chasing the platform's
+     scheduler. What the app actually owes is asserted on **every** leg instead, and directly: that
+     `values-pl` is in the APK and resolves, through a configuration context with no app-locale machinery
+     in the way. 1.0 could not make that assertion at all, so the platform legs now assert strictly more
+     than they did — just not via a wait. Four CI cycles went into learning that, which is the argument for
+     writing it down rather than rediscovering it at 1.1.
    - **`PolishTranslationTest`** holds the parity mechanically from here: every translatable resource has a
      counterpart, `values-pl` declares nothing extra, every plural carries all four categories, every format
      argument survives, and the breed lists are the same length. "Read every screen once" is a person's job
