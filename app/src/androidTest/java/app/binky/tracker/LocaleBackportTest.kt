@@ -20,7 +20,6 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Locale
@@ -53,11 +52,17 @@ import java.util.Locale
  * the backport was never in doubt at 26, but on 34 the running activity did not pick the locale up
  * within the ten seconds this file used to allow — twice — while a later test in the same run
  * resolved Polish in 1.4 seconds, having inherited the override the timed-out test had set. So the
- * change lands; what varies is whether it reaches an activity that is already on screen, and how
- * fast. Two things follow, and both are in the code below rather than in this comment: the wait is
- * two-stage (in place, then a freshly launched activity — see [awaitActivityResolving]), and the
- * override is cleared **before** each test as well as after, because that inherited-override pass
- * was a green test that asserted nothing.
+ * change lands on 34; what varies is whether it reaches an activity that is already on screen, and
+ * how fast. [awaitActivityResolving] therefore waits in two stages, the second on an activity it
+ * launches itself, which is the weaker claim but the true one and the only one Binky owes anyone.
+ *
+ * **And the obvious fix for that inherited override made it worse, which is the more useful
+ * finding.** Clearing the override in `@Before` — so no test can start on one — took API 34 *and*
+ * 36 from a slow apply to no apply at all inside twenty-five seconds. Two locale writes in quick
+ * succession do not queue: the clear issued moments before the set can be the one that lands last.
+ * Nothing in this file writes a locale to arrange a starting state any more. It asserts the
+ * starting state instead, via [assertStartsOnTheDeviceDefault], and lets the single write per test
+ * be the only one in flight.
  */
 @RunWith(AndroidJUnit4::class)
 class LocaleBackportTest {
@@ -67,15 +72,22 @@ class LocaleBackportTest {
     private var relaunched: ActivityScenario<MainActivity>? = null
 
     /**
-     * Cleared **before** as well as after, and that is not belt-and-braces.
+     * The starting state each probe test needs, asserted rather than imposed.
      *
-     * The override persists between tests by design, so a test that inherits one from the test
-     * before it can pass without ever exercising the thing it names — `awaitActivityResolving("pl")`
-     * returns on its first poll because the app was already Polish. That is a green test asserting
-     * nothing, and API 34 produced exactly one of them (see the class comment).
+     * The obvious way to stop a test inheriting an override from the one before it is to clear the
+     * override in `@Before`. **That was tried and it broke the two legs that worked**: a clear
+     * issued moments before a set can be the one that wins, and API 34 and 36 both went from a
+     * ten-second wait to no locale at all inside twenty-five. Two writes in quick succession do not
+     * queue. So the setup here writes nothing — it reads, and fails loudly if what it reads is not
+     * the state the test needs.
      */
-    @Before
-    fun startFollowingThePhone() = clearTheOverride()
+    private fun assertStartsOnTheDeviceDefault(activity: Activity) =
+        assertEquals(
+            "the test should start with no override — one has leaked from an earlier test",
+            deviceDefaultLanguage(),
+            activity.resources.configuration.locales[0]
+                .language,
+        )
 
     @After
     fun clearTheOverride() {
@@ -112,12 +124,7 @@ class LocaleBackportTest {
 
         ActivityScenario.launch(MainActivity::class.java).use {
             val before = resumedActivity()
-            assertEquals(
-                "with no override the activity should follow the phone",
-                deviceDefault,
-                before.resources.configuration.locales[0]
-                    .language,
-            )
+            assertStartsOnTheDeviceDefault(before)
 
             setApplicationLocales(PROBE)
 
@@ -145,6 +152,7 @@ class LocaleBackportTest {
         assumeTrue("this system image has no Polish platform resources", english != polish)
 
         ActivityScenario.launch(MainActivity::class.java).use {
+            assertStartsOnTheDeviceDefault(resumedActivity())
             setApplicationLocales(PROBE)
             val activity = awaitActivityResolving(PROBE)
 
@@ -162,6 +170,10 @@ class LocaleBackportTest {
     @Test
     fun theAppsOwnStringsResolveInPolishAndNotOnlyThePlatformsOwn() {
         ActivityScenario.launch(MainActivity::class.java).use {
+            // Without this the test can pass on an override left behind by an earlier one, having
+            // applied nothing itself. That is not hypothetical: API 34 produced exactly such a pass,
+            // in 1.4 seconds, on the run that first ungated this file.
+            assertStartsOnTheDeviceDefault(resumedActivity())
             setApplicationLocales(PROBE)
             val activity = awaitActivityResolving(PROBE)
 

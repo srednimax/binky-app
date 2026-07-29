@@ -1435,10 +1435,17 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      declared, 26 and 36 went green and **34 did not**: the running activity did not pick the locale up
      inside the ten seconds this file allowed, twice — while a later test in the same run resolved Polish in
      1.4 seconds, having *inherited* the override the timed-out test had set. So the change does land on 34;
-     what varies is whether it reaches an activity already on screen, and how fast. Two fixes, and the second
-     matters more than the first: the wait is now two-stage (in place, then an activity launched fresh), and
-     the override is cleared **before** each test as well as after — because that 1.4-second pass was a green
-     test that asserted nothing, and would have gone on being one.
+     what varies is whether it reaches an activity already on screen, and how fast. The wait is now
+     two-stage — in place, then an activity the wait launches itself, which is the weaker claim but the true
+     one and the only one the app owes anyone.
+   - **The obvious fix for that inherited override made it worse, and that is the more useful finding.**
+     Clearing the override in `@Before`, so that no test can start on one, took API 34 *and* 36 from a slow
+     apply to **no apply at all** inside twenty-five seconds — a leg that had been green went red. Two locale
+     writes in quick succession do not queue: the clear issued moments before the set can be the one that
+     lands last. Nothing in the file writes a locale to arrange a starting state now; it asserts the starting
+     state and lets the single write per test be the only one in flight. Recorded because it is a trap with
+     no symptom other than the wrong locale — the same shape as 3f's teardown that asserted clean over a
+     device that was not.
    - **`PolishTranslationTest`** holds the parity mechanically from here: every translatable resource has a
      counterpart, `values-pl` declares nothing extra, every plural carries all four categories, every format
      argument survives, and the breed lists are the same length. "Read every screen once" is a person's job
