@@ -228,7 +228,7 @@
 
     <string name="backup_refused_title">Nothing was restored</string>
     <string name="backup_refused_not_a_backup">This file is not a Binky backup. Nothing on this phone was changed.</string>
-    <string name="backup_refused_newer">This backup was made by a newer version of Binky, which this one cannot read. Nothing on this phone was changed.</string>
+    <string name="backup_refused_newer">This backup was made by a newer version of Binky, which this one cannot read. It was saved at version %1$d, and this app reads up to version %2$d. Nothing on this phone was changed.</string>
     <string name="backup_refused_too_large">This file is far too large to be a Binky backup. Nothing on this phone was changed.</string>
     <string name="backup_refused_unreadable">Binky could not open the records inside this backup, so nothing was changed. The file may be damaged.</string>
 

@@ -193,7 +193,18 @@ class RestoreStageMigrateSwapTest {
 
             val outcome = restorerFor(liveName).restore(open = { archive.inputStream() })
 
-            assertEquals(RestoreOutcome.Refused(RestoreRefusal.MadeByANewerBinky), outcome)
+            // Both numbers, not just the fact of a refusal: the owner is told how far ahead the file
+            // is and how far this build reaches, which is what makes "find the newer Binky"
+            // actionable rather than a dead end.
+            assertEquals(
+                RestoreOutcome.Refused(
+                    RestoreRefusal.MadeByANewerBinky(
+                        fileVersion = BUNNY_SCHEMA_VERSION + 1,
+                        readableVersion = BUNNY_SCHEMA_VERSION,
+                    ),
+                ),
+                outcome,
+            )
             assertArrayEquals(before, liveFile.readBytes())
             assertEquals(listOf("Already here"), bunnyNamesIn(liveName))
         }
