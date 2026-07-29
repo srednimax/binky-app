@@ -609,7 +609,9 @@ genuinely runs in parallel with the engineering is the **recruiting**, which is 
 
 ### Checkpoints
 
-Seven, and the ordering is deliberate three times over. ADR-0009's registration and the store paperwork are
+**Ten** — seven planned, and the last of those split into four once it was clear that 3g was three releases
+and a translation wearing one number. The ordering is deliberate three times over. ADR-0009's registration
+and the store paperwork are
 calendar costs rather than engineering ones, so they go first and the recruiting starts with them. The
 **shell change** goes second, because landing AppCompat early gives every later checkpoint's
 hand-verification a free pass over it, while landing it last would put a root-theme reparent underneath the
@@ -620,6 +622,13 @@ ADR-0019 gates 1.0 on *the data being safe*, which export and restore satisfy on
 ADR-0005's effortless net **on top**, so an agent that turns into a swamp costs a release date rather than a
 release. Everything else runs one way: photos need the schema bump, restore needs an export to restore,
 first-run setup needs a backup scope to offer.
+
+**The tail is four checkpoints rather than one**, for the same reason this phase already separated Polish
+from the release: each has a different kind of cost and fails in a different way, and welding them together
+makes the release date a function of the slowest. **3g** is engineering with an unknown yield — a gate pass
+finds what it finds. **3h** is paperwork plus Play's review latency on a first-time account, which no amount
+of working harder shortens. **3i** is a multi-session writing task. **3j** is a calendar. Only 3g can be
+estimated, and it is the only one that may change code.
 
 **One schema bump, one wipe** — version 4 at 3c. It is the last *planned* one, not the last *permitted*
 one: nothing reaches another device until 1.0.1, so a bump at 3d or 3f would still be free under ADR-0007.
@@ -740,6 +749,14 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - That build is then **uninstalled**. It is a pipeline proof, not a dogfood build: leaving a release build
      at schema 3 sitting on the phone would create a migration obligation for a version nobody used, and
      3c's wipe is spent on the debug app instead. The author's real bunny history starts at 1.0.
+   - **Neither of those last two bullets happened, and recording that is worth more than quietly dropping
+     them.** The developer account, the App content answers, the listing copy, the privacy policy, the icon,
+     the keystore and a real `bundleRelease` all landed; **nothing was ever uploaded to a track**. So the one
+     property this checkpoint existed to buy — proving upload, track configuration, Play's review and
+     install-from-Play while the payload is boring — is **spent**, because by the time it is done the next
+     thing there is to upload is 1.0 itself. The unproven half moves to **3h**, which buys back what it still
+     can by ordering *within* the checkpoint — a release candidate before the version number that matters —
+     rather than by pretending a boring payload still exists.
    - `versionName` / `versionCode` stay automated (release-please) and are never hand-edited. Both halves
      are **verified against a real `bundleRelease`**: the AAB's manifest carries `versionCode` 85, matching
      `git rev-list --count HEAD`, alongside `versionName` `0.4.0`, and the bundle is signed by the upload
@@ -1184,36 +1201,151 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      Finish button, because an owner who says what they want and then leaves has still said it. The language
      row was taken to English and back: `cmd locale get-app-locales` reported `[en]` and then `[]`, and the
      app came back on the same screen both times.
-7. **3g — 1.0 English, then Polish, then 1.0.1 and the closed track.**
-   - **1.0 goes to the internal track the moment the gate passes**, in English. That is the moment ADR-0019
-     actually cares about — the data is safe — and nothing is served by holding it behind a translation.
+7. **3g — The gate pass, and what it is allowed to find.**
+   - **What landed between 3f and here, unplanned and load-bearing for this checkpoint.** Three things, none
+     of them a checkpoint. The four standing lint warnings were **closed rather than restated** — and one was
+     a real defect, not a lint opinion: the gallery read strings through `LocalContext.current.resources`, and
+     a language switch (ADR-0013) replaces the `Resources` while a cached context keeps the old one, so it
+     would have shipped a screen that ignored the switcher 3f had just built. `photo_import_partial` became a
+     `<plurals>` keyed on the **unreadable** count, which is the number its trailing clause governs; its
+     English items are identical and that is the point, since the structure has to exist *before* 3i and not
+     after. The dependency-version notices and `OldTargetApi` dropped to `informational` rather than
+     `disable`, so the next bump is still one `./gradlew lint` away but they stop counting against a gate
+     about our code. Restore then learned to refuse a traversal entry on **every** API rather than only 14+.
+   - And **CI grew an instrumented matrix at API 26 / 34 / 36**, behind one stable required check name, plus
+     `BackupRoundTripTest` exporting at all three scopes and restoring onto a cleared phone. That changes this
+     gate's mechanics rather than its content: `connectedAndroidTest` stops being a Xiaomi ceremony run at
+     boundaries and becomes a per-PR check, and the **`minSdk` floor finally executes** — the pre-S route into
+     system backup settings, the pre-R agent branch, the pre-S theme and ADR-0013's pre-13 locale backport are
+     code that a single modern emulator never runs at all.
+   - **This checkpoint adds no features.** It is Phase 3's gate list driven end to end on the phone, and its
+     output is defects plus the fixes they justify. Anything it turns up that is *not* a defect — a rough
+     edge, a missing affordance, a screen that looks plain — is written down for 1.1 and left alone
+     (ADR-0012), or the gate quietly becomes a scope hole in the release it exists to protect.
+   - The list is ~20 bullets, so drive it in **four sittings grouped by machinery, not by screen**, because
+     the setup cost is per mechanism: (1) export and restore at all three scopes plus every refusal — a newer
+     schema, a `../` entry, a zip that is not a backup, and the pre-restore snapshot **undoing** a restore;
+     (2) Auto Backup — the marker's three states including the 14-day stale one, the "photos are not in this"
+     copy in both Settings and setup, and **no notification channel and no notification permission** on a
+     fresh install, which is a `dumpsys` question rather than a visual one; (3) the media and delete paths —
+     bulk import in capture order, cancelled part-way, one unreadable file; deleting a bunny counting photos
+     in the destroyed bucket and removing the files; the archived read-only gallery and the "All bunnies"
+     chooser; (4) first-run setup on a cleared install, the visibility flip, and debug beside release.
+   - **Two links have never been exercised by anything, and they are why this is a checkpoint and not a
+     checklist.** First, 3d's **SAF picked-file path**: HyperOS's picker ignores injected input, so every
+     restore so far — by test and by hand — has come from a `preserved/` row, and the picked-file path differs
+     exactly in where the `InputStream` comes from. It wants a deliberate human tap on a file the share sheet
+     put somewhere real. Second, 3b's **pre-13 locale backport**, which the Xiaomi cannot exercise at all
+     because it runs Android 16, and which is the half `minSdk` 26 exists to serve.
+   - The backport becomes an **instrumented test on the API 26 leg** rather than a claim waiting on hardware
+     nobody owns: set the application locales through `AppCompatDelegate` and assert the app resolves strings
+     against the configuration that results, below API 33 where the backport rather than the platform is doing
+     the work. If it cannot be asserted headlessly — the backport recreates activities and persists through
+     its own metadata service — it is recorded as **not observed** and checked by hand at 3i, where there is a
+     second language to switch to. What is not acceptable is the release depending on an emulator this machine
+     would need a `usermod -aG kvm` and a re-login to run (CLAUDE.md).
+   - **Release hygiene that belongs to the code rather than to the store**: `spotlessApply`, `assembleDebug`,
+     `test`, the CI matrix green on all three legs, one `bundleRelease` that still succeeds, and the
+     **schema-4 JSON git-tagged** (ADR-0007). The JSON is already committed; what is owed is the tag and the
+     statement that **4 is the first load-bearing schema** — the file every later migration is written from.
+     Lint already reports **0 errors and 0 warnings** after the closure above, so the phase's "must reach
+     zero" line is met and the only job here is to hold it there.
+   - **A release build cannot destructively wipe** is asserted by a JVM test (3c), because `run-as` does not
+     reach a release build. The half a phone *can* show is driven here: force the release variant of the
+     schema-mismatch screen in a debug build and confirm it offers **share and no forward button**.
+   - **Gate:** Phase 3's gate list, every bullet either passed or recorded as **not observed with its
+     reason**. Not-observed is pre-authorised exactly once, for the `bmgr` case ADR-0005 already names — and
+     3e drove even that. Anything else unobserved is unfinished, not passed.
+8. **3h — 1.0 to the internal track.**
+   - **3a's deferred half lands here, minus the property it was bought for.** The de-risking is bought back by
+     ordering *inside* this checkpoint: the **first upload is a release candidate at whatever version
+     release-please has**, not 1.0. It proves the upload key against Play App Signing, the App content answers
+     Play cross-checks against the privacy policy, the store listing's completeness, and — the one with a
+     calendar cost nobody can shorten — **Play's review of a first-time personal developer account**, all on a
+     version number nobody has to keep.
+   - Only once that build has **installed from Play on the Xiaomi** is 1.0 cut. The cost of the extra upload
+     is one version number; the cost of skipping it is discovering a rejected form or a signing mismatch with
+     the 1.0 tag already pushed and the release notes already written.
+   - The RC **may stay installed**, which 3a's proof build could not. Its reason for being uninstalled was a
+     migration obligation for a schema nobody used, and the schema is now **4** — the same one 1.0 ships — so
+     there is no version-specific obligation to avoid. Keeping it is also the only real dogfood of an artifact
+     signed the way a user receives it. ADR-0023's obligation attaches when a schema reaches *someone else's*
+     device, and the internal track here is this phone.
+   - **Real 1.0 screenshots and final copy**, replacing 3a's minimum-viable placeholders, taken from the
+     release build **with the debug fixture's data** — screenshots of an empty app photograph no product.
+     Five: Home's vitals card with the trend flag, the chart at 90 d, the observation timeline with a shared
+     entry, the gallery, and the backup screen. [`docs/store-listing.md`](store-listing.md) stays the
+     paste-ready source, and nothing in it may describe a 1.1 or 1.2 feature.
+   - **`bundleRelease`, never `assembleRelease`**, with `versionCode` read back out of the AAB's protobuf
+     manifest and checked against `git rev-list --count HEAD` — 3a found that trap by falling into it, and the
+     failure was a *signed artifact* carrying `versionCode` 1.
+   - **Both apps on the phone at once** (ADR-0023): `installDebug` still works with 1.0 from Play installed,
+     and the two hold separate data. This is the claim the whole `applicationIdSuffix` decision exists for and
+     the first moment it is testable.
+   - **Gate:** 1.0 is installable from Play on the Xiaomi, sits beside the debug build with its own data, and
+     the listing describes only what 1.0 does. ADR-0019's condition is met at this point — the data is safe
+     and it is in someone's hands — and everything after this is additive.
+9. **3i — Polish.**
    - `values-pl/strings.xml` — one new file, no code changes, which is what four phases of "no hardcoded
-     strings" bought. **250 strings and 10 plurals** stood before this phase; the gallery, backup, restore
-     and setup copy take 1.0 to roughly 400. It lands after the strings stop moving, because translating
-     churn twice is the only way to make it more expensive — and it lands after 1.0 rather than before,
-     because a multi-session writing task must not be what sets a release date.
-   - Polish's **four plural categories** against English's two is where the `<plurals>` discipline finally
-     becomes falsifiable: the delete ceremony's two buckets, the shared-observation participant counts and
-     the import-result line all get read in both languages at 1, 2 and 5.
+     strings" bought. The real count is **335 strings and 15 plurals**, not the ~400 this was estimated at,
+     and it is countable now precisely because the strings have stopped moving.
+   - It lands **after** 1.0 is on the track, deliberately: translating churn twice is the only way to make it
+     more expensive, and a multi-session writing task must not be what sets a release date.
+   - Polish's **four plural categories** against English's two are where the `<plurals>` discipline becomes
+     falsifiable rather than merely observed. Read at **1, 2 and 5**: the delete ceremony's two buckets, the
+     shared-observation participant counts, and the import result line — which is keyed on the *unreadable*
+     count, and whose structure was fixed before this file for exactly this moment.
    - Dates, numbers and weights already format through the platform, so `2,45 kg` is a **check rather than
      work** — the two places to look are `WeightFormat` and the chart's axis labels.
-   - The store listing is revisited with **real 1.0 screenshots** and final copy, replacing 3a's
-     minimum-viable placeholders.
-   - **1.0.1 goes up, and that build opens the closed track** — starting the 14-day clock on a translated
-     app, in front of testers recruited since 3a. If twelve have not opted in yet, 1.0 and 1.0.1 are already
-     released and in use on the internal track; what waits is production access, not the app.
-   - Release hygiene either way: `lint` clean, `test`, `connectedAndroidTest`, and the **schema-4 JSON
-     committed and git-tagged** (ADR-0007) — the first schema version that is load-bearing, and the one
-     every later migration is written from.
+   - **The switcher finally has a second language**, which is what makes 3b's backport checkable by a person:
+     on a pre-13 device or emulator, switch to Polish, confirm the app changes language while the **phone
+     does not**, and confirm the launcher label stays English — `app_name` is deliberately absent from
+     `values-pl` (3a), because a launcher label resolves against the *system* locale.
+   - `AppLanguage` gains `pl` and `locales_config.xml` gains its entry. They are the same claim in two files,
+     and `AppLanguageTest` already parses the XML and asserts they agree — which is what catches the file
+     being added in one place and not the other, a drift that is otherwise silent.
+   - **Voice, not translation.** [`docs/store-listing.md`](store-listing.md) already set the register and the
+     reason: Polish second-person forms are gendered, so the copy uses `co zostało zapisane` rather than
+     `co zapisałeś`, which addresses half the audience. The same applies to every screen. Two things must
+     survive the crossing intact — ADR-0001's framing (*worth a closer look* must not become a diagnosis in
+     Polish, where the medical register is easy to fall into) and ADR-0004's delete ceremony, whose whole
+     force is in its wording.
+   - Every screen read in Polish with **no English left behind**, dialogs, snackbars, the wizard and the
+     terminal restore screen included — the three surfaces least likely to be revisited by hand.
+10. **3j — 1.0.1, and the closed track.**
+    - 1.0.1 goes up with Polish, and **that build opens the closed track**. The internal track does not satisfy
+      Play's prerequisite; a closed one does, which is the whole reason this is a separate release.
+    - **This is where the schema stops being disposable in the sense that matters** (ADR-0023, ADR-0007):
+      1.0.1 reaches devices that are not the author's, so schema 4 becomes load-bearing and every later bump
+      ships a **tested forward migration** written from the tagged JSON. The machinery is already in place —
+      the debug-only destructive fallback, the release consent screen with no forward button, stage-migrate-
+      swap on restore — so what lands here is the obligation, not the code. Naming that is the point: the day
+      it attaches, nothing in the build changes and everything about a schema edit does.
+    - The **12 testers over 14 days** — re-read in the Console rather than trusted from this document — gate
+      **production access only**. If twelve have not opted in, 1.0 and 1.0.1 are already released and in use;
+      what waits is a button, not the app.
+    - The recruiting has been running as a non-code item since 3a. This is where it is either finished or
+      honestly re-planned, and it is the one dependency in this phase that working harder cannot move.
+    - **Phase 4 can start the day 1.0.1 is up.** The clock is other people's time, not engineering time. What
+      the clock does change is that Phase 4's first schema bump is a migration rather than a wipe, and that its
+      first notification channel and permission ask will be seen by people who are not the author — which is
+      the point of having a track at all.
 
 `spotlessApply`, `assembleDebug` and `test` at every checkpoint; `connectedAndroidTest` at the end of 3c and
 3d, the two that add instrumented tests, and again at the gate; `lint` at the gate. This is the phase where
 lint must reach **zero project-code warnings that are not a stated standing decision** — two of Phase 2's
-four are 3e's to close.
+four were 3e's to close, and the remaining four were closed between 3f and 3g, so the report now stands at
+**0 errors and 0 warnings** and the job from here is to hold it there.
+
+**From 3g on the instrumented suite is CI's**, on emulators at API 26 / 34 / 36 for every pull request,
+behind one stable required check name. The Xiaomi run stays at the gate anyway, and not out of ceremony: an
+emulator has no HyperOS split-APK prompt, no background killer, no vendor SAF picker and no Play install
+path, which is four of the things this phase has actually been bitten by.
 
 Each checkpoint is meant to survive being picked up cold, so read its decisions first — **3a**: ADR-0009,
 0019, 0023, 0012. **3b**: ADR-0013, 0012. **3c**: ADR-0020, 0015, 0004, 0007, 0023. **3d**: ADR-0005, 0023,
-0020. **3e**: ADR-0005, 0001, 0007. **3f**: ADR-0006, 0015, 0019, 0013. **3g**: ADR-0013, 0009, 0007.
+0020. **3e**: ADR-0005, 0001, 0007. **3f**: ADR-0006, 0015, 0019, 0013. **3g**: ADR-0005, 0019, 0007, 0023.
+**3h**: ADR-0009, 0023, 0012. **3i**: ADR-0013, 0001. **3j**: ADR-0009, 0007, 0023.
 
 **Gate:**
 
@@ -1258,8 +1390,13 @@ Each checkpoint is meant to survive being picked up cold, so read its decisions 
 - Every screen in Polish with no English left behind, and the switcher changes the app's language without
   changing the phone's — on a pre-13 device as well as a 13+ one, since the backport is the whole reason 3b
   exists.
-- Then the releases themselves — **1.0 English on the internal track**, and **1.0.1 with Polish**, both
-  installable from Play on the Xiaomi, with the closed track opened on 1.0.1.
+- A restore driven from a file chosen through the **system picker**, not only from a `preserved/` row — the
+  one link in ADR-0005's chain that no test on this device reaches.
+- Schema **4**'s exported JSON is committed and **git-tagged** (ADR-0007), and CI's instrumented matrix is
+  green at API 26, 34 and 36 — the floor leg being the only place the pre-S and pre-13 branches run at all.
+- Then the releases themselves — a **release candidate** proving the upload path before the version number
+  that matters, then **1.0 English on the internal track**, and **1.0.1 with Polish**, all installable from
+  Play on the Xiaomi, with the closed track opened on 1.0.1.
 
 ## Phase 4 — Care reminders and watch — ships as 1.1
 
