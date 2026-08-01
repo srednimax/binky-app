@@ -46,3 +46,27 @@ it into a hazard. *Asking* for the exemption is therefore not enough:
   confirmed, a dose reminder shows as **best-effort** ("may not fire reliably on this phone until you
   enable X"), never as an armed alarm. If the overnight gate cannot be met, dose reminders ship explicitly
   as best-effort — not as a safety-critical alarm the app cannot stand behind on its own hardware.
+
+## Amendment (Phase 4a): autostart cannot gate the honest state, because nothing can read it
+
+The condition above names two things — battery-optimisation exemption **and autostart**. Only the first has
+an API. `PowerManager.isIgnoringBatteryOptimizations` answers it without any permission; HyperOS autostart
+has no public state, and launching its settings screen returns no result. So "autostart confirmed" is
+permanently false on the one device this project tests on, and a strict reading of the sentence means every
+reminder in the app carries a best-effort hedge forever, no matter what the owner does.
+
+That inverts the rule it comes from. A permanent hedge is wallpaper in exactly the way a permanent nag is:
+it stops carrying information, and by the time it wraps dose reminders it is supposed to mean something.
+
+So, as built:
+
+- **Armed depends on the detectable exemption.** Autostart is offered once, alongside the exemption ask,
+  where the Xiaomi intent resolves — and the app then claims nothing about it in either direction.
+- **The owner is not asked to confirm autostart.** A checkbox would have the app repeating the owner's guess
+  back to them as its own assurance, which is this ADR's central hazard sourced from a new place.
+- **The evidence is the overnight-Doze gate**, run on the real device (PLAN 4g). Evidence from the hardware
+  beats an unreadable flag.
+
+Phase 4 also widens the state from two to three, because a *denied notification permission* or a *muted
+channel* is not best-effort — it is certain, and it is detectable. Reminders present as **blocked**,
+**best-effort** or **armed**, resolved by one pure function that Phase 5 inherits for doses.

@@ -1589,19 +1589,46 @@ Care reminders depend only on a bunny existing, and use the simpler mechanism. B
 establishes the notification channel, permission flow, reboot rescheduling and Xiaomi battery-exemption
 prompt on easy ground, so dose reminders later add only the exact-alarm path.
 
+**Three things are different from every phase before this one, and each of them costs something.** The
+schema is **load-bearing**: 1.0 is installed from Play on the author's phone and holds real bunny history,
+which is exactly the dogfood case ADR-0007 names, so version 5 arrives by a **written, tested migration**
+and not by a wipe — the first one this project has ever had to write. The app ships **two locales**, so a
+new string is not finished until it exists in both, and `PolishTranslationTest` makes that a red build
+rather than a memory. And the app **posts notifications for the first time**, which means the first runtime
+permission, the first manifest permission since Phase 1, and the first change to the Play answers 3a
+verified against an artifact that declared none.
+
+The other novelty is quieter and is a trap ADR-0007 wrote down in advance: its structural wipe guard exists
+because a container forced before consent destroys data with nobody looking, and the ADR names the future
+that breaks it — *"a project that goes on to add reminder rescheduling at process start"*. This is that
+phase. The OS can now start this process to run a worker, with no UI and no owner present, and any worker
+that touches a repository forces the container. The worker therefore checks the pending-schema state first
+and does nothing if one is pending; the reminder is rescheduled when the owner next opens the app.
+
+**Everything scheduled in this phase is one worker** (ADR-0024). Care reminders, the watch nag and 4e's
+export reminder are all derived at fire time by a single daily sweep, enqueued as unique work under one
+name and left enqueued permanently. That is the decision the rest of the phase is shaped by: there is no
+per-reminder scheduled work to cancel, orphan or lose, the boot receiver has exactly one job, and the
+overnight-Doze gate below is aimed at one target instead of three. Phase 5's dose alarms deliberately do
+**not** follow it — ADR-0003 gives them exact alarms for a reason, and ADR-0024 records why the two halves
+diverge.
+
 - Care reminders on WorkManager, rescheduled after reboot.
 - Repeat handled as "complete → record the care event → schedule the next", not an OS periodic trigger.
   Completion can be **back-dated** (did the nail trim yesterday, log it today) on the same terms as Phase 2
   entry; the next occurrence is scheduled from the recorded completion, not from when it was ticked off.
 - A care reminder is `{label, interval, optional type}` (ADR-0018): the closed `CareType` enum tags only
-  the known kinds — presets nail trim (~6 weeks), vaccination (annual), weigh-in (weekly), which map to
+  the known kinds — presets nail trim (6 weeks), vaccination (yearly), weigh-in (weekly), which map to
   calendar RRULEs and icons — while a custom reminder is a free-text label plus an owner-chosen interval.
-- Watch: opt-in per bunny and **time-boxed** — the owner sets a duration when starting it (default ~7 days)
+- **The interval is a calendar interval, `{count, unit}`**, not a day count. "Yearly" then means the same
+  date next year rather than 365 days later, and the `RRULE` hand-off maps one-to-one instead of
+  approximating. The cost is `java.time`'s clamping, taken deliberately: see 4b.
+- Watch: opt-in per bunny and **time-boxed** — the owner sets a duration when starting it (default 7 days)
   and it **auto-expires** with a prompt to extend or close, never silently persisting into wallpaper
   (ADR-0001). Only while active does the app chase for fresh observations: a **once-daily best-effort
-  WorkManager notification** framed about the owner's checking, not the bunny's state, and **satisfied by
-  logging any observation** for that bunny that day. A missed watch nag is low-stakes, so best-effort
-  delivery is fine — it needs none of the exact-alarm treatment doses get.
+  notification** framed about the owner's checking, not the bunny's state, and **satisfied by any
+  observation logged for that bunny in the last 24 hours**. A missed watch nag is low-stakes, so
+  best-effort delivery is fine — it needs none of the exact-alarm treatment doses get.
 - The trend flag and the Watch are **connected in both directions**, now that both exist. The flag carries
   a *Start a watch* action pre-filled with the default duration — **offered, never automatic**, because
   "worth a closer look" is already the flag's voice and a button acting on that sentence presumes less than
@@ -1609,7 +1636,14 @@ prompt on easy ground, so dose reminders later add only the exact-alarm path.
   dropping" is exactly what the owner is being asked. And a bunny under an active watch is **excluded from
   "Log a healthy day" pre-selection**, with the reason stated — the one unreviewed write path must not
   sweep a separated, ill bunny into a shared tray fact (ADR-0008).
-- Battery-optimisation exemption requested here, at the point something is first scheduled.
+- **Notification delivery has three honest states, not two** — blocked, best-effort, armed — resolved from
+  the notification permission, the channel's importance and the battery exemption. ADR-0003's honest-state
+  rule covers the *soft* failure; a denied permission or a muted channel is the **certain** one, and the app
+  can detect both. Building all three now means Phase 5 inherits the framing for doses rather than covering
+  one case in three.
+- Battery-optimisation exemption requested here, at the point something is first scheduled, and asked
+  **once**. Autostart is offered alongside it and never claimed either way, because nothing can read it
+  (ADR-0003's amendment, written in 4a).
 - Care reminders optionally hand off to the owner's calendar, one-way, no permission (ADR-0014).
 - The **remembered-folder export destination**, deferred from Phase 3 (ADR-0005): `ACTION_OPEN_DOCUMENT_TREE`
   with a persisted URI permission, and the plan's longest-standing unverified assumption finally tested on
@@ -1617,6 +1651,19 @@ prompt on easy ground, so dose reminders later add only the exact-alarm path.
   remembering a folder saves two taps and does not make export automatic; what makes it worth something is
   the recurring reminder this phase adds, which is also the thing that turns a manual export into a habit
   the owner does not have to hold. The share sheet remains the path that cannot fail for provider reasons.
+- **First-run setup gets its third step** (ADR-0006), which has been waiting for 1.1 by name since Phase 3:
+  our own screen explaining what reminders are for, with an opt-in that then triggers `POST_NOTIFICATIONS`
+  — never the bare system dialog. Android permits **two denials** before the permission is refused for good,
+  and this phase spends the first one, so the wizard step and ADR-0006's point-of-use ask are built as **one
+  composable in two hosts** rather than two asks that can both fire. Note who actually sees which: every
+  install that exists today has already finished setup, so for 1.1 the point-of-use path is not the fallback
+  — it is the only path anyone takes.
+- **Care & Meds goes `Live`** — the one-value flip back that 3f left in place deliberately, with the key, the
+  entry and the screen all still present. `StubScreen` loses its last caller and is deleted with the
+  `care_stub` string, which is the other half of 3f's rule: a top-level tab opens onto something real or it
+  is hidden, and there is no third answer.
+- **Schema → 5, by migration.** The first hand-written `Migration` in the project, written in the same commit
+  as the first care table and rewritten in place as the shape churns, rather than saved up for the release.
 
 - **Edge-to-edge, verified rather than implemented — its own checkpoint.** Play Console raises this against
   every app targeting SDK 35+, and the notice is generic advice rather than a detected defect: `MainActivity`
@@ -1627,23 +1674,431 @@ prompt on easy ground, so dose reminders later add only the exact-alarm path.
 
   What has actually been *looked at* is one device, portrait, gesture navigation — 1.0's screenshots, which
   render correctly. That is evidence for one cell of the matrix. Untested: **landscape**, where a punch-hole
-  or notch stops being a top-edge concern and `displayCutout` arrives on a side; nothing locks orientation
-  (there is no `screenOrientation` in the manifest), so landscape is in scope whether or not anyone holds
-  the phone that way. Also untested: **three-button navigation**, whose bottom inset is far taller than the
-  gesture pill's, and therefore the configuration most likely to put a nav bar over a button.
+  or notch stops being a top-edge concern and `displayCutout` arrives on a side; and **three-button
+  navigation**, whose bottom inset is far taller than the gesture pill's, and therefore the configuration
+  most likely to put a nav bar over a button.
 
-  It cannot be deferred behind a compatibility flag. `targetSdk` is **36**, and Android 16 removed
-  `windowOptOutEdgeToEdgeEnforcement` — the enforcement is already live on the test device. The only
-  question left is whether every screen survives it, not whether to adopt it.
+  Locking to portrait is not the escape hatch it looks like. Nothing locks orientation today, and adding
+  `screenOrientation` would not help where it matters: **Android 16 ignores orientation restrictions on
+  large screens**, and `targetSdk` is 36, so landscape is in scope on tablets and unfolded foldables no
+  matter what the manifest asks for. Nor can enforcement be deferred behind a compatibility flag — Android
+  16 removed `windowOptOutEdgeToEdgeEnforcement`, and it is already live on the test device. The only
+  question left is whether every screen survives it.
 
-**Gate:** a reminder set for +2 minutes fires while backgrounded and still fires after a reboot; a reminder
-also fires after the phone has sat idle in Doze **overnight** (screen off, app unopened) on the real
-Xiaomi — the +2-minute happy path is not sufficient evidence of reliability (ADR-0003); tapping
-*Add to calendar* on an annual reminder opens the calendar app with the date and yearly repeat already
-filled in; a short-duration watch stops nagging once it auto-expires; a trend flag offers to start a watch
-and "Log a healthy day" refuses to cover a watched bunny; **every screen renders correctly edge-to-edge in
-both orientations under both gesture and three-button navigation**, with nothing drawn under the status bar,
-the navigation bar or a display cutout. Then the 1.1 release.
+### Checkpoints
+
+**Eight.** The ordering is deliberate four times over. The **plumbing goes first, on an empty database** —
+3a's lesson repeated, proving the path while the payload is boring: the sweep, the channels, the permission
+and the boot receiver are all provable with a debug-only "remind me in two minutes" action, and proving them
+there rather than underneath the first real reminder means a missed notification later has one suspect
+instead of two. The **migration lands with the first table it has to carry**, not at the end, because a
+migration written under release pressure is the one that gets written once and looked at never. The **watch
+comes after care reminders** even though ADR-0001 makes it the more interesting half: it reuses the
+notification plumbing, it needs the trend flag's slot that already exists, and it is the piece whose failure
+mode is *nagging a real owner*, which is the last thing to build on ground that is still moving.
+**Edge-to-edge is verified after the new screens exist**, since a matrix checked before them is a matrix
+that grows afterwards.
+
+**The schema rule for this phase, stated once.** Version 5 is reached by `MIGRATION_4_5`, written in the
+same commit as the first care table. As the shape churns across 4b–4d the version does **not** climb —
+`5.json` is regenerated in place and the migration rewritten to match, which is exactly the "rewriting
+pending migrations is still fair game" ADR-0007 grants the debug build. The debug app keeps wiping through
+the consent screen on each churn, and that is fine; what must stay true is that a **release-shaped open of a
+schema-4 file succeeds**, asserted by test. That guard is **instrumented** — this project has no Robolectric
+and is not adding one to hold a single assertion — so what makes it always-on is **CI's per-pull-request
+matrix at API 26 / 34 / 36**, which is the granularity that actually matters: nothing broken reaches `main`.
+Version 5 is frozen and its JSON git-tagged at 4g, and only there.
+
+**Polish is no longer a checkpoint.** 3i was a multi-session writing task because ~400 strings arrived at
+once; here they arrive a handful at a time, and `PolishTranslationTest` already fails the build on a missing
+counterpart, a missing plural category and a dropped format argument. So translation is a per-commit
+obligation rather than a phase of its own — which is the whole return on having paid for that test.
+
+1. **4a — Reminder plumbing, proven while the payload is boring.** No schema change at all, deliberately:
+   the plumbing lands before the migration era starts, so a failure in either has only one explanation.
+   - WorkManager enters `libs.versions.toml` here and nowhere earlier.
+   - **On-demand initialization**, not `androidx.startup`: the default initializer node is removed from the
+     manifest and `BinkyApplication` implements `Configuration.Provider`. The default runs WorkManager's
+     initializer at process start, ahead of nothing in particular — and this app's `Application.onCreate` is
+     where ADR-0007's guard lives. Initialization order between the two should be a decision, not whatever
+     the merged manifest happens to produce.
+   - **The sweep** (ADR-0024): one worker, enqueued as unique work under one name, which resolves the
+     app-wide reminder time, does its pass, and enqueues tomorrow's run before returning. It stays enqueued
+     even when nothing is scheduled, and no-ops. The alternative — cancel it when the last reminder goes,
+     re-enqueue on the first write — has a silent failure mode of exactly the kind ADR-0003 refuses: one
+     write path that forgets to re-arm means no reminders ever again, with no error and nothing on screen.
+     The invariant to hold, and to assert at the gate: **exactly one enqueued work item exists at any time.**
+   - **The sweep begins by asking whether the container is safe to force**, and returns success having done
+     nothing when a schema mismatch is pending. This is the ADR-0007 hazard named in the intro, and with one
+     worker it is one helper called from one place; the sweep is re-enqueued on next launch, which is the
+     same path the boot receiver already uses.
+   - **Two notification channels**, `care` and `watch`, created at first use. Two rather than one because a
+     channel is the owner's only per-kind control, and an owner who mutes a daily watch nag must not thereby
+     mute an annual vaccination. Two rather than three because doses are Phase 5's and a channel with
+     nothing behind it is a settings row that describes a lie. **Both at `IMPORTANCE_DEFAULT`**, with no
+     sound, vibration or light overrides. Android lets the owner lower a channel and never lets the app
+     raise it, so this is chosen once and permanently: two channels exist to give the owner *separate
+     controls*, not because the two things ship at different volumes, and creating `watch` at `LOW` would be
+     making the mute decision on their behalf in the one direction that cannot be undone. `HIGH` is spent
+     nowhere in this phase, so Phase 5 can escalate doses to it as a real signal rather than as the level
+     everything already sits at.
+   - **The three-state delivery resolver**: a pure function over `(permission granted, channel importance,
+     battery exemption)` returning **blocked** (no permission, or `importance == IMPORTANCE_NONE`),
+     **best-effort** (exemption unconfirmed) or **armed**. Blocked is not a hedge — it is certain, and it is
+     detectable without any permission — so its copy says reminders will only appear in the app and offers a
+     deep link. A blocked state does **not** block creating reminders: the Care screen carries overdue state
+     on its own, so the reminder is still worth having. It just must not claim it will notify.
+   - `POST_NOTIFICATIONS` (API 33+) and `RECEIVE_BOOT_COMPLETED` enter the manifest — the app's first
+     permissions since the `FileProvider`, and the reason 3a's *"declares no user-facing permission at all"*
+     stops being true. `docs/play-app-content.md` gains a note here and is re-verified against the artifact
+     at 4h.
+   - The **permission ask is one function**, called from the wizard's third step and from the point-of-use
+     path, and it is the only caller of `requestPermissions` in the app. It also has to recognise the
+     **permanent refusal** — not granted, and no rationale to show, means the system dialog will never
+     appear again, so the ask deep-links to app settings instead of firing a request that silently does
+     nothing. ADR-0006's two-denial arithmetic is about not spending both; this is the case after they are
+     spent, and it is the one the owner actually hits.
+   - **First-run setup's third step** (ADR-0006), appended to 3f's stack of two, and **the same composable**
+     the point-of-use path hosts as a sheet. Skippable; skipping is re-asked at the point of use and nowhere
+     else. Existing installs are **not** re-onboarded — an upgrader is indistinguishable from a skipper, and
+     ADR-0006 already answers that case.
+   - The **boot receiver** re-enqueues the sweep and nothing else. It reads no persisted schedule, because
+     there is none: the due date is derived, and the OS schedule was never the source of truth.
+   - **Battery-optimisation exemption, without the permission.** `PowerManager.isIgnoringBatteryOptimizations`
+     needs none to *read*, so the app detects the state and deep-links to Android's battery-optimisation
+     settings and — where the intent resolves — Xiaomi's autostart screen. `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`
+     is **not** declared: Play restricts it to apps whose core function is the exemption, and this app's core
+     function is a rabbit's weight chart. The ask happens **once**, at first schedule, where the reason is
+     visible (ADR-0006), not in onboarding; if declined it is never auto-asked again, and the delivery-state
+     line carries a tappable fix instead.
+   - **ADR-0003's honest-state rule applies to care reminders too**, one phase before it becomes critical,
+     and it gets **narrowed here in writing**. The ADR conditions the honest framing on battery exemption
+     *and autostart*; autostart has no readable state on HyperOS, so a strict reading makes "armed"
+     permanently unreachable on the only device this project tests on, and a permanent hedge is wallpaper in
+     the same way a permanent nag is. So armed depends on the **detectable** exemption, autostart is offered
+     once and claimed never, and 4g's overnight-Doze run is the evidence that stands behind it. Recorded as
+     an amendment to ADR-0003 rather than left to code, in the style ADR-0006 already carries one.
+   - A **debug-only "remind me in two minutes"** action beside the sample-data one, on its own one-shot path
+     rather than through the sweep. It is what makes this checkpoint provable with no reminders in existence,
+     and it stays afterwards as the fastest way to re-prove delivery after any change to it.
+   - Tests, JVM: the pending-schema guard as a pure predicate; the delivery-state resolver as a case table
+     across all three states; the channel definitions against `strings.xml` in both directions, the same
+     shape as `AppLanguageTest`.
+2. **4b — Care reminders: schema 5, the first real migration, and the data layer.**
+   - `CareReminderEntity` — `id`, `bunnyId` FK `CASCADE` indexed, `label: String`, `type: CareType?` stored
+     by name, `intervalCount: Int`, `intervalUnit: CareIntervalUnit` stored by name, `firstDueOn: LocalDate`,
+     `notifiedForDueOn: LocalDate?`, `createdAt`, `calendarHandedOffAt: Instant?`. `type` is nullable because
+     ADR-0018 says a reminder with no type is normal and not a data error; the preset labels are `strings.xml`
+     keys resolved at read time, while a custom label is literal text — the same seeded/owner-added split
+     ADR-0010 draws for symptoms.
+   - `CareEventEntity` — `id`, `reminderId` FK `CASCADE` indexed, `completedOn: LocalDate`, `note: String?`,
+     `createdAt`.
+   - **Care dates are `LocalDate`, not `Instant`** — a new converter, stored ISO. This is the first place in
+     the app where the distinction is real: a weighing happens at a moment, a nail trim happens on a *day*,
+     and "I did it yesterday" stored as an instant shifts to a different day the first time the owner opens
+     the app in another timezone. ADR-0003 already calls care reminders day-granularity; this is that,
+     enforced by the column type rather than by everyone remembering.
+   - **The due date is derived, never stored** — latest `completedOn` plus the interval, else `firstDueOn`
+     **unmodified**. The anchor is a *due date*, not a pseudo-completion: the form asks "when is this next
+     due?", which is the question an owner can actually answer from a vet card, where "when did you last
+     vaccinate?" is a subtraction they have to do in their head and often cannot. An owner who does know when
+     it was last done records that as a real `CareEventEntity` row, where it is visible and correctable,
+     rather than as a field that silently moves the schedule.
+   - **Overdue does not drift.** Completing a reminder three weeks late schedules the next occurrence from
+     the recorded completion, not from the date it was originally due — a nail trim done late resets the six
+     weeks, it does not owe them.
+   - **The day-of-month is allowed to walk, and that is the decision.** Calendar units bring `java.time`'s
+     clamping: `31 January + 1 MONTH` is 28 February, and completing on the 28th then schedules 28 March, so
+     one short month relocates a monthly reminder permanently. The alternative is storing an intended
+     day-of-month beside the completion history — two facts that can disagree, which is the pattern ADR-0002
+     and ADR-0001 push this project away from — to save three days on a hay reorder. Following the completion
+     is also the rule the phase already committed to for late completions; this is the same rule meeting a
+     short month.
+   - `nextOccurrence` as a **pure JVM function** over `(anchor or last completion, interval, LocalTime,
+     ZoneId, now)` returning an `Instant`, resolved fresh in the device's current zone every time it is
+     called. Day-granularity means DST cannot double or drop an occurrence the way it can a dose, but the
+     zone still decides which instant "09:00 on the 14th" is, and PLAN's Verification section already names
+     DST-boundary arithmetic as a JVM test target. The constants and the reasoning live in this one file.
+   - **A weigh-in reminder's last completion also counts weights.** For `type = WEIGH_IN` it resolves as
+     `max(latest CareEvent.completedOn, latest weight.recordedAt as a date)` for that bunny — read-side only,
+     writing nothing. Otherwise the app asserts a task was not done while holding the record proving it was,
+     which is ADR-0001's principle running in the other direction and checkable besides. `nextOccurrence`
+     stays pure; it simply receives a `lastCompletedOn` the repository computed from two sources. Nothing is
+     stored, so back-dating or deleting a weight heals the schedule for free.
+   - **One app-wide reminder time-of-day**, `AppPreferences`' **fifth** key, defaulting to 09:00 — and it is
+     the sweep's time, so changing it re-enqueues the sweep. Per-reminder clock times would be promising a
+     precision ADR-0003 deliberately reserves for doses, and would need the exact-alarm path to mean anything.
+   - **A due reminder notifies once, and never again** — recorded as `notifiedForDueOn`, the due date the
+     notification was posted *for*, compared against the derived due date. Storing *when* it notified would
+     have to be cleared on every path that moves a due date — a completion, an edited or deleted care event,
+     an edited interval, and for a weigh-in a back-dated weight that writes nothing to the reminder at all —
+     and a missed clear fails silently in the worst direction. Comparing against derived truth needs no
+     clearing anywhere and heals on every one of those paths. The Care screen carries the overdue state
+     indefinitely; the notification does not repeat, because a notification that re-fires daily for a nail
+     trim is precisely the wallpaper failure ADR-0001 rejects for the watch, and the argument does not change
+     because the subject does.
+   - **`MIGRATION_4_5` ships in this commit**, with `room-testing` and a `MigrationTestHelper` instrumented
+     test that opens a schema-4 database built from `4.json`, migrates, and reads **every table's rows back**
+     — the assertion is data survival, not merely that nothing throws.
+   - **And a fixture the app did not synthesise.** `MigrationTestHelper` builds v4 from the app's own
+     description of v4, which proves the migration consistent with the JSON, not with a file 1.0.1 wrote. So
+     a **schema-4 backup zip produced by the shipped 1.0.1 build**, carrying fabricated bunnies and never
+     real history, is committed as a test asset and restored through 3d's staged path in an instrumented
+     test — the same trick as `rotated_quadrants.jpg`, for the same reason: the thing under test is exactly
+     the discrepancy a synthesised input cannot contain. Together with the always-on
+     `buildBunnyDatabase(allowDestructiveMigration = false)` guard, that runs the real migration against a
+     real artifact on every pull request, instead of once by hand at 4h. 3c's `allowDestructiveMigration`
+     parameter — added for 3d's staged restore — is what makes it expressible without a release build.
+   - `recordCounts` gains its fourth contributor: care reminders and their events are **sole-owned**, so they
+     land in the destroyed bucket (ADR-0004).
+   - Tests, instrumented: reminders and events cascade with their bunny, and events with their reminder;
+     `LocalDate` round-trips; `recordCounts` counts both; the migration and fixture tests above. JVM:
+     `nextOccurrence` as a case table — a completion back-dated across a DST boundary, an overdue completion
+     resetting rather than owing, `31 January + 1 MONTH` and `29 February + 1 YEAR` clamping, the anchor path
+     for a reminder never completed, and `notifiedForDueOn` going stale the moment a completion moves the
+     date.
+3. **4c — Care reminders: the screen, completion, the calendar hand-off, and the tab flip.**
+   - The Care list per bunny: due, overdue and scheduled, each row naming its next date in words rather than
+     a bare date, and carrying the delivery state from 4a rather than presenting as an armed alarm. Add /
+     edit / delete a reminder, delete behind **one** confirmation (ADR-0004's two-stage ceremony is
+     calibrated to a bunny's whole history, not to a reminder).
+   - The three presets — nail trim 6 weeks, vaccination yearly, weigh-in weekly — as `CareType` entries with
+     icons and `strings.xml` labels, plus "something else" for the free-text path (ADR-0018).
+   - **Completion, back-datable** on the same terms as Phase 2 entry: defaults to today, past allowed,
+     future rejected with the reason stated. Recording the completion is what schedules the next occurrence —
+     there is no OS periodic trigger anywhere in this design. Completing a reminder also **cancels its posted
+     notification**: with "notifies once and never again", a stale notification in the shade for a task
+     already done is the only copy of that lie left.
+   - **A weigh-in reminder's completion opens the weight entry form** rather than writing a bare tick. A
+     weigh-in marked done with no weight behind it is the one outcome that makes the reminder pointless, and
+     it is reachable by accident the moment the button is a generic "Done".
+   - A per-reminder history of care events, editable and deletable, since a completion recorded on the wrong
+     day moves every future occurrence. For a weigh-in it also lists the **weight-derived** completions —
+     *"Weighed 2 380 g"* — read-only there and editable in Weight, so the history cannot show a completion
+     with no visible row behind it.
+   - **Add to calendar**, per reminder (ADR-0014): `ACTION_INSERT` with title, all-day begin, and an `RRULE`
+     from the interval (`FREQ=YEARLY` for vaccination), **no calendar permission**. It lives here rather than
+     with 4e's export hand-offs because ADR-0014 is a decision *about care reminders* — it argues the yearly
+     vaccination is where in-app scheduling is weakest — and because a button on this screen should be built
+     while this screen is open, not two checkpoints later. The app does not own the event — no event id
+     stored, editing in-app changes nothing out there — so `calendarHandedOffAt` exists only to let the
+     button read "Added to calendar" instead of silently minting a second event on a second tap. Guard the
+     `startActivity` and fail with a message, never a crash.
+   - **The tab flips to `Live`** and `CareAndMedsScreen` stops calling `StubScreen`; `StubScreen.kt` and
+     `care_stub` are deleted. **The nav key's name does not change** — `@Serializable data object CareAndMeds`
+     is persisted back-stack state, and renaming it would make a stack saved by 1.0 unresolvable on 1.1. Only
+     the tab's *string* moves, to "Care" for 1.1 and back at 1.2, because a tab labelled "Care & Meds" with no
+     medications behind it advertises a feature that is not there — the same objection 3f's rule makes to a
+     stub, one layer up.
+   - Under **"All bunnies"** the tab asks which bunny first, reusing 2f's `ChooseBunnyDialog` — care is
+     individual data, like weight and photos (ADR-0015).
+   - In the `Archived(id)` scope the list renders read-only, and the sweep skips archived bunnies entirely:
+     an archived bunny has died or been rehomed, and a notification about its nail trim is the same failure
+     ADR-0001 names for the flag on a memorial page. There is nothing to cancel — with one sweep there is no
+     per-bunny work — so this is a fact about the derivation, and asserted as one.
+   - Notification tap targets, decided here because this is where the first real one exists: a tap **writes
+     the app-wide selection** through the same `AppContainer.select` the switcher uses, then hands
+     `NavDisplay` a back stack (3f's repair function). `CareAndMeds` takes no arguments, so selecting that
+     bunny is the only way to show their reminders, and landing on a different bunny's Care screen would be
+     the app lying about whose data is on screen. A notification naming a since-archived bunny falls back to
+     Home without changing the selection, since `Archived(id)` is deliberately never persisted.
+   - **One notification per reminder, bundled under a group summary** on the `care` channel, with ids derived
+     from the reminder id — three reminders due across two bunnies at 09:00 is otherwise three unrelated
+     notifications, and a stable id means a sweep that runs twice before `notifiedForDueOn` commits replaces
+     rather than stacks.
+   - The **care half of the sample-data action**: an overdue nail trim, a vaccination due in months, and a
+     weigh-in with a completion history — so 4f has real rows to render and 4g has something overdue to look
+     at.
+4. **4d — The watch, and its two connections to the trend flag.**
+   - `WatchEntity` — `bunnyId` as primary key **and** FK `CASCADE`, `startedAt`, `endsAt`,
+     `lastNaggedOn: LocalDate?`. The primary-key-as-FK shape is `TrendAcknowledgmentEntity`'s precedent
+     (2a): at most one live watch per bunny, and discard-on-delete as a database constraint rather than a
+     rule someone has to remember. `MIGRATION_4_5` is rewritten to include it — the pending-migration rule
+     doing exactly what it is for.
+   - **A watch is a present-tense state, not a record.** Closing deletes the row; there is no watch history.
+     Accepted rather than overlooked: the same family as the flag being derived on read (ADR-0001), and a
+     history nothing reads is a table that has to be migrated forever.
+   - **Every resolution disposes of the row.** Extend rewrites `endsAt` and clears `lastNaggedOn`; close,
+     dismiss, or swiping the prompt away **deletes** it. That is what makes "prompts once" true without a
+     column recording it, and it stops an unanswered expired row from occupying the only slot that bunny has.
+     Nothing is lost by treating dismissal as closing, because starting a new watch is the same single tap as
+     extending. The start path is an **upsert** regardless, so no stale row can block a new watch.
+   - **Duration is preset chips — 3 / 7 / 14 days, defaulting to 7**, not a free-form number. A free-form
+     field invites a 90-day watch, which is the silent wallpaper ADR-0001 time-boxed the feature to prevent.
+   - **An active watch is visible on that bunny's Home card** — *"Watch active · 4 days left"* — with
+     close-early there. A background state that only announces itself by nagging is one the owner cannot turn
+     off at the moment it annoys them, and that is how a feature gets muted at the channel instead, taking
+     its channel-mate's reliability with it.
+   - **`lastNaggedOn` is why "once daily" is true.** The sweep can run more than once a day — a retry, a
+     reboot, a doze window closing — so the once-a-day property has to be a recorded fact, not an assumption
+     about the scheduler.
+   - **The nag rides the morning sweep, and satisfaction is a rolling 24 hours.** Any observation logged for
+     that bunny in the last 24 h suppresses it, so an owner who logged at 20:00 is not chased at 09:00. The
+     window is rolling while `lastNaggedOn` is calendar-day, deliberately: they answer different questions —
+     "have they looked recently" and "have I already chased today" — and 4d asserts them separately. Morning
+     rather than evening is a medical choice, not an architectural one: a watch is running because something
+     may be wrong, and for a rabbit that is most likely GI stasis, a same-day emergency. A nag at 19:00
+     surfaces "nobody has looked at Bijou today" at the hour every vet is closed.
+   - Its copy is about the owner's checking — *"Have you checked on Bijou today?"* — and never a claim about
+     the bunny (ADR-0001). Tapping it opens the observation form pre-filled for that bunny, which means a
+     `PendingIntent` has to resolve to a **back stack** and not just to the Activity; 3f's back-stack repair
+     function is the precedent for handing `NavDisplay` a list it did not build itself.
+   - **Auto-expiry**: past `endsAt` the watch stops nagging immediately, and the app prompts once — extend or
+     close — **showing the current trend**, because "is it still dropping" is the question being asked
+     (ADR-0001). The prompt is a dialog on first app open after expiry, queued one at a time if several
+     expired; the nagging has already stopped by then, so it is never the urgent thing. An unanswered prompt
+     is not an active watch. Expiry is what stops the nagging; the prompt is only about re-arming.
+   - **The flag's `secondaryAction` slot gets its occupant.** `TrendFlagUi.kt` has carried it since 2c with a
+     comment naming this checkpoint, so *Start a watch* is a parameter passed at three call sites — dialog,
+     weight banner, Home card — and not a change to the composable. Offered, never automatic.
+   - **`ParticipantExclusion.UNDER_WATCH`**, which 2f built the road for: one enum entry, one `when` branch
+     and one string, with the reason shown — *"Clover is under a watch — log for her separately."* The
+     unreviewed one-tap write path must not sweep a separated, ill bunny into a shared tray fact (ADR-0008).
+     A **flagged** bunny is still covered, as 2f decided; a **watched** one is not. The distinction is that
+     the flag is about weight and the watch is about the owner having separated this bunny out.
+   - No watch on an archived bunny, and archiving closes any active one (ADR-0004).
+   - Tests, instrumented: the watch cascades with its bunny; `lastNaggedOn` suppresses a second nag the same
+     day and not the next; an observation logged at 20:00 suppresses the following morning's nag while one
+     logged 30 hours earlier does not. JVM: `preSelectParticipants` with a watched housemate excluded by
+     reason; watch state resolved from `(row, now)` as a pure function, so active / expired / absent is a
+     table.
+5. **4e — Backup: a destination worth remembering, and the nudge that makes it one.** Both halves live in
+   Backup settings, and both were deferred from 3d to the same place for the same reason.
+   - **The remembered export folder** (ADR-0005): `ACTION_OPEN_DOCUMENT_TREE` with a persisted URI
+     permission, `AppPreferences`' sixth key. **The share sheet stays the primary path** and is never
+     replaced — this is a saved destination, not a new export mechanism, and the fallback when a provider
+     refuses is the path that already works. Guard the `startActivity` and fail with a message, never a
+     crash.
+   - **The plan's longest-standing unverified assumption gets tested here**: whether Google Drive's document
+     provider accepts a write through a persisted tree grant. If it does not, that is a finding to record
+     with the local-storage and Drive-app-folder alternatives named, not a checkpoint to fail — the export
+     that matters already ships.
+   - **The recurring export reminder.** A backup reminder is not a care reminder: care reminders hang off a
+     bunny and this one hangs off the app. So it is a switch in Backup settings with an interval,
+     `AppPreferences`' seventh key, reusing 4a's sweep and 4b's `nextOccurrence` wholesale — one more branch
+     in the one worker, not a second scheduled thing. It is also the piece that turns the remembered folder
+     from a two-tap saving into a habit the owner does not have to hold.
+   - Its copy says what it is: a prompt about the owner's export, not a claim that the data is unsafe. The
+     Backup screen's status line already handles the honest version of that (3e).
+6. **4f — Edge-to-edge, verified.** No feature work; the deliverable is evidence, per the scope bullet above.
+   - **Three cells, not four.** Portrait + gesture is already evidenced by 1.0's screenshots, so what is owed
+     is portrait + three-button, landscape + gesture and landscape + three-button, for every screen — with
+     the fourth cell captured as well for the screens 4a–4e add, which have no prior evidence.
+   - **Capture is scripted; review is by structural family.** Driven with `adb`:
+     `settings put system accelerometer_rotation 0` plus `user_rotation`, and
+     `cmd overlay enable com.android.internal.systemui.navbar.threebutton` for the nav mode, then
+     `exec-out screencap`. This is one of the few checks in the project that genuinely needs a screenshot
+     rather than a `uiautomator` dump, because the defect is pixels under a system bar. But the defect is
+     also **structural** — does this screen's container own its insets — so screens sharing chrome fail
+     identically, and the review groups them: top-level tabs with the bottom bar, detail routes with a
+     `TopAppBar` and back, forms with bottom actions, full-bleed content (`PhotoGallery`, the chart), and the
+     chrome-free outliers. Capturing all of them is cheap once `adb` is driving it; reviewing dozens of
+     unstructured images is what does not happen. A family member that differs from its representative is
+     itself the finding.
+   - The two screens outside the ordinary `Scaffold` are the ones to look at hardest: `SchemaMismatchScreen`
+     (`safeDrawingPadding()`) and the first-run wizard, which is chrome-free by design.
+   - Three things a screen-by-screen matrix misses, all likelier to be broken than a plain screen:
+     **dialogs and bottom sheets**, drawn over content with their own inset behaviour; **the IME in
+     landscape**, where `adjustResize` meets a keyboard that eats the screen and pushes bottom actions into
+     the nav bar; and the **empty versus populated** state of any screen whose content only reaches the
+     bottom edge once it has rows.
+   - **`displayCutout` in landscape** is the specific untested case: in portrait a punch-hole sits behind the
+     status bar and costs nothing, and in landscape it arrives on a side edge where nothing is padding for it.
+   - A finding here is a fix here. If the matrix is clean, the checkpoint's output is the screenshots and a
+     line saying so — which is a real result, since Play's notice is generic advice and "we looked" is
+     exactly what was missing.
+7. **4g — The gate pass, and freezing schema 5.**
+   - The gate below, driven by hand on the Xiaomi, including the **overnight Doze** run — which is a calendar
+     item, not a task: it has to be started the evening before. With one sweep it is also a single target:
+     if the sweep fires, every reminder in the app fires.
+   - **Schema 5 is frozen**: `5.json` committed and git-tagged (ADR-0007), `MIGRATION_4_5` no longer pending.
+     From here a further change in this phase is a 5 → 6 migration, not a rewrite.
+   - `lint` back to **0 errors and 0 warnings**, which 3g reached and 3f's note says the job is to hold.
+   - The CI instrumented matrix green at API 26 / 34 / 36. The **26 leg is not ceremony here**: it is the only
+     place the pre-33 branch runs, where `POST_NOTIFICATIONS` does not exist and notifications post without a
+     runtime permission at all.
+8. **4h — 1.1 to the tracks.**
+   - Release-please cuts 1.1.0; the bundle is checked **against the artifact rather than the config** — 3a's
+     lesson — for `versionName`, `versionCode`, the upload key, and the Polish strings present in
+     `base/resources.pb`.
+   - **The upgrade proof, which is this phase's whole point.** 1.0.1 installed from the track, then 1.1 over
+     it, and the real bunny history is still there — the end-to-end evidence that `MIGRATION_4_5` works on a
+     file this project did not construct for the purpose. 4b's committed 1.0.1 fixture is the cheaper version
+     of the same proof that CI has been running on every pull request since; this is the one on real history.
+   - `docs/play-app-content.md` **re-verified against the new manifest**: the app no longer declares zero
+     user-facing permissions, and the answers 3a wrote against an artifact that did must be re-read rather
+     than assumed to still hold.
+   - **Screenshots for both listings**, since each locale's are uploaded per listing and 1.1 adds screens
+     worth showing.
+   - Internal track first, then the closed one — the same order 1.0 and 1.0.1 took, for the same reason.
+
+`spotlessApply`, `assembleDebug` and `test` at every checkpoint; `connectedAndroidTest` at the end of 4b, 4c
+and 4d — the migration tests and the two data layers — and again at the gate; `lint` at the gate, holding at
+**0 errors and 0 warnings**. From 3g the instrumented suite is CI's on every pull request at API 26 / 34 / 36,
+which is what makes the schema-4 guard always-on, and the Xiaomi run stays at the gate: an emulator has no
+HyperOS background killer, which is the single thing this phase is most likely to be bitten by.
+
+Each checkpoint is meant to survive being picked up cold, so read its decisions first — **4a**: ADR-0024,
+0003, 0006, 0007, 0009. **4b**: ADR-0007, 0023, 0018, 0003, 0002, 0024. **4c**: ADR-0018, 0014, 0004, 0015,
+0013. **4d**: ADR-0001, 0008, 0004, 0024. **4e**: ADR-0005, 0003, 0024. **4f**: ADR-0012. **4g**: ADR-0007,
+0023, 0003. **4h**: ADR-0009, 0007, 0023, 0013.
+
+**Gate:**
+
+- A reminder set for +2 minutes fires while backgrounded, and still fires after a reboot.
+- A reminder fires after the phone has sat idle in **Doze overnight** — screen off, app unopened, 12h+ — on
+  the real Xiaomi. The +2-minute happy path is **not** sufficient evidence of reliability (ADR-0003). If it
+  does not fire, that is recorded as a finding and the feature presents as best-effort, which is the honest
+  state the app already has copy for.
+- **Exactly one enqueued work item exists in the app**, before and after adding reminders, archiving a bunny
+  and rebooting — the sweep, under its one unique name (ADR-0024).
+- While battery-optimisation exemption is unconfirmed, a reminder says so **in words** rather than presenting
+  as an armed alarm — and the exemption prompt appears once, at first schedule, not during onboarding and not
+  again afterwards.
+- With notifications denied or the `care` channel muted, reminders present as **blocked** — stating they will
+  only appear in the app — rather than as best-effort, and creating a reminder still works.
+- The app posts nothing before the owner opts in: **`POST_NOTIFICATIONS` is asked from our own screen**, once,
+  and skipping the setup step re-asks at point of use and nowhere else. **An install that completed setup
+  under 1.0.1 gets that same ask at point of use**, from our own screen, once — which is the only path any 1.1
+  install actually takes. On an API 26 device the same flows work with no runtime permission in the picture
+  at all.
+- Completing a reminder **back-dated to yesterday** schedules the next occurrence from yesterday; completing
+  one three weeks overdue resets the interval rather than owing it. Neither is affected by what time of day
+  the tick happened.
+- A care reminder due today notifies **once** — a second day passing does not re-notify, and neither does a
+  reboot — while the Care screen still shows it overdue.
+- **Logging a weight satisfies a weigh-in reminder** without any tick, and deleting that weight puts the
+  reminder back where it was.
+- Tapping *Add to calendar* on a yearly reminder opens the calendar app with the date and yearly repeat
+  already filled in; a second tap says it was already added rather than silently creating a second event; and
+  on a device with no calendar app it fails with a message, not a crash.
+- Tapping a care notification for a bunny who is not the selected one **switches to that bunny** and lands on
+  their Care screen with a back stack that does not exit the app.
+- A short-duration watch nags **once** on a day with no observation, does **not** nag the morning after an
+  evening observation, and stops nagging the moment it auto-expires — with the expiry prompt showing the
+  current trend, and dismissing it leaving no row behind.
+- A trend flag offers **Start a watch** in all three of its hosts, and starting one from the flag pre-fills
+  the default duration.
+- **"Log a healthy day" refuses to cover a watched bunny**, naming the reason, while still covering a
+  *flagged* one — the pair that has to differ, differs.
+- An archived bunny has no scheduled reminders, no watch, and no way to start either: **the sweep produces no
+  notification for it**, asserted as a fact about the derivation, since with one sweep there is no per-bunny
+  work to cancel and none to orphan.
+- Deleting a bunny counts its care reminders and events in the destroyed bucket, with correct pluralisation.
+- **A worker woken by the OS while a schema mismatch is pending does nothing** — no wipe, no crash, and the
+  sweep is re-enqueued after the owner consents on next launch. Asserted by test, since the race cannot be
+  driven by hand.
+- **1.0.1 upgraded in place to 1.1 keeps a real bunny's history**, and the committed schema-4 fixture written
+  by 1.0.1 migrates and reads back in CI. Schema **5**'s exported JSON is committed and git-tagged.
+- The Care tab opens onto a real screen; **`StubScreen` has no callers left in the app at all**.
+- **Every screen renders correctly edge-to-edge in both orientations under both gesture and three-button
+  navigation**, with nothing drawn under the status bar, the navigation bar or a display cutout — dialogs,
+  bottom sheets and a landscape keyboard included.
+- Every new string exists in both locales, counts use `<plurals>`, and `PolishTranslationTest` is green — the
+  test being the gate, not a read-through.
+- An empty database still produces no warnings, and no reminder or watch infers anything from silence
+  (ADR-0001).
+- Then the 1.1 release: internal track, then closed, installable from Play on the Xiaomi.
 
 ## Phase 5 — Vet, medications, documents, dose reminders — ships as 1.2
 
@@ -1664,8 +2119,8 @@ the navigation bar or a display cutout. Then the 1.1 release.
 - Documents via the ML Kit scanner, attached to a bunny and optionally a visit; reorder, delete, view.
 - The **backup agent's document admission**, deferred from Phase 3: documents newest-first under a ceiling
   *below* the ~25 MB quota, as a pure function over `(core bytes, documents newest-first, ceiling)` with a
-  JVM test, plus the one-time exclusion notification and the app's first notification channel. All three
-  were unbuildable at 1.0 in the only sense that matters — `documents/` was empty, so the ceiling admitted
+  JVM test, plus the one-time exclusion notification — on a **third** channel beside Phase 4's `care` and
+  `watch`, no longer the app's first. Both were unbuildable at 1.0 in the only sense that matters — `documents/` was empty, so the ceiling admitted
   nothing and the notification could not fire — and ADR-0005's guard exists first to keep the evidential
   core under quota, which is a claim that can only be exercised once there is something to exclude.
 
