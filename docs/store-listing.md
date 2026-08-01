@@ -68,7 +68,7 @@ Binky: Bunny & Rabbit Tracker
 Track your rabbit's weight, health and care. Private, offline, no ads.
 ```
 
-### Full description — 2348/4000
+### Full description — 2396/4000
 
 ```
 Binky keeps a trustworthy record of your rabbit's health, so you and your vet can see what actually changed, and when.
@@ -102,6 +102,8 @@ YOUR DATA STAYS YOURS
 • Works fully offline, permanently
 • Export a backup whenever you want and restore it. Your records are portable, not trapped
 • Free, with no paid tier and nothing locked
+
+English and Polish, switchable inside the app.
 
 A RECORD, NOT A DIAGNOSIS
 Binky will not tell you whether your rabbit is ill, and it never infers a problem from missing entries. Silence means nobody looked, not that everything is fine. It shows you what you recorded, clearly enough to notice a change and take it to someone qualified. If you are worried about your rabbit, see a vet experienced with rabbits.
@@ -166,6 +168,29 @@ Binky nie powie Ci, czy Twój królik jest chory, i nigdy nie wnioskuje problemu
 
 ---
 
+## Release notes (Play's "What's new", 500 chars per locale)
+
+Per release, per locale, and pasted at upload time. 1.0 had none — it was the first build on the track
+and there was nothing to be new against. **1.0.1**:
+
+English:
+
+```
+Binky now speaks Polish. Switch the language inside the app, without changing your phone's language.
+```
+
+Polish:
+
+```
+Binky mówi teraz po polsku. Język przełączasz w samej aplikacji, bez zmieniania języka telefonu.
+```
+
+Both describe the *only* user-visible change in 1.0.1, which is what the release is for. Neither
+mentions the schema, because nothing about it changed for the person reading this — what changed is
+what the project owes from here (PLAN.md 3j, ADR-0023).
+
+---
+
 ## Open
 
 - **Screenshots are real as of 3h** — captured from the build Play delivered, running the debug
@@ -184,16 +209,10 @@ Binky nie powie Ci, czy Twój królik jest chory, i nigdy nie wnioskuje problemu
 
   Polish screenshots are a separate set that lands with the Polish listing at 3j — each locale's
   screenshots are uploaded per listing.
-- **One sentence comes back at 3j**, in the English description, after `• Free, with no paid tier and
-  nothing locked`:
-
-  ```
-  English and Polish, switchable inside the app.
-  ```
-
-  It was true of the app this file was written against and is not true of 1.0. The Polish description
-  below keeps its equivalent line, because the release that publishes that listing is the release that
-  makes it true.
+- **The bilingual sentence is back in**, at 3j, in the English description after `• Free, with no paid
+  tier and nothing locked` — `English and Polish, switchable inside the app.` It was held out of 1.0
+  because it was not true of that build; 1.0.1 is the release that makes it true, and the Polish
+  description had kept its equivalent line all along for the same reason.
 - **Nothing else is outstanding.** The icon was the last blocker and is now original art generated
   from [`art/rabbit.py`](../art/rabbit.py), so no third-party licence notice has to reach the user
   and no licences screen gates the upload. [`art/README.md`](../art/README.md) has the reasoning.
