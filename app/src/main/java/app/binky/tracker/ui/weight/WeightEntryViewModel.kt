@@ -11,6 +11,8 @@ import app.binky.tracker.data.AppPreferences
 import app.binky.tracker.data.BunnyRepository
 import app.binky.tracker.data.TrendDrop
 import app.binky.tracker.data.TrendFlag
+import app.binky.tracker.data.WatchDuration
+import app.binky.tracker.data.WatchRepository
 import app.binky.tracker.data.WeightEntity
 import app.binky.tracker.data.WeightRepository
 import app.binky.tracker.data.WeightUnit
@@ -82,6 +84,7 @@ class WeightEntryViewModel(
     private val weightId: String?,
     private val weights: WeightRepository,
     private val bunnies: BunnyRepository,
+    private val watches: WatchRepository,
     preferences: AppPreferences,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(WeightEntryUiState(isNew = weightId == null))
@@ -177,6 +180,16 @@ class WeightEntryViewModel(
         _uiState.update { it.copy(flagDrop = null, saved = true) }
     }
 
+    /**
+     * *Start a watch*, from the flag dialog raised by this write — **offered, never automatic**
+     * (ADR-0001), and deliberately **not** an acknowledgment: starting a watch is the owner
+     * deciding to look harder, which is the opposite of saying they have seen enough.
+     */
+    fun startWatch(duration: WatchDuration) {
+        _uiState.update { it.copy(flagDrop = null, saved = true) }
+        viewModelScope.launch { watches.start(bunnyId, duration) }
+    }
+
     private suspend fun write(replacing: List<WeightEntity>) {
         val state = _uiState.value
         val grams = state.parsedGrams ?: return
@@ -234,6 +247,7 @@ class WeightEntryViewModel(
                         weightId = weightId,
                         weights = app.container.weightRepository,
                         bunnies = app.container.bunnyRepository,
+                        watches = app.container.watchRepository,
                         preferences = app.container.preferences,
                     )
                 }

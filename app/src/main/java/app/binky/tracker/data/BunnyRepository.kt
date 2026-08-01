@@ -21,6 +21,9 @@ class BunnyRepository(
     /** Only for the delete path: a cascade removes photo rows, and never their files. */
     private val photoDao = database.photoDao()
 
+    /** Only for the archive path: archiving closes any watch (ADR-0004, ADR-0001). */
+    private val watchDao = database.watchDao()
+
     val activeBunnies: Flow<List<BunnyEntity>> = bunnyDao.activeBunnies()
 
     val archivedBunnies: Flow<List<BunnyEntity>> = bunnyDao.archivedBunnies()
@@ -67,7 +70,14 @@ class BunnyRepository(
     suspend fun archive(
         id: String,
         at: Instant = Instant.now(),
-    ) = bunnyDao.setArchivedAt(id, at)
+    ) = database.withTransaction {
+        bunnyDao.setArchivedAt(id, at)
+        // One thing archiving *does* end: the watch. An archived bunny has died or been rehomed,
+        // and a daily "have you checked on them today?" is the same failure ADR-0001 names for a
+        // trend flag on a memorial page. In the same transaction as the archive, because a watch
+        // surviving a half-applied archive is precisely the row nobody would think to look for.
+        watchDao.deleteByBunnyId(id)
+    }
 
     suspend fun unarchive(id: String) = bunnyDao.setArchivedAt(id, null)
 

@@ -174,6 +174,7 @@ private fun ParticipantsField(
                     stringResource(
                         when (excluded.reason) {
                             ParticipantExclusion.ARCHIVED -> R.string.observation_excluded_archived
+                            ParticipantExclusion.UNDER_WATCH -> R.string.observation_excluded_watch
                         },
                         excluded.name,
                     ),

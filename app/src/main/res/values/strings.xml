@@ -398,6 +398,7 @@
     <string name="observation_participants_help">Bunnies who share a litter tray are ticked already. Untick anyone this does not describe.</string>
     <string name="observation_participants_required">Choose at least one bunny.</string>
     <string name="observation_excluded_archived">%1$s is archived, so this cannot cover them.</string>
+    <string name="observation_excluded_watch">%1$s is under a watch — log for them separately.</string>
 
     <string name="observation_tray_heading">The litter tray</string>
     <string name="observation_tray_shared_help">Recorded once, for everyone this covers — a shared tray cannot be told apart per bunny.</string>
@@ -545,6 +546,32 @@
         <item quantity="one">%d care reminder due</item>
         <item quantity="other">%d care reminders due</item>
     </plurals>
+
+    <!-- The watch (ADR-0001): opt-in, time-boxed, and framed about the owner's checking rather than
+         about the bunny. Nothing here may read as a claim that anything is wrong — the app knows
+         only that nothing has been logged, and silence means nobody looked. -->
+    <string name="watch_start">Start a watch</string>
+    <string name="watch_start_title">Keep an eye on %1$s?</string>
+    <string name="watch_start_body">Each morning Binky asks whether you have checked on them. Logging anything for that bunny settles the day — a healthy day counts. It stops on its own when the time is up.</string>
+    <string name="watch_duration_question">For how long?</string>
+    <plurals name="watch_duration_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <string name="watch_start_action">Start it</string>
+    <plurals name="watch_days_left">
+        <item quantity="one">%1$d day left</item>
+        <item quantity="other">%1$d days left</item>
+    </plurals>
+    <string name="watch_active_line">Watch active · %1$s</string>
+    <string name="watch_close">Close it</string>
+    <string name="watch_expired_title">The watch on %1$s has run out</string>
+    <string name="watch_expired_body">It has already stopped asking. Extend it if you are still keeping an eye out, or close it.</string>
+    <string name="watch_expired_weight">Last weighed %1$s, on %2$s.</string>
+    <string name="watch_expired_no_weight">Nothing has been weighed, so there is no trend to show either way.</string>
+    <string name="watch_expired_extend">Extend it</string>
+    <string name="watch_notification_title">Have you checked on %1$s today?</string>
+    <string name="watch_notification_text">A watch is running. Whatever you saw is worth writing down — a healthy day counts.</string>
 
     <!-- More -->
     <string name="more_archived_bunnies">Archived bunnies</string>

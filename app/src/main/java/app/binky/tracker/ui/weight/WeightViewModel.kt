@@ -11,6 +11,8 @@ import app.binky.tracker.data.BunnyEntity
 import app.binky.tracker.data.BunnySelection
 import app.binky.tracker.data.TrendDrop
 import app.binky.tracker.data.TrendFlag
+import app.binky.tracker.data.WatchDuration
+import app.binky.tracker.data.WatchState
 import app.binky.tracker.data.WeightEntity
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.data.bunnyId
@@ -18,6 +20,7 @@ import app.binky.tracker.data.evaluateTrend
 import app.binky.tracker.data.readOnlyScope
 import app.binky.tracker.data.toAcknowledgment
 import app.binky.tracker.data.toWeighing
+import app.binky.tracker.data.watchState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -55,6 +58,11 @@ data class WeightUiState(
      * there, not merely hidden (ADR-0001, ADR-0004). It is also null before the first emission.
      */
     val flag: TrendFlag? = null,
+    /**
+     * The watch, if one is running — read here so the flag's *Start a watch* action is absent when
+     * there is already one to start (ADR-0001). [WatchState.None] in the archived scope.
+     */
+    val watch: WatchState = WatchState.None,
     val pendingDelete: WeightRow? = null,
     /** Set straight after a delete that leaves a visible, unacknowledged flag: the dialog host. */
     val writeFlag: TrendDrop? = null,
@@ -76,9 +84,24 @@ class WeightViewModel(
     private val container: AppContainer,
 ) : ViewModel() {
     private val weights = container.weightRepository
+    private val watches = container.watchRepository
 
     private val pendingDelete = MutableStateFlow<WeightRow?>(null)
     private val writeFlag = MutableStateFlow<TrendDrop?>(null)
+
+    /** What is on top of the screen right now. */
+    private data class Dialogs(
+        val pendingDelete: WeightRow?,
+        val writeFlag: TrendDrop?,
+    )
+
+    /**
+     * The two dialog flags as one flow, purely so the inner `combine` below stays inside Kotlin's
+     * five-flow typed overload — past that the only `combine` left takes an untyped array, and
+     * trading five named parameters for `it[3] as TrendDrop?` is not a trade worth making.
+     */
+    private val dialogs =
+        combine(pendingDelete, writeFlag) { pending, raised -> Dialogs(pending, raised) }
 
     /**
      * The chart's window — held here and **not persisted** (ADR-0022). Living in the `ViewModel`
@@ -117,10 +140,10 @@ class WeightViewModel(
                     combine(
                         weights.series(bunnyId),
                         weights.acknowledgment(bunnyId),
-                        pendingDelete,
-                        writeFlag,
+                        watches.watch(bunnyId),
+                        dialogs,
                         chartRange,
-                    ) { series, acknowledgment, pending, raised, range ->
+                    ) { series, acknowledgment, watch, open, range ->
                         val rows = series.toRows()
                         WeightUiState(
                             selection = scope.selection,
@@ -146,8 +169,17 @@ class WeightViewModel(
                                         acknowledgment?.toAcknowledgment(),
                                     ).flag
                                 },
-                            pendingDelete = pending,
-                            writeFlag = raised,
+                            // Resolved against the clock on every emission, never stored — the same
+                            // shape as the flag, and for the same reason: a watch runs out with
+                            // nothing being written to it.
+                            watch =
+                                if (scope.selection.readOnlyScope) {
+                                    WatchState.None
+                                } else {
+                                    watchState(watch, Instant.now())
+                                },
+                            pendingDelete = open.pendingDelete,
+                            writeFlag = open.writeFlag,
                         )
                     }
                 }
@@ -191,6 +223,18 @@ class WeightViewModel(
     /** Dismissing is explicitly **not** acknowledging: the watermark is only ever set deliberately. */
     fun dismissWriteFlag() {
         writeFlag.value = null
+    }
+
+    /**
+     * *Start a watch*, from the flag's secondary action — **offered, never automatic** (ADR-0001).
+     *
+     * It also closes the write dialog, if that is where the tap came from: the owner has answered
+     * the flag with an action, and leaving the dialog up would ask them to answer it again.
+     */
+    fun startWatch(duration: WatchDuration) {
+        val bunnyId = uiState.value.bunnyId ?: return
+        writeFlag.value = null
+        viewModelScope.launch { watches.start(bunnyId, duration) }
     }
 
     private suspend fun raiseFlagIfUnacknowledged(bunnyId: String) {

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 5,
-    "identityHash": "ad73a6d65eadfa081d4cc51a420ce962",
+    "identityHash": "8c431ecbdd24fe760c5eb340c336a692",
     "entities": [
       {
         "tableName": "bunnies",
@@ -725,11 +725,59 @@
             ]
           }
         ]
+      },
+      {
+        "tableName": "watches",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`bunnyId` TEXT NOT NULL, `startedAt` INTEGER NOT NULL, `endsAt` INTEGER NOT NULL, `lastNaggedOn` INTEGER, PRIMARY KEY(`bunnyId`), FOREIGN KEY(`bunnyId`) REFERENCES `bunnies`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "bunnyId",
+            "columnName": "bunnyId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAt",
+            "columnName": "startedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endsAt",
+            "columnName": "endsAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastNaggedOn",
+            "columnName": "lastNaggedOn",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "bunnyId"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "bunnies",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "bunnyId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ad73a6d65eadfa081d4cc51a420ce962')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8c431ecbdd24fe760c5eb340c336a692')"
     ]
   }
 }

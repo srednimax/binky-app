@@ -52,7 +52,7 @@ class CareNotifier(
                     } else {
                         resources.getString(R.string.care_notification_due, item.bunnyName)
                     },
-                bunnyId = item.bunnyId,
+                tap = ReminderTap.Care(item.bunnyId),
                 group = CARE_NOTIFICATION_GROUP,
             )
         }
@@ -66,6 +66,7 @@ class CareNotifier(
                 text = joinNames(resources, due.map { it.bunnyName }.distinct()),
                 // No bunny: a summary spanning two of them cannot honestly select either, so it
                 // opens the app as it stands and lets the owner choose.
+                tap = ReminderTap.OpenApp,
                 group = CARE_NOTIFICATION_GROUP,
                 isGroupSummary = true,
             )

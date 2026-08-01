@@ -71,11 +71,16 @@ class ReminderSweepWorker(
             return Result.success()
         }
 
-        // The care half. Wrapped, and deliberately: this is the one place where a failure must not
+        // The two halves. Wrapped, and deliberately: this is the one place where a failure must not
         // cost the *next* sweep. A throw here would return `Result.failure` with the re-enqueue
         // below unreached, and the app would go quiet until the next launch or reboot — a far worse
-        // outcome than one missed morning. 4d's watch nag and 4e's export reminder join it here.
-        runCatching { sweepCare((applicationContext as BinkyApplication).container) }
+        // outcome than one missed morning. 4e's export reminder joins them here.
+        //
+        // **One `runCatching` each**, not one around both: a care reminder that throws must not cost
+        // the watch nag its morning, and a watch is running precisely because somebody is worried.
+        val container = (applicationContext as BinkyApplication).container
+        runCatching { sweepCare(container) }
+        runCatching { sweepWatch(container) }
 
         // Before returning, not after: this is what keeps the sweep permanently enqueued, and a
         // sweep that only re-armed on a successful pass would go quiet the first time anything
@@ -119,6 +124,50 @@ private suspend fun sweepCare(
     val due = careDueForNotifying(sweepable, today)
     container.careNotifier.post(due, today)
     due.forEach { container.careRepository.markNotified(it.scheduled.reminder.id, it.scheduled.dueOn) }
+}
+
+/**
+ * Asks, once a morning, whether anybody has looked at each watched bunny.
+ *
+ * The same post-then-mark order as [sweepCare], for the same reason: a process killed between the
+ * two leaves the bunny still needing nagging, and the next sweep replaces its own notification
+ * because the id is derived from the bunny id (see [watchNotificationId]). The other order loses the
+ * nag for good.
+ *
+ * **The rows are read first and filtered afterwards**, in [watchesDueForNagging] — archived,
+ * expired, already-nagged and already-observed are all rules ADR-0001 cares about, so they live
+ * somewhere they can be read and asserted rather than being implied by which query was run.
+ */
+private suspend fun sweepWatch(
+    container: AppContainer,
+    now: Instant = Instant.now(),
+    zone: ZoneId = ZoneId.systemDefault(),
+) {
+    val watches = container.watchRepository.watchesNow()
+    // The overwhelmingly common case, and worth an early return: no watches means no bunny reads,
+    // no observation reads, and a sweep that costs one query on the mornings nobody is worried.
+    if (watches.isEmpty()) return
+
+    val bunnies =
+        (container.bunnyRepository.activeBunnies.first() + container.bunnyRepository.archivedBunnies.first())
+            .associateBy { it.id }
+
+    val watched =
+        watches.mapNotNull { watch ->
+            val bunny = bunnies[watch.bunnyId] ?: return@mapNotNull null
+            WatchedBunny(
+                id = bunny.id,
+                name = bunny.name,
+                archived = bunny.archivedAt != null,
+                watch = watch,
+                lastObservationAt = container.watchRepository.latestObservationNow(bunny.id),
+            )
+        }
+
+    val due = watchesDueForNagging(watched, now, zone)
+    container.watchNotifier.post(due)
+    val today = today(now, zone)
+    due.forEach { container.watchRepository.markNagged(it.bunnyId, today) }
 }
 
 /**
