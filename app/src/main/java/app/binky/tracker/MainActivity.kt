@@ -1,5 +1,6 @@
 package app.binky.tracker
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -12,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.binky.tracker.theme.BinkyTheme
 import app.binky.tracker.ui.wipe.SchemaMismatchScreen
+import app.binky.tracker.work.EXTRA_CARE_BUNNY_ID
+import kotlinx.coroutines.flow.MutableStateFlow
 
 // AppCompatActivity rather than ComponentActivity, and for one reason only: it is where
 // AppCompatDelegate lives, and AppCompatDelegate is what applies a per-app language on the
@@ -19,10 +22,22 @@ import app.binky.tracker.ui.wipe.SchemaMismatchScreen
 // no action bar, no AppCompat widgets — and AppCompatActivity is a ComponentActivity subclass,
 // so setContent, enableEdgeToEdge and the activity-result APIs all still work unchanged.
 class MainActivity : AppCompatActivity() {
+    /**
+     * The bunny a care notification named, waiting to be acted on — see [EXTRA_CARE_BUNNY_ID].
+     *
+     * A `MutableStateFlow` rather than a plain read of `intent`, because the tap arrives by two
+     * different routes: `onCreate` when the app was not running, and [onNewIntent] when it was, and
+     * only a flow makes the second one reach a composition that is already on screen. Cleared once
+     * the shell has acted, so a configuration change does not re-navigate the owner away from
+     * wherever they went afterwards.
+     */
+    private val careNotificationTarget = MutableStateFlow<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val app = application as BinkyApplication
+        careNotificationTarget.value = intent?.getStringExtra(EXTRA_CARE_BUNNY_ID)
 
         enableEdgeToEdge()
         setContent {
@@ -42,10 +57,21 @@ class MainActivity : AppCompatActivity() {
                         // `AppContainer`, so not composing it is what keeps Room out of existence.
                         SchemaMismatchScreen(mismatch = mismatch, onContinue = app::consentToWipe)
                     } else {
-                        MainNavigation()
+                        val careTarget by careNotificationTarget.collectAsStateWithLifecycle()
+                        MainNavigation(
+                            careNotificationBunnyId = careTarget,
+                            onCareNotificationHandled = { careNotificationTarget.value = null },
+                        )
                     }
                 }
             }
         }
+    }
+
+    /** The same tap, arriving while the app is already running. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        careNotificationTarget.value = intent.getStringExtra(EXTRA_CARE_BUNNY_ID)
     }
 }

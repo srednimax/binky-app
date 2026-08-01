@@ -66,6 +66,31 @@ data class WeightEntry(
 ) : NavKey
 
 /**
+ * One care reminder: its completion history, the calendar hand-off, and the way to edit or delete it
+ * (ADR-0018, ADR-0014).
+ *
+ * Keyed by the reminder alone. The bunny is not carried because it cannot disagree — a reminder
+ * belongs to exactly one bunny by its foreign key, and a second copy of that fact in the back stack
+ * would be the one that goes stale.
+ */
+@Serializable
+data class CareReminder(
+    val reminderId: String,
+) : NavKey
+
+/**
+ * Add or edit a care reminder. `null` [reminderId] adds, mirroring [BunnyEditor] and [WeightEntry].
+ *
+ * [bunnyId] is carried even when editing, because adding needs it and a key that took it only
+ * sometimes would be two keys wearing one name.
+ */
+@Serializable
+data class CareReminderEditor(
+    val bunnyId: String,
+    val reminderId: String? = null,
+) : NavKey
+
+/**
  * The archived bunnies list, reached from More (ADR-0004). A detail screen, not a destination:
  * archived bunnies are deliberately absent from the switcher, and this is the one way to them.
  */
@@ -148,11 +173,12 @@ enum class TopLevelDestination(
     WEIGHT(Weight, R.string.destination_weight, Icons.Filled.Star),
     OBSERVATIONS(Observations, R.string.destination_observations, Icons.AutoMirrored.Filled.List),
 
-    // Hidden at 1.0 (ADR-0015, ADR-0019). Care & Meds is the one tab whose screen is still a stub,
-    // and a fifth of primary navigation spent on a dead end is exactly what this enum exists to
-    // prevent. The key, the entry and the screen all stay — 1.1 flips this back and gets its tab
-    // returned with no navigation work at all.
-    CARE(CareAndMeds, R.string.destination_care, Icons.Filled.Favorite, DestinationVisibility.Hidden),
+    // Hidden at 1.0, live again at 1.1 (ADR-0015, ADR-0019, PLAN 4c). It was hidden because its
+    // screen was a stub and a fifth of primary navigation spent on a dead end is what this enum
+    // exists to prevent; 4c gives it real care reminders, so the flip back is the one value 3f
+    // promised. The label moved to "Care" for 1.1 — see `destination_care` — while [CareAndMeds]
+    // keeps its name, because it is persisted back-stack state.
+    CARE(CareAndMeds, R.string.destination_care, Icons.Filled.Favorite),
     MORE(More, R.string.destination_more, Icons.Filled.MoreVert),
 }
 

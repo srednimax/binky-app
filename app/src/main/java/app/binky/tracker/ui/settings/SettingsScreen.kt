@@ -241,7 +241,7 @@ private fun BackupSetting(onOpen: () -> Unit) {
  * **What makes 4a provable with no reminders in existence** (ADR-0024): a notification two minutes
  * from now, on its own one-shot path rather than through the daily sweep.
  *
- * It is also the point-of-use host for [RemindersOptIn] until 4c gives it a real one on the Care
+ * It was also the point-of-use host for [RemindersOptIn] until 4c gave it a real one on the Care
  * screen — which is what proves ADR-0006's "one composable in two hosts" claim rather than leaving
  * it as an intention. The sheet is the *only* path anyone takes at 1.1, since every install that
  * exists today has already been through first-run setup.

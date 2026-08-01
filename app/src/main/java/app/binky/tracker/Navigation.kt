@@ -49,6 +49,8 @@ import app.binky.tracker.ui.archive.ArchivedBunniesScreen
 import app.binky.tracker.ui.backup.BackupScreen
 import app.binky.tracker.ui.bunny.BunnyEditorScreen
 import app.binky.tracker.ui.care.CareAndMedsScreen
+import app.binky.tracker.ui.care.CareReminderEditorScreen
+import app.binky.tracker.ui.care.CareReminderScreen
 import app.binky.tracker.ui.home.HomeScreen
 import app.binky.tracker.ui.more.MoreScreen
 import app.binky.tracker.ui.observations.ChooseBunnyDialog
@@ -96,7 +98,11 @@ internal fun appEntryDecorators(): List<NavEntryDecorator<NavKey>> =
  * thing a first run must not do.
  */
 @Composable
-fun MainNavigation(modifier: Modifier = Modifier) {
+fun MainNavigation(
+    modifier: Modifier = Modifier,
+    careNotificationBunnyId: String? = null,
+    onCareNotificationHandled: () -> Unit = {},
+) {
     val shellViewModel: AppShellViewModel = viewModel(factory = AppShellViewModel.Factory)
     // Kotlin note: `by` unwraps the State object, so `state` reads as the value itself.
     // `collectAsStateWithLifecycle` subscribes to the Flow only while the screen is on screen —
@@ -108,6 +114,8 @@ fun MainNavigation(modifier: Modifier = Modifier) {
     // every entry — adding a fourth SetupState would stop this compiling, which is the point.
     when (setup) {
         SetupState.Loading -> Unit
+        // A notification cannot exist before setup has run — there are no reminders to be due — so
+        // the wizard deliberately ignores one rather than being interrupted by it.
         SetupState.Required -> {
             // Recorded here rather than by any step: showing the wizard is the event, and it is the
             // showing that has to be remembered. Kotlin note: `LaunchedEffect(Unit)` runs its block
@@ -116,7 +124,14 @@ fun MainNavigation(modifier: Modifier = Modifier) {
             LaunchedEffect(Unit) { shellViewModel.markSetupStarted() }
             SetupNavigation(state = state, modifier = modifier)
         }
-        SetupState.Complete -> AppShell(shellViewModel = shellViewModel, state = state, modifier = modifier)
+        SetupState.Complete ->
+            AppShell(
+                shellViewModel = shellViewModel,
+                state = state,
+                careNotificationBunnyId = careNotificationBunnyId,
+                onCareNotificationHandled = onCareNotificationHandled,
+                modifier = modifier,
+            )
     }
 }
 
@@ -197,6 +212,8 @@ private fun SetupNavigation(
 private fun AppShell(
     shellViewModel: AppShellViewModel,
     state: ShellUiState,
+    careNotificationBunnyId: String?,
+    onCareNotificationHandled: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // A stack restored from a build where Care & Meds was still a live tab comes back naming a
@@ -226,6 +243,29 @@ private fun AppShell(
     // Undo the owner can see and cannot press. Material3's Scaffold lifts the FAB above whatever its
     // own snackbar host is showing; that only works if it owns both.
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // **Where a care notification lands** (PLAN 4c). A tap writes the app-wide selection through the
+    // same path the switcher uses and *then* hands the back stack a destination, because
+    // `CareAndMeds` takes no arguments — selecting that bunny is the only thing that can decide
+    // whose reminders are on screen, and landing on someone else's would be the app lying about it.
+    //
+    // A bunny archived since the notification was posted falls back to Home **without touching the
+    // selection**: `Archived(id)` is deliberately never persisted (ADR-0015), so there is no scope
+    // to send them to, and quietly selecting a memorial would be worse than doing nothing.
+    LaunchedEffect(careNotificationBunnyId, state.selection, state.activeBunnies) {
+        val target = careNotificationBunnyId ?: return@LaunchedEffect
+        // Nothing is decidable while the first emissions are still in flight, and acting on an empty
+        // list would send an honest tap to Home.
+        if (state.selection == BunnySelection.Loading) return@LaunchedEffect
+
+        if (state.activeBunnies.any { it.id == target }) {
+            shellViewModel.selectBunny(target)
+            backStack.showTopLevel(TopLevelDestination.CARE)
+        } else {
+            backStack.showTopLevel(TopLevelDestination.HOME)
+        }
+        onCareNotificationHandled()
+    }
 
     Scaffold(
         modifier = modifier,
@@ -315,7 +355,40 @@ private fun AppShell(
                             },
                         )
                     }
-                    entry<CareAndMeds> { CareAndMedsScreen(state = state) }
+                    entry<CareAndMeds> {
+                        CareAndMedsScreen(
+                            state = state,
+                            // Picking under "All bunnies" *selects* rather than passing an id
+                            // along, for the same reason the notification tap does: the key
+                            // carries no bunny, so the selection is what decides.
+                            onSelectBunny = shellViewModel::selectBunny,
+                            onAddReminder = { bunnyId -> backStack.add(CareReminderEditor(bunnyId)) },
+                            onOpenReminder = { reminderId -> backStack.add(CareReminder(reminderId)) },
+                            // A weigh-in is completed by weighing, so *Done* opens the weight form
+                            // rather than writing a tick with no number behind it.
+                            onRecordWeight = { bunnyId -> backStack.add(WeightEntry(bunnyId)) },
+                        )
+                    }
+                    entry<CareReminder> { key ->
+                        CareReminderScreen(
+                            reminderId = key.reminderId,
+                            // The archived scope is the only read-only one, and a reminder is
+                            // reachable only through the bunny it belongs to.
+                            readOnly = state.readOnly,
+                            onBack = { backStack.removeLastOrNull() },
+                            onEdit = { bunnyId, reminderId ->
+                                backStack.add(CareReminderEditor(bunnyId, reminderId))
+                            },
+                            onRecordWeight = { bunnyId -> backStack.add(WeightEntry(bunnyId)) },
+                        )
+                    }
+                    entry<CareReminderEditor> { key ->
+                        CareReminderEditorScreen(
+                            bunnyId = key.bunnyId,
+                            reminderId = key.reminderId,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
                     entry<More> {
                         MoreScreen(
                             onOpenArchived = { backStack.add(ArchivedBunnies) },

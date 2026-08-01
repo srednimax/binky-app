@@ -25,6 +25,7 @@ import app.binky.tracker.data.buildBunnyDatabase
 import app.binky.tracker.data.resolveSelection
 import app.binky.tracker.data.resolveSetupState
 import app.binky.tracker.media.MediaFiles
+import app.binky.tracker.work.CareNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -146,6 +147,13 @@ class AppContainer(
     val photoRepository = PhotoRepository(database, mediaFiles)
 
     val careRepository = CareRepository(database)
+
+    /**
+     * Posting and cancelling care notifications, which needs a `Context` that a `ViewModel` has no
+     * business holding. Both ends of 4c reach it through here: the sweep posts, and a completion on
+     * the Care screen cancels.
+     */
+    val careNotifier = CareNotifier(appContext)
 
     /**
      * The read-only scope onto an archived bunny. In memory only — a background kill must not

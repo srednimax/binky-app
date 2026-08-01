@@ -57,6 +57,7 @@ suspend fun seedSampleData(
     observations: ObservationRepository,
     symptoms: SymptomRepository,
     photos: PhotoRepository,
+    care: CareRepository,
     cacheDir: File,
     now: Instant = Instant.now(),
 ): Boolean {
@@ -78,7 +79,77 @@ suspend fun seedSampleData(
 
     seedObservations(observations, symptoms, bijou, nugget, now)
     seedPhotos(photos, cacheDir, bijou, nugget, now)
+    seedCare(care, bijou, nugget, now)
     return true
+}
+
+/**
+ * The care half: one of each state the Care screen has to render, so 4f reviews a full list and 4g
+ * has something genuinely overdue to look at.
+ *
+ * - **An overdue nail trim** — a preset whose anchor is in the past and which has never been
+ *   completed, which is the one path where `firstDueOn` is returned unmodified. It is also what the
+ *   sweep posts about on the first run after seeding.
+ * - **A vaccination due in months**, so a yearly interval and the `FREQ=YEARLY` hand-off can be seen
+ *   without waiting a year, and so the list has something that is plainly *not* urgent.
+ * - **A weigh-in with a completion history**, on the bunny who already has a year of weighings —
+ *   which is the two-source completion (ADR-0018's amendment) with both sources non-empty, the only
+ *   arrangement where the `max` of the two can be seen to be doing anything.
+ * - **A custom reminder on the housemate**, because the free-text path has no type, no icon of its
+ *   own and no preset interval, and every one of those is a branch nothing else here exercises.
+ */
+private suspend fun seedCare(
+    care: CareRepository,
+    bijou: String,
+    nugget: String,
+    now: Instant,
+) {
+    val today = now.atZone(ZoneId.systemDefault()).toLocalDate()
+
+    care.add(
+        CareReminderEntity(
+            bunnyId = bijou,
+            type = CareType.NAIL_TRIM,
+            intervalCount = 6,
+            intervalUnit = CareIntervalUnit.WEEK,
+            firstDueOn = today.minusDays(11),
+        ),
+    )
+
+    care.add(
+        CareReminderEntity(
+            bunnyId = bijou,
+            type = CareType.VACCINATION,
+            intervalCount = 1,
+            intervalUnit = CareIntervalUnit.YEAR,
+            firstDueOn = today.plusMonths(4),
+        ),
+    )
+
+    val weighIn =
+        care.add(
+            CareReminderEntity(
+                bunnyId = bijou,
+                type = CareType.WEIGH_IN,
+                intervalCount = 1,
+                intervalUnit = CareIntervalUnit.WEEK,
+                firstDueOn = today.minusWeeks(6),
+            ),
+        )
+    // Two typed completions well behind the weight series, so the weigh-in's due date visibly comes
+    // from the *later* of the two sources rather than from these.
+    care.complete(weighIn, today.minusWeeks(5), today = today)
+    care.complete(weighIn, today.minusWeeks(4), note = "Wriggled off the scale twice.", today = today)
+
+    care.add(
+        CareReminderEntity(
+            bunnyId = nugget,
+            label = "Hay order",
+            intervalCount = 2,
+            intervalUnit = CareIntervalUnit.MONTH,
+            firstDueOn = today.plusDays(3),
+        ),
+    )
 }
 
 /**
