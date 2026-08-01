@@ -64,6 +64,26 @@ migration *exists*. It never establishes that it survives this particular file, 
 drifts. The staged open needs neither. Its one trap: the staged builder must pin its own configuration, or
 in a debug build the fallback above would quietly empty the very file it was asked to test.
 
+## Amendment (Phase 4b): a build takes migrations **or** the fallback, never both
+
+This ADR says the debug build keeps the fallback and the release build gets migrations, and reads as though
+they are independent settings. They are not. **Room prefers a registered migration over the destructive
+fallback**, so registering the migrations unconditionally — the obvious way to write it, and the way that
+looks like it exercises them harder — would silently retire the debug wipe this ADR just chose to keep.
+
+That matters most while a phase is in flight, because a pending migration is *rewritten in place* as the
+shape churns (ADR-0007). A debug database that had already migrated to an earlier shape of version 5 cannot
+be migrated again: same version, different identity hash, so Room throws "cannot verify the data integrity"
+rather than wiping. The consent screen would also be promising a wipe that no longer happens — a screen
+whose whole value is that its promise is true.
+
+So `buildBunnyDatabase` branches: `allowDestructiveMigration` picks the fallback, and its `else` registers
+`BUNNY_MIGRATIONS`. The debug build keeps wiping through the consent screen for the whole of a churning
+phase, and the migration is proven **by test rather than by the author's phone** — `MigrationTestHelper`
+against the exported schema, plus a release-shaped open through `allowDestructiveMigration = false`, which
+is the second thing 3c's parameter buys. CI runs both on every pull request, which is what makes the guard
+always-on rather than a thing someone remembers to do before a release.
+
 ## Consequences
 
 A schema mistake now costs differently per build, and that asymmetry is the point: free in debug, a failed

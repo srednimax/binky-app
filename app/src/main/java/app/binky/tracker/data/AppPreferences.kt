@@ -7,10 +7,13 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import app.binky.tracker.data.backup.BackupScope
+import app.binky.tracker.work.DEFAULT_REMINDER_TIME
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.io.IOException
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 /**
  * How weights are shown. **Entry is always in grams** — that is what a scale reads out — and
@@ -26,10 +29,11 @@ enum class WeightUnit { KILOGRAMS, GRAMS }
  * Owner preferences held outside the database, because ADR-0007 lets the database be wiped and
  * these must survive that.
  *
- * Five keys: which bunny is selected, the weight display unit, the export scope, whether first-run
- * setup has been through, and whether the battery-optimisation exemption has been offered once. The
- * unit's toggle lands in 2c with the Settings screen — a preference with no setter is a constant
- * with a DataStore round-trip, so the setter is here from the start even though nothing calls it yet.
+ * Six keys: which bunny is selected, the weight display unit, the export scope, whether first-run
+ * setup has been through, whether the battery-optimisation exemption has been offered once, and what
+ * time of day reminders arrive. The unit's toggle lands in 2c with the Settings screen — a preference
+ * with no setter is a constant with a DataStore round-trip, so the setter is here from the start even
+ * though nothing calls it yet.
  *
  * These **travel in every export scope, from Essential upward** (ADR-0005). They are a few hundred
  * bytes, and a restored phone that has forgotten its display unit, its selected bunny and its chosen
@@ -124,6 +128,27 @@ class AppPreferences(
         dataStore.edit { preferences -> preferences[BATTERY_EXEMPTION_ASKED] = true }
     }
 
+    /**
+     * **One app-wide time of day** for every care reminder, defaulting to 09:00.
+     *
+     * Not per reminder, and that is a decision rather than an omission: per-reminder clock times
+     * would promise a precision ADR-0003 deliberately reserves for medication doses, and would need
+     * the exact-alarm path to mean anything at all. This *is* the sweep's time (ADR-0024) — one
+     * number behind both — so changing it has to re-enqueue the sweep, or the next run still fires at
+     * the old hour.
+     *
+     * A preference rather than a column for the usual reason: it must survive ADR-0007's wipes.
+     */
+    val reminderTime: Flow<LocalTime> =
+        dataStore.data
+            .catch { cause -> if (cause is IOException) emit(emptyPreferences()) else throw cause }
+            .map { preferences -> decodeReminderTime(preferences[REMINDER_TIME]) }
+
+    /** The caller is responsible for re-enqueuing the sweep — see `rescheduleSweep`. */
+    suspend fun setReminderTime(time: LocalTime) {
+        dataStore.edit { preferences -> preferences[REMINDER_TIME] = time.format(REMINDER_TIME_FORMAT) }
+    }
+
     suspend fun setSelection(selection: StoredSelection) {
         dataStore.edit { preferences ->
             when (selection) {
@@ -151,6 +176,10 @@ class AppPreferences(
         val BACKUP_SCOPE = stringPreferencesKey("backup_scope")
         val SETUP_PROGRESS = stringPreferencesKey("setup_progress")
         val BATTERY_EXEMPTION_ASKED = booleanPreferencesKey("battery_exemption_asked")
+        val REMINDER_TIME = stringPreferencesKey("reminder_time")
+
+        /** `HH:mm`, so a stored time is readable in a `.preferences_pb` dump and in a backup. */
+        val REMINDER_TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
         /** Bunny ids are UUIDs, so this sentinel cannot collide with one. */
         const val ALL = "all"
@@ -175,5 +204,12 @@ class AppPreferences(
         // which for a phone downgraded from a build with more states is the safe direction: at
         // worst the owner is offered a two-step wizard again.
         fun decodeProgress(value: String?): SetupProgress? = SetupProgress.entries.firstOrNull { it.name == value }
+
+        // An unparseable time falls back to the default rather than throwing — the same rule as
+        // every decode above. A reminder time nobody can read is not a reason to stop reminding.
+        fun decodeReminderTime(value: String?): LocalTime =
+            value?.let { stored ->
+                runCatching { LocalTime.parse(stored, REMINDER_TIME_FORMAT) }.getOrNull()
+            } ?: DEFAULT_REMINDER_TIME
     }
 }

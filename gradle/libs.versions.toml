@@ -60,6 +60,9 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+# MigrationTestHelper, for the first hand-written migration (Phase 4b). Instrumented only: it builds
+# a database at an old version from the exported schema JSON, which needs a real SQLite.
+androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
 # Compose-native image loading. Only the local-file path is used — no network module, because

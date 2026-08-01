@@ -24,11 +24,13 @@ import java.util.concurrent.TimeUnit
 const val SWEEP_WORK_NAME = "reminder-sweep"
 
 /**
- * When the sweep runs, until 4b turns it into `AppPreferences`' next key.
+ * When the sweep runs, absent an owner's choice — `AppPreferences.reminderTime` is where that choice
+ * lives, and this is the value it falls back to.
  *
  * One app-wide time, not one per reminder: per-reminder clock times would promise a precision
  * ADR-0003 deliberately reserves for medication doses, and would need the exact-alarm path to mean
- * anything at all.
+ * anything at all. It lives here rather than beside the preference because it is a fact about the
+ * *sweep* — the preference names the sweep's hour, not the other way round.
  */
 val DEFAULT_REMINDER_TIME: LocalTime = LocalTime.of(9, 0)
 

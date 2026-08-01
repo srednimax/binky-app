@@ -207,6 +207,20 @@ ksp {
     arg("room.generateKotlin", "true")
 }
 
+// The exported schemas, shipped inside the *instrumented test* APK as assets.
+//
+// `MigrationTestHelper` builds a database at an old version by reading that version's JSON at
+// runtime, so `4.json` has to be readable on the device — it is not enough for it to exist in the
+// repository. This is the one line that turns a committed schema file into a testable one.
+androidComponents {
+    onVariants { variant ->
+        variant.androidTest
+            ?.sources
+            ?.assets
+            ?.addStaticSourceDirectory("$projectDir/schemas")
+    }
+}
+
 dependencies {
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -243,6 +257,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+    androidTestImplementation(libs.androidx.room.testing)
     implementation(libs.androidx.datastore.preferences)
 
     // The export manifest inside a backup zip (ADR-0005). JSON rather than a hand-rolled format

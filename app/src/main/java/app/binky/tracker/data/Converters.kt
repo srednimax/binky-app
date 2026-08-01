@@ -18,7 +18,16 @@ class Converters {
     @TypeConverter
     fun instantFromEpochMillis(value: Long?): Instant? = value?.let(Instant::ofEpochMilli)
 
-    /** A birthdate is a calendar day with no time zone, so it is stored as an epoch *day*. */
+    /**
+     * A calendar day with no time zone, stored as an epoch *day*.
+     *
+     * A birthdate was the first of these; Phase 4's care dates are the rest, and they share this one
+     * converter because Room picks a converter by *type* — there can be exactly one mapping for
+     * `LocalDate` in the whole database, so "ISO text for care dates, epoch day for birthdates" was
+     * never actually available. An integer is the better of the two anyway: `MAX(completedOn)` and
+     * `ORDER BY completedOn` are then real comparisons rather than a lexicographic accident that
+     * happens to work while every year has four digits.
+     */
     @TypeConverter
     fun localDateToEpochDay(value: LocalDate?): Long? = value?.toEpochDay()
 
@@ -96,6 +105,35 @@ class Converters {
 
     @TypeConverter
     fun waterIntakeFromName(value: String?): WaterIntake? = enumByName(value, WaterIntake.entries)
+
+    /**
+     * Care type is nullable for a reason of its own: `null` means a custom reminder, which ADR-0018
+     * calls normal and not a data error. So an unrecognised name reading back as `null` degrades a
+     * future preset into a custom reminder — it keeps its label, its interval and its history, and
+     * loses only an icon.
+     */
+    @TypeConverter
+    fun careTypeToName(value: CareType?): String? = value?.name
+
+    @TypeConverter
+    fun careTypeFromName(value: String?): CareType? = enumByName(value, CareType.entries)
+
+    @TypeConverter
+    fun careIntervalUnitToName(value: CareIntervalUnit): String = value.name
+
+    /**
+     * Unreachable in practice — ADR-0023's guard refuses to open a database file written by a build
+     * this one does not know, so a unit added in a later version never reaches this method. The
+     * fallback is here so that if it somehow does, a read cannot crash.
+     *
+     * `YEAR` rather than `DAY`, and the choice is not arbitrary: a wrong unit that stretches the
+     * interval shows a wrong date on a screen the owner can correct, where a wrong unit that
+     * shortens it notifies every morning about a nail trim. Between two wrong answers, take the quiet
+     * one — a daily false alarm is the wallpaper failure ADR-0001 rejects.
+     */
+    @TypeConverter
+    fun careIntervalUnitFromName(value: String): CareIntervalUnit =
+        CareIntervalUnit.entries.firstOrNull { it.name == value } ?: CareIntervalUnit.YEAR
 }
 
 /**
