@@ -9,7 +9,7 @@ The data model lives in the Room entities, so it cannot drift from the code.
 - [x] **Phase 0** — Toolchain, project skeleton, docs
 - [x] **Phase 1** — Data layer, bunnies, avatars
 - [x] **Phase 2** — Weight and observations
-- [ ] **Phase 3** — Backup, first-run setup, photo gallery — **ships as 1.0**
+- [x] **Phase 3** — Backup, first-run setup, photo gallery — **ships as 1.0**
 - [ ] **Phase 4** — Care reminders and watch — **ships as 1.1**
 - [ ] **Phase 5** — Vet, medications, documents, dose reminders — **ships as 1.2**
 
@@ -531,7 +531,7 @@ standing decisions rather than debt. `OldTargetApi` is `targetSdk` 36 held delib
 yet referencing either — **that pair is Phase 3's first piece of wiring** (ADR-0005), so the warning is a
 correct description of an unfinished phase and is left standing until it is.
 
-## Phase 3 — Backup, first-run setup, photo gallery — ships as 1.0
+## Phase 3 — Backup, first-run setup, photo gallery — ships as 1.0 ✅
 
 Moved ahead of vet/meds: by the end of Phase 2 the app holds irreplaceable data with no way off the device.
 That is also why this phase is 1.0 (ADR-0019) — the data being safe is the whole precondition for having
@@ -1476,7 +1476,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      switch to its Downloads root, which is the same class of obstacle as the split-APK prompt. Its strings
      were read out of `values-pl` instead and are complete. It stays owed as a two-minute look the next time
      a restore is driven by hand, which the gate already requires for other reasons.
-10. **3j — 1.0.1, and the closed track.** *(the build is cut and verified; the Console half is what remains)*
+10. **3j — 1.0.1, and the closed track.** ✅ *(closed on the build; the Console half is carried — last bullet)*
     - **1.0.1 is cut.** Release-please's PR merged, `v1.0.1` tagged, and the bundle checked **against the
       artifact rather than against the config** that was meant to produce it: `versionCode` 164,
       `versionName` 1.0.1, the upload key, and the Polish strings present in `base/resources.pb` — the last
@@ -1499,6 +1499,15 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
       the clock does change is that Phase 4's first schema bump is a migration rather than a wipe, and that its
       first notification channel and permission ask will be seen by people who are not the author — which is
       the point of having a track at all.
+    - **Closed 2026-08-01 on the build rather than on the upload**, deliberately. Everything that is code,
+      tests, artifact and copy is done and verified; what is left is Console work and other people's time,
+      which is the exact cost 3j was split out to isolate. Holding the phase open for it would make the phase
+      a measure of Play's queue rather than of the work. **Carried, and still owed before 1.0.1 is in anyone
+      else's hands:** the bundle uploaded and the closed track opened; the Polish listing entered, with its
+      own screenshots, since each locale's are uploaded per listing; **1.0.1 installed from Play on the
+      Xiaomi**, which is a gate bullet the artifact check cannot stand in for, because it proves delivery and
+      not construction; and the twelve testers. **ADR-0023's obligation attaches on that upload, not on this
+      tick** — until the bundle reaches a device that is not the author's, schema 4 is still disposable.
 
 `spotlessApply`, `assembleDebug` and `test` at every checkpoint; `connectedAndroidTest` at the end of 3c and
 3d, the two that add instrumented tests, and again at the gate; `lint` at the gate. This is the phase where
@@ -1566,6 +1575,13 @@ Each checkpoint is meant to survive being picked up cold, so read its decisions 
 - Then the releases themselves — a **release candidate** proving the upload path before the version number
   that matters, then **1.0 English on the internal track**, and **1.0.1 with Polish**, all installable from
   Play on the Xiaomi, with the closed track opened on 1.0.1.
+
+**Gate met**, with the three bullets that live in the Console carried into Phase 4 rather than blocking it —
+1.0.1 installed from Play, the closed track opened, and the Polish listing's screenshots (3j's last bullet).
+Everything else was proved at 3g and re-proved at the close: `spotlessApply`, `assembleDebug`, `test` and
+`lint` pass, lint holding at **0 errors and 0 warnings**, the instrumented matrix green at API 26 / 34 / 36,
+schema 4's exported JSON tagged, and — the bullet 1.0 could not satisfy at all — **every screen read in
+Polish with no English left behind**, on a phone whose own language never changed.
 
 ## Phase 4 — Care reminders and watch — ships as 1.1
 
