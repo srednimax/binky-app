@@ -35,7 +35,7 @@
     <string name="destination_home">Start</string>
     <string name="destination_weight">Waga</string>
     <string name="destination_observations">Obserwacje</string>
-    <string name="destination_care">Opieka i leki</string>
+    <string name="destination_care">Opieka</string>
     <string name="destination_more">Więcej</string>
 
     <!-- The bunny switcher -->
@@ -178,6 +178,12 @@
         <item quantity="few">%d tygodnie</item>
         <item quantity="many">%d tygodni</item>
         <item quantity="other">%d tygodni</item>
+    </plurals>
+    <plurals name="gap_days">
+        <item quantity="one">%d dzień</item>
+        <item quantity="few">%d dni</item>
+        <item quantity="many">%d dni</item>
+        <item quantity="other">%d dni</item>
     </plurals>
 
     <!-- Settings -->
@@ -458,8 +464,100 @@
     <!-- A flagged bunny is still offered, and named (ADR-0001, ADR-0008). -->
     <string name="healthy_day_name_flagged">%1$s (ostrzeżenie o wadze)</string>
 
-    <!-- Care &amp; Meds -->
-    <string name="care_stub">Przypomnienia o opiece pojawią się w wersji 1.1, leki w 1.2.</string>
+    <!-- Przypomnienia o opiece (ADR-0018). Nazwy gotowych rodzajów tłumaczą się, własna nazwa
+         królika-właściciela zostaje tak, jak ją wpisano. „Co” rządzi biernikiem, który dla dnia,
+         tygodnia, miesiąca i roku brzmi tak samo jak mianownik w liczebnikach poniżej. -->
+    <string name="care_empty">Nic tu jeszcze nie ma. Przypomnienie o opiece to zadanie, które wraca — obcinanie pazurków, coroczne szczepienie, cotygodniowe ważenie.</string>
+    <string name="care_pick_a_bunny">Opieka dotyczy jednego królika. Którego?</string>
+    <string name="care_choose_bunny">Wybierz królika</string>
+    <string name="care_add">Dodaj przypomnienie</string>
+    <string name="care_reminder_of">%1$s, %2$s</string>
+
+    <string name="care_type_nail_trim">Obcinanie pazurków</string>
+    <string name="care_type_vaccination">Szczepienie</string>
+    <string name="care_type_weigh_in">Ważenie</string>
+    <string name="care_type_custom">Coś innego</string>
+
+    <string name="care_due_today">Na dzisiaj</string>
+    <string name="care_due_tomorrow">Na jutro</string>
+    <string name="care_due_yesterday">Termin minął wczoraj</string>
+    <string name="care_due_in">Za %1$s</string>
+    <string name="care_due_overdue">%1$s po terminie</string>
+
+    <string name="care_every">Co %1$s</string>
+
+    <plurals name="care_unit_days">
+        <item quantity="one">dzień</item>
+        <item quantity="few">dni</item>
+        <item quantity="many">dni</item>
+        <item quantity="other">dni</item>
+    </plurals>
+    <plurals name="care_unit_weeks">
+        <item quantity="one">tydzień</item>
+        <item quantity="few">tygodnie</item>
+        <item quantity="many">tygodni</item>
+        <item quantity="other">tygodni</item>
+    </plurals>
+    <plurals name="care_unit_months">
+        <item quantity="one">miesiąc</item>
+        <item quantity="few">miesiące</item>
+        <item quantity="many">miesięcy</item>
+        <item quantity="other">miesięcy</item>
+    </plurals>
+    <plurals name="care_unit_years">
+        <item quantity="one">rok</item>
+        <item quantity="few">lata</item>
+        <item quantity="many">lat</item>
+        <item quantity="other">lat</item>
+    </plurals>
+
+    <string name="care_complete_title">Oznacz jako zrobione</string>
+    <string name="care_complete_when">Kiedy to zrobiono?</string>
+    <string name="care_complete_help">Domyślnie dzisiaj. Kolejny termin liczy się od dnia, w którym zadanie faktycznie wykonano, więc spóźnione obcinanie pazurków odlicza odstęp od nowa, a nie nadrabia zaległości.</string>
+    <string name="care_complete_future">Ten dzień jeszcze nie nadszedł.</string>
+    <string name="care_complete_note">Notatka, jeśli chcesz</string>
+    <string name="care_complete_action">Zapisz</string>
+
+    <string name="care_weigh_in_action">Zapisz wagę</string>
+    <string name="care_weigh_in_help">To zadanie kończy się ważeniem, więc otwiera się formularz wagi. Liczy się każde ważenie, kiedykolwiek zapisane.</string>
+
+    <string name="care_history_title">Zrobione wcześniej</string>
+    <string name="care_history_empty">Nic jeszcze nie zapisano. To zapis wykonania przesuwa kolejny termin.</string>
+    <string name="care_history_weight">Zważono: %1$s</string>
+    <string name="care_history_weight_help">Ważenia liczą się jako wykonane ważenia kontrolne. Zmienia się je i usuwa na ekranie Waga, nie tutaj.</string>
+    <string name="care_event_edit_title">Popraw ten zapis</string>
+    <string name="care_event_delete_title">Usunąć ten zapis?</string>
+    <string name="care_event_delete_body">Usunięcie wykonania zapisanego %1$s przesuwa wszystkie kolejne terminy.</string>
+
+    <!-- Dodanie do kalendarza (ADR-0014): jednorazowe przekazanie, bez uprawnień. Tekst musi to
+         mówić wprost, inaczej brzmi jak synchronizacja. -->
+    <string name="care_calendar_add">Dodaj do kalendarza</string>
+    <string name="care_calendar_added">Dodano do kalendarza</string>
+    <string name="care_calendar_help">Przekazuje ten cykl do aplikacji kalendarza jeden raz — tam przetrwa nawet zmianę telefonu. Binky później niczego nie synchronizuje: zmiana przypomnienia tutaj nie zmienia nic tam.</string>
+    <string name="care_calendar_none">Na tym telefonie nie ma aplikacji kalendarza, której można to przekazać.</string>
+
+    <string name="care_editor_add_title">Nowe przypomnienie</string>
+    <string name="care_editor_edit_title">Edytuj przypomnienie</string>
+    <string name="care_editor_kind">Czego dotyczy?</string>
+    <string name="care_editor_label">Jak to nazwać?</string>
+    <string name="care_editor_label_help">Własnymi słowami — ta nazwa zostaje taka, jak ją wpisano, w każdym języku aplikacji.</string>
+    <string name="care_editor_label_required">Nadaj nazwę, żeby wiadomo było, o co chodzi.</string>
+    <string name="care_editor_interval">Jak często?</string>
+    <string name="care_editor_interval_required">Co najmniej jeden.</string>
+    <string name="care_editor_first_due">Kiedy wypada następny raz?</string>
+    <string name="care_editor_first_due_help">Nie kiedy zrobiono to ostatnio, tylko kiedy wypada następny termin — to właśnie mówi karta od weterynarza. Jeśli wiadomo, kiedy zrobiono to ostatnio, lepiej zapisać to poniżej jako wykonanie.</string>
+
+    <string name="care_delete_title">Usunąć to przypomnienie?</string>
+    <string name="care_delete_body">Znika %1$s i wszystkie zapisane wykonania. Ważenia zostają nietknięte.</string>
+
+    <string name="care_notification_due">Termin dzisiaj — %1$s.</string>
+    <string name="care_notification_overdue">Termin minął — %1$s.</string>
+    <plurals name="care_summary_title">
+        <item quantity="one">%d przypomnienie o opiece</item>
+        <item quantity="few">%d przypomnienia o opiece</item>
+        <item quantity="many">%d przypomnień o opiece</item>
+        <item quantity="other">%d przypomnień o opiece</item>
+    </plurals>
 
     <!-- More -->
     <string name="more_archived_bunnies">Króliki w archiwum</string>

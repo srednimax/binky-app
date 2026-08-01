@@ -113,7 +113,7 @@ class CareRepositoryTest {
             care.complete(reminderId, LocalDate.of(2026, 1, 1), note = "  ", today = today)
             care.markNotified(reminderId, due)
 
-            val stored = care.reminder(reminderId)!!
+            val stored = care.reminderNow(reminderId)!!
             assertEquals(due, stored.firstDueOn)
             assertEquals(due, stored.notifiedForDueOn)
 
@@ -128,7 +128,7 @@ class CareRepositoryTest {
             val bunnyId = addBunny()
             val id = addReminder(bunnyId, type = CareType.VACCINATION, count = 1, unit = CareIntervalUnit.YEAR)
 
-            val stored = care.reminder(id)!!
+            val stored = care.reminderNow(id)!!
             assertEquals(CareType.VACCINATION, stored.type)
             assertEquals(CareIntervalUnit.YEAR, stored.intervalUnit)
             assertEquals(
@@ -148,7 +148,7 @@ class CareRepositoryTest {
             val bunnyId = addBunny()
             val id = addReminder(bunnyId, type = null, label = "  Reorder hay  ")
 
-            val stored = care.reminder(id)!!
+            val stored = care.reminderNow(id)!!
             assertEquals("trimmed, not stored as typed", "Reorder hay", stored.label)
             assertNull("a reminder with no type is normal, not a data error (ADR-0018)", stored.type)
         }

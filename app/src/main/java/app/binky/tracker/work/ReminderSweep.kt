@@ -6,10 +6,14 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import app.binky.tracker.AppContainer
+import app.binky.tracker.BinkyApplication
 import app.binky.tracker.data.BUNNY_DATABASE_FILE
 import app.binky.tracker.data.BUNNY_SCHEMA_VERSION
 import app.binky.tracker.data.readUserVersion
 import app.binky.tracker.data.schemaMismatchPending
+import app.binky.tracker.data.today
+import kotlinx.coroutines.flow.first
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
@@ -67,8 +71,11 @@ class ReminderSweepWorker(
             return Result.success()
         }
 
-        // 4b onwards: derive what is due for every active bunny, post what needs posting, do the
-        // watch nag, check the export reminder's interval. Nothing exists to sweep yet.
+        // The care half. Wrapped, and deliberately: this is the one place where a failure must not
+        // cost the *next* sweep. A throw here would return `Result.failure` with the re-enqueue
+        // below unreached, and the app would go quiet until the next launch or reboot — a far worse
+        // outcome than one missed morning. 4d's watch nag and 4e's export reminder join it here.
+        runCatching { sweepCare((applicationContext as BinkyApplication).container) }
 
         // Before returning, not after: this is what keeps the sweep permanently enqueued, and a
         // sweep that only re-armed on a successful pass would go quiet the first time anything
@@ -76,6 +83,42 @@ class ReminderSweepWorker(
         enqueueNextSweep(applicationContext)
         return Result.success()
     }
+}
+
+/**
+ * Derives what care is due today, posts it, and records what was posted for.
+ *
+ * The order is not negotiable. `markNotified` runs **after** the post, so a process killed between
+ * the two leaves the reminder still needing notifying — the next sweep posts again, replacing its own
+ * notification because the id is derived from the reminder id (see [careNotificationId]). The other
+ * order loses the notification for good.
+ *
+ * **Archived bunnies are read and then excluded**, rather than never asked about. The exclusion is
+ * the rule ADR-0001 cares about, so it lives in [careDueForNotifying] where it is a case-table
+ * assertion; the few extra queries a memorial bunny costs once a day are the price of it being
+ * checkable at all.
+ */
+private suspend fun sweepCare(
+    container: AppContainer,
+    now: Instant = Instant.now(),
+    zone: ZoneId = ZoneId.systemDefault(),
+) {
+    val bunnies = container.bunnyRepository.activeBunnies.first() + container.bunnyRepository.archivedBunnies.first()
+    val today = today(now, zone)
+
+    val sweepable =
+        bunnies.map { bunny ->
+            SweepBunny(
+                id = bunny.id,
+                name = bunny.name,
+                archived = bunny.archivedAt != null,
+                schedule = container.careRepository.scheduleNow(bunny.id, zone),
+            )
+        }
+
+    val due = careDueForNotifying(sweepable, today)
+    container.careNotifier.post(due, today)
+    due.forEach { container.careRepository.markNotified(it.scheduled.reminder.id, it.scheduled.dueOn) }
 }
 
 /**

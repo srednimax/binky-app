@@ -65,7 +65,13 @@ class CareRepository(
     /** One reminder's completions, newest first. Editable and deletable — both move the schedule. */
     fun events(reminderId: String): Flow<List<CareEventEntity>> = careDao.events(reminderId)
 
-    suspend fun reminder(id: String): CareReminderEntity? = careDao.reminderNow(id)
+    /**
+     * One reminder, watched — the `Flow`/`Now` pair every repository here draws (`bunny` /
+     * `bunnyNow`). Null once the row is gone, which is how its own screen learns to close.
+     */
+    fun reminder(id: String): Flow<CareReminderEntity?> = careDao.reminder(id)
+
+    suspend fun reminderNow(id: String): CareReminderEntity? = careDao.reminderNow(id)
 
     suspend fun add(reminder: CareReminderEntity): String {
         careDao.insertReminder(reminder.validated())
@@ -99,6 +105,9 @@ class CareRepository(
         careDao.insertEvent(event)
         return event.id
     }
+
+    /** One completion as it stands, for the edit path that has to copy the fields it is not changing. */
+    suspend fun eventNow(id: String): CareEventEntity? = careDao.eventNow(id)
 
     suspend fun updateEvent(
         event: CareEventEntity,

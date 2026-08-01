@@ -10,7 +10,11 @@
     <string name="destination_home">Home</string>
     <string name="destination_weight">Weight</string>
     <string name="destination_observations">Observations</string>
-    <string name="destination_care">Care &amp; Meds</string>
+    <!-- "Care" for 1.1 and "Care &amp; Meds" again at 1.2. A tab labelled for medications with no
+         medications behind it advertises a feature that is not there — 3f's objection to a stub, one
+         layer up. Only the label moves; the nav key keeps its name, because a back stack saved by
+         1.0 has to stay resolvable. -->
+    <string name="destination_care">Care</string>
     <string name="destination_more">More</string>
 
     <!-- The bunny switcher -->
@@ -153,6 +157,12 @@
     <plurals name="gap_weeks">
         <item quantity="one">%d week</item>
         <item quantity="other">%d weeks</item>
+    </plurals>
+    <!-- Days are the care screen's addition to the set: a gap between two weighings is context, but
+         a nail trim due in four days is something the owner is deciding about this week. -->
+    <plurals name="gap_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
     </plurals>
 
     <!-- Settings -->
@@ -436,8 +446,105 @@
          the numbers, not about today (ADR-0001, ADR-0008). It is named, not withheld. -->
     <string name="healthy_day_name_flagged">%1$s (weight flag)</string>
 
-    <!-- Care &amp; Meds -->
-    <string name="care_stub">Care reminders arrive in version 1.1, medications in 1.2.</string>
+    <!-- Care reminders (ADR-0018). A reminder is {label, interval, optional type}: the three presets
+         carry a type and therefore translate, while a custom one is the owner's own words and does
+         not. The tab is "Care" for 1.1 and becomes "Care &amp; Meds" again at 1.2, when there are
+         medications behind the second half of the name. -->
+    <string name="care_empty">Nothing scheduled yet. A care reminder is a job that comes round again — a nail trim, a yearly vaccination, a weekly weigh-in.</string>
+    <string name="care_pick_a_bunny">Care is per bunny. Which one?</string>
+    <string name="care_choose_bunny">Choose a bunny</string>
+    <string name="care_add">Add a reminder</string>
+    <string name="care_reminder_of">%1$s, %2$s</string>
+
+    <string name="care_type_nail_trim">Nail trim</string>
+    <string name="care_type_vaccination">Vaccination</string>
+    <string name="care_type_weigh_in">Weigh-in</string>
+    <string name="care_type_custom">Something else</string>
+
+    <!-- The next date in words rather than as a bare date: "in 3 days" is something an owner can act
+         on, where "14 March" is a subtraction they have to do first. -->
+    <string name="care_due_today">Due today</string>
+    <string name="care_due_tomorrow">Due tomorrow</string>
+    <string name="care_due_yesterday">Was due yesterday</string>
+    <string name="care_due_in">Due in %1$s</string>
+    <string name="care_due_overdue">%1$s overdue</string>
+
+    <!-- "Every week" for a count of one, "Every 6 weeks" above it — the amount is substituted rather
+         than built into four more plurals, so `Every 1 year` cannot happen. Polish takes the
+         accusative after `Co`, which for all four units is spelled like the nominative the plurals
+         below already hold. -->
+    <string name="care_every">Every %1$s</string>
+
+    <!-- The unit on its own, for the editor where the count is a field of its own, and for the
+         singular case above. No %d: the number is beside it, but the word still has to agree. -->
+    <plurals name="care_unit_days">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+    <plurals name="care_unit_weeks">
+        <item quantity="one">week</item>
+        <item quantity="other">weeks</item>
+    </plurals>
+    <plurals name="care_unit_months">
+        <item quantity="one">month</item>
+        <item quantity="other">months</item>
+    </plurals>
+    <plurals name="care_unit_years">
+        <item quantity="one">year</item>
+        <item quantity="other">years</item>
+    </plurals>
+
+    <!-- Completion. Back-datable on the same terms as a weighing: the next occurrence is scheduled
+         from the day it happened, not from the day it was ticked off. -->
+    <string name="care_complete_title">Mark as done</string>
+    <string name="care_complete_when">When was it done?</string>
+    <string name="care_complete_help">Today unless you say otherwise. The next one is scheduled from the day it was actually done, so a late trim resets the interval rather than owing it.</string>
+    <string name="care_complete_future">That day has not happened yet.</string>
+    <string name="care_complete_note">Note, if you want one</string>
+    <string name="care_complete_action">Record it</string>
+
+    <!-- A weigh-in is done by weighing. A generic "Done" here would let the owner tick off the one
+         reminder whose whole point is the number behind it. -->
+    <string name="care_weigh_in_action">Record a weight</string>
+    <string name="care_weigh_in_help">Weighing is what completes this one, so it opens the weight form. Any weighing counts, whenever you record it.</string>
+
+    <string name="care_history_title">Done before</string>
+    <string name="care_history_empty">Nothing recorded yet. Recording a completion is what moves the next date.</string>
+    <string name="care_history_weight">Weighed %1$s</string>
+    <string name="care_history_weight_help">Weighings count as weigh-ins. They are edited and deleted on the Weight screen, not here.</string>
+    <string name="care_event_edit_title">Correct this completion</string>
+    <string name="care_event_delete_title">Delete this completion?</string>
+    <string name="care_event_delete_body">Removing the completion recorded on %1$s moves every occurrence after it.</string>
+
+    <!-- Add to calendar (ADR-0014): one-way, no permission, and the app does not own what it hands
+         over. The copy has to say so, or it reads as syncing. -->
+    <string name="care_calendar_add">Add to calendar</string>
+    <string name="care_calendar_added">Added to your calendar</string>
+    <string name="care_calendar_help">Hands this repeat to your calendar app once, where it survives a new phone. Binky does not keep the two in step afterwards — editing the reminder here changes nothing there.</string>
+    <string name="care_calendar_none">There is no calendar app on this phone to hand it to.</string>
+
+    <string name="care_editor_add_title">New reminder</string>
+    <string name="care_editor_edit_title">Edit reminder</string>
+    <string name="care_editor_kind">What is it?</string>
+    <string name="care_editor_label">What do you call it?</string>
+    <string name="care_editor_label_help">Your own words, so this one stays as you typed it whichever language Binky is in.</string>
+    <string name="care_editor_label_required">Give it a name so you know what it is.</string>
+    <string name="care_editor_interval">How often?</string>
+    <string name="care_editor_interval_required">At least one.</string>
+    <string name="care_editor_first_due">When is it next due?</string>
+    <string name="care_editor_first_due_help">Not when you last did it — when it is next owed, which is what a vet card tells you. If you do know when it was last done, record that below as a completion.</string>
+
+    <string name="care_delete_title">Delete this reminder?</string>
+    <string name="care_delete_body">%1$s goes, and every completion recorded against it. Weighings are not touched.</string>
+
+    <!-- What the daily sweep posts. The reminder's name is the title, so the shade reads as the job
+         rather than as the app. -->
+    <string name="care_notification_due">Due today for %1$s.</string>
+    <string name="care_notification_overdue">Overdue for %1$s.</string>
+    <plurals name="care_summary_title">
+        <item quantity="one">%d care reminder due</item>
+        <item quantity="other">%d care reminders due</item>
+    </plurals>
 
     <!-- More -->
     <string name="more_archived_bunnies">Archived bunnies</string>

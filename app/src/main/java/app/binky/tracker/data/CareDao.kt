@@ -38,6 +38,14 @@ interface CareDao {
     suspend fun reminderNow(id: String): CareReminderEntity?
 
     /**
+     * One reminder, watched. Nullable because the row can be **deleted while its own screen is
+     * open** — the emission is what tells that screen to leave, rather than an exception it would
+     * otherwise have to catch.
+     */
+    @Query("SELECT * FROM care_reminders WHERE id = :id")
+    fun reminder(id: String): Flow<CareReminderEntity?>
+
+    /**
      * The latest completion of each of this bunny's reminders, for the ones that have any.
      *
      * A reminder with no completions is simply absent from the result rather than present with a

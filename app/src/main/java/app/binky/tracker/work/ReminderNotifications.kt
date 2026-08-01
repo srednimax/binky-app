@@ -9,6 +9,16 @@ import app.binky.tracker.MainActivity
 import app.binky.tracker.R
 
 /**
+ * The extra a reminder notification carries: **whose** reminder it is.
+ *
+ * A tap has to write the app-wide selection before navigating, because `CareAndMeds` takes no
+ * arguments — selecting that bunny is the only way to show their reminders, and landing on a
+ * different bunny's Care screen would be the app lying about whose data is on screen. `MainActivity`
+ * reads this and hands it to the shell; see `MainNavigation`.
+ */
+const val EXTRA_CARE_BUNNY_ID = "app.binky.tracker.extra.CARE_BUNNY_ID"
+
+/**
  * Posts one notification on [channel], or does nothing if it cannot.
  *
  * **Never throws on a missing permission.** `NotificationManagerCompat.notify` needs
@@ -17,15 +27,23 @@ import app.binky.tracker.R
  * be delivered is not an error the owner can act on from inside a background sweep; what they act on
  * is the delivery-state line in the app, which is exactly what [ReminderDelivery] is for.
  *
- * @param id must be **stable and derived from what the notification is about** (4c derives care ids
- *   from the reminder id). A stable id means a sweep that runs twice replaces its own notification
+ * @param id must be **stable and derived from what the notification is about** — see
+ *   [careNotificationId]. A stable id means a sweep that runs twice replaces its own notification
  *   rather than stacking a second copy of the same sentence.
+ * @param bunnyId whose reminder this is, for the tap target. Null opens the app as it stands, which
+ *   is right for the debug reminder and for a group summary that spans several bunnies.
+ * @param group the bundling key. Three reminders due across two bunnies at 09:00 are one glance at
+ *   the shade, not three unrelated notifications.
+ * @param isGroupSummary whether this **is** that bundle's summary rather than a member of it.
  */
 fun Context.postReminderNotification(
     channel: ReminderChannel,
     id: Int,
     title: String,
     text: String,
+    bunnyId: String? = null,
+    group: String? = null,
+    isGroupSummary: Boolean = false,
 ) {
     ensureReminderChannels()
 
@@ -42,9 +60,12 @@ fun Context.postReminderNotification(
             .setContentText(text)
             // Long text wraps rather than being cut off mid-sentence in the shade.
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
-            .setContentIntent(openAppIntent())
+            .setContentIntent(openAppIntent(bunnyId))
             .setAutoCancel(true)
-            .build()
+            .apply {
+                if (group != null) setGroup(group)
+                if (isGroupSummary) setGroupSummary(true)
+            }.build()
 
     try {
         manager.notify(id, notification)
@@ -56,18 +77,21 @@ fun Context.postReminderNotification(
 }
 
 /**
- * Where tapping the notification lands, until 4c gives care notifications a real target.
+ * Where tapping lands: the app, carrying the bunny whose reminder this was.
  *
- * 4c decides that properly — a tap has to write the app-wide selection through `AppContainer.select`
- * before handing `NavDisplay` a back stack, because `CareAndMeds` takes no arguments and landing on
- * a different bunny's Care screen would be the app lying about whose data is on screen. Opening the
- * app is the honest placeholder while nothing has a bunny behind it.
+ * The **request code varies with the bunny**, and it has to. `FLAG_UPDATE_CURRENT` rewrites the
+ * extras of any equal `PendingIntent`, and two intents differing only in their extras count as
+ * equal — so a single request code would have Bijou's notification and Nugget's end up pointing at
+ * whichever was built last, which is precisely the "lying about whose data is on screen" this extra
+ * exists to prevent.
  */
-private fun Context.openAppIntent(): PendingIntent =
+private fun Context.openAppIntent(bunnyId: String?): PendingIntent =
     PendingIntent.getActivity(
         this,
-        0,
-        Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP),
+        bunnyId?.hashCode() ?: 0,
+        Intent(this, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .apply { if (bunnyId != null) putExtra(EXTRA_CARE_BUNNY_ID, bunnyId) },
         // IMMUTABLE is required from API 31 and correct everywhere: nothing outside this app has
         // any business filling in fields on an intent we constructed.
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
