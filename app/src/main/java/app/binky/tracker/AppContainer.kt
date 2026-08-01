@@ -17,6 +17,7 @@ import app.binky.tracker.data.PhotoRepository
 import app.binky.tracker.data.SetupState
 import app.binky.tracker.data.StoredSelection
 import app.binky.tracker.data.SymptomRepository
+import app.binky.tracker.data.WatchRepository
 import app.binky.tracker.data.WeightRepository
 import app.binky.tracker.data.backup.BackupExporter
 import app.binky.tracker.data.backup.BackupRestorer
@@ -26,6 +27,7 @@ import app.binky.tracker.data.resolveSelection
 import app.binky.tracker.data.resolveSetupState
 import app.binky.tracker.media.MediaFiles
 import app.binky.tracker.work.CareNotifier
+import app.binky.tracker.work.WatchNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -148,12 +150,20 @@ class AppContainer(
 
     val careRepository = CareRepository(database)
 
+    val watchRepository = WatchRepository(database)
+
     /**
      * Posting and cancelling care notifications, which needs a `Context` that a `ViewModel` has no
      * business holding. Both ends of 4c reach it through here: the sweep posts, and a completion on
      * the Care screen cancels.
      */
     val careNotifier = CareNotifier(appContext)
+
+    /**
+     * The watch nag's other end. Same shape and same reason as [careNotifier]: the sweep posts, and
+     * an observation landing for that bunny — or the watch being closed — cancels.
+     */
+    val watchNotifier = WatchNotifier(appContext)
 
     /**
      * The read-only scope onto an archived bunny. In memory only — a background kill must not

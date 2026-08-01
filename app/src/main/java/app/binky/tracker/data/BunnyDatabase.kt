@@ -43,6 +43,7 @@ const val BUNNY_DATABASE_FILE = "bunny.db"
         PhotoEntity::class,
         CareReminderEntity::class,
         CareEventEntity::class,
+        WatchEntity::class,
     ],
     version = BUNNY_SCHEMA_VERSION,
     exportSchema = true,
@@ -62,6 +63,8 @@ abstract class BunnyDatabase : RoomDatabase() {
     abstract fun photoDao(): PhotoDao
 
     abstract fun careDao(): CareDao
+
+    abstract fun watchDao(): WatchDao
 }
 
 /**

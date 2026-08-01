@@ -58,6 +58,7 @@ suspend fun seedSampleData(
     symptoms: SymptomRepository,
     photos: PhotoRepository,
     care: CareRepository,
+    watches: WatchRepository,
     cacheDir: File,
     now: Instant = Instant.now(),
 ): Boolean {
@@ -80,7 +81,34 @@ suspend fun seedSampleData(
     seedObservations(observations, symptoms, bijou, nugget, now)
     seedPhotos(photos, cacheDir, bijou, nugget, now)
     seedCare(care, bijou, nugget, now)
+    seedWatches(watches, bijou, nugget, now)
     return true
+}
+
+/**
+ * The watch half: **one running and one already run out**, which is both of the states 4d has to
+ * show and neither of which can otherwise be looked at without waiting days for it.
+ *
+ * - **Bijou's is running**, four days in of seven, so Home's card carries *"Watch active · 3 days
+ *   left"* with close-early beside it, the flag stops offering *Start a watch*, and Bijou is the
+ *   bunny the next morning's sweep nags about.
+ * - **Nugget's ran out yesterday**, so the auto-expiry prompt is on screen the moment the fixture
+ *   lands rather than a week later — and because Nugget's series is deliberately steady, it is also
+ *   the prompt's *no live flag* branch, where it has to report the record without letting the
+ *   absence of a flag read as reassurance (ADR-0001).
+ *
+ * That pairing is the point: it puts Bijou under a running watch and Nugget under an expired one, so
+ * the healthy day excludes exactly one of them, with the reason shown, and the difference between
+ * "active" and "expired" is visible in the same tap rather than argued about from a test.
+ */
+private suspend fun seedWatches(
+    watches: WatchRepository,
+    bijou: String,
+    nugget: String,
+    now: Instant,
+) {
+    watches.start(bijou, WatchDuration.DAYS_7, now.daysAgo(4))
+    watches.start(nugget, WatchDuration.DAYS_3, now.daysAgo(4))
 }
 
 /**

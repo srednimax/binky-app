@@ -60,8 +60,13 @@ class Migration4To5Test {
             "INSERT INTO care_events (id, reminderId, completedOn, note, createdAt) " +
                 "VALUES ('event-1', 'care-1', 20000, NULL, 1700000000000)",
         )
+        migrated.execSQL(
+            "INSERT INTO watches (bunnyId, startedAt, endsAt, lastNaggedOn) " +
+                "VALUES ('bunny-1', 1700000000000, 1700600000000, 20000)",
+        )
         assertEquals(1, migrated.countOf("care_reminders"))
         assertEquals(1, migrated.countOf("care_events"))
+        assertEquals(1, migrated.countOf("watches"))
     }
 
     /**

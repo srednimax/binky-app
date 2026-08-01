@@ -34,6 +34,7 @@ import app.binky.tracker.R
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.common.RecordedAtField
+import app.binky.tracker.ui.watch.StartWatchAction
 
 /**
  * Add or edit one weighing — the route `NavigationKeys.kt` promised from Phase 1 and never built.
@@ -120,6 +121,10 @@ fun WeightEntryScreen(
             unit = state.unit,
             onAcknowledge = viewModel::acknowledge,
             onDismiss = viewModel::dismissFlag,
+            // The third of the flag's three hosts (ADR-0001). A watch cannot already be running
+            // here in any way this screen can see — it has no watch flow — so the action is always
+            // on offer, and starting one over a running one is an upsert either way.
+            secondaryAction = { StartWatchAction(state.bunnyName, viewModel::startWatch) },
         )
     }
 }

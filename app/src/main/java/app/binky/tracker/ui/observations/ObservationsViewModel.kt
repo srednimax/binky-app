@@ -83,6 +83,7 @@ class ObservationsViewModel(
     private val bunnies = container.bunnyRepository
     private val fluffles = container.fluffleRepository
     private val weights = container.weightRepository
+    private val watches = container.watchRepository
 
     private val pendingDelete = MutableStateFlow<TimelineEntry?>(null)
     private val receipt = MutableStateFlow<HealthyDayReceipt?>(null)
@@ -154,9 +155,17 @@ class ObservationsViewModel(
         viewModelScope.launch {
             val subject = bunnies.bunnyNow(bunnyId) ?: return@launch
             val members = subject.fluffleId?.let { fluffles.members(it).first() }.orEmpty()
-            val preSelection = preSelectParticipants(subject, members)
+            // **This** is the write path ADR-0008's watch exclusion is written for: the one tap
+            // that commits participants unreviewed. A housemate under a running watch has been
+            // singled out by the owner, and sweeping them into a shared tray fact would record a
+            // claim nobody made.
+            val preSelection = preSelectParticipants(subject, members, watches.activelyWatchedIdsNow())
 
             val ids = observations.add(preSelection.bunnyIds, Instant.now(), healthyDayFacts())
+            // Whoever this covered has now been looked at, so the morning's nag is answered — and a
+            // question still in the shade after it has been answered is the only copy of that
+            // staleness left anywhere (the same argument `CareNotifier.cancel` makes).
+            preSelection.bunnyIds.forEach(container.watchNotifier::cancel)
             receipt.value =
                 HealthyDayReceipt(
                     observationId = ids.first(),

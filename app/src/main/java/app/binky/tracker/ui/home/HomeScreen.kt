@@ -26,6 +26,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
 import app.binky.tracker.data.BunnySelection
+import app.binky.tracker.data.WatchDuration
+import app.binky.tracker.data.WatchState
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.bunny.BunnyAvatar
@@ -36,6 +38,8 @@ import app.binky.tracker.ui.bunny.dateLabel
 import app.binky.tracker.ui.bunny.housematesLabel
 import app.binky.tracker.ui.bunny.neuterLabel
 import app.binky.tracker.ui.bunny.sexLabel
+import app.binky.tracker.ui.watch.StartWatchAction
+import app.binky.tracker.ui.watch.WatchActiveCard
 import app.binky.tracker.ui.weight.TrendFlagBanner
 import app.binky.tracker.ui.weight.instantDateLabel
 import app.binky.tracker.ui.weight.weightLabel
@@ -62,7 +66,15 @@ fun HomeScreen(
         // beats flashing an empty state at an owner who has bunnies.
         BunnySelection.Loading -> Unit
         BunnySelection.Empty -> NoBunniesYet(onAddBunny, modifier)
-        BunnySelection.All -> AllBunnies(state, onSelectBunny, viewModel::acknowledge, modifier)
+        BunnySelection.All ->
+            AllBunnies(
+                state = state,
+                onSelectBunny = onSelectBunny,
+                onAcknowledge = viewModel::acknowledge,
+                onStartWatch = viewModel::startWatch,
+                onCloseWatch = viewModel::closeWatch,
+                modifier = modifier,
+            )
         else ->
             state.profiles.firstOrNull()?.let { profile ->
                 OneBunny(
@@ -74,6 +86,8 @@ fun HomeScreen(
                     onArchive = { viewModel.requestArchive(profile) },
                     onDelete = { viewModel.requestDelete(profile) },
                     onAcknowledge = { viewModel.acknowledge(profile.id) },
+                    onStartWatch = { duration -> viewModel.startWatch(profile.id, duration) },
+                    onCloseWatch = { viewModel.closeWatch(profile.id) },
                     modifier = modifier,
                 )
             }
@@ -118,6 +132,8 @@ private fun OneBunny(
     onArchive: () -> Unit,
     onDelete: () -> Unit,
     onAcknowledge: () -> Unit,
+    onStartWatch: (WatchDuration) -> Unit,
+    onCloseWatch: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -152,7 +168,9 @@ private fun OneBunny(
             flag = vitals.flag,
             unit = unit,
             onAcknowledge = onAcknowledge,
+            secondaryAction = watchAction(profile.name, vitals, readOnly, onStartWatch),
         )
+        WatchLine(vitals = vitals, readOnly = readOnly, onClose = onCloseWatch)
         LastWeighing(vitals = vitals, unit = unit)
         LastObservation(vitals = vitals)
 
@@ -220,6 +238,41 @@ private fun LastObservation(vitals: BunnyVitals) {
     )
 }
 
+/**
+ * The active watch, where it is running (ADR-0001) — *"Watch active · 4 days left"*, with
+ * close-early beside it. Nothing at all when no watch is running, which is almost always.
+ *
+ * Absent in the read-only scope: an archived bunny has no watch, because archiving closes it.
+ */
+@Composable
+private fun WatchLine(
+    vitals: BunnyVitals,
+    readOnly: Boolean,
+    onClose: () -> Unit,
+) {
+    val active = vitals.watch as? WatchState.Active ?: return
+    if (readOnly) return
+    WatchActiveCard(active = active, onClose = onClose)
+}
+
+/**
+ * The flag's secondary slot, filled or empty.
+ *
+ * Empty while a watch is already running — offering to start one on top of one that is running
+ * would be a button that says nothing true — and empty in the read-only scope, which writes nothing.
+ */
+private fun watchAction(
+    bunnyName: String,
+    vitals: BunnyVitals,
+    readOnly: Boolean,
+    onStartWatch: (WatchDuration) -> Unit,
+): (@Composable () -> Unit)? =
+    if (readOnly || vitals.watch is WatchState.Active) {
+        null
+    } else {
+        { StartWatchAction(bunnyName = bunnyName, onStart = onStartWatch) }
+    }
+
 @Composable
 private fun Fact(
     label: String,
@@ -245,6 +298,8 @@ private fun AllBunnies(
     state: HomeUiState,
     onSelectBunny: (String) -> Unit,
     onAcknowledge: (String) -> Unit,
+    onStartWatch: (String, WatchDuration) -> Unit,
+    onCloseWatch: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -285,11 +340,20 @@ private fun AllBunnies(
                     }
                     LastWeighing(vitals = vitals, unit = state.unit)
                     LastObservation(vitals = vitals)
+                    WatchLine(
+                        vitals = vitals,
+                        readOnly = state.readOnly,
+                        onClose = { onCloseWatch(profile.id) },
+                    )
                     TrendFlagBanner(
                         bunnyName = profile.name,
                         flag = vitals.flag,
                         unit = state.unit,
                         onAcknowledge = { onAcknowledge(profile.id) },
+                        secondaryAction =
+                            watchAction(profile.name, vitals, state.readOnly) { duration ->
+                                onStartWatch(profile.id, duration)
+                            },
                     )
                 }
             }

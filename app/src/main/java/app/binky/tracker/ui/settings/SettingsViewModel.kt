@@ -64,6 +64,7 @@ class SettingsViewModel(
                     symptoms = container.symptomRepository,
                     photos = container.photoRepository,
                     care = container.careRepository,
+                    watches = container.watchRepository,
                     cacheDir = container.cacheDir,
                 )
             sampleData.value = if (seeded) SampleDataOutcome.SEEDED else SampleDataOutcome.ALREADY_PRESENT

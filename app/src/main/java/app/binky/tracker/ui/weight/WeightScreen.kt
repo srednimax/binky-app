@@ -25,8 +25,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
 import app.binky.tracker.data.BunnySelection
+import app.binky.tracker.data.WatchDuration
+import app.binky.tracker.data.WatchState
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.ui.appViewModelExtras
+import app.binky.tracker.ui.watch.StartWatchAction
 
 /**
  * Weight — always bunny-scoped, and the one screen that **refuses** "All bunnies" (ADR-0015):
@@ -61,6 +64,7 @@ fun WeightScreen(
                 onEdit = { row -> state.bunnyId?.let { onEditWeight(it, row.id) } },
                 onDelete = viewModel::requestDelete,
                 onAcknowledge = viewModel::acknowledge,
+                onStartWatch = viewModel::startWatch,
                 onRangeChange = viewModel::setChartRange,
                 modifier = modifier,
             )
@@ -84,9 +88,27 @@ fun WeightScreen(
             unit = state.unit,
             onAcknowledge = viewModel::acknowledge,
             onDismiss = viewModel::dismissWriteFlag,
+            secondaryAction = watchAction(state, viewModel::startWatch),
         )
     }
 }
+
+/**
+ * The flag's secondary slot: *Start a watch*, or nothing (ADR-0001).
+ *
+ * Nothing while a watch is already running — a button offering to start one on top of a running one
+ * says nothing true — and nothing in the read-only scope, which writes nothing at all (ADR-0004).
+ * Shared by the banner and the dialog, so the two cannot disagree about whether it is on offer.
+ */
+private fun watchAction(
+    state: WeightUiState,
+    onStartWatch: (WatchDuration) -> Unit,
+): (@Composable () -> Unit)? =
+    if (state.readOnly || state.watch is WatchState.Active) {
+        null
+    } else {
+        { StartWatchAction(bunnyName = state.bunnyName, onStart = onStartWatch) }
+    }
 
 @Composable
 private fun Message(
@@ -107,6 +129,7 @@ private fun History(
     onEdit: (WeightRow) -> Unit,
     onDelete: (WeightRow) -> Unit,
     onAcknowledge: () -> Unit,
+    onStartWatch: (WatchDuration) -> Unit,
     onRangeChange: (WeightChartRange) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -120,6 +143,10 @@ private fun History(
                 flag = state.flag,
                 unit = state.unit,
                 onAcknowledge = onAcknowledge,
+                // Absent while a watch is already running. **Home is where a running watch is
+                // shown and closed** (ADR-0001) — one place for that, so the owner learns where it
+                // lives rather than finding it wherever they happen to be.
+                secondaryAction = watchAction(state, onStartWatch),
             )
         }
 

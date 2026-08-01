@@ -419,6 +419,7 @@
     <string name="observation_participants_help">Króliki dzielące kuwetę są już zaznaczone. Odznacz każdego, kogo to nie dotyczy.</string>
     <string name="observation_participants_required">Wybierz co najmniej jednego królika.</string>
     <string name="observation_excluded_archived">%1$s jest w archiwum, więc ta obserwacja tego królika nie obejmie.</string>
+    <string name="observation_excluded_watch">%1$s — trwa obserwacja, lepiej zapisać osobno.</string>
 
     <string name="observation_tray_heading">Kuweta</string>
     <string name="observation_tray_shared_help">Zapisywane raz, dla wszystkich, których to dotyczy — wspólnej kuwety nie da się rozdzielić między króliki.</string>
@@ -558,6 +559,35 @@
         <item quantity="many">%d przypomnień o opiece</item>
         <item quantity="other">%d przypomnień o opiece</item>
     </plurals>
+
+    <!-- Obserwacja (ADR-0001). Pytanie jest o to, czy ktoś zajrzał — nigdy o to, co królikowi jest.
+         Formy bezosobowe i bezokoliczniki, imię zawsze po dwukropku (zasady 1 i 2 na górze pliku). -->
+    <string name="watch_start">Rozpocznij obserwację</string>
+    <string name="watch_start_title">Mieć oko na: %1$s?</string>
+    <string name="watch_start_body">Każdego ranka Binky pyta, czy udało się już zajrzeć do tego królika. Cokolwiek zapisanego tego dnia zamyka sprawę — zdrowy dzień też się liczy. Obserwacja kończy się sama, gdy minie czas.</string>
+    <string name="watch_duration_question">Na jak długo?</string>
+    <plurals name="watch_duration_days">
+        <item quantity="one">%1$d dzień</item>
+        <item quantity="few">%1$d dni</item>
+        <item quantity="many">%1$d dni</item>
+        <item quantity="other">%1$d dni</item>
+    </plurals>
+    <string name="watch_start_action">Rozpocznij</string>
+    <plurals name="watch_days_left">
+        <item quantity="one">został %1$d dzień</item>
+        <item quantity="few">zostały %1$d dni</item>
+        <item quantity="many">zostało %1$d dni</item>
+        <item quantity="other">zostało %1$d dni</item>
+    </plurals>
+    <string name="watch_active_line">Obserwacja trwa · %1$s</string>
+    <string name="watch_close">Zakończ</string>
+    <string name="watch_expired_title">Koniec obserwacji: %1$s</string>
+    <string name="watch_expired_body">Pytania już się skończyły. Przedłuż obserwację, jeśli nadal warto mieć oko na tego królika, albo ją zakończ.</string>
+    <string name="watch_expired_weight">Ostatnia waga: %1$s, dnia %2$s.</string>
+    <string name="watch_expired_no_weight">Nie ma żadnych ważeń, więc nie ma też trendu — w żadną stronę.</string>
+    <string name="watch_expired_extend">Przedłuż</string>
+    <string name="watch_notification_title">Zajrzeć dziś do: %1$s?</string>
+    <string name="watch_notification_text">Obserwacja trwa. Warto zapisać to, co widać — zdrowy dzień też się liczy.</string>
 
     <!-- More -->
     <string name="more_archived_bunnies">Króliki w archiwum</string>

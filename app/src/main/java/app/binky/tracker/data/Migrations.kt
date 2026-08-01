@@ -59,6 +59,19 @@ val MIGRATION_4_5 =
                 "CREATE INDEX IF NOT EXISTS `index_care_events_reminderId_completedOn` " +
                     "ON `care_events` (`reminderId`, `completedOn`)",
             )
+            // 4d's table, added to this migration rather than to a sixth version — the
+            // pending-migration rule doing exactly what ADR-0007 grants it for. No index on
+            // `bunnyId`: it is the primary key, so SQLite has already indexed it.
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `watches` (" +
+                    "`bunnyId` TEXT NOT NULL, " +
+                    "`startedAt` INTEGER NOT NULL, " +
+                    "`endsAt` INTEGER NOT NULL, " +
+                    "`lastNaggedOn` INTEGER, " +
+                    "PRIMARY KEY(`bunnyId`), " +
+                    "FOREIGN KEY(`bunnyId`) REFERENCES `bunnies`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
         }
     }
 

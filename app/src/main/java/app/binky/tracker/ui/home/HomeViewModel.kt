@@ -9,11 +9,14 @@ import app.binky.tracker.AppContainer
 import app.binky.tracker.BinkyApplication
 import app.binky.tracker.data.BunnySelection
 import app.binky.tracker.data.TrendFlag
+import app.binky.tracker.data.WatchDuration
+import app.binky.tracker.data.WatchState
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.data.evaluateTrend
 import app.binky.tracker.data.readOnlyScope
 import app.binky.tracker.data.toAcknowledgment
 import app.binky.tracker.data.toWeighing
+import app.binky.tracker.data.watchState
 import app.binky.tracker.ui.bunny.BunnyActions
 import app.binky.tracker.ui.bunny.BunnyDialog
 import app.binky.tracker.ui.bunny.BunnyProfile
@@ -48,6 +51,11 @@ data class BunnyVitals(
      * there, not merely hidden (ADR-0001, ADR-0004).
      */
     val flag: TrendFlag? = null,
+    /**
+     * The watch, if one is running. [WatchState.None] in the archived scope for the same reason the
+     * flag is null there — an archived bunny has none, because archiving closes it.
+     */
+    val watch: WatchState = WatchState.None,
 )
 
 /**
@@ -74,6 +82,7 @@ class HomeViewModel(
     private val actions = BunnyActions(container.bunnyRepository, viewModelScope)
     private val weights = container.weightRepository
     private val observations = container.observationRepository
+    private val watches = container.watchRepository
 
     /** Everything the card needs *before* the per-bunny series reads fan out beneath it. */
     private data class Shown(
@@ -109,7 +118,7 @@ class HomeViewModel(
                 unit = unit,
             )
         }.flatMapLatest { shown ->
-            vitals(shown.profiles.map { it.id }, evaluateFlag = !shown.selection.readOnlyScope)
+            vitals(shown.profiles.map { it.id }, liveState = !shown.selection.readOnlyScope)
                 .map { vitals ->
                     HomeUiState(
                         selection = shown.selection,
@@ -131,19 +140,25 @@ class HomeViewModel(
      */
     private fun vitals(
         bunnyIds: List<String>,
-        evaluateFlag: Boolean,
+        liveState: Boolean,
     ): Flow<Map<String, BunnyVitals>> =
         if (bunnyIds.isEmpty()) {
             // combine() over an empty list never emits, which would leave Home stuck on its initial
             // value for an owner with no bunnies.
             flowOf(emptyMap())
         } else {
-            combine(bunnyIds.map { id -> vitalsFor(id, evaluateFlag) }) { entries -> entries.toMap() }
+            combine(bunnyIds.map { id -> vitalsFor(id, liveState) }) { entries -> entries.toMap() }
         }
 
+    /**
+     * [liveState] is false in the archived scope, and it governs **both** derived facts — the trend
+     * flag and the watch. Neither is merely hidden there: an archived bunny's flag is not evaluated
+     * (ADR-0001, ADR-0004), and archiving closes any watch, so reporting one would be reporting a
+     * row that should not exist.
+     */
     private fun vitalsFor(
         bunnyId: String,
-        evaluateFlag: Boolean,
+        liveState: Boolean,
     ): Flow<Pair<String, BunnyVitals>> =
         combine(
             weights.series(bunnyId),
@@ -151,7 +166,8 @@ class HomeViewModel(
             // This bunny's own rows, which for a shared observation is its copy — so "last
             // observation" is true of this bunny whether or not it was observed alone (ADR-0008).
             observations.forBunny(bunnyId),
-        ) { series, acknowledgment, observed ->
+            watches.watch(bunnyId),
+        ) { series, acknowledgment, observed, watch ->
             val latest = series.firstOrNull()
             bunnyId to
                 BunnyVitals(
@@ -159,7 +175,7 @@ class HomeViewModel(
                     lastRecordedAt = latest?.recordedAt,
                     lastObservationAt = observed.firstOrNull()?.recordedAt,
                     flag =
-                        if (!evaluateFlag) {
+                        if (!liveState) {
                             null
                         } else {
                             evaluateTrend(
@@ -167,11 +183,34 @@ class HomeViewModel(
                                 acknowledgment?.toAcknowledgment(),
                             ).flag
                         },
+                    // Resolved against the clock on every emission, never stored — a watch runs out
+                    // without anything being written to it.
+                    watch = if (!liveState) WatchState.None else watchState(watch, Instant.now()),
                 )
         }
 
     fun acknowledge(bunnyId: String) {
         viewModelScope.launch { weights.acknowledgeTrend(bunnyId) }
+    }
+
+    /**
+     * *Start a watch*, from the flag's secondary action — **offered, never automatic** (ADR-0001).
+     *
+     * An upsert underneath, so a stale expired row cannot block it.
+     */
+    fun startWatch(
+        bunnyId: String,
+        duration: WatchDuration,
+    ) {
+        viewModelScope.launch { watches.start(bunnyId, duration) }
+    }
+
+    /** Close-early, from the card the watch announces itself on. */
+    fun closeWatch(bunnyId: String) {
+        viewModelScope.launch {
+            watches.close(bunnyId)
+            container.watchNotifier.cancel(bunnyId)
+        }
     }
 
     fun requestArchive(profile: BunnyProfile) = actions.requestArchive(profile)

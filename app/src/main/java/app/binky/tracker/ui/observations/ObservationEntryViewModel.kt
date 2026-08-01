@@ -24,10 +24,12 @@ import app.binky.tracker.data.ParticipantCandidate
 import app.binky.tracker.data.SymptomEntity
 import app.binky.tracker.data.SymptomRepository
 import app.binky.tracker.data.TrayFacts
+import app.binky.tracker.data.WatchRepository
 import app.binky.tracker.data.WaterIntake
 import app.binky.tracker.data.individualFacts
 import app.binky.tracker.data.preSelectParticipants
 import app.binky.tracker.data.trayFacts
+import app.binky.tracker.work.WatchNotifier
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -99,6 +101,8 @@ class ObservationEntryViewModel(
     private val symptoms: SymptomRepository,
     private val bunnies: BunnyRepository,
     private val fluffles: FluffleRepository,
+    private val watches: WatchRepository,
+    private val watchNotifier: WatchNotifier,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ObservationEntryUiState(isNew = observationId == null))
     val uiState: StateFlow<ObservationEntryUiState> = _uiState.asStateFlow()
@@ -115,8 +119,10 @@ class ObservationEntryViewModel(
             val members = subject?.fluffleId?.let { fluffles.members(it).first() }.orEmpty()
 
             // The current fluffle pre-selects; it never *defines* who an existing observation
-            // covered. That is stamped at creation and read back below (ADR-0008).
-            val preSelection = subject?.let { preSelectParticipants(it, members) }
+            // covered. That is stamped at creation and read back below (ADR-0008). A housemate
+            // under a running watch is left out with the reason shown — one predicate, exactly
+            // where 2f built the road for it.
+            val preSelection = subject?.let { preSelectParticipants(it, members, watches.activelyWatchedIdsNow()) }
 
             val existing = observationId?.let { observations.observationNow(it) }
             val storedGroup =
@@ -299,6 +305,11 @@ class ObservationEntryViewModel(
             } else {
                 applyEdit(existingId, state)
             }
+            // Whoever this covers has now been looked at, so this morning's nag is answered — and a
+            // question still in the shade after it has been answered is the only copy of that
+            // staleness left anywhere (the argument `CareNotifier.cancel` makes for a completion).
+            // Tapping the nag itself needs no help: the notification is `setAutoCancel(true)`.
+            state.selectedParticipants.forEach(watchNotifier::cancel)
             _uiState.update { it.copy(saved = true) }
         }
     }
@@ -358,6 +369,8 @@ class ObservationEntryViewModel(
                         symptoms = app.container.symptomRepository,
                         bunnies = app.container.bunnyRepository,
                         fluffles = app.container.fluffleRepository,
+                        watches = app.container.watchRepository,
+                        watchNotifier = app.container.watchNotifier,
                     )
                 }
             }

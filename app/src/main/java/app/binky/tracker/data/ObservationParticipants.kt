@@ -21,7 +21,22 @@ enum class ParticipantExclusion {
      * did live with the others, and none of that history moves. Only new writes stop.
      */
     ARCHIVED,
-    // Phase 4 adds UNDER_WATCH here, and nothing else changes.
+
+    /**
+     * Under a **running** watch (ADR-0008, ADR-0001), which is the exclusion 2f built this filter
+     * for. The unreviewed one-tap write path must not sweep a separated, ill bunny into a shared
+     * tray fact — if they are being watched, the owner has singled them out, and the tray they are
+     * using may not be the tray the others are.
+     *
+     * A **flagged** bunny is still covered, as 2f decided, and the distinction is the point: the
+     * flag is about *weight*, where a bunny losing weight with entirely normal droppings is real and
+     * useful data. The watch is about the owner having separated this bunny out.
+     *
+     * An **expired** watch excludes nobody. Expiry stops the nagging on its own, and the prompt that
+     * follows is only about re-arming — leaving a bunny out of the healthy day because nobody has
+     * answered a dialog yet would be the app acting on a question it has not asked.
+     */
+    UNDER_WATCH,
 }
 
 /** A bunny the form offers as a participant, ticked when the form opens. */
@@ -46,7 +61,12 @@ data class ExcludedParticipant(
  * history the first time a bond broke.
  *
  * [subject] is always a candidate and never excluded. The owner asked to log for this bunny; a rule
- * that could drop them would produce an observation covering nobody.
+ * that could drop them would produce an observation covering nobody — and that holds for a *watched*
+ * subject too. Starting a watch on Bijou and then logging for Bijou is the ordinary case; the
+ * exclusion is about not sweeping a watched **housemate** in alongside them.
+ *
+ * `activelyWatchedIds` is who is under a running watch, resolved by the caller against the clock —
+ * an expired one excludes nobody (see [ParticipantExclusion.UNDER_WATCH]).
  */
 data class ParticipantPreSelection(
     val candidates: List<ParticipantCandidate>,
@@ -58,6 +78,7 @@ data class ParticipantPreSelection(
 fun preSelectParticipants(
     subject: BunnyEntity,
     fluffleMembers: List<BunnyEntity>,
+    activelyWatchedIds: Set<String> = emptySet(),
 ): ParticipantPreSelection {
     val candidates = mutableListOf(ParticipantCandidate(subject.id, subject.name))
     val excluded = mutableListOf<ExcludedParticipant>()
@@ -65,11 +86,14 @@ fun preSelectParticipants(
     for (member in fluffleMembers.sortedBy { it.name.lowercase() }) {
         if (member.id == subject.id) continue
         // Kotlin note: `when` used as an expression here, not a statement — each branch yields the
-        // exclusion reason or null, so adding Phase 4's Watch predicate is one branch above this one
-        // rather than a new `if` somewhere else in the function.
+        // exclusion reason or null, which is what made Phase 4's Watch predicate one branch rather
+        // than a new `if` somewhere else in the function. Archived is asked first because it is the
+        // stronger fact: archiving closes any watch, so the two cannot both be true of a live row,
+        // and if they ever were, "archived" is the answer that explains more.
         val reason =
             when {
                 member.archivedAt != null -> ParticipantExclusion.ARCHIVED
+                member.id in activelyWatchedIds -> ParticipantExclusion.UNDER_WATCH
                 else -> null
             }
         if (reason == null) {

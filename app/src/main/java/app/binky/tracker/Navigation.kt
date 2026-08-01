@@ -64,8 +64,10 @@ import app.binky.tracker.ui.setup.SetupRemindersStep
 import app.binky.tracker.ui.shell.AppShellViewModel
 import app.binky.tracker.ui.shell.BunnySwitcher
 import app.binky.tracker.ui.shell.ShellUiState
+import app.binky.tracker.ui.watch.WatchExpiryHost
 import app.binky.tracker.ui.weight.WeightEntryScreen
 import app.binky.tracker.ui.weight.WeightScreen
+import app.binky.tracker.work.ReminderTap
 
 /**
  * What every back-stack entry is wrapped in — above all, **one `ViewModelStore` per entry**.
@@ -100,8 +102,8 @@ internal fun appEntryDecorators(): List<NavEntryDecorator<NavKey>> =
 @Composable
 fun MainNavigation(
     modifier: Modifier = Modifier,
-    careNotificationBunnyId: String? = null,
-    onCareNotificationHandled: () -> Unit = {},
+    notificationTap: ReminderTap? = null,
+    onNotificationHandled: () -> Unit = {},
 ) {
     val shellViewModel: AppShellViewModel = viewModel(factory = AppShellViewModel.Factory)
     // Kotlin note: `by` unwraps the State object, so `state` reads as the value itself.
@@ -128,8 +130,8 @@ fun MainNavigation(
             AppShell(
                 shellViewModel = shellViewModel,
                 state = state,
-                careNotificationBunnyId = careNotificationBunnyId,
-                onCareNotificationHandled = onCareNotificationHandled,
+                notificationTap = notificationTap,
+                onNotificationHandled = onNotificationHandled,
                 modifier = modifier,
             )
     }
@@ -212,8 +214,8 @@ private fun SetupNavigation(
 private fun AppShell(
     shellViewModel: AppShellViewModel,
     state: ShellUiState,
-    careNotificationBunnyId: String?,
-    onCareNotificationHandled: () -> Unit,
+    notificationTap: ReminderTap?,
+    onNotificationHandled: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // A stack restored from a build where Care & Meds was still a live tab comes back naming a
@@ -244,27 +246,53 @@ private fun AppShell(
     // own snackbar host is showing; that only works if it owns both.
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // **Where a care notification lands** (PLAN 4c). A tap writes the app-wide selection through the
-    // same path the switcher uses and *then* hands the back stack a destination, because
-    // `CareAndMeds` takes no arguments — selecting that bunny is the only thing that can decide
-    // whose reminders are on screen, and landing on someone else's would be the app lying about it.
+    // **Where a reminder notification lands** (PLAN 4c, 4d). A tap writes the app-wide selection
+    // through the same path the switcher uses and *then* hands the back stack a destination,
+    // because `CareAndMeds` takes no arguments — selecting that bunny is the only thing that can
+    // decide whose reminders are on screen, and landing on someone else's would be the app lying
+    // about it. A watch nag goes one step further and pushes the observation form on top, which is
+    // why its `PendingIntent` has to resolve to a **back stack** and not just to the Activity:
+    // Back out of the form has to land somewhere the owner can stay.
     //
     // A bunny archived since the notification was posted falls back to Home **without touching the
     // selection**: `Archived(id)` is deliberately never persisted (ADR-0015), so there is no scope
     // to send them to, and quietly selecting a memorial would be worse than doing nothing.
-    LaunchedEffect(careNotificationBunnyId, state.selection, state.activeBunnies) {
-        val target = careNotificationBunnyId ?: return@LaunchedEffect
+    LaunchedEffect(notificationTap, state.selection, state.activeBunnies) {
+        val tap = notificationTap ?: return@LaunchedEffect
         // Nothing is decidable while the first emissions are still in flight, and acting on an empty
         // list would send an honest tap to Home.
         if (state.selection == BunnySelection.Loading) return@LaunchedEffect
 
+        // Kotlin note: `when` over a sealed interface is exhaustive without an `else`, so a fourth
+        // destination would stop this compiling rather than silently falling through to Home.
+        val target =
+            when (tap) {
+                is ReminderTap.Care -> tap.bunnyId
+                is ReminderTap.LogObservation -> tap.bunnyId
+                // "The app as it stands" means exactly that: nothing to select and nowhere to send
+                // them, so the stack is left where the owner last had it.
+                ReminderTap.OpenApp -> {
+                    onNotificationHandled()
+                    return@LaunchedEffect
+                }
+            }
         if (state.activeBunnies.any { it.id == target }) {
             shellViewModel.selectBunny(target)
-            backStack.showTopLevel(TopLevelDestination.CARE)
+            when (tap) {
+                is ReminderTap.Care -> backStack.showTopLevel(TopLevelDestination.CARE)
+                is ReminderTap.LogObservation -> {
+                    // Home first, then the form on top of it: `showTopLevel` clears back to the
+                    // root, so this *is* the two-entry back stack the nag promises — Back out of
+                    // the form lands on Home rather than on nothing.
+                    backStack.showTopLevel(TopLevelDestination.HOME)
+                    backStack.add(LogObservation(target))
+                }
+                ReminderTap.OpenApp -> Unit
+            }
         } else {
             backStack.showTopLevel(TopLevelDestination.HOME)
         }
-        onCareNotificationHandled()
+        onNotificationHandled()
     }
 
     Scaffold(
@@ -485,6 +513,12 @@ private fun AppShell(
             onDismiss = { choosingGalleryBunny = false },
         )
     }
+
+    // The watch's auto-expiry prompt (ADR-0001), hosted here because it is about a bunny rather
+    // than about a screen — it has to appear over whatever the owner opened onto. It renders
+    // nothing unless a watch has run out, which is almost always. Deliberately *not* inside the
+    // wizard's branch: a watch cannot exist before setup has run.
+    WatchExpiryHost()
 }
 
 /**

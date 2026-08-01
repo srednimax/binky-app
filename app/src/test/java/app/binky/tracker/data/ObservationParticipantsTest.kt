@@ -9,8 +9,8 @@ import java.time.Instant
  * Who the form ticks when it opens, and who it says nothing about.
  *
  * A JVM test because [preSelectParticipants] is a pure function over plain entities — the rule is
- * the claim, and Phase 4's Watch predicate has to land in it as one more `when` branch without any
- * of these expectations moving.
+ * the claim, and Phase 4's Watch predicate landed in it as one more `when` branch with none of 2f's
+ * expectations moving, which is what writing it as a filter bought.
  */
 class ObservationParticipantsTest {
     private fun bunny(
@@ -74,6 +74,59 @@ class ObservationParticipantsTest {
         // a second gate, and making it one would leave the caller with an empty participant list.
         assertEquals(listOf("bijou"), selection.bunnyIds)
         assertTrue(selection.excluded.isEmpty())
+    }
+
+    @Test
+    fun aHousemateUnderAWatchIsExcludedWithAStatedReason() {
+        val clover = bunny("clover", "Clover")
+
+        val selection =
+            preSelectParticipants(
+                subject = bijou,
+                fluffleMembers = listOf(bijou, nugget, clover),
+                activelyWatchedIds = setOf("clover"),
+            )
+
+        // The one-tap healthy day is the unreviewed write path, and it must not sweep a separated,
+        // ill bunny into a shared tray fact (ADR-0008). Stated, not silent: *"Clover is under a
+        // watch — log for them separately."*
+        assertEquals(listOf("bijou", "nugget"), selection.bunnyIds)
+        val excluded = selection.excluded.single()
+        assertEquals("clover", excluded.bunnyId)
+        assertEquals(ParticipantExclusion.UNDER_WATCH, excluded.reason)
+    }
+
+    @Test
+    fun aWatchedSubjectIsStillTheSubject() {
+        val selection =
+            preSelectParticipants(
+                subject = bijou,
+                fluffleMembers = listOf(bijou, nugget),
+                activelyWatchedIds = setOf("bijou"),
+            )
+
+        // Starting a watch on Bijou and then logging for Bijou is the ordinary case — indeed it is
+        // the point of the watch. The exclusion is about housemates, and the subject rule is what
+        // keeps a watched bunny from producing an observation covering nobody.
+        assertEquals(listOf("bijou", "nugget"), selection.bunnyIds)
+        assertTrue(selection.excluded.isEmpty())
+    }
+
+    @Test
+    fun archivedOutranksWatchedWhenSomehowBothAreTrue() {
+        val clover = bunny("clover", "Clover", archivedAt = Instant.parse("2026-01-01T00:00:00Z"))
+
+        val selection =
+            preSelectParticipants(
+                subject = bijou,
+                fluffleMembers = listOf(bijou, clover),
+                activelyWatchedIds = setOf("clover"),
+            )
+
+        // Archiving closes any watch, so this pair cannot arise from a live database — the test
+        // exists to pin which answer wins if it ever does. "Archived" explains more, and the
+        // ordering being deliberate is the difference between a decision and an accident.
+        assertEquals(ParticipantExclusion.ARCHIVED, selection.excluded.single().reason)
     }
 
     @Test
