@@ -1389,7 +1389,7 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      HyperOS — `INSTALL_FAILED_USER_RESTRICTED` returns instantly with no dialog, which reads exactly like
      the documented missed-prompt case and is not it. Updates were always fine, which is why it only
      surfaced here.
-9. **3i — Polish.** *(the file has landed; one hand check is still owed — last bullet)*
+9. **3i — Polish.** ✅
    - `values-pl/strings.xml` — **335 strings, 14 plurals** and the breed array, not the ~400 this was
      estimated at and not the 15 plurals counted above either. It lands after 1.0 is on the track,
      deliberately: translating churn twice is the only way to make it more expensive.
@@ -1457,12 +1457,31 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      counterpart, `values-pl` declares nothing extra, every plural carries all four categories, every format
      argument survives, and the breed lists are the same length. "Read every screen once" is a person's job
      done once; this is the part of it a machine can keep holding afterwards.
-   - **Still owed, and it is a person's job:** every screen read in Polish with no English left behind —
-     dialogs, snackbars, the wizard and the terminal restore screen included, the three least likely to be
-     revisited by hand. The pre-13 half of that (switch to Polish, app changes language while the *phone*
-     does not, launcher label stays English) is now covered mechanically by the ungated probe on the API 26
-     leg, so what remains is a read for register rather than for mechanism.
-10. **3j — 1.0.1, and the closed track.**
+   - **The read was done, on the phone, and nothing shipping is in English.** Every screen was walked with
+     the app switched through its own switcher — home, weight list and entry, the observation timeline, entry
+     form and symptom picker, photos, the archive, settings, backup and restore, both wizard steps, the empty
+     states — plus the dialogs and a snackbar, which is the half a screen-by-screen walk usually misses. The
+     switcher's claim held on the 13+ half too: the app read `pl` while the phone stayed `en-US`. The pre-13
+     half stays mechanical, on the ungated API 26 leg.
+   - **Three things the read found are worth keeping.** The seeded symptom table **resolves through
+     resources, not through the rows it was seeded with**, so a database seeded in English still lists Polish
+     symptoms — the failure this check most expected to find is structurally absent. The **breed list is
+     half-untranslated on purpose** (`Angora angielska` and `Zając belgijski` beside `Beveren` and `Blanc de
+     Hotot`): registry names are not translated in Polish rabbit keeping either, and `PolishTranslationTest`
+     holds the two arrays only to the same length, so this is a decision rather than a gap — written down
+     because it looks exactly like one. The only English left anywhere is in **`SampleData.kt`**, a note and
+     two photo captions, which is debug-only and reaches no shipped build.
+   - **One screen was not reached by hand:** the restore confirmation and the terminal restore screen, which
+     need a file chosen through the vendor picker — and the Xiaomi's picker would not take the taps that
+     switch to its Downloads root, which is the same class of obstacle as the split-APK prompt. Its strings
+     were read out of `values-pl` instead and are complete. It stays owed as a two-minute look the next time
+     a restore is driven by hand, which the gate already requires for other reasons.
+10. **3j — 1.0.1, and the closed track.** *(the build is cut and verified; the Console half is what remains)*
+    - **1.0.1 is cut.** Release-please's PR merged, `v1.0.1` tagged, and the bundle checked **against the
+      artifact rather than against the config** that was meant to produce it: `versionCode` 164,
+      `versionName` 1.0.1, the upload key, and the Polish strings present in `base/resources.pb` — the last
+      being the one absence that would make this particular release pointless, and the one 3a's silent
+      `aapt2` lesson says to read out of the file.
     - 1.0.1 goes up with Polish, and **that build opens the closed track**. The internal track does not satisfy
       Play's prerequisite; a closed one does, which is the whole reason this is a separate release.
     - **This is where the schema stops being disposable in the sense that matters** (ADR-0023, ADR-0007):
