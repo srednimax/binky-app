@@ -3,6 +3,34 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!--
+        The app's first user-facing permissions, and the reason docs/play-app-content.md's
+        "declares no user-facing permission at all" stops being true at 1.1 (PLAN 4a).
+
+        POST_NOTIFICATIONS is a runtime permission on API 33+ and granted at install below it. It is
+        never asked from a bare system dialog on launch — ADR-0006 gives Android only two denials
+        before the dialog stops appearing for good, so the ask always follows our own screen
+        explaining what it is for.
+
+        RECEIVE_BOOT_COMPLETED is install-time and invisible to the owner. It exists so BootReceiver
+        can put the daily sweep back after a restart; the sweep is the only scheduled work in the
+        app (ADR-0024), so this permission buys exactly one line of code.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!--
+        Package visibility (API 30+) for the one OEM screen the app offers to open: Xiaomi's
+        autostart manager, which on HyperOS decides whether background work runs at all (ADR-0003).
+        Without this declaration `resolveActivity` returns null on a phone where the activity exists,
+        and the app would either hide a button that works or show one that does nothing.
+
+        A named package, not QUERY_ALL_PACKAGES: we look for exactly one thing and say which.
+    -->
+    <queries>
+        <package android:name="com.miui.securitycenter" />
+    </queries>
+
+    <!--
         `android:localeConfig` is read by Android 13+ only, which is what tools:targetApi records —
         it silences lint's "unused below minSdk" note without weakening anything at runtime. Older
         devices ignore the attribute and AppCompat's backport reads the same file instead, so the
@@ -57,6 +85,50 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!--
+            **WorkManager initialises on demand, not at process start.** Removing its entry from
+            androidx.startup's provider is half of that; `BinkyApplication : Configuration.Provider`
+            is the other half, and WorkManager then builds itself the first time
+            `WorkManager.getInstance` is called.
+
+            The default is an initializer that runs inside a ContentProvider, before
+            `Application.onCreate` — and `Application.onCreate` is where ADR-0007's wipe guard lives.
+            Initialisation order between "the database may be about to be destroyed" and "background
+            work may start touching it" is not something to inherit from whatever the merged
+            manifest happens to produce.
+
+            `tools:node="remove"` on the meta-data alone, not on the provider: androidx.startup is
+            shared, and other libraries may register initialisers there.
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
+        <!--
+            Puts the daily sweep back after a restart, and does nothing else (ADR-0024). It reads no
+            persisted schedule because there is none — the due date is derived, and the OS schedule
+            was never the source of truth.
+
+            `exported="false"` is correct even though the sender is another process: BOOT_COMPLETED
+            is a protected broadcast, which the system is permitted to deliver to a receiver no
+            other app can reach.
+        -->
+        <receiver
+            android:name=".work.BootReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <!--
             Not a service anybody starts — `android:enabled="false"` means it can never run. It is

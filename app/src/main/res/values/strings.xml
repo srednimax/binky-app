@@ -171,13 +171,14 @@
     <string name="settings_language_polish">Polski</string>
     <string name="settings_language_help">Binky can use a different language from the rest of the phone. Changing this restarts the app.</string>
 
-    <!-- First-run setup (ADR-0006). Two steps at 1.0: the first bunny, then backup. The reminders
-         step ships with 1.1 and the reminders themselves. -->
+    <!-- First-run setup (ADR-0006). Three steps at 1.1: the first bunny, backup, then reminders.
+         The reminders step waited for the reminders themselves — an opt-in that cannot demonstrate
+         anything spends one of Android's two permitted denials for nothing. -->
     <string name="setup_step">Step %1$d of %2$d</string>
     <string name="setup_continue">Continue</string>
     <string name="setup_back">Back a step</string>
     <string name="setup_bunny_title">Welcome to Binky</string>
-    <string name="setup_bunny_body">Binky keeps your bunnies\' health history on this phone — weights, observations and photos. There is no account and no server: nothing you record here is sent anywhere.\n\nTwo quick questions, and then it is yours.</string>
+    <string name="setup_bunny_body">Binky keeps your bunnies\' health history on this phone — weights, observations and photos. There is no account and no server: nothing you record here is sent anywhere.\n\nThree quick questions, and then it is yours.</string>
     <string name="setup_bunny_action">Add your first bunny</string>
     <string name="setup_bunny_add_another">Add another bunny</string>
     <string name="setup_bunny_skip">Skip for now</string>
@@ -190,12 +191,50 @@
     <string name="setup_backup_changeable">All of this stays editable in Settings › Backup &amp; restore.</string>
     <string name="setup_finish">Finish setup</string>
 
+    <!-- Reminders (ADR-0003, ADR-0006, ADR-0024). The same strings serve first-run setup's third
+         step and the point-of-use sheet, because they are the same composable.
+
+         The three delivery states are the load-bearing copy in this app. "Blocked" is a certainty
+         and says so; "best-effort" is a real hedge about a real thing; "armed" is the only one that
+         promises anything, and it is only reachable once the exemption is actually held. None of
+         them may overstate what the phone will do. -->
+    <string name="reminders_title">Reminders</string>
+    <string name="reminders_body">Binky can remind you about recurring care — a nail trim every six weeks, a yearly vaccination, a weekly weigh-in. Reminders arrive once a day, on this phone only, and you choose what they are for.</string>
+    <string name="reminders_enable_action">Turn reminders on</string>
+    <string name="reminders_state_blocked">Notifications are off, so reminders will only appear inside the app.</string>
+    <string name="reminders_state_best_effort">Reminders are on. This phone may still delay or drop them while Binky is in the background — the setting below is what fixes that.</string>
+    <string name="reminders_state_armed">Reminders are on, and this phone is set up to let them through.</string>
+    <string name="reminders_denied_once">No problem. You can turn them on whenever you like.</string>
+    <string name="reminders_permanently_denied">Android will not ask again, so this one has to be switched on in the phone\'s settings.</string>
+    <string name="reminders_open_settings_action">Open notification settings</string>
+    <string name="reminders_battery_title">One more thing, or reminders may not arrive</string>
+    <string name="reminders_battery_body">Android pauses apps it thinks are idle, and a paused Binky cannot post a reminder. Exempting it from battery optimisation is what lets a reminder through at nine in the morning after the phone has been asleep all night.</string>
+    <string name="reminders_battery_action">Open battery settings</string>
+    <string name="reminders_battery_dismiss">Not now</string>
+    <string name="reminders_autostart_help">Some phones — Xiaomi above all — also keep an autostart list of their own. Binky cannot read it, so it cannot tell you whether it is set; this is just the way in.</string>
+    <string name="reminders_autostart_action">Open autostart settings</string>
+
     <!-- Debug builds only, and never shown in a release build. -->
     <string name="settings_sample_data">Sample data</string>
     <string name="settings_sample_data_help">Debug builds only. Adds two bonded bunnies, a year of uneven, back-dated weighings and a handful of observations, so the chart, the trend flag and the timeline can be reviewed against real history.</string>
     <string name="settings_sample_data_action">Add the sample data</string>
     <string name="settings_sample_data_seeded">Sample data added.</string>
     <string name="settings_sample_data_present">The sample bunnies are already here.</string>
+    <string name="settings_debug_reminder">Reminder delivery</string>
+    <string name="settings_debug_reminder_help">Debug builds only. Posts one notification two minutes from now, on its own path rather than through the daily sweep — so the channel, the permission and the delivery can be proven with no reminders in existence.</string>
+    <string name="settings_debug_reminder_settings_action">Reminder settings</string>
+    <string name="settings_debug_reminder_action">Remind me in two minutes</string>
+    <string name="settings_debug_reminder_scheduled">A test reminder will arrive in two minutes. Lock the phone and wait.</string>
+    <string name="debug_reminder_notification_title">Test reminder</string>
+    <string name="debug_reminder_notification_text">This is what a care reminder will look like. Nothing is due — the reminder was scheduled by hand from Settings.</string>
+
+    <!-- Notification channels. The owner sees these names in the phone's notification settings, and
+         they are the only per-kind control they have: someone who mutes a daily watch nag must not
+         thereby mute an annual vaccination. -->
+    <string name="channel_care_name">Care reminders</string>
+    <string name="channel_care_description">Nail trims, vaccinations, weigh-ins, and anything else you have set a recurring reminder for.</string>
+    <string name="channel_watch_name">Watch check-ins</string>
+    <string name="channel_watch_description">A once-a-day nudge to look in on a bunny you are watching closely. Only while a watch is running.</string>
 
     <!-- Backup and restore (ADR-0005). The photo-gallery warning is not decoration: photos are the
          least protected data in the app, and ADR-0001's rule about silence says a gap the owner

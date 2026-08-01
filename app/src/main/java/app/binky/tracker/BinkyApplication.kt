@@ -1,6 +1,8 @@
 package app.binky.tracker
 
 import android.app.Application
+import android.util.Log
+import androidx.work.Configuration
 import app.binky.tracker.data.BUNNY_DATABASE_FILE
 import app.binky.tracker.data.BUNNY_SCHEMA_VERSION
 import app.binky.tracker.data.PRESERVED_DIRECTORY
@@ -8,6 +10,7 @@ import app.binky.tracker.data.backup.adoptRestoredDatabase
 import app.binky.tracker.data.destructiveMigrationAllowed
 import app.binky.tracker.data.preserveBeforeWipe
 import app.binky.tracker.data.readUserVersion
+import app.binky.tracker.work.ensureSweepEnqueued
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -15,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
@@ -54,8 +58,30 @@ data class SchemaMismatch(
  * *first read* is the event that matters, which is why nothing may touch [container] before consent.
  * (This is not the decorative `database by lazy`: this lazy **is** the gate.)
  */
-class BinkyApplication : Application() {
+class BinkyApplication :
+    Application(),
+    Configuration.Provider {
     val container: AppContainer by lazy { AppContainer(this) }
+
+    /**
+     * WorkManager's configuration, supplied **on demand**: the manifest removes its `androidx.startup`
+     * initializer, so nothing exists until the first `WorkManager.getInstance` call and this property
+     * is what that call builds from.
+     *
+     * The default initializer runs inside a `ContentProvider`, *before* `Application.onCreate` — and
+     * `onCreate` below is where the wipe guard lives. Initialisation order between "this database may
+     * be about to be destroyed" and "background work may start touching it" should be a decision, not
+     * whatever the merged manifest happens to produce.
+     *
+     * Kotlin note: `Configuration.Provider` declares a `val`, not a getter method, so this is an
+     * `override val` with an initialiser rather than a function — the property *is* the override.
+     */
+    override val workManagerConfiguration: Configuration
+        get() =
+            Configuration
+                .Builder()
+                .setMinimumLoggingLevel(if (BuildConfig.DEBUG) Log.DEBUG else Log.WARN)
+                .build()
 
     private val _schemaMismatch = MutableStateFlow<SchemaMismatch?>(null)
 
@@ -117,6 +143,16 @@ class BinkyApplication : Application() {
     private fun openDatabase(onOpened: () -> Unit = {}) {
         scope.launch {
             container.openDatabase()
+            // **After the gate, never before it.** The sweep guards itself against a pending wipe
+            // too (ADR-0007), but arming it while the consent screen is still up would mean the app
+            // scheduled background work over a database it had just told the owner it could not
+            // open. This is also the "re-enqueued on next launch" path the sweep relies on when it
+            // finds a mismatch and returns having done nothing.
+            //
+            // Off the main thread, because this coroutine is back on it: `openDatabase` moves its
+            // own blocking work to IO and returns, and the first `WorkManager.getInstance` call is
+            // what builds WorkManager's own database object.
+            withContext(Dispatchers.IO) { ensureSweepEnqueued(this@BinkyApplication) }
             onOpened()
         }
     }

@@ -66,6 +66,25 @@ fun readUserVersion(databaseFile: File): Int {
 }
 
 /**
+ * Whether the file on disk is at a version this build cannot simply open — the one rule behind both
+ * things that have to know it, stated once.
+ *
+ * `0` is "there is nothing here": no file, an empty one, or one too short to hold a header, which is
+ * exactly how a fresh install looks. A **newer** on-disk version counts as pending too, because Room
+ * destroys a downgrade just as thoroughly as it destroys an upgrade.
+ *
+ * Two callers, arrived at from opposite directions. [preserveBeforeWipe] asks it to decide whether
+ * there is anything worth copying aside. The daily sweep (ADR-0024) asks it because it runs with no
+ * UI and no owner present, and **any worker that touches a repository forces the container** — which
+ * is the future ADR-0007 named when it made its guard structural. A sweep that ran anyway would
+ * destroy a database in the background, on a phone nobody is looking at.
+ */
+fun schemaMismatchPending(
+    onDiskVersion: Int,
+    appSchemaVersion: Int = BUNNY_SCHEMA_VERSION,
+): Boolean = onDiskVersion != 0 && onDiskVersion != appSchemaVersion
+
+/**
  * Copies the database aside if opening it with this build would destroy it, and returns the copy.
  * Returns null when there is nothing to preserve — no file yet, or a file already at this version.
  *
@@ -88,9 +107,7 @@ fun preserveBeforeWipe(
     appSchemaVersion: Int = BUNNY_SCHEMA_VERSION,
     timestamp: Instant = Instant.ofEpochMilli(databaseFile.lastModified()),
 ): File? {
-    val onDisk = readUserVersion(databaseFile)
-    // A *newer* on-disk version is preserved too: Room destroys a downgrade just as thoroughly.
-    if (onDisk == 0 || onDisk == appSchemaVersion) return null
+    if (!schemaMismatchPending(readUserVersion(databaseFile), appSchemaVersion)) return null
 
     preservedDir.mkdirs()
     val preserved =

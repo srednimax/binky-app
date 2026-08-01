@@ -58,6 +58,7 @@ import app.binky.tracker.ui.photos.PhotoGalleryScreen
 import app.binky.tracker.ui.settings.SettingsScreen
 import app.binky.tracker.ui.setup.SetupBackupStep
 import app.binky.tracker.ui.setup.SetupBunnyStep
+import app.binky.tracker.ui.setup.SetupRemindersStep
 import app.binky.tracker.ui.shell.AppShellViewModel
 import app.binky.tracker.ui.shell.BunnySwitcher
 import app.binky.tracker.ui.shell.ShellUiState
@@ -175,7 +176,13 @@ private fun SetupNavigation(
                             onBack = { backStack.removeLastOrNull() },
                         )
                     }
-                    entry<SetupBackup> { SetupBackupStep(onBack = { backStack.removeLastOrNull() }) }
+                    entry<SetupBackup> {
+                        SetupBackupStep(
+                            onBack = { backStack.removeLastOrNull() },
+                            onContinue = { backStack.add(SetupReminders) },
+                        )
+                    }
+                    entry<SetupReminders> { SetupRemindersStep(onBack = { backStack.removeLastOrNull() }) }
                 },
         )
     }

@@ -276,6 +276,11 @@ dependencies {
     // `recordedAt` on a numeric x-axis, which is the house rule a categorical/index axis would break.
     implementation(libs.vico.compose.m3)
 
+    // Scheduling. One worker for the whole app (ADR-0024), initialised on demand rather than by
+    // androidx.startup — see BinkyApplication, where ADR-0007's wipe guard also lives and the
+    // ordering between the two has to be a decision rather than a merged-manifest accident.
+    implementation(libs.androidx.work.runtime)
+
     // Navigation
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)

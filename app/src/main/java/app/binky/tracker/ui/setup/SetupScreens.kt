@@ -26,10 +26,11 @@ import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.backup.BackupScopePicker
 import app.binky.tracker.ui.backup.PhotosNotProtectedNote
 import app.binky.tracker.ui.common.openSystemBackupSettings
+import app.binky.tracker.ui.reminders.RemindersOptIn
 import app.binky.tracker.ui.shell.BunnySummary
 
 /** How many steps the wizard has, so the counter and the last step's button agree on the end. */
-private const val SETUP_STEPS = 2
+private const val SETUP_STEPS = 3
 
 /**
  * Step one: add your first bunny, or don't (ADR-0006).
@@ -112,6 +113,7 @@ fun SetupBunnyStep(
 @Composable
 fun SetupBackupStep(
     onBack: () -> Unit,
+    onContinue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: SetupViewModel = viewModel(factory = SetupViewModel.Factory, extras = appViewModelExtras())
@@ -161,6 +163,50 @@ fun SetupBackupStep(
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            // Continue, not Finish: the reminders step is now the last one, and it is the only place
+            // the wizard ends. Two steps that both wrote the completion flag would be two answers to
+            // one question.
+            Button(onClick = onContinue, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.setup_continue))
+            }
+            TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.setup_back))
+            }
+        }
+    }
+}
+
+/**
+ * Step three: turn reminders on, or don't (ADR-0006).
+ *
+ * **Our own screen, with the system dialog behind a button on it** — never the bare dialog on
+ * launch. Android permits two `POST_NOTIFICATIONS` denials before it stops asking for good, and a
+ * prompt shown before the owner knows what it is for is the most likely to be dismissed. This phase
+ * spends the first denial, so it spends it on a screen that has said what it wants and why.
+ *
+ * The body is [RemindersOptIn] verbatim — the same composable the point-of-use sheet hosts. A
+ * wizard-shaped copy would be a second place for two denials to be spent from, which is precisely
+ * the arithmetic ADR-0006 exists to protect.
+ *
+ * **Skippable, and skipping is re-asked at the point of use and nowhere else.** Upgraders are not
+ * re-onboarded: an upgrader is indistinguishable from a skipper, and `resolveSetupState` already
+ * answers that case.
+ */
+@Composable
+fun SetupRemindersStep(
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val viewModel: SetupViewModel = viewModel(factory = SetupViewModel.Factory, extras = appViewModelExtras())
+
+    SetupStep(
+        step = 3,
+        title = stringResource(R.string.reminders_title),
+        modifier = modifier,
+    ) {
+        RemindersOptIn()
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             Button(onClick = viewModel::finish, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.setup_finish))
             }
@@ -174,8 +220,8 @@ fun SetupBackupStep(
 /**
  * The frame both steps share: where they are, what they are about, and room to scroll.
  *
- * The step counter is not decoration — it is the promise that this ends, and how soon. Two steps is
- * short enough that saying so is the difference between "answer these" and "how long is this
+ * The step counter is not decoration — it is the promise that this ends, and how soon. Three steps
+ * is short enough that saying so is the difference between "answer these" and "how long is this
  * going to be".
  */
 @Composable

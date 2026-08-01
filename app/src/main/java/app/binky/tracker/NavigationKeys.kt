@@ -96,12 +96,15 @@ data class PhotoGallery(
 ) : NavKey
 
 /**
- * First-run setup (ADR-0006), as two keys rather than one screen with a step counter.
+ * First-run setup (ADR-0006), as three keys rather than one screen with a step counter.
  *
- * Two steps at 1.0: add your first bunny, then choose what a backup carries. The reminders step
- * ADR-0006 describes ships with 1.1 and the reminders themselves — 1.0 has nothing that posts a
- * notification, and an opt-in that cannot demonstrate anything spends one of Android's two
- * permitted denials on a screen that has nothing to show for it.
+ * Add your first bunny, choose what a backup carries, then turn reminders on. The third step waited
+ * for 1.1 by name: 1.0 had nothing that posts a notification, and an opt-in that cannot demonstrate
+ * anything spends one of Android's two permitted denials on a screen with nothing to show for it.
+ *
+ * **Almost nobody will see it.** Every install that exists today has already finished setup, so for
+ * 1.1 the point-of-use path is the one anyone takes — but the step is built because a fresh install
+ * is still a first run, and because it and the sheet are the same composable rather than two.
  *
  * These are keys on their own back stack, not on the shell's — see `SetupNavigation`. The bunny
  * step reaches [BunnyEditor], which is the whole reason for the shape: the editor keeps its own
@@ -110,6 +113,8 @@ data class PhotoGallery(
 @Serializable data object SetupBunny : NavKey
 
 @Serializable data object SetupBackup : NavKey
+
+@Serializable data object SetupReminders : NavKey
 
 /**
  * Whether a top-level destination is shown, shown as unavailable, or absent (ADR-0015).

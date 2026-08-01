@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The launcher's monochrome rabbit, scaled up to fill a notification icon.
+
+  A notification small icon is drawn as a **silhouette**: Android throws away every colour in it and
+  tints the non-transparent pixels, which is why this reuses the monochrome layer's path rather than
+  the full-colour launcher art. The path itself is generated — regenerate it in
+  art/make-launcher-icon.py, don't hand-edit it here.
+
+  The scale exists because the adaptive-icon path is drawn inside a 108x108 viewport with a large
+  safe zone around it, and dropped into a 24dp notification slot unchanged the rabbit would be a
+  speck. The art's bounding box is already centred on (54, 54), so the group needs a scale and no
+  translation.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108"
+    android:tint="#FFFFFF">
+  <group
+      android:pivotX="54"
+      android:pivotY="54"
+      android:scaleX="1.6"
+      android:scaleY="1.6">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M53.33,34.15C52.12,28.9 52.34,24.36 53.82,24.02C55.3,23.68 57.49,27.66 58.7,32.91C59.91,38.16 59.69,42.69 58.21,43.03C56.73,43.37 54.54,39.4 53.33,34.15ZM60.5,34.16C61.35,28.83 63.25,24.71 64.75,24.95C66.26,25.19 66.79,29.7 65.95,35.02C65.11,40.34 63.2,44.46 61.7,44.22C60.2,43.98 59.66,39.48 60.5,34.16ZM39.26,72.12C39.26,69.9 41.06,68.09 43.29,68.09C45.52,68.09 47.32,69.9 47.32,72.12C47.32,74.35 45.52,76.15 43.29,76.15C41.06,76.15 39.26,74.35 39.26,72.12ZM42.44,68.31C42.44,59.64 48.33,52.61 55.59,52.61C62.85,52.61 68.74,59.64 68.74,68.31C68.74,76.97 62.85,84 55.59,84C48.33,84 42.44,76.97 42.44,68.31ZM50.5,49.64C50.5,44.72 54.49,40.74 59.41,40.74C64.33,40.74 68.32,44.72 68.32,49.64C68.32,54.56 64.33,58.55 59.41,58.55C54.49,58.55 50.5,54.56 50.5,49.64ZM61.95,48.16C61.95,48.98 62.62,49.64 63.44,49.64C64.26,49.64 64.92,48.98 64.92,48.16C64.92,47.34 64.26,46.67 63.44,46.67C62.62,46.67 61.95,47.34 61.95,48.16Z" />
+  </group>
+</vector>

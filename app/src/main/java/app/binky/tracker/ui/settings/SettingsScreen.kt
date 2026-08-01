@@ -21,6 +21,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -41,6 +43,8 @@ import app.binky.tracker.BuildConfig
 import app.binky.tracker.R
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.ui.appViewModelExtras
+import app.binky.tracker.ui.reminders.RemindersOptIn
+import app.binky.tracker.work.scheduleDebugReminder
 
 /**
  * Settings, reached from More. A detail screen, the same shape as the archived bunnies list.
@@ -90,6 +94,8 @@ fun SettingsScreen(
                     onSeed = viewModel::seedSampleData,
                     onDismiss = viewModel::clearSampleDataOutcome,
                 )
+                HorizontalDivider()
+                DebugReminderSetting()
             }
         }
     }
@@ -227,6 +233,73 @@ private fun BackupSetting(onOpen: () -> Unit) {
             text = stringResource(R.string.settings_backup_summary),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * **What makes 4a provable with no reminders in existence** (ADR-0024): a notification two minutes
+ * from now, on its own one-shot path rather than through the daily sweep.
+ *
+ * It is also the point-of-use host for [RemindersOptIn] until 4c gives it a real one on the Care
+ * screen — which is what proves ADR-0006's "one composable in two hosts" claim rather than leaving
+ * it as an intention. The sheet is the *only* path anyone takes at 1.1, since every install that
+ * exists today has already been through first-run setup.
+ *
+ * Debug builds only; the caller renders it behind `BuildConfig.DEBUG`. It stays after this
+ * checkpoint as the fastest way to re-prove delivery after any change to it.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DebugReminderSetting() {
+    val context = LocalContext.current
+    var scheduled by remember { mutableStateOf(false) }
+    var optingIn by remember { mutableStateOf(false) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(text = stringResource(R.string.settings_debug_reminder), style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = stringResource(R.string.settings_debug_reminder_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = { optingIn = true }) {
+            Text(stringResource(R.string.settings_debug_reminder_settings_action))
+        }
+        TextButton(
+            onClick = {
+                scheduleDebugReminder(context)
+                scheduled = true
+            },
+        ) {
+            Text(stringResource(R.string.settings_debug_reminder_action))
+        }
+    }
+
+    if (optingIn) {
+        ModalBottomSheet(onDismissRequest = { optingIn = false }) {
+            Column(
+                modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(text = stringResource(R.string.reminders_title), style = MaterialTheme.typography.headlineSmall)
+                RemindersOptIn()
+                TextButton(onClick = { optingIn = false }, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.action_done))
+                }
+            }
+        }
+    }
+
+    if (scheduled) {
+        AlertDialog(
+            onDismissRequest = { scheduled = false },
+            text = { Text(stringResource(R.string.settings_debug_reminder_scheduled)) },
+            confirmButton = {
+                TextButton(
+                    onClick = { scheduled = false },
+                ) { Text(stringResource(R.string.action_ok)) }
+            },
         )
     }
 }
