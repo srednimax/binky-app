@@ -2,6 +2,7 @@ package app.binky.tracker.data
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -25,10 +26,10 @@ enum class WeightUnit { KILOGRAMS, GRAMS }
  * Owner preferences held outside the database, because ADR-0007 lets the database be wiped and
  * these must survive that.
  *
- * Four keys: which bunny is selected, the weight display unit, the export scope, and whether
- * first-run setup has been through. The unit's toggle lands in 2c with the Settings screen — a
- * preference with no setter is a constant with a DataStore round-trip, so the setter is here from
- * the start even though nothing calls it yet.
+ * Five keys: which bunny is selected, the weight display unit, the export scope, whether first-run
+ * setup has been through, and whether the battery-optimisation exemption has been offered once. The
+ * unit's toggle lands in 2c with the Settings screen — a preference with no setter is a constant
+ * with a DataStore round-trip, so the setter is here from the start even though nothing calls it yet.
  *
  * These **travel in every export scope, from Essential upward** (ADR-0005). They are a few hundred
  * bytes, and a restored phone that has forgotten its display unit, its selected bunny and its chosen
@@ -102,6 +103,27 @@ class AppPreferences(
         dataStore.edit { preferences -> preferences[SETUP_PROGRESS] = SetupProgress.Complete.name }
     }
 
+    /**
+     * Whether the battery-optimisation exemption has been **offered** — not whether it was granted,
+     * which the OS answers for itself through `PowerManager.isIgnoringBatteryOptimizations`
+     * (ADR-0003's Phase 4a amendment).
+     *
+     * Two facts, and only one of them is ours to remember. The exemption's state can change in
+     * Android's settings at any moment and is read fresh every time; what the app has to remember is
+     * that it already asked, because an unprompted ask that reappears on every visit is the nag
+     * ADR-0001 rejects. Declining leaves the fix on the delivery-state line, where the owner can
+     * take it when they want it.
+     */
+    val batteryExemptionAsked: Flow<Boolean> =
+        dataStore.data
+            .catch { cause -> if (cause is IOException) emit(emptyPreferences()) else throw cause }
+            .map { preferences -> preferences[BATTERY_EXEMPTION_ASKED] == true }
+
+    /** Recorded on the way *into* the system screen, and on "Not now" — both are having asked. */
+    suspend fun markBatteryExemptionAsked() {
+        dataStore.edit { preferences -> preferences[BATTERY_EXEMPTION_ASKED] = true }
+    }
+
     suspend fun setSelection(selection: StoredSelection) {
         dataStore.edit { preferences ->
             when (selection) {
@@ -128,6 +150,7 @@ class AppPreferences(
         val WEIGHT_UNIT = stringPreferencesKey("weight_unit")
         val BACKUP_SCOPE = stringPreferencesKey("backup_scope")
         val SETUP_PROGRESS = stringPreferencesKey("setup_progress")
+        val BATTERY_EXEMPTION_ASKED = booleanPreferencesKey("battery_exemption_asked")
 
         /** Bunny ids are UUIDs, so this sentinel cannot collide with one. */
         const val ALL = "all"

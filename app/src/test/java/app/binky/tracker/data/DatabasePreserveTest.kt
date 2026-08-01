@@ -1,6 +1,7 @@
 package app.binky.tracker.data
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -52,6 +53,25 @@ class DatabasePreserveTest {
 
         val empty = temporaryFolder.newFile("empty.db")
         assertEquals(0, readUserVersion(empty))
+    }
+
+    /**
+     * The predicate the daily sweep asks before it touches anything (ADR-0024, ADR-0007).
+     *
+     * Its two "safe" answers are opposites and both matter. A **fresh install** has nothing to lose,
+     * so the sweep may run — refusing there would mean a phone that never sweeps until it happens to
+     * hold data. A **matching version** is the ordinary case. Everything else is the sweep forcing a
+     * container that destroys a database with nobody looking, which is the exact future ADR-0007
+     * named when it made its guard structural.
+     */
+    @Test
+    fun `a pending schema mismatch is anything that is neither absent nor current`() {
+        assertFalse("a fresh install", schemaMismatchPending(onDiskVersion = 0, appSchemaVersion = 5))
+        assertFalse("already at this version", schemaMismatchPending(onDiskVersion = 5, appSchemaVersion = 5))
+        assertTrue("an upgrade this build has not migrated", schemaMismatchPending(4, appSchemaVersion = 5))
+        // A downgrade counts: Room destroys one just as thoroughly as it destroys an upgrade, so a
+        // sweep running under a rolled-back build is the same hazard from the other direction.
+        assertTrue("a downgrade", schemaMismatchPending(6, appSchemaVersion = 5))
     }
 
     @Test

@@ -22,6 +22,31 @@ landed in between, and any one of them could have pulled in a permission. None d
 | No advertising ID | No `com.google.android.gms.permission.AD_ID` in the artifact. |
 | No network code of our own | No `INTERNET` permission is declared. |
 
+### 1.1 declares two permissions, and the table above stops being true for the first two rows
+
+Written at **4a**, when they entered the manifest, and **re-verified against the 1.1 artifact at 4h** —
+the rows above stay as the record of what 1.0.1 shipped, because "no permissions" is a claim about a
+build and not about a project.
+
+| Permission | Why, and what it changes on the Console |
+| --- | --- |
+| `android.permission.POST_NOTIFICATIONS` | Care reminders and the watch check-in. Runtime on API 33+, install-time below. **Not a Play sensitive permission** and there is no declaration form for it — it needs no justification, only that the Data safety answers and the store listing stop implying the app never notifies. It is never requested from a bare system dialog: ADR-0006 puts our own screen in front of it, in first-run setup and at the point of use. |
+| `android.permission.RECEIVE_BOOT_COMPLETED` | Puts the daily sweep back after a restart (ADR-0024). Install-time, invisible to the owner, not sensitive, no declaration form. |
+
+Two permissions this app **deliberately does not declare**, both of which would be easy to reach for:
+
+- **`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`.** It would let the app pop its own exemption dialog
+  instead of deep-linking into Android's list. Play restricts it to apps whose *core function* is the
+  exemption, and this app's core function is a rabbit's weight chart — declaring it invites a review
+  rejection to save the owner one tap. The app reads the state (which needs no permission), explains
+  it, and opens the screen where the owner decides.
+- **`SCHEDULE_EXACT_ALARM`.** Care reminders are day-granularity and use WorkManager (ADR-0003); the
+  exact-alarm path is Phase 5's, with medication doses, and this table will need revisiting then.
+
+The `<queries>` element added alongside them names one package, `com.miui.securitycenter`, so the app
+can tell whether Xiaomi's autostart screen exists before offering to open it. Package visibility is
+not a permission and needs no Console answer; `QUERY_ALL_PACKAGES`, which would, is not used.
+
 ---
 
 ## 1. Privacy policy

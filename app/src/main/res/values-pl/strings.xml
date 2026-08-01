@@ -204,7 +204,7 @@
     <string name="setup_continue">Dalej</string>
     <string name="setup_back">Krok wstecz</string>
     <string name="setup_bunny_title">Witaj w Binky</string>
-    <string name="setup_bunny_body">Binky trzyma historię zdrowia Twoich królików na tym telefonie — wagi, obserwacje i zdjęcia. Nie ma konta ani serwera: nic, co tu zapiszesz, nigdzie nie jest wysyłane.\n\nDwa krótkie pytania i aplikacja jest Twoja.</string>
+    <string name="setup_bunny_body">Binky trzyma historię zdrowia Twoich królików na tym telefonie — wagi, obserwacje i zdjęcia. Nie ma konta ani serwera: nic, co tu zapiszesz, nigdzie nie jest wysyłane.\n\nTrzy krótkie pytania i aplikacja jest Twoja.</string>
     <string name="setup_bunny_action">Dodaj pierwszego królika</string>
     <string name="setup_bunny_add_another">Dodaj kolejnego królika</string>
     <string name="setup_bunny_skip">Pomiń na razie</string>
@@ -217,12 +217,44 @@
     <string name="setup_backup_changeable">Wszystko to można zmienić w Ustawieniach › Kopia zapasowa i przywracanie.</string>
     <string name="setup_finish">Zakończ konfigurację</string>
 
+    <!-- Przypomnienia (ADR-0003, ADR-0006, ADR-0024). Te same teksty służą trzeciemu krokowi
+         konfiguracji i arkuszowi otwieranemu w miejscu użycia — to jeden komponent, nie dwa. -->
+    <string name="reminders_title">Przypomnienia</string>
+    <string name="reminders_body">Binky może przypominać o powtarzalnej opiece — obcinaniu pazurów co sześć tygodni, corocznym szczepieniu, cotygodniowym ważeniu. Przypomnienia przychodzą raz dziennie, tylko na tym telefonie, a Ty decydujesz, czego dotyczą.</string>
+    <string name="reminders_enable_action">Włącz przypomnienia</string>
+    <string name="reminders_state_blocked">Powiadomienia są wyłączone, więc przypomnienia pojawią się tylko w aplikacji.</string>
+    <string name="reminders_state_best_effort">Przypomnienia są włączone. Ten telefon może je mimo to opóźnić albo pominąć, kiedy Binky działa w tle — poniższe ustawienie to naprawia.</string>
+    <string name="reminders_state_armed">Przypomnienia są włączone, a ten telefon jest ustawiony tak, żeby je przepuszczać.</string>
+    <string name="reminders_denied_once">Nic nie szkodzi. Możesz je włączyć, kiedy tylko zechcesz.</string>
+    <string name="reminders_permanently_denied">Android nie zapyta ponownie, więc to trzeba włączyć w ustawieniach telefonu.</string>
+    <string name="reminders_open_settings_action">Otwórz ustawienia powiadomień</string>
+    <string name="reminders_battery_title">Jeszcze jedno, inaczej przypomnienia mogą nie dotrzeć</string>
+    <string name="reminders_battery_body">Android wstrzymuje aplikacje, które uzna za nieużywane, a wstrzymany Binky nie wyśle przypomnienia. Wyłączenie optymalizacji baterii dla Binky\'ego jest tym, co pozwala przypomnieniu dotrzeć o dziewiątej rano po nocy, którą telefon przespał.</string>
+    <string name="reminders_battery_action">Otwórz ustawienia baterii</string>
+    <string name="reminders_battery_dismiss">Nie teraz</string>
+    <string name="reminders_autostart_help">Niektóre telefony — przede wszystkim Xiaomi — mają jeszcze własną listę autostartu. Binky nie potrafi jej odczytać, więc nie powie Ci, czy jest ustawiona; to jest tylko droga do niej.</string>
+    <string name="reminders_autostart_action">Otwórz ustawienia autostartu</string>
+
     <!-- Debug builds only, and never shown in a release build. -->
     <string name="settings_sample_data">Dane przykładowe</string>
     <string name="settings_sample_data_help">Tylko w wersji deweloperskiej. Dodaje dwa zaprzyjaźnione króliki, rok nierównomiernych, wstecznie datowanych ważeń i kilka obserwacji, żeby wykres, ostrzeżenie o trendzie i oś czasu dało się obejrzeć na prawdziwej historii.</string>
     <string name="settings_sample_data_action">Dodaj dane przykładowe</string>
     <string name="settings_sample_data_seeded">Dane przykładowe dodane.</string>
     <string name="settings_sample_data_present">Przykładowe króliki już tu są.</string>
+    <string name="settings_debug_reminder">Dostarczanie przypomnień</string>
+    <string name="settings_debug_reminder_help">Tylko w wersji deweloperskiej. Wysyła jedno powiadomienie za dwie minuty, własną drogą, nie codziennym przebiegiem — żeby dało się sprawdzić kanał, uprawnienie i samo dostarczenie, kiedy nie istnieje jeszcze żadne przypomnienie.</string>
+    <string name="settings_debug_reminder_settings_action">Ustawienia przypomnień</string>
+    <string name="settings_debug_reminder_action">Przypomnij mi za dwie minuty</string>
+    <string name="settings_debug_reminder_scheduled">Testowe przypomnienie przyjdzie za dwie minuty. Zablokuj telefon i poczekaj.</string>
+    <string name="debug_reminder_notification_title">Testowe przypomnienie</string>
+    <string name="debug_reminder_notification_text">Tak będzie wyglądać przypomnienie o opiece. Nic nie jest zaplanowane — to przypomnienie ustawiono ręcznie w Ustawieniach.</string>
+
+    <!-- Kanały powiadomień. Te nazwy właściciel widzi w ustawieniach powiadomień telefonu i to jego
+         jedyna kontrola nad każdym rodzajem osobno. -->
+    <string name="channel_care_name">Przypomnienia o opiece</string>
+    <string name="channel_care_description">Obcinanie pazurów, szczepienia, ważenia i wszystko inne, dla czego ustawiono powtarzalne przypomnienie.</string>
+    <string name="channel_watch_name">Zaglądanie podczas obserwacji</string>
+    <string name="channel_watch_description">Codzienne przypomnienie, żeby zajrzeć do królika, którego bacznie obserwujesz. Tylko w czasie trwania obserwacji.</string>
 
     <!-- Backup and restore (ADR-0005) -->
     <string name="backup_title">Kopia zapasowa i przywracanie</string>
