@@ -81,6 +81,10 @@ interface BunnyDao {
      * - Weighings are always sole-owned: a weight belongs to exactly one bunny and cascades with it.
      * - Photos likewise: a photo is of one bunny, and deleting the bunny destroys it — the row by
      *   cascade and the file by [BunnyRepository.delete], which is the only way a file goes.
+     * - Care reminders and their completions the same, in two hops: a reminder cascades from the
+     *   bunny and its events cascade from the reminder, so both land in the destroyed bucket. The
+     *   events are counted separately rather than folded into the reminder, because a weigh-in with
+     *   two years of history loses more than the one row the reminder is.
      * - A grouped observation counts as **shared** only while at least one row belongs to a *different*
      *   bunny, because those rows survive the delete.
      * - A grouped observation where this bunny is the **last participant** is destroyed by the delete,
@@ -100,6 +104,12 @@ interface BunnyDao {
         SELECT
             (SELECT COUNT(*) FROM weights WHERE bunnyId = :bunnyId)
             + (SELECT COUNT(*) FROM photos WHERE bunnyId = :bunnyId)
+            + (SELECT COUNT(*) FROM care_reminders WHERE bunnyId = :bunnyId)
+            + (
+                SELECT COUNT(*) FROM care_events e
+                JOIN care_reminders r ON r.id = e.reminderId
+                WHERE r.bunnyId = :bunnyId
+            )
             + (
                 SELECT COUNT(*) FROM observations o
                 WHERE o.bunnyId = :bunnyId

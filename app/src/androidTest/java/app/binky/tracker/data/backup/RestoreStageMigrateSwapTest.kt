@@ -4,6 +4,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import app.binky.tracker.data.BUNNY_SCHEMA_VERSION
 import app.binky.tracker.data.BunnyEntity
 import app.binky.tracker.data.buildBunnyDatabase
@@ -33,11 +34,15 @@ import java.util.zip.ZipOutputStream
  * an empty app. That is why `BackupRestorer` pins its own configuration rather than taking the
  * default, and why the pin is asserted here rather than trusted.
  *
- * The older-schema migration path is deliberately absent: at 1.0 no older *released* schema exists,
- * so there is nothing to migrate from. It becomes a real test at 1.1.
+ * At 1.0 the older-schema migration path was deliberately absent — no older *released* schema
+ * existed, so there was nothing to migrate from. 1.1 is where it becomes real, and
+ * [aSchemaFourBackupWrittenBy101RestoresAndMigrates] is that test.
  */
 @RunWith(AndroidJUnit4::class)
 class RestoreStageMigrateSwapTest {
+    /** Committed under `app/src/androidTest/assets/`, produced once by the tagged 1.0.1 build. */
+    private val schemaFourFixture = "bunny-schema-4-fixture.zip"
+
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
     private lateinit var filesDir: File
@@ -100,6 +105,18 @@ class RestoreStageMigrateSwapTest {
             exporter = exporterFor(liveName),
             databaseName = liveName,
         )
+
+    private fun rowsIn(
+        databaseName: String,
+        table: String,
+    ): Int {
+        val database = buildBunnyDatabase(context, databaseName)
+        return try {
+            database.countRows(table)
+        } finally {
+            database.close()
+        }
+    }
 
     private fun bunnyNamesIn(databaseName: String): List<String> {
         val database = buildBunnyDatabase(context, databaseName)
@@ -366,6 +383,60 @@ class RestoreStageMigrateSwapTest {
             assertEquals(listOf("photos/3f2504e0-4f89-41d3-9a0c-0305e82c3303.jpg"), restored.merge.kept)
             assertTrue(photo.isFile)
             assertEquals("a bunny in a cardboard box", photo.readText())
+        }
+
+    /**
+     * **The real migration, against a real artifact.**
+     *
+     * `Migration4To5Test` proves `MIGRATION_4_5` consistent with `4.json` — but that file is the
+     * app's own *description* of version 4, so a database built from it can only contain what this
+     * build believes 1.0.1 wrote. `bunny-schema-4-fixture.zip` is what 1.0.1 actually wrote: exported
+     * by the tagged build's own container, seeder, Room and exporter, running on the test phone,
+     * carrying the sample-data bunnies and never a line of real history. Same trick as
+     * `rotated_quadrants.jpg`, for the same reason — the thing under test is precisely the
+     * discrepancy a synthesised input cannot contain.
+     *
+     * It runs the whole owner-facing path, not just the migration: read the archive, stage the
+     * database, migrate it, snapshot what was there, swap it in. Regenerating it is a device chore
+     * (build the v1.0.1 tag in a worktree, seed, export, pull), which is the argument for committing
+     * the artifact rather than a script that recreates it.
+     */
+    @Test
+    fun aSchemaFourBackupWrittenBy101RestoresAndMigrates() =
+        runTest {
+            val liveName = databaseHolding("Already here")
+            val liveFile = context.getDatabasePath(liveName)
+
+            val outcome =
+                restorerFor(liveName).restore(
+                    // The instrumentation context, not the target's: the asset ships in the test APK.
+                    open = {
+                        InstrumentationRegistry
+                            .getInstrumentation()
+                            .context.assets
+                            .open(schemaFourFixture)
+                    },
+                )
+
+            val restored = outcome as? RestoreOutcome.Restored
+            assertTrue(outcome.toString(), restored != null)
+            assertEquals("the archive really is an older one", 4, restored!!.manifest.schemaVersion)
+
+            // Migrated on the way in, and the file's own header says so.
+            assertEquals(BUNNY_SCHEMA_VERSION, readUserVersion(liveFile))
+
+            // Data survival, table by table — the assertion is that an owner's history arrived, not
+            // that nothing threw. The counts are the seeder's, fixed by the pinned `now` it ran with.
+            assertEquals(listOf("Bijou", "Nugget"), bunnyNamesIn(liveName))
+            assertEquals(43, rowsIn(liveName, "weights"))
+            assertEquals(5, rowsIn(liveName, "observations"))
+            assertEquals(5, rowsIn(liveName, "photos"))
+            assertEquals(2, rowsIn(liveName, "observation_symptoms"))
+
+            // And the tables the migration is *for*, present and empty: 1.0.1 had no care reminders
+            // to carry, so an empty pair of tables is the correct outcome rather than a missing one.
+            assertEquals(0, rowsIn(liveName, "care_reminders"))
+            assertEquals(0, rowsIn(liveName, "care_events"))
         }
 
     /** A sanity check that the throwaway live database really is a Binky one. */
