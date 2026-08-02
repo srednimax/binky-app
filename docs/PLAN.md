@@ -1980,7 +1980,29 @@ obligation rather than a phase of its own — which is the whole return on havin
      from a two-tap saving into a habit the owner does not have to hold.
    - Its copy says what it is: a prompt about the owner's export, not a claim that the data is unsafe. The
      Backup screen's status line already handles the honest version of that (3e).
-6. **4f — Edge-to-edge, verified.** No feature work; the deliverable is evidence, per the scope bullet above.
+6. **4f — Edge-to-edge, verified.** ✅ No feature work; the deliverable is evidence, per the scope bullet
+   above. **Done, and it was not clean** — the evidence is [`docs/edge-to-edge.md`](edge-to-edge.md), the
+   capture is `scripts/edge-to-edge.py`, and the matrix found two defects, both fixed here and both
+   invisible in the one cell that had prior evidence.
+
+   The **keyboard** was the first: `enableEdgeToEdge()` sets `decorFitsSystemWindows = false`, which makes
+   the manifest's `adjustResize` inoperative from API 30 and gets it downgraded to a *pan*, so opening the
+   keyboard on the observation form slid the top of the form under the status bar and carried the
+   `TopAppBar` — *Save* included — off the screen. Fixed with `imePadding()` on the shell's `NavDisplay` and
+   `SOFT_INPUT_ADJUST_NOTHING` on API 30+ only, because below 30 `WindowInsets.ime` is not reported at all
+   and `adjustResize` is still the only thing that moves. The **bottom sheet** was the second: a sheet is
+   its own window, so the one owner of insets does not reach it, and the reminders opt-in could not scroll
+   and ran under the navigation bar.
+
+   `displayCutout` in landscape — the case this checkpoint named as untested — **holds**, and the reason is
+   recorded because it is not something this app does: Material3's `contentWindowInsets` default is
+   `systemBars.union(displayCutout)`, on a value the shell has never overridden. An override added later
+   would take it away, in landscape only, on cutout devices only.
+
+   Two notes for whoever runs this again. HyperOS ignores the AOSP `navbar.threebutton` overlay this bullet
+   assumed and needs MIUI's `force_fsg_nav_bar` instead; and `input tap` on this phone exits 0 when the
+   event is dropped, so the driver taps, looks, and taps again — an unverified tap skips scenes, and a
+   skipped scene in a matrix reads exactly like a clean one.
    - **Three cells, not four.** Portrait + gesture is already evidenced by 1.0's screenshots, so what is owed
      is portrait + three-button, landscape + gesture and landscape + three-button, for every screen — with
      the fourth cell captured as well for the screens 4a–4e add, which have no prior evidence.
