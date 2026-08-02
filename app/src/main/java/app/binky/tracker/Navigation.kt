@@ -3,7 +3,9 @@ package app.binky.tracker
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -169,7 +171,9 @@ private fun SetupNavigation(
     Scaffold(modifier = modifier) { insets ->
         NavDisplay(
             backStack = backStack,
-            modifier = Modifier.padding(insets),
+            // The keyboard included, for the same reason and by the same means as the shell's —
+            // see [AppShell]. The wizard hosts the bunny editor, so it has a form in it too.
+            modifier = Modifier.padding(insets).consumeWindowInsets(insets).imePadding(),
             entryDecorators = appEntryDecorators(),
             onBack = {
                 if (backStack.size > 1) backStack.removeLastOrNull() else activity?.finish()
@@ -356,7 +360,21 @@ private fun AppShell(
     ) { insets ->
         NavDisplay(
             backStack = backStack,
-            modifier = Modifier.padding(insets),
+            // **The keyboard is an inset like any other, and this Scaffold owns them** (PLAN 4f).
+            //
+            // `enableEdgeToEdge()` sets `decorFitsSystemWindows = false`, and that makes the
+            // manifest's `adjustResize` inoperative — the window manager reports `adjust=pan` for
+            // this activity whatever the manifest asks for. With nothing consuming `WindowInsets.ime`
+            // the system then *pans the whole window* to keep the focused field in view, which slid
+            // the top of the observation form under the status bar and pushed its `TopAppBar` —
+            // Save included — off the top of the screen. Caught in 4f's landscape and portrait
+            // matrix, on the one form long enough to need scrolling.
+            //
+            // `consumeWindowInsets` before `imePadding` is what stops it double-counting: the
+            // keyboard's inset is measured from the bottom of the *screen*, so it already contains
+            // the navigation bar height that `padding(insets)` just applied. Consuming says "that
+            // part is handled", leaving `imePadding` to add only the rest.
+            modifier = Modifier.padding(insets).consumeWindowInsets(insets).imePadding(),
             entryDecorators = appEntryDecorators(),
             onBack = {
                 // Back from a detail screen returns to its destination; back from any top-level

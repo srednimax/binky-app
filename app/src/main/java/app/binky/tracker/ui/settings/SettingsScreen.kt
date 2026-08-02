@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -279,7 +280,17 @@ private fun DebugReminderSetting() {
     if (optingIn) {
         ModalBottomSheet(onDismissRequest = { optingIn = false }) {
             Column(
-                modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
+                // **A sheet is its own window, so the shell's Scaffold pads none of this** (PLAN 4f).
+                // Anchored to the bottom edge, which is exactly where the navigation bar is: without
+                // the padding the autostart explanation ran under the three-button bar with the nav
+                // icons drawn over the words, and the rest of it off the bottom of the screen. The
+                // scroll is the other half — this text does not fit a 1220px-tall landscape screen,
+                // and a sheet that cannot scroll simply loses whatever did not fit.
+                modifier =
+                    Modifier
+                        .verticalScroll(rememberScrollState())
+                        .navigationBarsPadding()
+                        .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(text = stringResource(R.string.reminders_title), style = MaterialTheme.typography.headlineSmall)

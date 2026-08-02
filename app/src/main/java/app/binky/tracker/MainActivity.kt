@@ -1,7 +1,9 @@
 package app.binky.tracker
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -44,6 +46,23 @@ class MainActivity : AppCompatActivity() {
         notificationTarget.value = intent.reminderTap()
 
         enableEdgeToEdge()
+        // **Nobody pans this window; the content pads itself** (PLAN 4f).
+        //
+        // The manifest asks for `adjustResize`, and on API 26-29 that is the only thing that works:
+        // `WindowInsets.ime` is not reported before API 30, so the older half of the supported range
+        // depends on the window actually being resized. From API 30 the same request is inert —
+        // `enableEdgeToEdge()` above sets `decorFitsSystemWindows = false`, and the window manager
+        // downgrades the resize to a *pan*. Panning is worse than doing nothing: with the keyboard
+        // open on the observation form it slid the top of the form under the status bar and carried
+        // the `TopAppBar`, Save button and all, off the top of the screen.
+        //
+        // So on API 30+ the system is told to do neither, and `Modifier.imePadding()` in
+        // `Navigation.kt` handles the keyboard as the inset it now is. Set here rather than in the
+        // manifest because the manifest cannot say "only on new enough Android", and the old
+        // behaviour is still load-bearing below 30.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+        }
         setContent {
             BinkyTheme {
                 Surface(
