@@ -261,6 +261,8 @@
     <string name="channel_care_description">Obcinanie pazurów, szczepienia, ważenia i wszystko inne, dla czego ustawiono powtarzalne przypomnienie.</string>
     <string name="channel_watch_name">Zaglądanie podczas obserwacji</string>
     <string name="channel_watch_description">Codzienne przypomnienie, żeby zajrzeć do królika, którego bacznie obserwujesz. Tylko w czasie trwania obserwacji.</string>
+    <string name="channel_backup_name">Przypomnienia o kopii zapasowej</string>
+    <string name="channel_backup_description">Rzadkie przypomnienie, żeby wyeksportować zapisy, w wybranym przez Ciebie odstępie. Nie dotyczy żadnego królika.</string>
 
     <!-- Backup and restore (ADR-0005) -->
     <string name="backup_title">Kopia zapasowa i przywracanie</string>
@@ -287,6 +289,37 @@
     <string name="backup_export_action">Wyeksportuj kopię zapasową</string>
     <string name="backup_exporting">Tworzenie kopii zapasowej…</string>
     <string name="backup_export_share">Udostępnij tę kopię</string>
+
+    <!-- Zapamiętany folder eksportu (ADR-0005, PLAN 4e). Zapamiętany cel, a nie zamiennik
+         udostępniania — każde niepowodzenie kończy się udostępnieniem kopii. -->
+    <string name="backup_folder_title">Gdzie trafiają eksporty</string>
+    <string name="backup_folder_help">Zwykle eksport trafia do okna udostępniania i sam(a) decydujesz, co z nim zrobić. Możesz też wskazać folder — na tym telefonie albo w aplikacji chmurowej, na przykład na Dysku — a Binky zapisze go prosto tam.</string>
+    <string name="backup_folder_none">Nie wybrano folderu. Eksporty trafiają do okna udostępniania.</string>
+    <string name="backup_folder_chosen">Eksporty mogą trafiać prosto do „%1$s”.</string>
+    <string name="backup_folder_unavailable">Binky nie może już pisać do wybranego folderu. Mógł zostać przeniesiony lub usunięty, albo cofnięto uprawnienie. Wskaż go ponownie albo korzystaj dalej z okna udostępniania.</string>
+    <string name="backup_folder_choose">Wskaż folder</string>
+    <string name="backup_folder_change">Wskaż inny folder</string>
+    <string name="backup_folder_forget">Zapomnij ten folder</string>
+    <string name="backup_folder_export">Wyeksportuj do tego folderu</string>
+    <string name="backup_folder_saved">Zapisano jako „%1$s”.</string>
+    <string name="backup_folder_refused">Binky nie zdołało zapisać w tym folderze, więc kopia została udostępniona — nic nie przepadło. Jeśli powtarza się to często, wskaż folder na tym telefonie.</string>
+    <string name="backup_folder_not_remembered">Ten telefon nie pozwolił Binky zachować dostępu do tego folderu, więc żaden folder nie został zapisany. Eksporty nadal trafiają do okna udostępniania.</string>
+    <string name="backup_folder_no_picker">Ten telefon nie ma menedżera plików, który Binky mogłoby otworzyć, więc eksporty trafiają do okna udostępniania.</string>
+
+    <!-- Powtarzalne przypomnienie o eksporcie (ADR-0005, PLAN 4e). Domyślnie wyłączone, a jego treść
+         to prośba o eksport — nigdy twierdzenie, że dane są zagrożone. -->
+    <string name="backup_reminder_title">Przypominaj o eksporcie</string>
+    <string name="backup_reminder_help">Przypomnienie, żeby zrobić eksport, o tej samej porze dnia co pozostałe przypomnienia. To prośba o kopię zapasową, a nie znak, że coś jest nie tak.</string>
+    <string name="backup_reminder_switch">Przypominaj mi</string>
+    <string name="backup_reminder_off">Wyłączone. Binky nie będzie pytać.</string>
+    <string name="backup_reminder_next">Następne przypomnienie: %1$s.</string>
+    <string name="backup_reminder_blocked">Powiadomienia Binky są wyłączone albo wyciszone dla przypomnień o kopii zapasowej, więc to nie dotrze.</string>
+    <string name="backup_reminder_weekly">Co tydzień</string>
+    <string name="backup_reminder_fortnightly">Co dwa tygodnie</string>
+    <string name="backup_reminder_monthly">Co miesiąc</string>
+    <string name="backup_reminder_quarterly">Co trzy miesiące</string>
+    <string name="export_notification_title">Czas na kopię zapasową zapisów?</string>
+    <string name="export_notification_text">Prosiłeś(-aś) o przypomnienie. Otwórz „Kopia zapasowa i przywracanie”, żeby zrobić świeży eksport — to kilka dotknięć.</string>
 
     <string name="backup_restore_title">Przywracanie</string>
     <string name="backup_restore_help">Przywracanie zastępuje wszystko, co Binky teraz przechowuje, zawartością pliku. Najpierw na tym telefonie zapisywana jest kopia obecnych zapisów, więc przywracanie da się cofnąć.</string>

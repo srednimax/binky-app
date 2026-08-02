@@ -54,15 +54,22 @@ fun careDueForNotifying(
         }
 
 /**
- * Ids below this are spoken for: 1 is the debug reminder, 2 the care group summary.
+ * Ids below this are spoken for: 1 is the debug reminder, 2 the care group summary, 3 the export
+ * prompt.
  *
- * A block rather than a pair of constants, so 4d's watch nag and 4e's export reminder have somewhere
- * to take an id from without revisiting the derivation below.
+ * A block rather than a handful of constants, so 4d's watch nag and 4e's export reminder had
+ * somewhere to take an id from without revisiting the derivation below.
  */
 const val RESERVED_NOTIFICATION_IDS = 16
 
 /** The care group's summary — one per sweep, not one per reminder. */
 const val CARE_SUMMARY_NOTIFICATION_ID = 2
+
+/**
+ * The recurring export prompt. A **fixed** id, unlike care's and the watch's: there is exactly one
+ * export reminder in the app, so there is nothing to derive it from and nothing to collide with.
+ */
+const val EXPORT_NOTIFICATION_ID = 3
 
 /**
  * A notification id **derived from the reminder id**, and therefore stable across sweeps.

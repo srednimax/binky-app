@@ -10,6 +10,8 @@ import app.binky.tracker.AppContainer
 import app.binky.tracker.BinkyApplication
 import app.binky.tracker.data.BUNNY_DATABASE_FILE
 import app.binky.tracker.data.BUNNY_SCHEMA_VERSION
+import app.binky.tracker.data.dueOn
+import app.binky.tracker.data.needsNotifying
 import app.binky.tracker.data.readUserVersion
 import app.binky.tracker.data.schemaMismatchPending
 import app.binky.tracker.data.today
@@ -71,16 +73,19 @@ class ReminderSweepWorker(
             return Result.success()
         }
 
-        // The two halves. Wrapped, and deliberately: this is the one place where a failure must not
-        // cost the *next* sweep. A throw here would return `Result.failure` with the re-enqueue
+        // The three halves. Wrapped, and deliberately: this is the one place where a failure must
+        // not cost the *next* sweep. A throw here would return `Result.failure` with the re-enqueue
         // below unreached, and the app would go quiet until the next launch or reboot — a far worse
-        // outcome than one missed morning. 4e's export reminder joins them here.
+        // outcome than one missed morning.
         //
-        // **One `runCatching` each**, not one around both: a care reminder that throws must not cost
-        // the watch nag its morning, and a watch is running precisely because somebody is worried.
+        // **One `runCatching` each**, not one around all three: a care reminder that throws must not
+        // cost the watch nag its morning, and a watch is running precisely because somebody is
+        // worried. The export prompt is last for the same reason it is least urgent — and it is
+        // wrapped separately so a preferences file that will not read cannot silence the other two.
         val container = (applicationContext as BinkyApplication).container
         runCatching { sweepCare(container) }
         runCatching { sweepWatch(container) }
+        runCatching { sweepExport(container) }
 
         // Before returning, not after: this is what keeps the sweep permanently enqueued, and a
         // sweep that only re-armed on a successful pass would go quiet the first time anything
@@ -168,6 +173,34 @@ private suspend fun sweepWatch(
     container.watchNotifier.post(due)
     val today = today(now, zone)
     due.forEach { container.watchRepository.markNagged(it.bunnyId, today) }
+}
+
+/**
+ * Asks whether it is time the owner made an export (ADR-0005, PLAN 4e).
+ *
+ * **The whole branch is preferences and arithmetic** — no database, no repositories, no bunnies.
+ * That is what makes it one more branch in the one worker (ADR-0024) rather than a second scheduled
+ * thing: a backup reminder hangs off the app, so the only per-run cost when it is switched off is a
+ * single `DataStore` read that returns a `null` interval and stops.
+ *
+ * Post-then-mark, the same order as the other two and for the same reason: a process killed between
+ * them leaves the prompt still needing posting, and the next sweep replaces its own notification
+ * because the id is a constant. The other order loses it for good.
+ */
+private suspend fun sweepExport(
+    container: AppContainer,
+    now: Instant = Instant.now(),
+    zone: ZoneId = ZoneId.systemDefault(),
+) {
+    val reminder = container.preferences.exportReminder.first()
+    val today = today(now, zone)
+    if (!reminder.needsNotifying(today)) return
+
+    container.exportNotifier.post()
+    // Non-null whenever `needsNotifying` was true — it is derived from the same call — but read
+    // again rather than smuggled out of the predicate, which would make the predicate return two
+    // things and be honest about neither.
+    reminder.dueOn()?.let { due -> container.preferences.markExportReminderNotified(due) }
 }
 
 /**

@@ -245,6 +245,11 @@
     <string name="channel_care_description">Nail trims, vaccinations, weigh-ins, and anything else you have set a recurring reminder for.</string>
     <string name="channel_watch_name">Watch check-ins</string>
     <string name="channel_watch_description">A once-a-day nudge to look in on a bunny you are watching closely. Only while a watch is running.</string>
+    <!-- The third channel, and the only one about the app rather than about a bunny: the least
+         urgent thing Binky posts, and so the likeliest to be muted — which is exactly why it cannot
+         share a channel with a vaccination. -->
+    <string name="channel_backup_name">Backup reminders</string>
+    <string name="channel_backup_description">An occasional prompt to export your records, at the interval you chose. Nothing to do with any bunny.</string>
 
     <!-- Backup and restore (ADR-0005). The photo-gallery warning is not decoration: photos are the
          least protected data in the app, and ADR-0001's rule about silence says a gap the owner
@@ -273,6 +278,42 @@
     <string name="backup_export_action">Export a backup</string>
     <string name="backup_exporting">Building the backup…</string>
     <string name="backup_export_share">Share this backup</string>
+
+    <!-- The remembered export folder (ADR-0005, PLAN 4e). A saved destination, never a replacement
+         for the share sheet — every failure here ends with the backup shared instead, which is the
+         path that worked before a folder was ever remembered. -->
+    <string name="backup_folder_title">Where exports go</string>
+    <string name="backup_folder_help">An export normally goes to the share sheet and you choose what to do with it. You can also pick a folder — on this phone, or in a cloud app like Drive — and Binky will write straight there.</string>
+    <string name="backup_folder_none">No folder chosen. Exports go to the share sheet.</string>
+    <string name="backup_folder_chosen">Exports can go straight to “%1$s”.</string>
+    <string name="backup_folder_unavailable">Binky can no longer write to the folder you chose. It may have been moved or deleted, or its permission withdrawn. Choose it again, or carry on using the share sheet.</string>
+    <string name="backup_folder_choose">Choose a folder</string>
+    <string name="backup_folder_change">Choose a different folder</string>
+    <string name="backup_folder_forget">Forget this folder</string>
+    <string name="backup_folder_export">Export to this folder</string>
+    <string name="backup_folder_saved">Saved as “%1$s”.</string>
+    <string name="backup_folder_refused">Binky could not write to that folder, so the backup was shared instead — nothing was lost. If it keeps happening, choose a folder on this phone.</string>
+    <string name="backup_folder_not_remembered">This phone would not let Binky keep access to that folder, so no folder was saved. Exports still go to the share sheet.</string>
+    <string name="backup_folder_no_picker">This phone has no file picker Binky can open, so exports go to the share sheet.</string>
+
+    <!-- The recurring export reminder (ADR-0005, PLAN 4e). Off by default, and its copy is a prompt
+         about the owner's export — never a claim that their data is unsafe. Whether anything is
+         actually protecting it is the automatic-backup line's job, honestly, at the top of the
+         screen. -->
+    <string name="backup_reminder_title">Remind me to export</string>
+    <string name="backup_reminder_help">A nudge to make an export, arriving at the same time of day as your other reminders. It is a prompt about your backups, not a sign that anything is wrong.</string>
+    <string name="backup_reminder_switch">Remind me</string>
+    <string name="backup_reminder_off">Off. Binky will not ask.</string>
+    <string name="backup_reminder_next">Next reminder: %1$s.</string>
+    <!-- Only the certain failure is stated (ADR-0003): "may arrive late" is fine for a backup
+         prompt, and hedging about it is how an owner learns to stop reading these lines. -->
+    <string name="backup_reminder_blocked">Notifications are off for Binky, or muted for backup reminders, so this one cannot arrive.</string>
+    <string name="backup_reminder_weekly">Every week</string>
+    <string name="backup_reminder_fortnightly">Every two weeks</string>
+    <string name="backup_reminder_monthly">Every month</string>
+    <string name="backup_reminder_quarterly">Every three months</string>
+    <string name="export_notification_title">Time to back up your records?</string>
+    <string name="export_notification_text">You asked to be reminded. Open Backup &amp; restore to make a fresh export — it takes a couple of taps.</string>
 
     <string name="backup_restore_title">Restore</string>
     <string name="backup_restore_help">Restoring replaces everything Binky currently holds with what is inside the file. A copy of the current records is saved to this phone first, so a restore can be undone.</string>

@@ -275,6 +275,16 @@ private fun AppShell(
                     onNotificationHandled()
                     return@LaunchedEffect
                 }
+                // The export prompt names no bunny, so it never reaches the selection below. More
+                // first, then Backup on top of it: `showTopLevel` clears back to the root, so this
+                // is the two-entry stack the notification promises — Back out of Backup lands where
+                // Backup is normally reached from rather than on nothing.
+                ReminderTap.OpenBackup -> {
+                    backStack.showTopLevel(TopLevelDestination.MORE)
+                    backStack.add(Backup)
+                    onNotificationHandled()
+                    return@LaunchedEffect
+                }
             }
         if (state.activeBunnies.any { it.id == target }) {
             shellViewModel.selectBunny(target)
@@ -287,7 +297,7 @@ private fun AppShell(
                     backStack.showTopLevel(TopLevelDestination.HOME)
                     backStack.add(LogObservation(target))
                 }
-                ReminderTap.OpenApp -> Unit
+                ReminderTap.OpenApp, ReminderTap.OpenBackup -> Unit
             }
         } else {
             backStack.showTopLevel(TopLevelDestination.HOME)

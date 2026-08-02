@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.io.IOException
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -34,6 +35,13 @@ enum class WeightUnit { KILOGRAMS, GRAMS }
  * time of day reminders arrive. The unit's toggle lands in 2c with the Settings screen — a preference
  * with no setter is a constant with a DataStore round-trip, so the setter is here from the start even
  * though nothing calls it yet.
+ *
+ * **1.1 adds two more owner-facing settings and three dates behind them** (PLAN 4e): the remembered
+ * export folder, the recurring export reminder's interval — and, so that reminder can be derived
+ * rather than guessed, when it was switched on, when the owner last exported, and which due date was
+ * last notified about. The three dates are bookkeeping, never shown as settings; they are here
+ * rather than in the database for the same reason as everything else in this class, and because a
+ * backup reminder hangs off the app and not off any bunny.
  *
  * These **travel in every export scope, from Essential upward** (ADR-0005). They are a few hundred
  * bytes, and a restored phone that has forgotten its display unit, its selected bunny and its chosen
@@ -149,6 +157,81 @@ class AppPreferences(
         dataStore.edit { preferences -> preferences[REMINDER_TIME] = time.format(REMINDER_TIME_FORMAT) }
     }
 
+    /**
+     * The document tree the owner picked for exports, or `null` for "ask the share sheet every
+     * time" (ADR-0005).
+     *
+     * A `String` rather than a `Uri`: this file is a plain key-value store that travels inside every
+     * backup, and `Uri` is an Android type with no place in one. Whether the *grant* behind it still
+     * holds is a different question, answered against `ContentResolver.persistedUriPermissions` at
+     * read time — a remembered folder can be revoked in Android's settings, or land on a phone that
+     * never granted it, and this preference cannot know either.
+     */
+    val exportFolder: Flow<String?> =
+        dataStore.data
+            .catch { cause -> if (cause is IOException) emit(emptyPreferences()) else throw cause }
+            .map { preferences -> preferences[EXPORT_FOLDER] }
+
+    suspend fun setExportFolder(uri: String?) {
+        dataStore.edit { preferences ->
+            if (uri == null) preferences.remove(EXPORT_FOLDER) else preferences[EXPORT_FOLDER] = uri
+        }
+    }
+
+    /**
+     * The recurring export reminder, read as the one shape the sweep and the screen both want —
+     * see [ExportReminder], which is where the derivation lives.
+     *
+     * Four keys behind one flow, because no single one of them answers anything on its own.
+     */
+    val exportReminder: Flow<ExportReminder> =
+        dataStore.data
+            .catch { cause -> if (cause is IOException) emit(emptyPreferences()) else throw cause }
+            .map { preferences ->
+                ExportReminder(
+                    every = decodeExportInterval(preferences[EXPORT_REMINDER_EVERY]),
+                    enabledOn = decodeDate(preferences[EXPORT_REMINDER_SINCE]),
+                    lastExportedOn = decodeDate(preferences[EXPORT_LAST_ON]),
+                    notifiedForDueOn = decodeDate(preferences[EXPORT_REMINDER_NOTIFIED_FOR]),
+                )
+            }
+
+    /**
+     * Switches the reminder on at [interval] from [today], or off.
+     *
+     * **Turning it on rewrites the anchor**, so off-and-on-again restarts the interval rather than
+     * resuming a due date the owner may have forgotten about. Turning it off keeps every other key:
+     * an owner who switches it back on next week has not lost their last export date, and the
+     * notified-for watermark is compared against a derived due date that will have moved anyway.
+     */
+    suspend fun setExportReminder(
+        interval: ExportInterval?,
+        today: LocalDate,
+    ) {
+        dataStore.edit { preferences ->
+            if (interval == null) {
+                preferences.remove(EXPORT_REMINDER_EVERY)
+            } else {
+                preferences[EXPORT_REMINDER_EVERY] = interval.name
+                preferences[EXPORT_REMINDER_SINCE] = today.toString()
+            }
+        }
+    }
+
+    /**
+     * Records that an export was made, whichever path made it — the share sheet or the remembered
+     * folder. This is the reminder's completion, so it is written by *both*, or the reminder would
+     * prompt an owner who has just exported to a folder.
+     */
+    suspend fun markExported(on: LocalDate) {
+        dataStore.edit { preferences -> preferences[EXPORT_LAST_ON] = on.toString() }
+    }
+
+    /** The due date the sweep has posted a prompt for — ADR-0024's "notifies once", recorded. */
+    suspend fun markExportReminderNotified(dueOn: LocalDate) {
+        dataStore.edit { preferences -> preferences[EXPORT_REMINDER_NOTIFIED_FOR] = dueOn.toString() }
+    }
+
     suspend fun setSelection(selection: StoredSelection) {
         dataStore.edit { preferences ->
             when (selection) {
@@ -177,6 +260,11 @@ class AppPreferences(
         val SETUP_PROGRESS = stringPreferencesKey("setup_progress")
         val BATTERY_EXEMPTION_ASKED = booleanPreferencesKey("battery_exemption_asked")
         val REMINDER_TIME = stringPreferencesKey("reminder_time")
+        val EXPORT_FOLDER = stringPreferencesKey("export_folder")
+        val EXPORT_REMINDER_EVERY = stringPreferencesKey("export_reminder_every")
+        val EXPORT_REMINDER_SINCE = stringPreferencesKey("export_reminder_since")
+        val EXPORT_LAST_ON = stringPreferencesKey("export_last_on")
+        val EXPORT_REMINDER_NOTIFIED_FOR = stringPreferencesKey("export_reminder_notified_for")
 
         /** `HH:mm`, so a stored time is readable in a `.preferences_pb` dump and in a backup. */
         val REMINDER_TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
@@ -211,5 +299,16 @@ class AppPreferences(
             value?.let { stored ->
                 runCatching { LocalTime.parse(stored, REMINDER_TIME_FORMAT) }.getOrNull()
             } ?: DEFAULT_REMINDER_TIME
+
+        // Absent *and* unrecognised both read as off. A phone downgraded from a build with more
+        // presets would otherwise hold a name this one cannot map, and inventing an interval for it
+        // is how an owner gets notifications on a schedule they never chose.
+        fun decodeExportInterval(value: String?): ExportInterval? =
+            ExportInterval.entries.firstOrNull { it.name == value }
+
+        // ISO-8601 (`2026-08-02`), which is what `LocalDate.toString` writes — readable in a
+        // `.preferences_pb` dump and in a backup, like the reminder time above.
+        fun decodeDate(value: String?): LocalDate? =
+            value?.let { stored -> runCatching { LocalDate.parse(stored) }.getOrNull() }
     }
 }
