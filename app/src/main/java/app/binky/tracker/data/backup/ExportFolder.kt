@@ -113,7 +113,7 @@ fun ContentResolver.exportFolderState(stored: String?): ExportFolderState {
     val granted = persistedUriPermissions.any { it.uri == uri && it.isWritePermission }
     if (!granted) return ExportFolderState.Unavailable
 
-    val label = folderLabel(uri) ?: return ExportFolderState.Unavailable
+    val label = treeLabel(uri) ?: return ExportFolderState.Unavailable
     return ExportFolderState.Remembered(uri = uri, label = label)
 }
 
@@ -151,7 +151,7 @@ suspend fun ContentResolver.writeExportToFolder(
             // The provider decides the final name — a second export in the same minute becomes
             // "bunny-records-….zip (1)" on some, and telling the owner the name Binky asked for
             // would be telling them about a file that is not there.
-            FolderWrite.Written(folderLabel(target) ?: archive.name)
+            FolderWrite.Written(documentLabel(target) ?: archive.name)
         } catch (e: FileNotFoundException) {
             FolderWrite.Refused
         } catch (e: IOException) {
@@ -166,19 +166,38 @@ suspend fun ContentResolver.writeExportToFolder(
     }
 
 /**
- * The provider's own display name for a document or tree, or `null` if it will not say.
+ * The folder's own name, for a **tree** URI: the thing `ACTION_OPEN_DOCUMENT_TREE` hands back.
  *
- * `null` is a real answer and is treated as one by both callers: a folder the provider will not
- * describe is a folder this app should not promise to write to.
+ * The rebuild is what makes this a query at all — a tree URI is not a document URI, and asking the
+ * provider about one directly answers nothing.
  */
-private fun ContentResolver.folderLabel(uri: Uri): String? =
+private fun ContentResolver.treeLabel(tree: Uri): String? =
     try {
-        val document =
-            if (DocumentsContract.isTreeUri(uri)) {
-                DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri))
-            } else {
-                uri
-            }
+        displayName(DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree)))
+    } catch (e: IllegalArgumentException) {
+        null
+    }
+
+/**
+ * The file's own name, for the **document** URI `createDocument` returns.
+ *
+ * Separate from [treeLabel], and it has to be. A document created inside a tree keeps the tree in
+ * its URI — `…/tree/<tree>/document/<doc>` — so `DocumentsContract.isTreeUri` is *true* of it, and a
+ * shared helper that branched on that would rebuild the file's URI back into the folder's and report
+ * the saved backup as "Documents". Which is exactly what it did, on the phone, first try: the two
+ * questions look alike and are not, so they get one function each.
+ */
+private fun ContentResolver.documentLabel(document: Uri): String? = displayName(document)
+
+/**
+ * The provider's own display name for a document, or `null` if it will not say.
+ *
+ * `null` is a real answer and is treated as one by every caller: a folder the provider will not
+ * describe is a folder this app should not promise to write to, and an unnamed file falls back to
+ * the name Binky asked for.
+ */
+private fun ContentResolver.displayName(document: Uri): String? =
+    try {
         query(document, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null)
             ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
     } catch (e: SecurityException) {

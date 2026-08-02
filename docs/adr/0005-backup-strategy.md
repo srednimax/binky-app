@@ -143,6 +143,11 @@ building the path does not settle it. It is a gate item, and a failure there is 
 with local storage and the Drive app folder named as the alternatives — not a checkpoint to fail,
 because the fallback is the export that already ships.
 
+*Verified so far, on the Xiaomi at 4e:* the whole path — pick, persist, create, write, and the grant
+surviving an app update — against **local storage** (`com.android.externalstorage`, the phone's
+`Documents`). That is the mechanism proven and the alternative proven at the same time. The Drive
+provider specifically has not been exercised, so the assumption stands exactly where it did.
+
 ## Restore replaces the database but merges media
 
 The export's counterpart, restore, is a **full database replace** — the incoming db becomes the app's db
