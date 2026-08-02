@@ -9,16 +9,25 @@ import app.binky.tracker.R
 /**
  * The notification channels this app owns, and the **only** ones it ever will at 1.1.
  *
- * **Two, not one.** A channel is the owner's one per-kind control, and someone who mutes a daily
- * watch nag must not thereby mute an annual vaccination. **Two, not three.** Medication doses are
- * Phase 5's, and a channel with nothing behind it is a settings row describing a lie.
+ * **Three, not one.** A channel is the owner's one per-kind control, and the three things this app
+ * posts fail the same test in every pairing: someone who mutes a daily watch nag must not thereby
+ * mute an annual vaccination, and someone who has decided a monthly *"make a backup"* prompt is not
+ * for them must not lose either. The backup one is the least urgent thing here and the most likely
+ * to be muted — which is exactly why it cannot share a channel with the other two.
  *
- * **Both at `IMPORTANCE_DEFAULT`, with no sound, vibration or light overrides**, and that is chosen
+ * **Three, not four.** Medication doses are Phase 5's, and a channel with nothing behind it is a
+ * settings row describing a lie. The rule the count follows is that one: a channel exists when
+ * something is posting on it. 4a's comment said two because two were posting; 4e's export reminder
+ * is the third thing that posts, and `ReminderChannelsTest` is what makes adding one a deliberate
+ * act rather than a passing convenience.
+ *
+ * **All at `IMPORTANCE_DEFAULT`, with no sound, vibration or light overrides**, and that is chosen
  * once and permanently: Android lets the owner lower a channel and never lets the app raise one
  * again. Creating `watch` at `IMPORTANCE_LOW` would be making the mute decision on their behalf, in
- * the one direction that cannot be undone. `IMPORTANCE_HIGH` is spent nowhere in this phase, so
- * Phase 5 can escalate doses to it as a real signal rather than as the level everything already
- * sits at.
+ * the one direction that cannot be undone — and `backup`, the obvious candidate for a quiet default,
+ * is the one where making that choice for them would be hardest to undo and easiest to regret.
+ * `IMPORTANCE_HIGH` is spent nowhere in this phase, so Phase 5 can escalate doses to it as a real
+ * signal rather than as the level everything already sits at.
  *
  * Kotlin note: enum entries carrying constructor arguments make this a small lookup table rather
  * than the bare constants a JS enum gives you — the same shape as `TopLevelDestination`.
@@ -35,6 +44,7 @@ enum class ReminderChannel(
 ) {
     Care("care", R.string.channel_care_name, R.string.channel_care_description),
     Watch("watch", R.string.channel_watch_name, R.string.channel_watch_description),
+    Backup("backup", R.string.channel_backup_name, R.string.channel_backup_description),
 }
 
 /**

@@ -1,11 +1,13 @@
 package app.binky.tracker.ui.backup
 
+import android.content.ActivityNotFoundException
 import android.text.format.Formatter
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,37 +21,54 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
+import app.binky.tracker.data.DEFAULT_EXPORT_INTERVAL
+import app.binky.tracker.data.ExportInterval
+import app.binky.tracker.data.ExportReminder
 import app.binky.tracker.data.PreservedCopy
 import app.binky.tracker.data.PreservedKind
 import app.binky.tracker.data.backup.AutoBackupStatus
 import app.binky.tracker.data.backup.BackupScope
+import app.binky.tracker.data.backup.ExportFolderState
 import app.binky.tracker.data.backup.RestoreOutcome
 import app.binky.tracker.data.backup.RestoreRefusal
+import app.binky.tracker.data.dueOn
 import app.binky.tracker.ui.appViewModelExtras
+import app.binky.tracker.ui.bunny.dateLabel
 import app.binky.tracker.ui.common.openSystemBackupSettings
 import app.binky.tracker.ui.common.shareBackupArchive
 import app.binky.tracker.ui.common.sharePreservedCopy
 import app.binky.tracker.ui.weight.dateTimeLabel
+import app.binky.tracker.work.ReminderChannel
+import app.binky.tracker.work.ReminderDelivery
+import app.binky.tracker.work.openAppNotificationSettings
+import app.binky.tracker.work.reminderDelivery
 import kotlin.system.exitProcess
 
 /**
@@ -81,6 +100,14 @@ fun BackupScreen(
     val picker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) viewModel.inspect(RestoreSource.Picked(uri))
+        }
+
+    // The folder picker. `OpenDocumentTree` returns a *tree* URI standing for a whole directory,
+    // which is the only kind of grant that lets an app write a file it has not been handed — and
+    // the grant has to be persisted straight away or it dies with this process.
+    val folderPicker =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            if (uri != null) viewModel.rememberFolder(uri)
         }
 
     // A finished export is handed straight to the share sheet, then cleared — or a rotation would
@@ -121,6 +148,30 @@ fun BackupScreen(
                 working = state.working,
                 onSelectScope = viewModel::setScope,
                 onExport = viewModel::export,
+            )
+            HorizontalDivider()
+            ExportFolderSection(
+                folder = state.folder,
+                notice = state.notice,
+                working = state.working,
+                onChoose = {
+                    // A phone with no document provider at all is rare and is not a crash: the
+                    // share sheet is still there, and this screen says so rather than dying on the
+                    // way to a picker that does not exist (ADR-0005).
+                    try {
+                        folderPicker.launch(null)
+                    } catch (e: ActivityNotFoundException) {
+                        viewModel.folderPickerUnavailable()
+                    }
+                },
+                onForget = viewModel::forgetFolder,
+                onExportToFolder = viewModel::exportToFolder,
+                onDismissNotice = viewModel::dismissNotice,
+            )
+            HorizontalDivider()
+            ExportReminderSection(
+                reminder = state.reminder,
+                onSet = viewModel::setReminder,
             )
             HorizontalDivider()
             RestoreSection(
@@ -257,6 +308,198 @@ private fun ExportSection(
         if (working == BackupWork.Exporting) Working(R.string.backup_exporting)
     }
 }
+
+/**
+ * The remembered export destination (ADR-0005, PLAN 4e).
+ *
+ * **A saved destination, not a new export mechanism.** The button above still goes to the share
+ * sheet and always will — a chooser cannot fail for provider reasons, where writing into a cloud
+ * provider's document tree was the plan's longest-standing unverified assumption. What a remembered
+ * folder buys is the two taps between making a backup and having it where the owner keeps things,
+ * which is what turns "I should export" into something they actually do.
+ *
+ * The three states are the three the app can honestly be in, and [ExportFolderState.Unavailable] is
+ * the one that earns its keep: a grant revoked in Android's settings, or a preference restored from
+ * another phone, leaves a folder name that would fail at the moment it was counted on.
+ */
+@Composable
+private fun ExportFolderSection(
+    folder: ExportFolderState,
+    notice: FolderNotice?,
+    working: BackupWork?,
+    onChoose: () -> Unit,
+    onForget: () -> Unit,
+    onExportToFolder: () -> Unit,
+    onDismissNotice: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(text = stringResource(R.string.backup_folder_title), style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = stringResource(R.string.backup_folder_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        val line =
+            when (folder) {
+                ExportFolderState.None -> stringResource(R.string.backup_folder_none)
+                is ExportFolderState.Remembered -> stringResource(R.string.backup_folder_chosen, folder.label)
+                ExportFolderState.Unavailable -> stringResource(R.string.backup_folder_unavailable)
+            }
+        Text(text = line, style = MaterialTheme.typography.bodyMedium)
+
+        if (folder is ExportFolderState.Remembered) {
+            Button(onClick = onExportToFolder, enabled = working == null) {
+                Text(stringResource(R.string.backup_folder_export))
+            }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = onChoose) {
+                Text(
+                    stringResource(
+                        if (folder is ExportFolderState.None) {
+                            R.string.backup_folder_choose
+                        } else {
+                            R.string.backup_folder_change
+                        },
+                    ),
+                )
+            }
+            // Offered for an unavailable folder too: forgetting is exactly how an owner clears a
+            // destination that has gone, and refusing them that would leave the warning on screen
+            // with no way to act on it.
+            if (folder !is ExportFolderState.None) {
+                TextButton(onClick = onForget) { Text(stringResource(R.string.backup_folder_forget)) }
+            }
+        }
+
+        notice?.let { message ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = message.text(),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = onDismissNotice) { Text(stringResource(R.string.action_ok)) }
+            }
+        }
+    }
+}
+
+/** One sentence per outcome; none of them is an error the owner has to resolve. */
+@Composable
+private fun FolderNotice.text(): String =
+    when (this) {
+        is FolderNotice.Saved -> stringResource(R.string.backup_folder_saved, name)
+        FolderNotice.Refused -> stringResource(R.string.backup_folder_refused)
+        FolderNotice.Unavailable -> stringResource(R.string.backup_folder_unavailable)
+        FolderNotice.NotRemembered -> stringResource(R.string.backup_folder_not_remembered)
+        FolderNotice.NoPicker -> stringResource(R.string.backup_folder_no_picker)
+    }
+
+/**
+ * The recurring export prompt (ADR-0005, PLAN 4e) — the piece that turns a remembered folder from a
+ * two-tap saving into a habit the owner does not have to hold.
+ *
+ * **A switch and four presets, off by default.** Off by default because an app that starts nagging
+ * about backups uninvited is one an owner learns to swipe past, and this project spends its
+ * notification budget on animals first.
+ *
+ * The copy says what it is: a prompt about the owner's *export*, never a claim that their data is
+ * unsafe. What is and is not protected is the automatic-backup line's job at the top of this screen,
+ * including the case where the honest answer is that nobody knows.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExportReminderSection(
+    reminder: ExportReminder,
+    onSet: (ExportInterval?) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(text = stringResource(R.string.backup_reminder_title), style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = stringResource(R.string.backup_reminder_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = stringResource(R.string.backup_reminder_switch),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            Switch(
+                checked = reminder.every != null,
+                // Switching on takes the default interval rather than the last one used: the chips
+                // below are right there, and remembering a choice the owner turned off is how a
+                // reminder comes back on a schedule they no longer recognise.
+                onCheckedChange = { on -> onSet(if (on) DEFAULT_EXPORT_INTERVAL else null) },
+            )
+        }
+
+        if (reminder.every == null) {
+            Text(text = stringResource(R.string.backup_reminder_off), style = MaterialTheme.typography.bodyMedium)
+            return@Column
+        }
+
+        // **The certain failure, stated** (ADR-0003's three honest states). A switch that promises a
+        // monthly prompt while notifications are off — or this channel is muted — is the app
+        // claiming something it can already tell will not happen. Only `Blocked` earns a line here:
+        // best-effort means "may arrive late", and for a backup prompt late is fine, so saying it
+        // would be the hedge that teaches an owner to stop reading these.
+        val context = LocalContext.current
+        var delivery by remember { mutableStateOf<ReminderDelivery?>(null) }
+        // Re-read on every resume, not remembered once: the owner can change either fact by walking
+        // into Android's settings and back, and this line has to redraw when they do.
+        LifecycleResumeEffect(Unit) {
+            delivery = context.reminderDelivery(ReminderChannel.Backup)
+            onPauseOrDispose {}
+        }
+        if (delivery == ReminderDelivery.Blocked) {
+            Text(
+                text = stringResource(R.string.backup_reminder_blocked),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(onClick = { context.openAppNotificationSettings() }) {
+                // The reminders_ string, reused rather than copied: it is the same button doing the
+                // same thing, and a second translation of "Open notification settings" is a second
+                // thing to keep in step.
+                Text(stringResource(R.string.reminders_open_settings_action))
+            }
+        }
+
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ExportInterval.entries.forEach { entry ->
+                FilterChip(
+                    selected = entry == reminder.every,
+                    onClick = { onSet(entry) },
+                    label = { Text(stringResource(entry.labelRes)) },
+                )
+            }
+        }
+
+        // The derived due date, shown rather than described: "every month" is the setting, and
+        // "next: 1 September" is what the owner can check against their own memory of the last one.
+        reminder.dueOn()?.let { due ->
+            Text(
+                text = stringResource(R.string.backup_reminder_next, dateLabel(due)),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
+
+private val ExportInterval.labelRes: Int
+    get() =
+        when (this) {
+            ExportInterval.WEEKLY -> R.string.backup_reminder_weekly
+            ExportInterval.FORTNIGHTLY -> R.string.backup_reminder_fortnightly
+            ExportInterval.MONTHLY -> R.string.backup_reminder_monthly
+            ExportInterval.QUARTERLY -> R.string.backup_reminder_quarterly
+        }
 
 @Composable
 private fun RestoreSection(

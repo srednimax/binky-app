@@ -29,6 +29,13 @@ const val EXTRA_CARE_BUNNY_ID = "app.binky.tracker.extra.CARE_BUNNY_ID"
 const val EXTRA_WATCH_BUNNY_ID = "app.binky.tracker.extra.WATCH_BUNNY_ID"
 
 /**
+ * The flag the export prompt carries. **No bunny**, and that is the point: a backup reminder hangs
+ * off the app rather than off any animal (ADR-0005), so there is nothing to select and one
+ * destination to open.
+ */
+const val EXTRA_OPEN_BACKUP = "app.binky.tracker.extra.OPEN_BACKUP"
+
+/**
  * Where tapping a reminder notification lands.
  *
  * Kotlin note: a sealed interface, so the `when` that turns one into an `Intent` is exhaustive and a
@@ -50,6 +57,12 @@ sealed interface ReminderTap {
     data class LogObservation(
         val bunnyId: String,
     ) : ReminderTap
+
+    /**
+     * Backup & restore, where the export button and the reminder's own switch both are — the export
+     * prompt's destination, and the only one carrying no bunny at all.
+     */
+    data object OpenBackup : ReminderTap
 }
 
 /**
@@ -134,6 +147,10 @@ private fun Context.openAppIntent(tap: ReminderTap): PendingIntent {
                 intent.putExtra(EXTRA_WATCH_BUNNY_ID, tap.bunnyId)
                 tap.bunnyId.hashCode() xor TAP_OBSERVATION_SALT
             }
+            ReminderTap.OpenBackup -> {
+                intent.putExtra(EXTRA_OPEN_BACKUP, true)
+                TAP_BACKUP_REQUEST
+            }
         }
     return PendingIntent.getActivity(
         this,
@@ -147,3 +164,10 @@ private fun Context.openAppIntent(tap: ReminderTap): PendingIntent {
 
 /** Arbitrary and fixed: it only has to keep the two per-bunny request-code spaces apart. */
 private const val TAP_OBSERVATION_SALT = 0x4F62_7376
+
+/**
+ * The export prompt's request code — a constant, because there is one export reminder and it always
+ * means the same thing. Distinctive rather than `1` so it cannot plausibly land on a bunny id's hash
+ * and hand a care notification the backup screen.
+ */
+private const val TAP_BACKUP_REQUEST = 0x4261_636B

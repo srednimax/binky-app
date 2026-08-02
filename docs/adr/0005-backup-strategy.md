@@ -102,6 +102,47 @@ mild, since the file is normally the owner's own, but backups travel by mail and
 arbitrary write into app-private storage is not a thing to leave open in an app holding an animal's medical
 history.
 
+### Phase 4e amendment: the remembered folder, and the reminder that makes it a habit
+
+The deferred destination lands, and the shape it lands in is narrower than "export to a folder".
+
+**It is a saved destination, not a second export mechanism.** The share sheet is still the primary
+path and is never replaced: a chooser cannot fail for provider reasons, and it is what the fallback
+falls back *to*. Every failure in the folder path — a provider that refuses the write, a grant
+revoked in Android's settings, a preferences file restored from a phone that granted nothing — ends
+with the finished archive handed to the share sheet and one sentence saying why. The export is
+already built by the time any of that can happen, so no failure here can cost a backup.
+
+**A stored tree URI is not a working folder**, which is the same shape as the automatic-backup
+marker's three states and exists for the same reason. The grant is checked against
+`persistedUriPermissions` and the provider is asked for a display name on every read; if either
+declines, the screen says the folder is gone rather than showing a name that would fail at the
+moment the owner counted on it. A folder that quietly emptied itself would be ADR-0001's silence
+again, one layer down.
+
+**The recurring reminder is a preference, not a care reminder.** Care reminders hang off a bunny and
+live in the database (ADR-0018); this one hangs off the app, so it is a switch and an interval in
+Backup settings, and it rides the one daily sweep as one more branch (ADR-0024) rather than becoming
+a second scheduled thing. Off by default — an app that starts nagging about backups uninvited is one
+an owner learns to swipe past — and on its own notification channel, because it is the least urgent
+thing this app posts and therefore the likeliest to be muted, which is exactly why muting it must not
+cost a vaccination.
+
+**Its copy is a prompt about the owner's export, never a claim that their data is unsafe.** What is
+and is not protected is the automatic-backup status line's job, including the case where the honest
+answer is that nobody knows.
+
+**An export counts at the moment the file exists**, not when it reaches a destination. `ACTION_SEND`
+returns no result, so the alternative is a reminder that keeps prompting someone who exports every
+week; erring towards "they did it" is the direction that respects the owner's attention, and no part
+of the app claims a file is *safe* anywhere on the strength of that date.
+
+**The Google Drive question is still owed an answer on a real device.** Whether that provider accepts
+a write through a persisted tree grant is the plan's longest-standing unverified assumption, and
+building the path does not settle it. It is a gate item, and a failure there is a finding to record —
+with local storage and the Drive app folder named as the alternatives — not a checkpoint to fail,
+because the fallback is the export that already ships.
+
 ## Restore replaces the database but merges media
 
 The export's counterpart, restore, is a **full database replace** — the incoming db becomes the app's db

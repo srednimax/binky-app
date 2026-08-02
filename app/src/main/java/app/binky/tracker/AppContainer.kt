@@ -27,6 +27,7 @@ import app.binky.tracker.data.resolveSelection
 import app.binky.tracker.data.resolveSetupState
 import app.binky.tracker.media.MediaFiles
 import app.binky.tracker.work.CareNotifier
+import app.binky.tracker.work.ExportNotifier
 import app.binky.tracker.work.WatchNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -164,6 +165,13 @@ class AppContainer(
      * an observation landing for that bunny — or the watch being closed — cancels.
      */
     val watchNotifier = WatchNotifier(appContext)
+
+    /**
+     * The export prompt's other end (ADR-0005). The odd one out of the three: it is about the app
+     * rather than about a bunny, so the sweep posts it from preferences alone and an export — by
+     * either path — cancels it.
+     */
+    val exportNotifier = ExportNotifier(appContext)
 
     /**
      * The read-only scope onto an archived bunny. In memory only — a background kill must not

@@ -14,6 +14,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.binky.tracker.theme.BinkyTheme
 import app.binky.tracker.ui.wipe.SchemaMismatchScreen
 import app.binky.tracker.work.EXTRA_CARE_BUNNY_ID
+import app.binky.tracker.work.EXTRA_OPEN_BACKUP
 import app.binky.tracker.work.EXTRA_WATCH_BUNNY_ID
 import app.binky.tracker.work.ReminderTap
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -91,5 +92,7 @@ private fun Intent?.reminderTap(): ReminderTap? {
     if (care != null) return ReminderTap.Care(care)
     val watch = this?.getStringExtra(EXTRA_WATCH_BUNNY_ID)
     if (watch != null) return ReminderTap.LogObservation(watch)
+    // Last, and deliberately: the two above are about an animal and this one is about a file.
+    if (this?.getBooleanExtra(EXTRA_OPEN_BACKUP, false) == true) return ReminderTap.OpenBackup
     return null
 }
