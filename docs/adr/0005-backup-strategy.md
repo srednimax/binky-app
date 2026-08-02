@@ -137,16 +137,19 @@ returns no result, so the alternative is a reminder that keeps prompting someone
 week; erring towards "they did it" is the direction that respects the owner's attention, and no part
 of the app claims a file is *safe* anywhere on the strength of that date.
 
-**The Google Drive question is still owed an answer on a real device.** Whether that provider accepts
-a write through a persisted tree grant is the plan's longest-standing unverified assumption, and
-building the path does not settle it. It is a gate item, and a failure there is a finding to record —
-with local storage and the Drive app folder named as the alternatives — not a checkpoint to fail,
-because the fallback is the export that already ships.
+**The Google Drive question is answered: it works.** Whether that provider accepts a write through a
+persisted tree grant was the plan's longest-standing unverified assumption, carried since Phase 3 and
+the reason this destination was deferred out of 1.0 at all. Exercised on the Xiaomi at 4e against
+**`com.google.android.apps.docs.storage`** — a folder picked in Drive, the grant persisted
+(`persistable=0x3 persisted=0x3`), the document created, the bytes written, and the provider
+answering with the file's own name afterwards. The same path was exercised against **local storage**
+(`com.android.externalstorage`) in the same session, where the grant additionally survived an app
+update.
 
-*Verified so far, on the Xiaomi at 4e:* the whole path — pick, persist, create, write, and the grant
-surviving an app update — against **local storage** (`com.android.externalstorage`, the phone's
-`Documents`). That is the mechanism proven and the alternative proven at the same time. The Drive
-provider specifically has not been exercised, so the assumption stands exactly where it did.
+So the assumption is retired, and what stands in its place is narrower and worth keeping: *the
+provider accepted the write.* When Drive's own sync carries that file to the cloud is Drive's
+business, not something this app can observe or should claim — which is why the fallback stays, and
+why no copy anywhere calls a file safe on the strength of an export having happened.
 
 ## Restore replaces the database but merges media
 
