@@ -258,6 +258,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.androidx.work.testing)
     implementation(libs.androidx.datastore.preferences)
 
     // The export manifest inside a backup zip (ADR-0005). JSON rather than a hand-rolled format

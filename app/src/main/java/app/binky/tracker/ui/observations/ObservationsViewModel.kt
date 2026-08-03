@@ -10,6 +10,7 @@ import app.binky.tracker.BinkyApplication
 import app.binky.tracker.data.BunnyEntity
 import app.binky.tracker.data.BunnySelection
 import app.binky.tracker.data.ObservationEntity
+import app.binky.tracker.data.ParticipantExclusion
 import app.binky.tracker.data.SymptomEntity
 import app.binky.tracker.data.TrendFlag
 import app.binky.tracker.data.bunnyId
@@ -51,6 +52,19 @@ data class HealthyDayReceipt(
      * the snackbar names the flag instead (ADR-0001, ADR-0008).
      */
     val flaggedNames: List<String>,
+    /**
+     * Housemates left **out** because they are under a watch, so the snackbar can say so.
+     *
+     * ADR-0008 asks for the exclusion *and* the reason, and the reason is the half that was
+     * missing: this is the one write path that commits participants unreviewed, so an owner who
+     * expected the tap to cover the whole fluffle otherwise learns nothing about why it did not.
+     * The full entry screen states it per row; here there are no rows to state it on.
+     *
+     * Watch exclusions only. An archived housemate is excluded too, but that is a permanent and
+     * already-visible fact, and repeating it on every tap would be the daily noise ADR-0001 rejects
+     * — where a watch is temporary, and "log for them separately" is something to act on today.
+     */
+    val watchedOutNames: List<String>,
 )
 
 data class ObservationsUiState(
@@ -171,6 +185,10 @@ class ObservationsViewModel(
                     observationId = ids.first(),
                     names = preSelection.candidates.map { it.name },
                     flaggedNames = preSelection.candidates.filter { flagged(it.bunnyId) }.map { it.name },
+                    watchedOutNames =
+                        preSelection.excluded
+                            .filter { it.reason == ParticipantExclusion.UNDER_WATCH }
+                            .map { it.name },
                 )
         }
     }
