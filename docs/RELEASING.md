@@ -79,9 +79,19 @@ that was supposed to produce it:
 
 ```bash
 ./gradlew bundleRelease
-python3 scripts/aab-version.py        # exits non-zero on a mismatch
+python3 scripts/aab-version.py        # versionCode/versionName vs. git
+python3 scripts/aab-permissions.py    # the <uses-permission> set, vs. an allowlist
+python3 scripts/aab-locale.py pl      # every Polish string, vs. the resource table
 keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab
 ```
+
+All three scripts **exit non-zero** rather than printing and leaving you to read.
+Each exists because the corresponding claim was once wrong in a shipped artifact
+while every source-side check was green: `versionCode` 1 on a signed bundle (3a),
+Polish missing from the build that went up (fixed in 1.0.1), and a permission set
+that had quietly grown from two to six (found at 4h). The pattern is the same
+every time — the config said one thing, the artifact said another, and nothing
+compared them.
 
 Don't reach for `aapt2 dump xmltree` here. An AAB stores its manifest as
 **protobuf**, not the binary XML aapt2 reads, so it prints nothing and exits `0` —
