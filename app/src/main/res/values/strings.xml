@@ -484,6 +484,12 @@
     <!-- A flagged bunny is still offered — the owner is the one who looked, and the flag is about
          the numbers, not about today (ADR-0001, ADR-0008). It is named, not withheld. -->
     <string name="healthy_day_name_flagged">%1$s (weight flag)</string>
+    <!-- Named on the one-tap path because it has no participant rows to state it on (ADR-0008).
+         The count is of housemates left out, not of bunnies covered. -->
+    <plurals name="healthy_day_excluded_watch">
+        <item quantity="one">%1$s is under a watch — log for them separately.</item>
+        <item quantity="other">%1$s are under watches — log for them separately.</item>
+    </plurals>
 
     <!-- Care reminders (ADR-0018). A reminder is {label, interval, optional type}: the three presets
          carry a type and therefore translate, while a custom one is the owner's own words and does

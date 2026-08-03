@@ -494,6 +494,12 @@
     <string name="healthy_day_logged">Zdrowy dzień zapisany dla: %1$s.</string>
     <!-- A flagged bunny is still offered, and named (ADR-0001, ADR-0008). -->
     <string name="healthy_day_name_flagged">%1$s (ostrzeżenie o wadze)</string>
+    <plurals name="healthy_day_excluded_watch">
+        <item quantity="one">%1$s — trwa obserwacja, lepiej zapisać osobno.</item>
+        <item quantity="few">%1$s — trwają obserwacje, lepiej zapisać osobno.</item>
+        <item quantity="many">%1$s — trwają obserwacje, lepiej zapisać osobno.</item>
+        <item quantity="other">%1$s — trwają obserwacje, lepiej zapisać osobno.</item>
+    </plurals>
 
     <!-- Przypomnienia o opiece (ADR-0018). Nazwy gotowych rodzajów tłumaczą się, własna nazwa
          królika-właściciela zostaje tak, jak ją wpisano. „Co” rządzi biernikiem, który dla dnia,

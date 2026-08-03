@@ -155,7 +155,21 @@ private fun HealthyDaySnackbar(
                 it.names.map { name ->
                     if (name in it.flaggedNames) resources.getString(R.string.healthy_day_name_flagged, name) else name
                 }
-            resources.getString(R.string.healthy_day_logged, joinNames(resources, names))
+            val logged = resources.getString(R.string.healthy_day_logged, joinNames(resources, names))
+            // ADR-0008 wants the exclusion *and* its reason, and this is the only surface the
+            // one-tap path has to put the reason on. Appended rather than shown as a second
+            // snackbar: two in a row would make the owner wait to reach Undo, and the whole point
+            // of the receipt is that a wrong attribution is reversible immediately.
+            if (it.watchedOutNames.isEmpty()) {
+                logged
+            } else {
+                logged + " " +
+                    resources.getQuantityString(
+                        R.plurals.healthy_day_excluded_watch,
+                        it.watchedOutNames.size,
+                        joinNames(resources, it.watchedOutNames),
+                    )
+            }
         }
     val undoLabel = stringResource(R.string.action_undo)
 
