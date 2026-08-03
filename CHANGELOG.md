@@ -5,15 +5,10 @@
 
 ### Features
 
-* carry care reminders in by migration, not by wipe ([04a7c7b](https://github.com/srednimax/binky-app/commit/04a7c7bdfee98702cd9e5229a0aeab9f9da4175c))
 * carry care reminders in by migration, not by wipe ([80b0412](https://github.com/srednimax/binky-app/commit/80b04127b2043139f7455b869c0dab168e222501))
-* give a worried owner a watch, and the flag something to offer ([65c6445](https://github.com/srednimax/binky-app/commit/65c6445ddba130081f9d422da04b1a7b47dbd541))
 * give a worried owner a watch, and the flag something to offer ([01a20e6](https://github.com/srednimax/binky-app/commit/01a20e63e577f2774f08822b5125390811847953))
-* give Care a screen, and the tab back ([d42560a](https://github.com/srednimax/binky-app/commit/d42560ad5739cd17a410db02b57c288e32d7157b))
 * give Care a screen, and the tab back ([fb774cd](https://github.com/srednimax/binky-app/commit/fb774cd548d90caf24ae1ae5e690527b128c0c6e))
-* give exports a destination worth remembering, and a nudge to use it ([37c249b](https://github.com/srednimax/binky-app/commit/37c249bfa2b4821e0037bd877820688314714d48))
 * give exports a destination worth remembering, and a nudge to use it ([3cbdef2](https://github.com/srednimax/binky-app/commit/3cbdef2e9af4b66c314d4ad04afd7384d1f3e8a9))
-* schedule, notify and ask, on an empty database ([bf3454e](https://github.com/srednimax/binky-app/commit/bf3454e367fa67993f785f637c1d843150d631ce))
 * schedule, notify and ask, on an empty database ([77e1116](https://github.com/srednimax/binky-app/commit/77e1116e0599de57cb3a8a80a46f336e882c9c85))
 
 
