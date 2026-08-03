@@ -22,16 +22,49 @@ landed in between, and any one of them could have pulled in a permission. None d
 | No advertising ID | No `com.google.android.gms.permission.AD_ID` in the artifact. |
 | No network code of our own | No `INTERNET` permission is declared. |
 
-### 1.1 declares two permissions, and the table above stops being true for the first two rows
+### 1.1 declares six permissions, and the table above stops being true for the first two rows
 
-Written at **4a**, when they entered the manifest, and **re-verified against the 1.1 artifact at 4h** —
-the rows above stay as the record of what 1.0.1 shipped, because "no permissions" is a claim about a
-build and not about a project.
+Written at **4a**, when the first two entered the manifest, and **re-verified against the 1.1 artifact
+at 4h — `versionCode` 191, `versionName` 1.1.0**. The rows above stay as the record of what 1.0.1
+shipped, because "no permissions" is a claim about a build and not about a project.
 
-| Permission | Why, and what it changes on the Console |
-| --- | --- |
-| `android.permission.POST_NOTIFICATIONS` | Care reminders and the watch check-in. Runtime on API 33+, install-time below. **Not a Play sensitive permission** and there is no declaration form for it — it needs no justification, only that the Data safety answers and the store listing stop implying the app never notifies. It is never requested from a bare system dialog: ADR-0006 puts our own screen in front of it, in first-run setup and at the point of use. |
-| `android.permission.RECEIVE_BOOT_COMPLETED` | Puts the daily sweep back after a restart (ADR-0024). Install-time, invisible to the owner, not sensitive, no declaration form. |
+**Two of the six are ours. The other three arrived on their own**, merged out of WorkManager's manifest
+by the manifest merger, and that is the finding 4h existed to produce: the note written at 4a said
+*two*, and the artifact says six. Nothing in the app's own source declares them. This is precisely the
+hazard the advertising-ID section below warns about — a transitive dependency writing permissions into
+the merged manifest — arriving in a place nobody was watching for it.
+
+Read this list from `scripts/aab-permissions.py`, which walks the AAB's protobuf manifest, and not from
+`strings | grep`: a grep cannot tell a `<uses-permission>` from a `android:permission` guard on a
+service, and three of the strings in this artifact are the latter.
+
+| Permission | Ours? | Why, and what it changes on the Console |
+| --- | --- | --- |
+| `android.permission.POST_NOTIFICATIONS` | yes | Care reminders and the watch check-in. Runtime on API 33+, install-time below. **Not a Play sensitive permission** and there is no declaration form for it — it needs no justification, only that the Data safety answers and the store listing stop implying the app never notifies. It is never requested from a bare system dialog: ADR-0006 puts our own screen in front of it, in first-run setup and at the point of use. |
+| `android.permission.RECEIVE_BOOT_COMPLETED` | yes | Puts the daily sweep back after a restart (ADR-0024). Install-time, invisible to the owner, not sensitive, no declaration form. |
+| `android.permission.WAKE_LOCK` | **WorkManager** | Holds the CPU awake for the few seconds a worker runs. Normal, install-time, invisible, not sensitive, no declaration form. |
+| `android.permission.ACCESS_NETWORK_STATE` | **WorkManager** | Lets WorkManager evaluate a `NetworkType` constraint. **This is not network access** and must not be read as contradicting the "no `INTERNET` permission" row above — it reads connectivity state, it does not open a socket. `INTERNET` is still absent from the artifact, which is what the Data safety answer rests on. This app sets no network constraint on any work, so the capability is never exercised either. |
+| `android.permission.FOREGROUND_SERVICE` | **WorkManager** | ⚠ See below — the only one of the three with a Console consequence worth reading twice. |
+| `binky.bunny.and.rabbit.tracker.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | AndroidX | Signature-level, self-defined and self-used, for AndroidX's own non-exported receivers. Not user-visible, not a Play sensitive permission, nothing to declare — unchanged from 1.0.1. |
+
+#### ⚠ `FOREGROUND_SERVICE`, and why it is left in place
+
+`androidx.work.impl.foreground.SystemForegroundService` is in the merged manifest and the permission
+comes with it. Play scans the manifest, so the Console may surface a foreground-service question
+against an app that **cannot start one**: nothing in `app/src/main/java` calls `setForeground`,
+`setExpedited`, `ForegroundInfo` or `OutOfQuotaPolicy`, and the sweep is an ordinary `Worker` under an
+ordinary `JobScheduler` job. Verified by grep at 4h and worth re-running whenever work is added.
+
+**No `FOREGROUND_SERVICE_*` typed permission is declared**, which is the load-bearing detail at
+`targetSdk` 36: since Android 14 a foreground service must name a type to start at all, and the
+Console's foreground-service declaration is keyed to those types. There are none here, so there
+should be nothing to declare.
+
+It is **not** stripped with `tools:node="remove"`, deliberately. WorkManager falls back to a foreground
+service for expedited work below API 31, and removing the permission would convert a future
+`setExpedited` call into a runtime crash on exactly the older devices this app still supports
+(`minSdk` 26) — trading a Console question that may never be asked for a defect that only appears in
+the field. If a reviewer does ask, the answer above is the answer.
 
 Two permissions this app **deliberately does not declare**, both of which would be easy to reach for:
 
@@ -134,6 +167,14 @@ So it is answered from the **artifact**, and at 3h (`versionCode` 140) the artif
 string in the merged manifest, no ads SDK in the bundle, and — the load-bearing one — **no Play
 Services on `releaseRuntimeClasspath` at all**. There is no SDK present that could merge it.
 
+**Re-verified at 4h on `versionCode` 191**: still no `AD_ID` in the manifest, still zero matches for
+`play-services` on `releaseRuntimeClasspath`. The answer holds for 1.1. It is worth noticing *why* it
+held, though — not because the hazard is theoretical, but because no dependency capable of it was
+added. The same release brought in three permissions from WorkManager by exactly this route
+(see the permission table above), which is the proof that the mechanism this section describes is
+live rather than hypothetical. `scripts/aab-permissions.py` now asserts `AD_ID`'s absence on every
+run, so 1.2's ML Kit dependency cannot land quietly.
+
 That last fact is what makes the answer safe, and it is exactly what **changes at 1.2**: ML Kit's
 document scanner needs Play services (ADR-0009). When that dependency lands, GMS enters the classpath
 and this answer must be **re-verified against the artifact rather than inherited**:
@@ -146,8 +187,11 @@ unzip -p app/build/outputs/bundle/release/app-release.aab base/manifest/AndroidM
 
 A related non-finding worth writing down so it is not re-investigated: `android.permission.DUMP`
 appears in the merged manifest as `android:permission` on `androidx.profileinstaller`'s
-`ProfileInstallReceiver`. That is a guard on who may *call* the receiver — shell and system — not a
-permission the app requests. `aapt2 dump badging` lists no `uses-permission` for it.
+`ProfileInstallReceiver` — and, since 1.1, on WorkManager's `DiagnosticsReceiver` as well.
+`android.permission.BIND_JOB_SERVICE` appears the same way on WorkManager's `SystemJobService`. All
+three are guards on who may *call* the component — shell and system — not permissions the app
+requests. `scripts/aab-permissions.py` prints them under a separate marker for exactly this reason,
+and lists no `uses-permission` for any of them.
 
 ### ⚠ Android Auto Backup — the one a reviewer may query
 
