@@ -45,9 +45,6 @@
     <string name="switcher_no_bunnies">Nie ma jeszcze królików</string>
 
     <!-- "Widok:" rather than a verb, so the bunny's name needs no case and no gender. -->
-    <string name="scope_all_bunnies">Widok: wszystkie króliki</string>
-    <string name="scope_bunny">Widok: %1$s</string>
-    <string name="scope_bunny_archived">Widok: %1$s, w archiwum</string>
 
     <!-- The read-only scope onto an archived bunny -->
     <string name="archived_banner">W archiwum. Zapisy można czytać, ale nie zmieniać.</string>

@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
 import android.provider.DocumentsContract
+import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -144,10 +145,11 @@ suspend fun ContentResolver.writeExportToFolder(
                 DocumentsContract.createDocument(this@writeExportToFolder, parent, ZIP_MIME, archive.name)
                     ?: return@withContext FolderWrite.Refused
 
-            openOutputStream(target).use { output ->
-                if (output == null) return@withContext FolderWrite.Refused
-                archive.inputStream().use { input -> input.copyTo(output) }
-            }
+            // Null-checked before `use` rather than inside it: `Closeable?.use` accepts a null
+            // receiver quite happily, but lint's Recycle detector cannot see the close through it
+            // and reports a leak that is not there. Same behaviour, one fewer standing warning.
+            val output = openOutputStream(target) ?: return@withContext FolderWrite.Refused
+            output.use { archive.inputStream().use { input -> input.copyTo(output) } }
             // The provider decides the final name — a second export in the same minute becomes
             // "bunny-records-….zip (1)" on some, and telling the owner the name Binky asked for
             // would be telling them about a file that is not there.
@@ -196,15 +198,19 @@ private fun ContentResolver.documentLabel(document: Uri): String? = displayName(
  * describe is a folder this app should not promise to write to, and an unnamed file falls back to
  * the name Binky asked for.
  */
-private fun ContentResolver.displayName(document: Uri): String? =
-    try {
-        query(document, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null)
-            ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
-    } catch (e: SecurityException) {
-        null
-    } catch (e: IllegalArgumentException) {
-        null
-    }
+private fun ContentResolver.displayName(document: Uri): String? {
+    // Hoisted to a non-null local before `use`, for the same lint reason as the stream above. The
+    // try now wraps only the query, which is the call that actually throws either of these.
+    val cursor =
+        try {
+            query(document, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null)
+        } catch (e: SecurityException) {
+            null
+        } catch (e: IllegalArgumentException) {
+            null
+        } ?: return null
+    return cursor.use { if (it.moveToFirst()) it.getString(0) else null }
+}
 
 /** A stored string that is not a URI is corruption, not a crash. */
-private fun String.toUriOrNull(): Uri? = runCatching { Uri.parse(this) }.getOrNull()
+private fun String.toUriOrNull(): Uri? = runCatching { toUri() }.getOrNull()

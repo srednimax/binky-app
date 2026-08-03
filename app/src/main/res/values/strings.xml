@@ -25,9 +25,6 @@
 
     <!-- Which bunny a screen is scoped to. Every stub says so, or a stub scoped to the wrong
          bunny would be indistinguishable from one scoped to the right one. -->
-    <string name="scope_all_bunnies">Showing all bunnies</string>
-    <string name="scope_bunny">Showing %1$s</string>
-    <string name="scope_bunny_archived">Showing %1$s, archived</string>
 
     <!-- The read-only scope onto an archived bunny -->
     <string name="archived_banner">Archived. Records can be read, not changed.</string>
