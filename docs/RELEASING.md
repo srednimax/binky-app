@@ -47,6 +47,29 @@ git config core.hooksPath .githooks
 Config lives in `release-please-config.json` + `.release-please-manifest.json`
 (the manifest holds the current version — release-please rewrites it).
 
+### Merge pull requests with **rebase**, never a merge commit
+
+The repo allows rebase merging only, and that setting is load-bearing for the
+changelog rather than a matter of taste.
+
+GitHub writes the PR title into a merge commit's *body*. `conventional-commits-parser`
+strips the `Merge pull request #N from …` header and parses what follows as the
+commit — so a PR titled `feat: …` whose branch also carries that `feat: …` commit
+is counted **twice**, and the release notes list the feature twice. That is exactly
+what 1.1.0's first draft did, for all five of its features; the four `fix:` entries
+escaped only because those PR titles happened to be `chore:` or plain prose, which
+is luck, not a rule.
+
+Rebase replays the branch commits onto `main` with no merge commit in between, so
+every conventional subject is counted exactly once and each commit keeps its own
+changelog line. Squash would also de-duplicate, but it folds a PR's individual
+subjects into a single entry taken from the PR title — and this repo writes a
+meaningful subject per commit (PR #72 alone contributed three separate `fix:`
+lines), so squashing would throw away detail the changelog exists to carry.
+
+There is no release-please option for this. The merge strategy *is* the fix, which
+is why it is enforced by the repo setting instead of by remembering.
+
 ## Checking the artifact before it reaches Play
 
 `bundleRelease`, never `assembleRelease` — Play wants an AAB and an AAB can't be
