@@ -2309,8 +2309,15 @@ rebuild triggers; **ADR-0026**, the app records doses and never advises on them,
 copy.
 
 1. **5a — The exact-alarm path, proven while nothing depends on it.** 🔨 *(built; lint 0/0, JVM tests green —
-   **not closed**: the overnight-Doze run is armable but unread, and the run can still reshape the phase, so the
-   tick waits for it. The **autostart state is now recorded**, which ADR-0025 asked for and no result in the
+   **not closed**: the overnight-Doze run is unread, and it can still reshape the phase, so the tick waits for
+   it. **Everything else is proven on the device**, 2026-08-04 on the Xiaomi: the two-minute dose arrived, with
+   `1 wakeups` recorded against `DoseAlarmReceiver` — so the alarm woke the phone rather than riding somebody
+   else's wakeup; `doses` exists at `mImportance=4` with the other three at 3; the appop went `default` →
+   `allow` through the app's own deep link, so the permission path works end to end; the slot store is empty
+   afterwards, which is post-then-mark; **exactly one** notification was posted on `channel=doses`, which is the
+   fire-then-rebuild loop *not* happening — a slot stays answerable for another 29 minutes after firing, so
+   without the mark the rebuild re-arms the same instant and fires again; and `dumpsys alarm` reports no pending
+   alarm afterwards, which is ADR-0025's invariant in the one place it is checkable. The **autostart state is now recorded**, which ADR-0025 asked for and no result in the
    project had: on 2026-08-04, before anything was changed, HyperOS's *Background autostart* listed nine
    permitted apps and **neither Binky build was among them**. So 4g's 10.5-hour Doze run and 4h's gate reboot
    were both taken with autostart **denied** — a stronger reading of those results than they were being given,
