@@ -2309,8 +2309,18 @@ rebuild triggers; **ADR-0026**, the app records doses and never advises on them,
 copy.
 
 1. **5a — The exact-alarm path, proven while nothing depends on it.** 🔨 *(built; lint 0/0, JVM tests green —
-   **not closed**: the overnight-Doze run is armable but unread, and the autostart state is unrecorded. Both are
-   readings off the phone, and the first of them can still reshape the phase, so the tick waits for them. What
+   **not closed**: the overnight-Doze run is armable but unread, and the run can still reshape the phase, so the
+   tick waits for it. The **autostart state is now recorded**, which ADR-0025 asked for and no result in the
+   project had: on 2026-08-04, before anything was changed, HyperOS's *Background autostart* listed nine
+   permitted apps and **neither Binky build was among them**. So 4g's 10.5-hour Doze run and 4h's gate reboot
+   were both taken with autostart **denied** — a stronger reading of those results than they were being given,
+   and the denied half of the two-state reboot check the ADR's gate requires. **How to read it, since the app
+   cannot**: the count in *Settings → Apps → Permissions → Autostart* ("N apps can start in the background") and
+   the group of apps under it are the only trustworthy signal — a `uiautomator` dump's `checked` attribute
+   reports false for every row on that list, including ones the header proves are enabled, so it must not be
+   used. Each overnight run records its own autostart state alongside its result; granting it for the first run
+   is deliberate, because a MIUI denial can stop an alarm waking the app at all and would return outcome 3 for a
+   reason that is not `setExactAndAllowWhileIdle`. What
    the build added beyond the bullets below: the debug dose is **stored** and arms through
    `rescheduleDoseAlarm()` rather than placing an alarm of its own — otherwise the three receivers have nothing
    observable to rebuild at a checkpoint whose whole premise is proving them early — and it gained a second
