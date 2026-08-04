@@ -2486,6 +2486,28 @@ copy.
      migration fixtures. JVM: `WeightSource` derived from `visitId` as a two-case table,
      which is trivial and is the point — it is the assertion that there is nothing else to get wrong.
 3. **5c — Visits and the vet directory on screen, and the origin-tagged weight.**
+   ✅ *(built and closed. spotless, `assembleDebug` and JVM tests green, lint **0/0**; instrumented
+   **153 tests on the Xiaomi, all green** — 5b's 141 plus twelve new ones in `VisitRepositoryTest` —
+   2026-08-04, through `am instrument` after two plain installs. The screens were **reviewed on the
+   phone**, not only asserted: the seeded fixture now writes two vets and three visits, and the round
+   trip More → Vets → directory, Care → Vet visits → a visit carrying "Weighed 2,380 g", Weight → the
+   12:00 row saying "Recorded at a vet visit" with *Edit* and *Delete* absent → *Open the visit* →
+   the editor with every field filled, all render as designed. Five decisions the plan's text did not
+   settle, made here: **the editor is the visit's only screen** — there is no separate detail view,
+   and it takes the shell's `readOnly` the way `CareReminderScreen` does, so an archived bunny's
+   visits are readable in full with no Save and no pickers; **the Care tab keeps one `ViewModel`**
+   (house rule), so visits arrive through `CareViewModel` and its `combine` lands exactly on Kotlin's
+   five-flow typed overload; **a visit-tagged row loses *Edit* and *Delete* in the weight list too**,
+   which is wider than the plan's "read-only in the weight editor" and is the same rule — leaving
+   *Delete* on the row would take the vet's number out of the series with none of the stated choice
+   the visit's own delete dialog exists to ask; **`VisitDetails` is a joined projection** (visit + vet
+   name + weighing) rather than three reads, and Room re-emits it on a write to any of the three
+   tables, so renaming a vet moves the list with nothing telling it to; and the delete dialog states
+   its choice as a **radio pair defaulting to keep** with Delete/Cancel beneath, rather than as two
+   buttons that both destroy — one confirmation, still cancelable. `RecordedAtField` gained an
+   `enabled` flag rather than a second read-only copy of itself. **`CONTEXT.md` gained `Vet` and
+   `Visit` here**, which 5b owed and did not land. The tab is **still labelled "Care"**: the name
+   moves back to "Care & Meds" at 5e, with the medications that make the second half of it true.)*
    - **Where they live is a decision, so it is made here.** The `CareAndMeds` tab is **bunny-scoped** and
      becomes a hub with three lists — care reminders (4c), medication courses (5e), visits — because all three
      are that bunny's ongoing care. The **vet directory is not bunny-scoped**, so it lives in **More** beside

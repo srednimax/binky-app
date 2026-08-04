@@ -121,6 +121,34 @@ data class PhotoGallery(
 ) : NavKey
 
 /**
+ * The vet directory, reached from More — a detail route off a tab, like [ArchivedBunnies].
+ *
+ * **In More rather than on the Care tab, and that is ADR-0015's rule rather than a preference.** A
+ * vet is app-wide: a household's bunnies see the same one, so a directory hanging off a bunny-scoped
+ * tab would ask which rabbit a phone number belongs to. The visits *are* bunny-scoped, and they stay
+ * on the Care tab where the rest of that bunny's ongoing care lives.
+ */
+@Serializable data object Vets : NavKey
+
+/** Add or edit a vet. `null` adds, mirroring [BunnyEditor]. */
+@Serializable
+data class VetEditor(
+    val vetId: String? = null,
+) : NavKey
+
+/**
+ * Add or edit one vet visit. `null` [visitId] adds, mirroring [WeightEntry].
+ *
+ * [bunnyId] is carried even when editing, for the same reason [CareReminderEditor] carries it:
+ * adding needs it, and a key that took it only sometimes would be two keys wearing one name.
+ */
+@Serializable
+data class VisitEditor(
+    val bunnyId: String,
+    val visitId: String? = null,
+) : NavKey
+
+/**
  * First-run setup (ADR-0006), as three keys rather than one screen with a step counter.
  *
  * Add your first bunny, choose what a backup carries, then turn reminders on. The third step waited

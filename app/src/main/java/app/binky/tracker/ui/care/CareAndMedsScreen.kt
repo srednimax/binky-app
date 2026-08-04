@@ -16,6 +16,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,16 +36,23 @@ import app.binky.tracker.R
 import app.binky.tracker.data.BunnySelection
 import app.binky.tracker.data.interval
 import app.binky.tracker.ui.appViewModelExtras
+import app.binky.tracker.ui.bunny.dateLabel
 import app.binky.tracker.ui.observations.ChooseBunnyDialog
 import app.binky.tracker.ui.reminders.RemindersOptIn
 import app.binky.tracker.ui.shell.ShellUiState
+import app.binky.tracker.ui.weight.gramsLabel
 import app.binky.tracker.work.ReminderChannel
 import app.binky.tracker.work.ReminderDelivery
 import app.binky.tracker.work.openBatteryOptimisationSettings
 import app.binky.tracker.work.reminderDelivery
 
 /**
- * Care — one bunny's recurring care, due first (ADR-0018).
+ * Care — one bunny's recurring care, due first (ADR-0018), **and its vet visits** (ADR-0017).
+ *
+ * **The tab is a hub from 1.2**, and that is a decision about where things live rather than a
+ * layout: care reminders, vet visits and — at 5e — medication courses are all *this bunny's ongoing
+ * care*, so they share the bunny-scoped tab. The **vet directory is not here**: a vet is app-wide,
+ * so it lives in More (ADR-0015), and only the visits are per bunny.
  *
  * **The tab is live from 1.1**, which is the one-value flip 3f left in place: this screen stopped
  * being a stub the moment there was something real behind it, and `StubScreen` lost its last caller
@@ -66,6 +74,8 @@ fun CareAndMedsScreen(
     onAddReminder: (String) -> Unit,
     onOpenReminder: (String) -> Unit,
     onRecordWeight: (String) -> Unit,
+    onAddVisit: (String) -> Unit,
+    onOpenVisit: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: CareViewModel = viewModel(factory = CareViewModel.Factory, extras = appViewModelExtras())
@@ -94,6 +104,9 @@ fun CareAndMedsScreen(
                     }
                 },
                 onDelete = viewModel::requestDelete,
+                onAddVisit = { careState.bunnyId?.let(onAddVisit) },
+                onOpenVisit = { row -> careState.bunnyId?.let { onOpenVisit(it, row.id) } },
+                onDeleteVisit = viewModel::requestVisitDelete,
                 modifier = modifier,
             )
     }
@@ -123,6 +136,14 @@ fun CareAndMedsScreen(
             reminderLabel = careReminderLabel(row.scheduled.reminder),
             onConfirm = viewModel::confirmDelete,
             onDismiss = viewModel::cancelDelete,
+        )
+    }
+
+    careState.pendingVisitDelete?.let { row ->
+        DeleteVisitDialog(
+            row = row,
+            onConfirm = viewModel::confirmVisitDelete,
+            onDismiss = viewModel::cancelVisitDelete,
         )
     }
 }
@@ -160,6 +181,9 @@ private fun CareList(
     onOpen: (CareRow) -> Unit,
     onComplete: (CareRow) -> Unit,
     onDelete: (CareRow) -> Unit,
+    onAddVisit: () -> Unit,
+    onOpenVisit: (VisitRow) -> Unit,
+    onDeleteVisit: (VisitRow) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -171,6 +195,10 @@ private fun CareList(
         if (!state.readOnly) {
             item { DeliveryLine() }
         }
+
+        // Headed from 1.2, and not before: one list needs no header, and two unlabelled ones read
+        // as a single list whose rows have stopped making sense.
+        item { SectionHeader(stringResource(R.string.care_reminders_heading)) }
 
         // No add / complete / edit affordances at all in the archived scope, rather than
         // affordances that refuse when tapped (ADR-0004).
@@ -199,6 +227,143 @@ private fun CareList(
                 onDelete = { onDelete(row) },
             )
         }
+
+        item { SectionHeader(stringResource(R.string.visits_heading)) }
+
+        if (!state.readOnly) {
+            item {
+                Button(onClick = onAddVisit) { Text(stringResource(R.string.visit_add)) }
+            }
+        }
+
+        if (state.visits.isEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.visits_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        // Prefixed, because a visit and a reminder can be two different rows sharing one UUID space
+        // and `LazyColumn` keys have to be unique across the *whole* list rather than per section.
+        items(state.visits, key = { "visit-${it.id}" }) { row ->
+            VisitCard(
+                row = row,
+                readOnly = state.readOnly,
+                onOpen = { onOpenVisit(row) },
+                onDelete = { onDeleteVisit(row) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(text: String) {
+    Text(text = text, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+}
+
+/**
+ * One visit: the day, what it was for, who was seen, and the weighing taken at it.
+ *
+ * The weighing is shown because it is the visit's own record of it (ADR-0017) — **the same row** the
+ * Weight screen draws, read back through the join rather than copied here.
+ */
+@Composable
+private fun VisitCard(
+    row: VisitRow,
+    readOnly: Boolean,
+    onOpen: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(text = row.reason, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text =
+                    row.vetName?.let { stringResource(R.string.visit_row_with_vet, dateLabel(row.visitedOn), it) }
+                        ?: dateLabel(row.visitedOn),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            row.weightGrams?.let { grams ->
+                Text(
+                    text = stringResource(R.string.visit_row_weighed, gramsLabel(grams)),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            if (!readOnly) {
+                HorizontalDivider()
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onOpen) { Text(stringResource(R.string.action_edit)) }
+                    TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Deleting a visit **states the choice about its weighing** rather than guessing (PLAN 5c).
+ *
+ * One confirmation, not ADR-0004's two-stage ceremony — that is calibrated to a bunny's whole
+ * history. But the weighing is a second record with a life of its own: keeping it leaves a
+ * standalone number in the chart, and removing it takes the vet's reading out of the series. The
+ * default is **keep**, because it is the recoverable one.
+ *
+ * With no weighing at the visit there is nothing to choose, and the dialog says so in one line.
+ */
+@Composable
+private fun DeleteVisitDialog(
+    row: VisitRow,
+    onConfirm: (Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var keepWeighing by remember(row.id) { mutableStateOf(true) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.visit_delete_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.visit_delete_body, dateLabel(row.visitedOn)))
+                row.weightGrams?.let { grams ->
+                    Text(stringResource(R.string.visit_delete_weighing, gramsLabel(grams)))
+                    WeighingChoice(
+                        label = stringResource(R.string.visit_delete_keep_weighing),
+                        selected = keepWeighing,
+                        onSelect = { keepWeighing = true },
+                    )
+                    WeighingChoice(
+                        label = stringResource(R.string.visit_delete_remove_weighing),
+                        selected = !keepWeighing,
+                        onSelect = { keepWeighing = false },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(row.weightGrams == null || keepWeighing) }) {
+                Text(stringResource(R.string.action_delete))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+    )
+}
+
+@Composable
+private fun WeighingChoice(
+    label: String,
+    selected: Boolean,
+    onSelect: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onSelect),
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 8.dp))
     }
 }
 

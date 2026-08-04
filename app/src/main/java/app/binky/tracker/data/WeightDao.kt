@@ -54,6 +54,16 @@ interface WeightDao {
         recordedAt: Instant,
     ): List<WeightEntity>
 
+    /**
+     * The one weighing recorded at a visit, if there is one.
+     *
+     * Singular by the schema rather than by a `LIMIT`: the unique index on `visitId` is what makes
+     * "one row, never a copy" true (ADR-0017), so a `LIMIT 1` here would only hide a violation that
+     * cannot happen.
+     */
+    @Query("SELECT * FROM weights WHERE visitId = :visitId")
+    suspend fun weightForVisitNow(visitId: String): WeightEntity?
+
     @Insert
     suspend fun insert(weight: WeightEntity)
 

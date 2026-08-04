@@ -24,6 +24,20 @@ brought back, and its records stay **readable in a read-only scope** — records
 indistinguishable from deleted ones (ADR-0004).
 _Avoid_: delete, remove, hide, deactivate
 
+**Visit**:
+One appointment a bunny had with a vet, recorded afterwards: the day it happened, what it was for,
+optionally who was seen, and the weight if one was taken. A **health record, never an expense** — there is
+no cost anywhere in it (ADR-0017). A weight taken at a visit is **one** row in the weight history tagged
+with the visit, never a second copy of the number, so the chart and the visit cannot drift apart.
+_Avoid_: appointment, consultation, checkup, vet bill
+
+**Vet**:
+A directory entry for a vet or practice — a name, and optionally a clinic, phone number and notes. **App-wide
+rather than per bunny**: a household's bunnies see the same vet. A vet **outlives its visits** (ADR-0017):
+removing the entry leaves every visit standing, minus the name, because a clinic closing is not a reason to
+lose a health record.
+_Avoid_: doctor, clinic (the clinic is a field on a vet), practice, provider
+
 **Document**:
 A scan or photo of paperwork from a vet — results, prescriptions, vaccination records — attached to a
 bunny and optionally to a visit. A record, not a memory: it is evidence the owner may need again.

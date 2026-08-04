@@ -27,6 +27,7 @@ import app.binky.tracker.R
 fun MoreScreen(
     onOpenArchived: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenVets: () -> Unit,
     onOpenPhotos: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
@@ -39,6 +40,13 @@ fun MoreScreen(
             // Inert while no bunny exists to have photos of, which is the same row as before with
             // one fewer reason to tap it.
             onClick = onOpenPhotos,
+        )
+        // **Never inert**, unlike photos above: the directory is app-wide (ADR-0017), so it is
+        // usable with no bunny in scope and reads the same in the archived one.
+        MoreRow(
+            title = stringResource(R.string.more_vets),
+            subtitle = stringResource(R.string.more_vets_summary),
+            onClick = onOpenVets,
         )
         MoreRow(
             title = stringResource(R.string.more_archived_bunnies),

@@ -17,6 +17,7 @@ import app.binky.tracker.data.WeightEntity
 import app.binky.tracker.data.WeightRepository
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.data.evaluateTrend
+import app.binky.tracker.data.replaceable
 import app.binky.tracker.data.toAcknowledgment
 import app.binky.tracker.data.toWeighing
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,6 +52,12 @@ data class WeightEntryUiState(
     val inFuture: Boolean = false,
     /** Non-empty while the replace-or-add-a-second prompt is up (ADR-0021). */
     val collision: List<WeightEntity> = emptyList(),
+    /**
+     * Set when the row being edited was recorded at a visit (ADR-0017): the form then **reads** and
+     * does not write, because the visit owns that number and re-derives its timestamp from its own
+     * date. The screen offers the visit instead of a Save.
+     */
+    val visitId: String? = null,
     /** Set after the write when the flag is visible and unacknowledged: the dialog host. */
     val flagDrop: TrendDrop? = null,
     /** Flipped once the write has landed *and* been reported, which is the screen's cue to leave. */
@@ -69,6 +76,15 @@ data class WeightEntryUiState(
                 .truncatedTo(ChronoUnit.MINUTES)
 
     val parsedGrams: Int? get() = grams.trim().toIntOrNull()?.takeIf { it > 0 }
+
+    /**
+     * The visit a *clashing* row belongs to, if one of them does (ADR-0021's amendment).
+     *
+     * When this is set the prompt drops *replace* entirely and offers to open the visit instead —
+     * the destructive option is **absent** rather than merely not the default, because replacing
+     * would leave the visit displaying a figure the vet never recorded.
+     */
+    val collisionVisitId: String? get() = collision.firstNotNullOfOrNull { it.visitId }
 }
 
 /**
@@ -108,6 +124,7 @@ class WeightEntryViewModel(
                     grams = weight?.grams?.toString() ?: "",
                     date = recordedAt?.toLocalDate() ?: state.date,
                     time = recordedAt?.toLocalTime()?.truncatedTo(ChronoUnit.MINUTES) ?: state.time,
+                    visitId = weight?.visitId,
                 )
             }
         }
@@ -128,6 +145,9 @@ class WeightEntryViewModel(
 
     fun save() {
         val state = _uiState.value
+        // A visit-recorded weighing is read-only here (ADR-0017). The screen renders no Save at all,
+        // so this is the belt to that pair of braces rather than a path anyone can reach.
+        if (state.visitId != null) return
         if (state.parsedGrams == null) {
             _uiState.update { it.copy(gramsInvalid = true) }
             return
@@ -155,7 +175,10 @@ class WeightEntryViewModel(
      * weighing out of the three-wide baseline window, silently shortening effective history.
      */
     fun replaceExisting() {
-        val clash = _uiState.value.collision
+        // Filtered a second time, and not defensively: this is the one function that could still
+        // overwrite a visit's weighing, and the rule lives in `replaceable()` rather than in the
+        // dialog that currently happens not to offer the button (ADR-0021's amendment).
+        val clash = _uiState.value.collision.replaceable()
         _uiState.update { it.copy(collision = emptyList()) }
         viewModelScope.launch { write(replacing = clash) }
     }

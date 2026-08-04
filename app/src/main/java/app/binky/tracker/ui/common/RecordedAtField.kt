@@ -50,6 +50,9 @@ import java.time.ZoneOffset
  * @param inFuture set by the form's own save check. The date picker below refuses future *days* on
  *   its own, but a time picker cannot express "not later than now on today's date", so the form
  *   re-checks the whole instant and this renders the answer.
+ * @param enabled false renders the same two lines with **no way to change them** — the pickers are
+ *   absent rather than present-and-refusing (ADR-0004's shape). Used by the weight form for a
+ *   visit-recorded weighing, whose timestamp is derived from the visit's date (ADR-0017).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,6 +66,7 @@ fun RecordedAtField(
     onDateChanged: (LocalDate) -> Unit,
     onTimeChanged: (LocalTime) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     var pickingDate by rememberSaveable { mutableStateOf(false) }
     var pickingTime by rememberSaveable { mutableStateOf(false) }
@@ -71,17 +75,24 @@ fun RecordedAtField(
         Text(text = label, style = MaterialTheme.typography.titleSmall)
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(text = dateLabel(date), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-            TextButton(onClick = { pickingDate = true }) { Text(stringResource(R.string.recorded_at_pick_date)) }
+            if (enabled) {
+                TextButton(onClick = { pickingDate = true }) { Text(stringResource(R.string.recorded_at_pick_date)) }
+            }
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(text = timeLabel(time), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-            TextButton(onClick = { pickingTime = true }) { Text(stringResource(R.string.recorded_at_pick_time)) }
+            if (enabled) {
+                TextButton(onClick = { pickingTime = true }) { Text(stringResource(R.string.recorded_at_pick_time)) }
+            }
         }
-        Text(
-            text = helpText,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        // The help text explains how to back-date, so it goes with the controls that can.
+        if (enabled) {
+            Text(
+                text = helpText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         if (inFuture) {
             Text(
                 text = futureRejectedText,

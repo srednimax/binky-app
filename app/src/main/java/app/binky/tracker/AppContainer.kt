@@ -17,6 +17,8 @@ import app.binky.tracker.data.PhotoRepository
 import app.binky.tracker.data.SetupState
 import app.binky.tracker.data.StoredSelection
 import app.binky.tracker.data.SymptomRepository
+import app.binky.tracker.data.VetRepository
+import app.binky.tracker.data.VisitRepository
 import app.binky.tracker.data.WatchRepository
 import app.binky.tracker.data.WeightRepository
 import app.binky.tracker.data.backup.BackupExporter
@@ -150,6 +152,15 @@ class AppContainer(
     val photoRepository = PhotoRepository(database, mediaFiles)
 
     val careRepository = CareRepository(database)
+
+    val vetRepository = VetRepository(database)
+
+    /**
+     * Takes [weightRepository] rather than the database alone: a visit's weighing is a weighing, and
+     * writing it through the repository that owns ADR-0001's watermark is what keeps the trend flag
+     * from going stale behind a vet's number (ADR-0017).
+     */
+    val visitRepository = VisitRepository(database, weightRepository)
 
     val watchRepository = WatchRepository(database)
 

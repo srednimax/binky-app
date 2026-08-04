@@ -132,6 +132,10 @@
     </plurals>
     <string name="weight_collision_replace">Zastąp je</string>
     <string name="weight_collision_add_second">Dodaj drugie</string>
+    <string name="weight_collision_visit_body">Ważenie zapisane o tej porze pochodzi z wizyty u weterynarza. Binky go nie nadpisze — dodaj drugie ważenie albo popraw liczbę przy samej wizycie.</string>
+    <string name="weight_from_visit">Zapisane podczas wizyty u weterynarza</string>
+    <string name="weight_open_visit">Otwórz wizytę</string>
+    <string name="weight_visit_owned">To ważenie zostało zapisane podczas wizyty u weterynarza, więc zmienia się je tam. O jego godzinie decyduje data wizyty.</string>
 
     <!-- How a stored weight is rendered. The number itself is formatted by the platform, so a
          Polish locale already gives 2,45 rather than 2.45 — only the unit lives here. -->
@@ -614,6 +618,53 @@
         <item quantity="other">%d przypomnień o opiece</item>
     </plurals>
 
+    <!-- Wizyty u weterynarza (ADR-0017). Zapis zdrowia, nigdy wydatków: nic tu nie pyta o koszt.
+         Nazwiska weterynarzy nie są odmieniane (zasada 2 na górze pliku) — stąd dwukropki i cudzysłowy. -->
+    <string name="care_reminders_heading">Przypomnienia o opiece</string>
+    <string name="visits_heading">Wizyty u weterynarza</string>
+    <string name="visits_empty">Nie zapisano jeszcze żadnej wizyty. Wizyta to zapis zdrowia: dzień, powód i waga, jeśli weterynarz zważył królika.</string>
+    <string name="visit_add">Dodaj wizytę</string>
+    <string name="visit_row_with_vet">%1$s · %2$s</string>
+    <string name="visit_row_weighed">Zważono: %1$s</string>
+
+    <string name="visit_editor_add_title">Nowa wizyta</string>
+    <string name="visit_editor_edit_title">Edytuj wizytę</string>
+    <string name="visit_date_label">Kiedy to było?</string>
+    <string name="visit_future_rejected">Ten dzień jeszcze nie nadszedł.</string>
+    <string name="visit_reason_label">W jakiej sprawie?</string>
+    <string name="visit_reason_required">Napisz, w jakiej sprawie — żeby ten zapis coś znaczył także za rok.</string>
+    <string name="visit_notes_label">Notatki, jeśli chcesz</string>
+    <string name="visit_vet_label">Weterynarz</string>
+    <string name="visit_vet_none">Nie zapisano</string>
+    <string name="visit_vet_choose">Wybierz</string>
+    <string name="visit_vet_clear">Wyczyść</string>
+    <string name="visit_vet_picker_title">Który weterynarz?</string>
+    <string name="visit_vet_add_typed">Dodaj „%1$s” jako nowego weterynarza</string>
+    <string name="visit_weight_label">Waga w gramach, jeśli zważono</string>
+    <string name="visit_weight_help">Opcjonalne. Zapisuje się raz, jako ważenie tego królika w tym dniu.</string>
+    <string name="visit_weight_invalid">Pełne gramy albo zostaw puste.</string>
+
+    <string name="visit_delete_title">Usunąć tę wizytę?</string>
+    <string name="visit_delete_body">Wizyta z dnia %1$s znika wraz z notatkami.</string>
+    <string name="visit_delete_weighing">Zapisano przy niej ważenie: %1$s.</string>
+    <string name="visit_delete_keep_weighing">Zostaw samo ważenie</string>
+    <string name="visit_delete_remove_weighing">Usuń także ważenie</string>
+
+    <!-- Lista weterynarzy, dostępna z ekranu Więcej. Wspólna dla wszystkich królików i trwalsza niż
+         wizyty, które ją wskazują (ADR-0017). -->
+    <string name="vets_title">Weterynarze</string>
+    <string name="vets_empty">Nie ma jeszcze żadnego weterynarza. Dodaj gabinet, z którego korzystasz, a każda wizyta będzie mogła go wskazać — można go też dodać w trakcie wpisywania wizyty.</string>
+    <string name="vet_add">Dodaj weterynarza</string>
+    <string name="vet_editor_add_title">Nowy weterynarz</string>
+    <string name="vet_editor_edit_title">Edytuj weterynarza</string>
+    <string name="vet_name_label">Nazwa lub nazwisko</string>
+    <string name="vet_name_required">Podaj nazwę, żeby dało się później znaleźć ten wpis.</string>
+    <string name="vet_clinic_label">Gabinet, jeśli chcesz</string>
+    <string name="vet_phone_label">Telefon, jeśli chcesz</string>
+    <string name="vet_notes_label">Notatki, jeśli chcesz</string>
+    <string name="vet_delete_title">Usunąć tego weterynarza?</string>
+    <string name="vet_delete_body">Z listy znika wpis: %1$s. Wizyty przy nim zapisane zostają bez zmian — tracą tylko nazwę.</string>
+
     <!-- Obserwacja (ADR-0001). Pytanie jest o to, czy ktoś zajrzał — nigdy o to, co królikowi jest.
          Formy bezosobowe i bezokoliczniki, imię zawsze po dwukropku (zasady 1 i 2 na górze pliku). -->
     <string name="watch_start">Rozpocznij obserwację</string>
@@ -649,6 +700,8 @@
     <string name="more_photos">Zdjęcia</string>
     <string name="more_photos_summary">Zdjęcia jednego królika, trzymane na tym telefonie.</string>
     <string name="more_documents">Dokumenty</string>
+    <string name="more_vets">Weterynarze</string>
+    <string name="more_vets_summary">Nazwy i numery, wspólne dla wszystkich królików.</string>
     <string name="more_settings">Ustawienia</string>
     <string name="more_settings_summary">Jednostki wagi, język, kopia zapasowa i przywracanie.</string>
     <string name="more_support">Wsparcie</string>
