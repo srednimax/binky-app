@@ -1583,7 +1583,7 @@ Everything else was proved at 3g and re-proved at the close: `spotlessApply`, `a
 schema 4's exported JSON tagged, and — the bullet 1.0 could not satisfy at all — **every screen read in
 Polish with no English left behind**, on a phone whose own language never changed.
 
-## Phase 4 — Care reminders and watch — ships as 1.1
+## Phase 4 — Care reminders and watch — ships as 1.1 ✅ *(closed on the build; delivery evidence and the Console half are carried into Phase 5)*
 
 Care reminders depend only on a bunny existing, and use the simpler mechanism. Building them first
 establishes the notification channel, permission flow, reboot rescheduling and Xiaomi battery-exemption
@@ -1714,7 +1714,7 @@ once; here they arrive a handful at a time, and `PolishTranslationTest` already 
 counterpart, a missing plural category and a dropped format argument. So translation is a per-commit
 obligation rather than a phase of its own — which is the whole return on having paid for that test.
 
-1. **4a — Reminder plumbing, proven while the payload is boring.** No schema change at all, deliberately:
+1. **4a — Reminder plumbing, proven while the payload is boring.** ✅ No schema change at all, deliberately:
    the plumbing lands before the migration era starts, so a failure in either has only one explanation.
    - WorkManager enters `libs.versions.toml` here and nowhere earlier.
    - **On-demand initialization**, not `androidx.startup`: the default initializer node is removed from the
@@ -1784,7 +1784,7 @@ obligation rather than a phase of its own — which is the whole return on havin
    - Tests, JVM: the pending-schema guard as a pure predicate; the delivery-state resolver as a case table
      across all three states; the channel definitions against `strings.xml` in both directions, the same
      shape as `AppLanguageTest`.
-2. **4b — Care reminders: schema 5, the first real migration, and the data layer.**
+2. **4b — Care reminders: schema 5, the first real migration, and the data layer.** ✅
    - `CareReminderEntity` — `id`, `bunnyId` FK `CASCADE` indexed, `label: String`, `type: CareType?` stored
      by name, `intervalCount: Int`, `intervalUnit: CareIntervalUnit` stored by name, `firstDueOn: LocalDate`,
      `notifiedForDueOn: LocalDate?`, `createdAt`, `calendarHandedOffAt: Instant?`. `type` is nullable because
@@ -1857,7 +1857,7 @@ obligation rather than a phase of its own — which is the whole return on havin
      resetting rather than owing, `31 January + 1 MONTH` and `29 February + 1 YEAR` clamping, the anchor path
      for a reminder never completed, and `notifiedForDueOn` going stale the moment a completion moves the
      date.
-3. **4c — Care reminders: the screen, completion, the calendar hand-off, and the tab flip.**
+3. **4c — Care reminders: the screen, completion, the calendar hand-off, and the tab flip.** ✅
    - The Care list per bunny: due, overdue and scheduled, each row naming its next date in words rather than
      a bare date, and carrying the delivery state from 4a rather than presenting as an armed alarm. Add /
      edit / delete a reminder, delete behind **one** confirmation (ADR-0004's two-stage ceremony is
@@ -1909,7 +1909,7 @@ obligation rather than a phase of its own — which is the whole return on havin
    - The **care half of the sample-data action**: an overdue nail trim, a vaccination due in months, and a
      weigh-in with a completion history — so 4f has real rows to render and 4g has something overdue to look
      at.
-4. **4d — The watch, and its two connections to the trend flag.**
+4. **4d — The watch, and its two connections to the trend flag.** ✅
    - `WatchEntity` — `bunnyId` as primary key **and** FK `CASCADE`, `startedAt`, `endsAt`,
      `lastNaggedOn: LocalDate?`. The primary-key-as-FK shape is `TrendAcknowledgmentEntity`'s precedent
      (2a): at most one live watch per bunny, and discard-on-delete as a database constraint rather than a
@@ -1962,7 +1962,7 @@ obligation rather than a phase of its own — which is the whole return on havin
      logged 30 hours earlier does not. JVM: `preSelectParticipants` with a watched housemate excluded by
      reason; watch state resolved from `(row, now)` as a pure function, so active / expired / absent is a
      table.
-5. **4e — Backup: a destination worth remembering, and the nudge that makes it one.** Both halves live in
+5. **4e — Backup: a destination worth remembering, and the nudge that makes it one.** ✅ Both halves live in
    Backup settings, and both were deferred from 3d to the same place for the same reason.
    - **The remembered export folder** (ADR-0005): `ACTION_OPEN_DOCUMENT_TREE` with a persisted URI
      permission, `AppPreferences`' sixth key. **The share sheet stays the primary path** and is never
@@ -2029,17 +2029,45 @@ obligation rather than a phase of its own — which is the whole return on havin
    - A finding here is a fix here. If the matrix is clean, the checkpoint's output is the screenshots and a
      line saying so — which is a real result, since Play's notice is generic advice and "we looked" is
      exactly what was missing.
-7. **4g — The gate pass, and freezing schema 5.**
+7. **4g — The gate pass, and freezing schema 5.** ✅ *(schema 5 frozen and tagged, lint at 0/0, CI green at
+   26/34/36, overnight Doze observed; the watch's auto-expiry is carried — it needs a watch to run out, and
+   Phase 5 re-drives this plumbing anyway)*
    - The gate below, driven by hand on the Xiaomi, including the **overnight Doze** run — which is a calendar
      item, not a task: it has to be started the evening before. With one sweep it is also a single target:
      if the sweep fires, every reminder in the app fires.
+   - **The overnight-Doze run: passed on 2026-08-04, and the caveat is written down rather than rounded off.**
+     Armed 2026-08-03, read the next morning from `dumpsys` alone — no unlocking, since waking the phone to
+     look is the one thing that invalidates the observation. The sweep ran **09:00:00.720 → 09:00:01.411**
+     (691 ms) and posted exactly what was predicted the day before: `care` / "Nail trim" / "Due today for
+     Nugget.", and `watch` / "Have you checked on Bijou today?". Nugget's *other* nail trim, dated 2026-08-03
+     and already notified, did **not** re-notify — the "a second day passing does not re-notify" bullet, got
+     for free. Afterwards exactly one binky job remained, due 09:00 the next day, which is 4a's
+     single-enqueued-item invariant holding *across* a run and not merely at arming.
+
+     What the run proves is **survival**, and that much is unambiguous: `batterystats --history` puts the
+     phone unplugged at 22:25 on 80% with `device_idle=full` stretches of 1 h, 2 h, **4 h unbroken** and 1 h
+     again through the night, on HyperOS, with the battery-optimisation exemption deliberately absent. The
+     job was neither culled nor deferred. What it does **not** prove is firing *while still dozing*: the
+     phone was plugged in at 08:53:00, seven minutes before the sweep, so at the moment it ran the device was
+     awake and on power. The mitigating detail, recorded for what it is worth rather than as a substitute —
+     it fired at its scheduled 09:00:00, not at 08:53 when Doze lifted, and a job Doze had been suppressing
+     flushes the instant its constraints clear.
+
+     Taken as a pass on that basis. ADR-0003's amendment already has the app presenting as **best-effort**
+     rather than armed while the exemption is unconfirmed, so the copy on screen does not depend on the
+     stronger reading, and the seven-minute gap changes no shipped words.
    - **Schema 5 is frozen**: `5.json` committed and git-tagged (ADR-0007), `MIGRATION_4_5` no longer pending.
      From here a further change in this phase is a 5 → 6 migration, not a rewrite.
    - `lint` back to **0 errors and 0 warnings**, which 3g reached and 3f's note says the job is to hold.
    - The CI instrumented matrix green at API 26 / 34 / 36. The **26 leg is not ceremony here**: it is the only
      place the pre-33 branch runs, where `POST_NOTIFICATIONS` does not exist and notifications post without a
      runtime permission at all.
-8. **4h — 1.1 to the tracks.**
+8. **4h — 1.1 to the tracks.** ✅ *(closed on the build; the Console half is carried — see Phase 5)*
+   **Blocked on Play, not on the build, as of 2026-08-04.** 1.0.1's closed-testing
+   run is in flight against the 12-testers / 14-day requirement, and shipping 1.1 into that track while it is
+   counting is not worth the risk to the run. So the three remaining items — the upgrade proof, both listings'
+   screenshots, and the two track uploads — are **deferred until that run completes**, not performed and not
+   waived. The build half is done: 1.1.0 is cut, tagged `v1.1.0`, and verified against the artifact.
    - Release-please cuts 1.1.0; the bundle is checked **against the artifact rather than the config** — 3a's
      lesson — for `versionName`, `versionCode`, the upload key, and the Polish strings present in
      `base/resources.pb`.
@@ -2047,6 +2075,10 @@ obligation rather than a phase of its own — which is the whole return on havin
      it, and the real bunny history is still there — the end-to-end evidence that `MIGRATION_4_5` works on a
      file this project did not construct for the purpose. 4b's committed 1.0.1 fixture is the cheaper version
      of the same proof that CI has been running on every pull request since; this is the one on real history.
+     **Outstanding, and the distinction matters:** `MIGRATION_4_5` is not unproven — the committed schema-4
+     zip written by the shipped 1.0.1 build migrates and reads every table back, green in CI at API 26/34/36
+     on every pull request. What is missing is only the last mile, that same migration against *this phone's*
+     real history rather than a fixture. So the risk being carried is narrow, and it is carried knowingly.
    - `docs/play-app-content.md` **re-verified against the new manifest**: the app no longer declares zero
      user-facing permissions, and the answers 3a wrote against an artifact that did must be re-read rather
      than assumed to still hold.
@@ -2146,11 +2178,30 @@ Each checkpoint is meant to survive being picked up cold, so read its decisions 
   nothing and the notification could not fire — and ADR-0005's guard exists first to keep the evidential
   core under quota, which is a claim that can only be exercised once there is something to exclude.
 
+**Carried in from Phase 4**, which closed on the build with two halves outstanding. Neither is new work for
+this phase to design — both are evidence this phase is already standing in front of.
+
+- **Does the Phase-4 notification plumbing actually work in the wild?** 4g's overnight-Doze run proved the
+  sweep *survives* deep Doze (10.5 h, HyperOS, no battery exemption) but not that it *fires while dozing* —
+  the phone was plugged in seven minutes before the sweep, so the last stretch was awake and on power. Phase 5
+  puts a second, stricter reminder mechanism on the same device, and its gate already demands an overnight
+  Doze run for doses. **Re-read the care sweep and the watch nag in that same run**, with the phone left
+  unplugged past the fire time — one night's evidence settles both mechanisms. Also still unobserved: a watch
+  **auto-expiring** (nagging stops that morning, the prompt shows the *current* trend, dismissing leaves no
+  row behind), which needs nothing but a watch allowed to run out.
+- **4h's Console half** — the upgrade proof (1.0.1 → 1.1 over real bunny history), both listings' screenshots,
+  and the internal-then-closed track uploads. Deferred because 1.0.1's closed-testing run was counting against
+  Play's 12-testers / 14-day requirement and 1.1 was not worth risking it. 1.2 goes up the same path, so the
+  proof to actually run is the **longest** upgrade the field will see — whatever version a real device is on,
+  forward to 1.2, history intact. `MIGRATION_4_5` is meanwhile proven against the committed schema-4 fixture
+  on every pull request; only the real-history mile is untested.
+
 **Gate:** a two-page scanned document reopens after restart; a visit-recorded weight appears in the chart;
 shortening a course removes its future due doses without touching recorded ones; a dose reminder fires at
 its exact clock time after an **overnight Doze idle** on the real Xiaomi, and while battery-optimisation
 exemption/autostart are unconfirmed it presents as **best-effort**, never as an armed alarm (ADR-0003).
-Then the 1.2 release.
+**In that same Doze run, the care sweep and the watch nag are re-read** — the Phase-4 evidence carried above,
+which costs one night for both mechanisms instead of two. Then the 1.2 release.
 
 ## Releasing — at the end of Phases 3, 4 and 5
 
