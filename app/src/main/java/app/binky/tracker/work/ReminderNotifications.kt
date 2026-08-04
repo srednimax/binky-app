@@ -7,6 +7,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import app.binky.tracker.MainActivity
 import app.binky.tracker.R
+import java.time.Duration
 
 /**
  * The extra a care notification carries: **whose** reminder it is.
@@ -81,6 +82,10 @@ sealed interface ReminderTap {
  * @param group the bundling key. Three reminders due across two bunnies at 09:00 are one glance at
  *   the shade, not three unrelated notifications.
  * @param isGroupSummary whether this **is** that bundle's summary rather than a member of it.
+ * @param timeoutAfter how long the notification should live before Android withdraws it. Null for
+ *   everything but doses, which expire with their slot at local midnight (ADR-0025) — a shade that
+ *   still offers a one-tap answer for a day the app has stopped deriving is offering to record
+ *   something it would otherwise make the owner back-date deliberately.
  */
 fun Context.postReminderNotification(
     channel: ReminderChannel,
@@ -90,8 +95,9 @@ fun Context.postReminderNotification(
     tap: ReminderTap = ReminderTap.OpenApp,
     group: String? = null,
     isGroupSummary: Boolean = false,
+    timeoutAfter: Duration? = null,
 ) {
-    ensureReminderChannels()
+    ensureReminderChannel(channel)
 
     val manager = NotificationManagerCompat.from(this)
     if (!manager.areNotificationsEnabled()) return
@@ -111,6 +117,9 @@ fun Context.postReminderNotification(
             .apply {
                 if (group != null) setGroup(group)
                 if (isGroupSummary) setGroupSummary(true)
+                // Non-positive would mean "withdraw immediately", so a slot already past its own
+                // expiry posts nothing rather than flashing and vanishing.
+                if (timeoutAfter != null) setTimeoutAfter(timeoutAfter.toMillis().coerceAtLeast(1))
             }.build()
 
     try {

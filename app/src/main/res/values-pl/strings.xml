@@ -238,6 +238,15 @@
     <string name="reminders_autostart_help">Niektóre telefony — przede wszystkim Xiaomi — mają jeszcze własną listę autostartu. Binky nie potrafi jej odczytać, więc nie powie Ci, czy jest ustawiona; to jest tylko droga do niej.</string>
     <string name="reminders_autostart_action">Otwórz ustawienia autostartu</string>
 
+    <!-- Dostarczanie dawek (ADR-0003, ADR-0025, ADR-0026). Trzy stany, ale cztery zdania: „mniej
+         więcej” bierze się z dwóch różnych braków i każdy naprawia się gdzie indziej. Żadne z tych
+         zdań nie mówi nic o samym leku. -->
+    <string name="doses_state_blocked">Powiadomienia są wyłączone, więc przypomnienia o dawkach pojawią się tylko w aplikacji.</string>
+    <string name="doses_state_best_effort_exact">Przypomnienia o dawkach są włączone, ale Android nie pozwala Binky\'emu ustawiać ich co do minuty — przyjdą w ciągu kilku minut od danej godziny, nie punktualnie.</string>
+    <string name="doses_state_best_effort_battery">Przypomnienia o dawkach są włączone i ustawione co do minuty. Ten telefon może je mimo to opóźnić, kiedy Binky działa w tle.</string>
+    <string name="doses_state_armed">Przypomnienia o dawkach są włączone, ustawione co do minuty, a ten telefon jest ustawiony tak, żeby je przepuszczać.</string>
+    <string name="doses_exact_alarm_action">Otwórz ustawienia alarmów</string>
+
     <!-- Debug builds only, and never shown in a release build. -->
     <string name="settings_sample_data">Dane przykładowe</string>
     <string name="settings_sample_data_help">Tylko w wersji deweloperskiej. Dodaje dwa zaprzyjaźnione króliki, rok nierównomiernych, wstecznie datowanych ważeń i kilka obserwacji, żeby wykres, ostrzeżenie o trendzie i oś czasu dało się obejrzeć na prawdziwej historii.</string>
@@ -251,6 +260,13 @@
     <string name="settings_debug_reminder_scheduled">Testowe przypomnienie przyjdzie za dwie minuty. Zablokuj telefon i poczekaj.</string>
     <string name="debug_reminder_notification_title">Testowe przypomnienie</string>
     <string name="debug_reminder_notification_text">Tak będzie wyglądać przypomnienie o opiece. Nic nie jest zaplanowane — to przypomnienie ustawiono ręcznie w Ustawieniach.</string>
+    <string name="settings_debug_dose">Dostarczanie dawek</string>
+    <string name="settings_debug_dose_help">Tylko w wersji deweloperskiej. Uzbraja jedyny alarm dawki w aplikacji — nie ma jeszcze żadnego leku, który by go wypełnił. Dwie minuty sprawdzają kanał, uprawnienie i dostarczenie na oczach; wersja nocna jako jedyna odpowiada, czy dokładny alarm przetrwa na tym telefonie noc w trybie Doze — uzbrój, odłącz od ładowarki i nie dotykaj telefonu do rana.</string>
+    <string name="settings_debug_dose_action">Dawka za dwie minuty</string>
+    <string name="settings_debug_dose_overnight_action">Dawka o najbliższej 8:00</string>
+    <string name="settings_debug_dose_scheduled">Testowa dawka jest uzbrojona na %1$s. Zablokuj telefon i zostaw go w spokoju.</string>
+    <string name="debug_dose_notification_title">Testowa dawka</string>
+    <string name="debug_dose_notification_text">Tak będzie wyglądać przypomnienie o dawce. Żaden lek nie jest zapisany — tę dawkę uzbrojono ręcznie w Ustawieniach.</string>
 
     <!-- Kanały powiadomień. Te nazwy właściciel widzi w ustawieniach powiadomień telefonu i to jego
          jedyna kontrola nad każdym rodzajem osobno. -->
@@ -260,6 +276,8 @@
     <string name="channel_watch_description">Codzienne przypomnienie, żeby zajrzeć do królika, którego bacznie obserwujesz. Tylko w czasie trwania obserwacji.</string>
     <string name="channel_backup_name">Przypomnienia o kopii zapasowej</string>
     <string name="channel_backup_description">Rzadkie przypomnienie, żeby wyeksportować zapisy, w wybranym przez Ciebie odstępie. Nie dotyczy żadnego królika.</string>
+    <string name="channel_doses_name">Dawki leków</string>
+    <string name="channel_doses_description">Przypomnienie o godzinie zaplanowanej dawki. Tylko w czasie trwania kuracji.</string>
 
     <!-- Backup and restore (ADR-0005) -->
     <string name="backup_title">Kopia zapasowa i przywracanie</string>

@@ -19,6 +19,21 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!--
+        Medication doses, and the one place this app asks for precision (ADR-0003, PLAN 5a).
+
+        SCHEDULE_EXACT_ALARM and **not** USE_EXACT_ALARM. The other one is auto-granted and can never
+        be revoked, which sounds like the better deal until you read Play's policy: it is permitted
+        only for apps whose core function is an alarm clock or a calendar, and this app's core
+        function is a rabbit's weight chart. Declaring it would put the whole listing at risk to save
+        one settings screen.
+
+        This one is **denied by default** from Android 14 at targetSdk 33+, so the app assumes
+        nothing: it reads `canScheduleExactAlarms()`, says which of the two mechanisms is actually in
+        play, and a dose without it still goes in via `setAndAllowWhileIdle` — late but real.
+    -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!--
         Package visibility (API 30+) for the one OEM screen the app offers to open: Xiaomi's
         autostart manager, which on HyperOS decides whether background work runs at all (ADR-0003).
         Without this declaration `resolveActivity` returns null on a phone where the activity exists,
@@ -127,6 +142,51 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+            **Three receivers, one function** (ADR-0025, PLAN 5a). BootReceiver above is the first;
+            these two are the rest, and all three do nothing but call `rescheduleDoseAlarm()` behind
+            ADR-0007's guard. There is one pending dose alarm for the whole app, recomputed from
+            truth, so more occasions to rebuild it cost one query each and can never stack.
+
+            No intent-filter on DoseAlarmReceiver on purpose: it is the target of our own
+            PendingIntent and nothing else, so it is addressed by component and never by action.
+        -->
+        <receiver
+            android:name=".work.DoseAlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <!--
+            An alarm is an absolute instant; a dose slot is a wall-clock time. Move the clock or fly
+            somewhere and the pending alarm points at the wrong moment — TIME_SET covers a manual
+            clock change, TIMEZONE_CHANGED the flight. Both are protected broadcasts, which is why
+            `exported="false"` is still correct with another process sending them.
+        -->
+        <receiver
+            android:name=".work.TimeChangeReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+            API 31+. An alarm placed inexactly must be re-placed exactly the moment the owner grants
+            the permission — otherwise the first precise dose is whichever one happens to follow the
+            next reboot. Only the *grant* arrives here: revoking force-stops the app, so the matching
+            rebuild after a revocation is the one at process start.
+        -->
+        <receiver
+            android:name=".work.ExactAlarmPermissionReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
             </intent-filter>
         </receiver>
 

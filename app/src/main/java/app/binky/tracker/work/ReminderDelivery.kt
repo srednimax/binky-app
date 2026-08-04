@@ -28,6 +28,12 @@ enum class ReminderDelivery {
     /**
      * It will be posted, and may arrive late or not at all. The exemption is unconfirmed, which on
      * an aggressive skin is the difference between a reminder and a wish (ADR-0003).
+     *
+     * Since 5a it also covers a *dose* without `SCHEDULE_EXACT_ALARM`, and that case is different in
+     * kind: the alarm still goes in, via `setAndAllowWhileIdle`, which pierces Doze but inside a
+     * window the OS chooses. So the reminder is real and merely imprecise — the one place the app
+     * degrades a **mechanism** rather than a promise. Same state, different sentence and different
+     * fix; the copy and the tap target are chosen by whichever fact is missing.
      */
     BestEffort,
 
@@ -57,31 +63,46 @@ enum class ReminderDelivery {
  *   deliberately not an input**: HyperOS exposes no readable state for it, so requiring it would
  *   make [Armed] permanently unreachable on the only device this project tests on — a permanent
  *   hedge, which is wallpaper in exactly the way a permanent nag is (ADR-0003's Phase 4a amendment).
+ * @param exactAlarmsPermitted `SCHEDULE_EXACT_ALARM`. **Doses only** — the fourth input, and it
+ *   defaults to true because it is a fact about the *exact-alarm* mechanism and nothing else rides
+ *   it. Care, watch and backup are delivered by the daily sweep, where this permission changes
+ *   nothing, and reporting on it there would be hedging about a mechanism that is not in use.
+ *   Absent, it is [ReminderDelivery.BestEffort] and **not** [ReminderDelivery.Blocked]: the alarm
+ *   still goes in inexactly, so something arrives.
  */
 fun resolveReminderDelivery(
     notificationsPermitted: Boolean,
     channelImportance: Int,
     batteryExemptionConfirmed: Boolean,
+    exactAlarmsPermitted: Boolean = true,
 ): ReminderDelivery =
     when {
         !notificationsPermitted -> ReminderDelivery.Blocked
         channelImportance == NotificationManager.IMPORTANCE_NONE -> ReminderDelivery.Blocked
+        // Before the exemption, and it only matters for the sentence the caller then writes: an
+        // owner missing both is told about the one whose fix is a single toggle and whose absence
+        // is the app's own doing, rather than about the OEM screen underneath it.
+        !exactAlarmsPermitted -> ReminderDelivery.BestEffort
         !batteryExemptionConfirmed -> ReminderDelivery.BestEffort
         else -> ReminderDelivery.Armed
     }
 
 /**
- * The impure half: reads the three facts off this phone and hands them to [resolveReminderDelivery].
+ * The impure half: reads the facts off this phone and hands them to [resolveReminderDelivery].
  *
- * Ensures the channels exist first, because "the channel does not exist yet" and "the owner muted
+ * Ensures the channel exists first, because "the channel does not exist yet" and "the owner muted
  * the channel" are different answers and only the second one is [ReminderDelivery.Blocked]. This is
- * one of the two first-use sites [ensureReminderChannels] describes.
+ * one of the two first-use sites [ensureReminderChannel] describes.
  */
 fun Context.reminderDelivery(channel: ReminderChannel): ReminderDelivery {
-    ensureReminderChannels()
+    ensureReminderChannel(channel)
     return resolveReminderDelivery(
         notificationsPermitted = NotificationManagerCompat.from(this).areNotificationsEnabled(),
         channelImportance = reminderChannelImportance(channel),
         batteryExemptionConfirmed = isIgnoringBatteryOptimisations(),
+        // The one channel that goes out as an alarm rather than through the sweep. Written as a
+        // property of the channel rather than left to each caller to remember, so a fifth channel
+        // added later cannot accidentally start reporting on a permission it does not use.
+        exactAlarmsPermitted = channel != ReminderChannel.Doses || canScheduleExactAlarms(),
     )
 }
