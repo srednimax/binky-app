@@ -2176,11 +2176,11 @@ whose contents are the app's reason to exist. Which of the two it is gets decide
 5b, not by a guess here.
 
 **One migration creates all seven new tables**, the document ones included, well before any screen touches
-them. Churn is free while 6 is pending (ADR-0007), but a *released* schema is a permanent obligation — so
-giving documents their own version would buy a second forever-migration and a third fixture for a feature
-that is optional to the release. With the tables already there, whether documents ship in 1.2 or slip to 1.3
-is a **UI decision made at 5g with the merged manifest in hand**, not a schema decision made under release
-pressure.
+them. Churn is free while 6 is pending (ADR-0007), but a *released* schema is a permanent obligation, and
+that obligation is counted **per version, not per feature**: a second version for the document tables would
+buy a second forever-migration and a third fixture for tables that settle at the same time as the other
+five. **Documents ship in 1.2** — decided here rather than left open at 5g — so the split would answer a
+question nobody is asking, at a price that never goes away.
 
 The **second scheduling mechanism arrives, and it needs a permission the app cannot grant itself.** At
 `targetSdk` 36, `SCHEDULE_EXACT_ALARM` is **denied by default** (Android 14 behaviour change); it is granted
@@ -2227,9 +2227,12 @@ and 1.2 is the release where the app starts holding a number the vet chose and t
 - **One pending dose alarm at a time, rebuilt from truth** — ADR-0024's discipline surviving its own
   exception. Doses diverge from the sweep in *mechanism* because ADR-0003 needs the timing; they do not
   diverge in bookkeeping. There is no per-course alarm to orphan: one `PendingIntent` under one request code,
-  recomputed from the courses table after every write, every reboot, every clock change and every fire —
-  **and by the daily care sweep and process start**, because one alarm is also one point of failure and the
-  rebuild is idempotent, so the answer is more occasions to rebuild rather than more alarms to track.
+  recomputed from the courses table after every write, **every bunny archive, un-archive and delete**, every
+  reboot, every clock change and every fire — **and by the daily care sweep and process start**, because one
+  alarm is also one point of failure and the rebuild is idempotent, so the answer is more occasions to
+  rebuild rather than more alarms to track. A **30-minute grace window** decides what a fired alarm is still
+  allowed to post, because the best-effort path is late by design and a rule written against *now* would
+  make it deliver nothing at all.
 - Documents via the ML Kit scanner behind ADR-0009's interface, with the existing `TakePicture` path as the
   fallback; attached to a bunny and optionally a visit; multi-page, reorderable, viewable with zoom, and
   deletable. All writes go through `MediaFiles.persist(Document)` — whose 3000 px / q92 spec is marked
@@ -2254,14 +2257,17 @@ this phase to design — both are evidence this phase is already standing in fro
   sweep *survives* deep Doze (10.5 h, HyperOS, no battery exemption) but not that it *fires while dozing* —
   the phone was plugged in seven minutes before the sweep, so the last stretch was awake and on power. Phase 5
   puts a second, stricter mechanism on the same device and its gate already demands an overnight Doze run for
-  doses. But this one does not wait for a checkpoint, because the other unobserved item has a **fixed date**:
-  Bijou's 3-day watch **auto-expires on Thursday 2026-08-06**, and a watch running out is not something a
-  checkpoint can schedule. So the night of **5→6 August** carries both — phone off charge from Wednesday
-  evening, not plugged in until after 09:05, and Thursday's 09:00 sweep delivers the watch expiry (nagging
-  stops that morning, the prompt shows the *current* trend, dismissing leaves no row behind) **and** the
-  care sweep firing while still in Doze. Read with the same read-only `dumpsys` commands before the shade is
-  touched. That leaves 5a's and 5i's runs owing only what they are actually about: the exact-alarm path,
-  which is a different mechanism under different Doze rules.
+  doses. So one unplugged night still owes an answer — phone off charge from the evening, not plugged in
+  until after the 09:00 sweep, read with the same read-only `dumpsys` commands before the shade is touched.
+  It carries the care sweep firing while **still in Doze**, and alongside it a watch **auto-expiring**
+  (nagging stops that morning, the prompt shows the *current* trend, dismissing leaves no row behind) — two
+  different mechanisms with two different signatures, so one night can hold both without ambiguity.
+  **Neither is date-fixed.** Bijou's watch happens to run out on Thursday 2026-08-06 and is free evidence if
+  the phone is idle that night, but `seedWatches` already back-dates `startedAt` — `watches.start(bijou,
+  DAYS_7, now.daysAgo(4))` — so an expiry on any chosen morning is a fixture parameter, re-armable in a
+  minute on a freshly migrated database. Nothing here blocks a checkpoint, and no checkpoint is held off the
+  device to protect it. That leaves 5a's and 5i's runs owing only what they are about: the exact-alarm path,
+  a different mechanism under different Doze rules.
 - **4h's Console half** — the upgrade proof (1.0.1 → 1.1 over real bunny history), both listings' screenshots,
   and the internal-then-closed track uploads. Deferred because 1.0.1's closed-testing run was counting against
   Play's 12-testers / 14-day requirement and 1.1 was not worth risking it. 1.2 goes up the same path, so the
@@ -2289,14 +2295,17 @@ release-shaped open of a schema-**4** *and* a schema-**5** file both succeed, as
 committed fixtures written by two shipped builds. Version 6 is frozen and its JSON git-tagged at 5i, and only
 there.
 
-**Decisions this phase owes, written where decisions live.** Four, all small, and all landing **with this
+**Decisions this phase owes, written where decisions live.** Five, all small, and all landing **with this
 plan** rather than with the code they justify: an **amendment to ADR-0017** recording that `visitId` is the
 *only* stored origin fact and `source` is derived from it (the ADR's actual claim — one row, never a copy —
 is unchanged; two columns that can disagree is the pattern 4b already refused for day-of-month), that the
 index is unique so the claim is enforced by the schema rather than by the editor, and that vets outlive
 visits; an **amendment to ADR-0002** clamping derivation to today-and-forward and keying a recorded dose by
-its slot's *local* date and time; **ADR-0025**, one pending dose alarm rebuilt from truth, as the ADR-0024
-exception it is; **ADR-0026**, the app records doses and never advises on them, on screen as well as in the
+its slot's *local* date and time; an **amendment to ADR-0021** taking a visit-tagged weighing out of the
+same-instant collision resolver, because *replace* was written when a weighing had one owner and would
+otherwise silently overwrite or delete the vet's number; **ADR-0025**, one pending dose alarm rebuilt from
+truth, as the ADR-0024 exception it is, now also carrying the 30-minute grace window and the bunny-level
+rebuild triggers; **ADR-0026**, the app records doses and never advises on them, on screen as well as in the
 copy.
 
 1. **5a — The exact-alarm path, proven while nothing depends on it.** No schema change at all, deliberately —
@@ -2319,9 +2328,26 @@ copy.
      reopens the app's notification settings. That is not a second ask (ADR-0006 still gets exactly one); it
      is the label refusing to be dead text, and it earns its place because revoking `SCHEDULE_EXACT_ALARM`
      on Android 14+ drops the owner into best-effort without their ever having chosen it.
-   - **A third channel, `doses`, at `IMPORTANCE_HIGH`** — the level 4a deliberately spent nowhere so that this
-     one would read as a real signal instead of as the volume everything already sits at. Created at first
-     use like the other two; muting it must not mute care reminders, which is why there are three.
+   - **The grace window, and it lands here because best-effort is what needs it** (ADR-0025). A slot is
+     answerable while `now - slot ≤ grace`, a **named 30-minute constant**, and fire and reschedule share the
+     one predicate rather than each deciding for itself. Without it the obvious rule — fire what is due
+     *now*, skip what is past — breaks the app's **default** configuration rather than a corner of it:
+     `setAndAllowWhileIdle` is delivered when the OS chooses, in Doze a window of minutes, so an alarm placed
+     for 08:00 and delivered at 08:04 finds its own slot already past, posts nothing and re-arms for the
+     next. Doses would then arrive **never**, on the path built to degrade honestly, looking exactly like the
+     correct quiet of nothing being armed. Thirty minutes clears the Doze window and stays far short of the
+     eleven-hours-late shade answer 5f refuses. Note what cannot catch this: the two-minute debug action on a
+     screen-on phone fires promptly, and so does every emulator.
+   - **A fourth channel, `doses`, at `IMPORTANCE_HIGH`** — the level 4a deliberately spent nowhere so that
+     this one reads as a real signal instead of as the volume everything already sits at. **Fourth, not
+     third**: `care`, `watch` and `backup` all ship in 1.1, and 4e's export prompt took the third slot. Two
+     changes to 4a/4e code fall out, and they are this checkpoint's rather than discoveries later.
+     `ReminderChannel` gains a **per-entry importance**, because `ensureReminderChannels` today creates every
+     entry at a hardcoded `IMPORTANCE_DEFAULT` and `doses` cannot be HIGH without it. And creation goes **per
+     channel at its own first use** instead of all of them at once — the rule that file already states,
+     *"a channel exists when something is posting on it"*, and the one its loop currently breaks: adding
+     `doses` to the enum as it stands puts a medication row in the notification settings of every owner who
+     has never opened a medication screen. Muting doses must not mute care, which is why there are four.
    - **Three receivers, one function.** `ACTION_TIMEZONE_CHANGED` and `ACTION_TIME_CHANGED` join
      `BOOT_COMPLETED`, and `ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED` (API 31+) joins them because
      an alarm placed inexactly must be re-placed exactly the moment the owner grants the permission. All four
@@ -2331,16 +2357,36 @@ copy.
      through any course. It is what makes this checkpoint provable with no medication in existence, and it
      stays afterwards as the fastest way to re-prove delivery.
    - **The first overnight-Doze run is armed from here**, unplugged, using that debug action. Phase 4's
-     re-read and the watch expiry are settled on their own fixed night (5→6 August), so this run answers one
-     question and no others: does `setExactAndAllowWhileIdle` fire *on time* on HyperOS after 12 h idle. A
-     pass makes doses shippable as armed; a failure is recorded and the feature presents as best-effort,
-     which the copy already supports.
+     re-read rides its own night, so this run answers one question and no others: does
+     `setExactAndAllowWhileIdle` fire *on time* on HyperOS after 12 h idle. **The three outcomes are written
+     down before the run**, because the third is the one that will be argued away at 06:00 with a phase half
+     built:
+     1. **Fires inside the grace window** → doses ship armed, the phase proceeds as planned.
+     2. **Fires late but reliably, outside grace** → the constant widens to cover the observed lateness,
+        recorded as a device-specific finding; doses still ship on the exact path, and the copy says
+        best-effort on this device.
+     3. **Does not fire until the phone is touched** → the exact path is **not** the delivery mechanism.
+        Doses fall back to a more frequent sweep — the one mechanism with overnight evidence on this device —
+        and ADR-0003 is amended to say so. The exact alarm survives as an *optimisation* taken when the
+        permission is granted and the device honours it, never as the promise. Holding this branch open is
+        nearly free: a sweep-driven fallback wants the same `dueDoses` derivation and the same rebuild
+        function, and only the trigger differs. Shipping the channel, four receivers, the deep link and
+        ADR-0025's apparatus so the app can say "best-effort" in words would be a lot of machinery to keep
+        after its premise had been disproven on the only hardware in the project.
+   - **The phone's autostart state is read and recorded here, before anything else** (ADR-0025). It is one
+     look at *Ustawienia → Aplikacje → Autostart*, and it decides what every reboot result the project
+     already holds actually proved — 4h's gate reboot passed in a state nobody wrote down, and two of the
+     three rebuild occasions are gated on it.
    - Tests, JVM: the extended delivery resolver as a case table across notification × channel × exact-alarm
      state; the ADR-0007 guard as a pure predicate, reused rather than re-derived.
 2. **5b — The whole schema: vets, visits, and the first column added to a shipped table. Schema 6.**
-   - **Every id here is a `String` UUID**, as every entity since 1.0 has been. That is not a style
-     preference: `UUID.randomUUID().toString()` is what lets ADR-0005's restore merge rows from another
-     install without collisions, and an autoincrementing integer would not.
+   - **Every id here is a `String` UUID**, as every entity since 1.0 has been, and the reason is worth
+     stating correctly because the obvious version of it is wrong. **A restore does not merge rows** —
+     `BackupRestorer` replaces the database wholesale and merges only *media*, and a preserved copy is a
+     whole database file. So UUIDs are not buying row-level collision safety across installs. What they buy
+     is that **every media path is globally unique** (`documents/<uuid>.jpg` merging into a directory that
+     already holds another install's files) and that an id stays meaningful when a row is read out of a
+     preserved copy taken on a different phone. An autoincrementing integer would break both.
    - `VetEntity` — `id`, `name`, `clinic: String?`, `phone: String?`, `notes: String?`, `createdAt`.
      **App-wide, with no bunny FK**: a household's bunnies see the same vet, and a directory per bunny would
      make the owner type the clinic in twice.
@@ -2361,10 +2407,12 @@ copy.
      `medication_courses`, `medication_times`, `doses`, `documents`, `document_pages` — their indices, and one
      `ALTER TABLE weights ADD COLUMN visit_id TEXT REFERENCES visits(id) ON DELETE SET NULL DEFAULT NULL`
      — the only form SQLite accepts for a foreign-keyed column added to an existing table, and it is accepted
-     only because the default is null. The five tables 5d and 5g will fill are created **here and left
-     empty**: their entities and DAOs exist so Room can validate schema 6 as a whole, and no screen reads
-     them until the checkpoint that owns them. This is what makes "documents ship in 1.2 or in 1.3" a
-     question about the UI rather than about the database. Whether Room's `validateMigration` agrees is settled by the
+     only because the default is null — **followed by its own
+     `CREATE UNIQUE INDEX index_weights_visit_id ON weights (visit_id)`**. The `ALTER` enforces nothing on its
+     own; `ADD COLUMN` cannot carry a `UNIQUE` constraint, so the index is a separate statement and it is the
+     statement the "one row, never a copy" claim actually rests on. The five tables 5d and 5g will fill are
+     created **here and left empty**: their entities and DAOs exist so Room can validate schema 6 as a whole,
+     and no screen reads them until the checkpoint that owns them. Whether Room's `validateMigration` agrees is settled by the
      instrumented test in this same commit; if it does not, the fallback is the create-copy-drop-rename
      rebuild, which is a bigger change to the one table that must not lose a row, and so is a decision made
      with a red test in hand.
@@ -2400,6 +2448,19 @@ copy.
      puts the chart point in the middle of the right day, clamped to now because a visit dated today and
      entered at 09:00 must not write a weighing three hours in the future. Editing the visit's date
      re-derives it.
+   - **And the weight side has to stop being able to overwrite it** (ADR-0021 amendment). "No path produces
+     two numbers" guards duplication; the live exposure is the opposite direction and it is already shipped
+     code. ADR-0021's same-instant collision resolver defaults to *replace*: adding a manual weighing at an
+     occupied timestamp **updates the row already there** (`WeightEntryViewModel.kt:205`), and editing one
+     onto that timestamp **deletes the clashing row** (`:213`). Since every visit on a day lands at the same
+     noon, both are reachable by accident — the first leaves the visit displaying a figure the vet never
+     recorded while the row keeps its `visitId`, the second makes the visit's weighing vanish with no stated
+     choice and no ADR-0004 ceremony. The unique index catches neither; it stops two rows claiming one visit,
+     not one row being quietly rewritten. So a **visit-tagged row is excluded from `replacing`** — a clash
+     against one offers *add a second weighing* or *open the visit*, with the destructive option absent
+     rather than merely not-default — and a **visit-tagged weighing is read-only in the weight editor**,
+     which is what keeps the visit's re-derivation the single path. The visit write path itself never
+     prompts.
    - **Deleting a visit states the choice** rather than guessing: *"Also delete the 2 380 g weighing recorded
      at this visit?"* — keep standalone, or remove. One confirmation, not ADR-0004's two-stage ceremony, which
      is calibrated to a bunny's whole history.
@@ -2488,10 +2549,23 @@ copy.
      a fact about the derivation, as 4c made it for the sweep.
 6. **5f — Dose reminders on the real alarm path.**
    - **One pending alarm, rebuilt from truth** (ADR-0025): the earliest unanswered derived slot at or after
-     now, across every active course with reminders on, for every non-archived bunny. One request code, one
-     `PendingIntent`, `FLAG_UPDATE_CURRENT`. Recomputed after every course, time or dose write, on boot, on
-     zone or clock change, when the exact-alarm permission is granted, and immediately after firing. Nothing
-     incremental, nothing per-course, nothing to orphan.
+     now. One request code, one `PendingIntent`, `FLAG_UPDATE_CURRENT`. Recomputed after every course, time
+     or dose write, **after every bunny archive, un-archive or delete**, on boot, on zone or clock change,
+     when the exact-alarm permission is granted, and immediately after firing. Nothing incremental, nothing
+     per-course, nothing to orphan.
+   - **The query is defined by what it excludes, and `startOn` is not one of the exclusions.** A course is
+     read if reminders are on, `endOn` is null or not before today, and its bunny is not archived. Whether it
+     has *started* belongs to `dueDoses`, whose window already opens at `max(startOn, today)` — filter on
+     `startOn` here and a course beginning tomorrow arms nothing tonight, with the next rebuild being
+     tomorrow's 09:00 sweep, an hour after the 08:00 dose. "Start tomorrow morning" is how most courses are
+     created, so that reading loses the first dose of nearly every one of them.
+   - **The three bunny-level writes are in the list because they reach the alarm sideways.** Archiving,
+     un-archiving and deleting a bunny all change the answer without touching a medication table, and a
+     delete takes the courses by cascade with no course write happening at all — so a rebuild hung off the
+     medication writes alone misses them, while the gate demands the invariant hold across exactly those
+     operations. The rebuild is therefore wired **at the repository layer**, on every write that could change
+     the answer, rather than remembered at each call site: it is idempotent and costs one query, and
+     enumerating call sites is how the sideways paths were missed in the first place.
    - **Two more occasions to rebuild, because one alarm is one point of failure.** The daily care sweep calls
      `rescheduleDoseAlarm()` as its last step, and `AppContainer` does the same on process start. The failure
      this covers is invisible by construction — zero pending alarms is *also* the correct state when nothing
@@ -2511,19 +2585,24 @@ copy.
      midnight — because ADR-0002 stops deriving a day once it is over, and a shade still offering a one-tap
      **Given** at 19:00 for the 08:00 dose is the same eleven-hours-late answer the next bullet refuses, just
      arriving by a different route.
-   - **A slot whose time passed while the phone was off is not fired retroactively.** On reschedule, past
-     slots are skipped and appear unanswered in the app. A stack of 3 a.m. notifications at breakfast is a
-     lie about when the app knew, and answering a dose eleven hours late from the shade is worse than opening
-     the app.
+   - **Late is answerable, retroactive is not, and 5a's 30-minute grace constant is the line between them.**
+     Fire and reschedule share the one `now - slot ≤ grace` predicate. Inside it the slot is posted — which
+     is what makes the best-effort path deliver at all, since `setAndAllowWhileIdle` is routinely minutes
+     late. Outside it the slot is skipped and appears unanswered in the app: a stack of 3 a.m. notifications
+     at breakfast is a lie about when the app knew, and answering a dose eleven hours late from the shade is
+     worse than opening the app.
    - Per-course off switch (ADR-0003), and a course with no times has no switch to show.
    - Tests, JVM: "the earliest unanswered slot" as a case table — an answered slot skipped, a reminders-off
-     course excluded, an archived bunny's course excluded, all courses ended → no alarm. Instrumented: the
+     course excluded, an archived bunny's course excluded, all courses ended → no alarm, and **a course
+     starting tomorrow arming tomorrow's first slot today**, which is the assertion that `startOn` never
+     became a filter. The grace predicate as its own table: fired on time, 4 minutes late, 40 minutes late,
+     phone off six hours — the first two post, the last two do not. Instrumented: the
      write paths that must re-arm, each asserted to leave exactly one pending alarm; **a sweep run with the
      alarm already correct leaves exactly one**, which is the assertion that the heartbeat is idempotent
      rather than additive.
 7. **5g — Documents: the scanner, the fallback, and the viewer. No schema change.**
-   - The tables **already exist from 5b** and have been empty since; this checkpoint gives them a UI, which
-     is what makes the ship-or-slip decision below cost nothing.
+   - The tables **already exist from 5b** and have been empty since; this checkpoint gives them a UI.
+     **Documents ship in 1.2** — that was settled when the migration was written, not here.
    - `DocumentEntity` — `id`, `bunnyId` FK `CASCADE` indexed, `visitId` FK `SET NULL` nullable indexed,
      `title`, `capturedAt: Instant?`, `createdAt`. `DocumentPageEntity` — `documentId` FK `CASCADE`,
      `path: String` (relative, `documents/<uuid>.jpg`), `position: Int`. **A document is the paperwork; pages
@@ -2543,21 +2622,39 @@ copy.
      value of a document is legible small print. Missing media renders as a placeholder, never a crash.
    - Documents are attachable from a visit and from the bunny's document list, and detaching one from a visit
      leaves the document with its bunny.
+   - The **document half of the sample-data action**, matching 5e's medication half: multi-page documents
+     whose page images are generated through `MediaFiles.persist(Document)`, no ML Kit involved. It earns its
+     place on 5h — breaching a ~25 MB budget needs a lot of documents on disk, and hand-scanning that many
+     vet printouts is not a test anyone will re-run.
    - **Deleting a bunny has to take the page files with it.** `BunnyRepository.delete()` already has the
      shape: read the paths *inside* the transaction, before the cascade takes the rows and there is nothing
      left to ask, then delete the files after commit — that ordering is ADR-0020's file-first rule in
      reverse, and it is why the avatar and the photos survive a rolled-back delete. Documents add
      `documentPageDao.pathsOf(bunnyId)` to that same block. Missing it orphans the app's *largest* files
      with nothing left pointing at them.
-   - **The ship-or-slip decision is made here, with the merged manifest in hand.** If the dependency lands
-     clean, documents go out in 1.2. If the manifest, the AAB size or the Play-services-absent path turns
-     ugly, documents slip to 1.3 as a UI-only release — schema 6 already has the tables, so there is no
-     second migration, no third fixture, and no decision taken under release pressure at 5j.
+   - **If the dependency is the problem, the dependency goes — not the feature.** ML Kit brings the merged
+     manifest, the AAB size and the Play-services-absent path; documents as *data* bring none of them, and
+     the `TakePicture` fallback is already written. So the contingency is dropping ML Kit and shipping
+     documents on the camera path, losing auto-crop and page detection and nothing else — which is precisely
+     what ADR-0009's interface was for. **The interface and the fallback are built and proven before the ML
+     Kit implementation lands**, so "drop the dependency" stays a one-line container change for the whole
+     checkpoint instead of a rewrite under release pressure.
    - **The dependency's merged manifest is inspected in this commit** with `scripts/aab-permissions.py` — 4h's
-     finding was that the merger writes permissions nobody declared, and the answer that matters is whether
-     `INTERNET` arrives, since `docs/play-app-content.md` claims *"no network code of our own"* and Data
-     safety is cross-checked against the privacy policy. If it does, the claim is **reworded to the truth**,
-     not deleted, and the privacy policy moves in the same commit. AAB size before and after is recorded too.
+     finding was that the merger writes permissions nobody declared. Three answers matter, not one:
+     - **`INTERNET`**, since `docs/play-app-content.md` claims *"no network code of our own"* and Data safety
+       is cross-checked against the privacy policy. If it arrives, the claim is **reworded to the truth**,
+       not deleted, and the privacy policy moves in the same commit.
+     - **`CAMERA`**, which this app has deliberately never declared — the manifest says why: declaring it
+       makes it *required at install*, and firing the system camera intent needs none. A merged `CAMERA`
+       changes the store listing, so keeping the scanner at that price is a decision to take here rather
+       than a merge artefact discovered at 5j.
+     - **`<uses-feature>` and its `required` attribute.** A merged `android.hardware.camera` at
+       `required="true"` — the default when the attribute is omitted — **filters the app off every device
+       without a camera on Play**. That is a distribution change that no permission list would show, so
+       `scripts/aab-permissions.py` grows a `uses-feature` section: it is the tool of record and it currently
+       cannot see the half that decides who can install.
+
+     AAB size before and after is recorded too.
    - Tests, instrumented: documents and pages cascade with their bunny and their document; a deleted visit
      leaves its documents attached to the bunny; `recordCounts` counts documents; a **Records-scope export
      round-trips them**, which is free — `BackupScope.Records` has listed `MediaKind.Document` since 3d — and
@@ -2569,23 +2666,45 @@ copy.
      what is left under the ceiling after the core, so a growing database shrinks the document allowance
      instead of taking the whole dataset over quota. Keeping the evidential core under quota is the first
      duty; preserving as many documents as fit is the second, and the function's shape says so.
+   - `autoBackupFileSet` **changes shape**: admission is per-file and ordered, so it stops being a flat list
+     of files and directories and becomes the unconditional core plus the admitted documents, newest-first.
+     That is a signature change to a function `BinkyBackupAgent` already calls, not merely a new caller.
    - The **marker gains its excluded count** — the file, the temp-then-rename write and the unknown-key
      tolerance all landed at 3d precisely so this could be added without invalidating a marker written by 1.0.
    - Backup settings' status line says it in words: *"Last automatic backup: 3 days ago — 12 documents were
      too large to include; use manual export to keep them."* Never dropped silently (ADR-0005).
-   - **A fourth channel, `backup`, at `IMPORTANCE_LOW`**, for the one-time notice the first time exclusion
-     bites. Phase 5's stub called it the third; doses took that slot, and low importance is right here — this
-     is information, not an event.
+   - **The agent writes, the app posts.** The one-time notice cannot come from the backup agent, and the
+     reason is already written down in `AutoBackup.kt`: the agent cannot reach the app's DataStore, *"its
+     writes are `suspend` inside blocking backup callbacks"*. So it has nowhere to record that the notice has
+     fired — and Auto Backup runs roughly daily, which turns a "one-time" notice into a nightly one on the
+     channel an owner is most likely to mute. Instead the agent writes `excludedDocuments: N` into the
+     marker, and **the app posts on next launch** if the count is non-zero and has not been notified,
+     recording that in DataStore where once-only bookkeeping works. The status line reads the same field, so
+     the words and the notification cannot disagree. The cost is honest: the notice arrives when the app is
+     next opened rather than at 3 a.m. — which is the right latency for a standing condition rather than an
+     event, and it is still the first thing the owner sees.
+   - **No new channel.** The notice posts on the **existing `backup` channel at `IMPORTANCE_DEFAULT`**, and
+     the plan's earlier `IMPORTANCE_LOW` is withdrawn as unavailable rather than merely reconsidered: 4e
+     created `backup` at DEFAULT, 1.1 has shipped it, and an app cannot change an existing channel's
+     importance — only the owner can. Declaring LOW would give fresh 1.2 installs one behaviour and upgraded
+     ones another. It is also the wrong instinct twice over: `ReminderChannels.kt` already refuses to make
+     the mute decision on the owner's behalf "in the one direction that cannot be undone", and this is the
+     notice that says data is **not** protected, which is not "information, not an event".
    - Tests, JVM: the admission function as a case table — everything fits; nothing fits; the newest-first
      order respected at the boundary; a core already over budget admitting zero documents rather than going
      negative; the marker round-tripping an excluded count and an old marker without one still reading.
 9. **5i — The gate pass, freezing schema 6, and the definitive overnight Doze run.**
    - The gate below, driven by hand on the Xiaomi. The **overnight Doze run is a calendar item, not a task**:
      armed the evening before, **left unplugged past the fire time** — which is the one thing 4g could not
-     claim — with a real medication course. The Phase-4 carry is **not** bundled here: the sweep firing while
-     still dozing and a watch auto-expiring are settled on the night of 5→6 August, because Bijou's watch
-     runs out when it runs out and no checkpoint can schedule that. So this run asks one question, about one
-     mechanism: does the dose alarm fire at its exact clock time out of deep Doze.
+     claim — with a real medication course. The Phase-4 carry rides its own night rather than this one, so
+     this run asks one question about one mechanism: does the dose alarm fire at its exact clock time out of
+     deep Doze. Any night will do for either; neither is date-fixed.
+   - **The reboot half of the alarm invariant runs twice — autostart granted and autostart denied**
+     (ADR-0025). Two of the three rebuild occasions are gated on autostart, which is off by default on
+     HyperOS and unreadable from inside the app, so a single run in whichever state the phone happens to be
+     in cannot distinguish "self-heals within a day" from "self-heals when someone opens the app". The denied
+     run is the one that describes an owner who skipped the prompt, and whatever it says is what ADR-0025's
+     consequence is reworded to.
    - **Schema 6 is frozen**: `6.json` committed and git-tagged (ADR-0007), `MIGRATION_5_6` no longer pending.
    - `lint` back to **0 errors and 0 warnings**, which 3g reached and the job since has been to hold.
    - The CI instrumented matrix green at API 26 / 34 / 36. **Both ends earn their place this time**: 26 is
@@ -2621,7 +2740,8 @@ holding at **0 errors and 0 warnings**. CI runs the instrumented suite on every 
 no HyperOS background killer, and this phase's whole reliability argument is about that killer.
 
 Each checkpoint is meant to survive being picked up cold, so read its decisions first — **5a**: ADR-0003,
-0009, 0006, 0007, 0024. **5b**: ADR-0007, 0017, 0002, 0023, 0004. **5c**: ADR-0017, 0015, 0004, 0022, 0013.
+0009, 0006, 0007, 0024, 0025. **5b**: ADR-0007, 0017, 0002, 0023, 0004. **5c**: ADR-0017, 0021, 0015, 0004,
+0022, 0013.
 **5d**: ADR-0002, 0003, 0001. **5e**: ADR-0002, 0026, 0001, 0004. **5f**: ADR-0025, 0003, 0024, 0007.
 **5g**: ADR-0009, 0020, 0017, 0005. **5h**: ADR-0005, 0007. **5i**: ADR-0007, 0023, 0003. **5j**: ADR-0009,
 0013, 0007, 0012.
@@ -2632,17 +2752,28 @@ Each checkpoint is meant to survive being picked up cold, so read its decisions 
   screen off, app unopened, 12h+, **still unplugged when it fires** — on the real Xiaomi. The two-minute happy
   path is not sufficient evidence (ADR-0003). If it does not fire, that is recorded as a finding and doses
   ship explicitly as best-effort, which is the honest state the app already has copy for.
-- **The Phase-4 carry is already settled by then**, on the night of 5→6 August rather than here: the care
+- **The Phase-4 carry is already settled by then**, on its own unplugged night rather than here: the care
   sweep firing while **still in Doze** (the half 4g could not claim), and a watch **auto-expiring** — the
   nagging stops that morning, the prompt shows the *current* trend, and dismissing it leaves no row behind.
-  Recorded before 5a, because Bijou's watch expires on a date and not on a checkpoint.
+  Any night will do; `seedWatches` back-dates `startedAt`, so the expiry morning is chosen rather than waited
+  for.
 - **At most one pending dose alarm exists in the app**, before and after adding courses, recording doses,
-  archiving a bunny, changing the clock, rebooting **and running the care sweep** — and **none** when no
-  course is armed (ADR-0025). The sweep's rebuild is the heartbeat, so it has to be provably idempotent on
-  the device, not only in a JVM test.
+  **archiving and un-archiving a bunny, deleting a bunny with an armed course**, changing the clock,
+  rebooting **and running the care sweep** — and **none** when no course is armed (ADR-0025). The sweep's
+  rebuild is the heartbeat, so it has to be provably idempotent on the device, not only in a JVM test. The
+  three bunny-level operations are in the list because they reach the alarm without touching a medication
+  table.
+- **The reboot check runs twice, autostart granted and denied** (ADR-0025), because two of the three rebuild
+  occasions are gated on it and the app cannot read it. Whatever the denied run says is what the ADR's
+  self-heal consequence is reworded to.
 - With the exact-alarm permission **denied** — the default on Android 14+ — a dose reminder still arrives, and
   the app says **best-effort** in words rather than presenting as an armed alarm. Granting the permission
-  afterwards re-arms the pending alarm exactly, with no app launch in between.
+  afterwards re-arms the pending alarm exactly, with no app launch in between. **Arriving is the assertion
+  here, not arriving punctually**: `setAndAllowWhileIdle` is delivered when the OS chooses, and a reminder
+  that posted nothing because its own slot had gone four minutes stale would look exactly like the correct
+  quiet of nothing being armed (5a's grace window).
+- **A course created today and starting tomorrow arms tomorrow's first dose**, before any sweep runs. The
+  first morning of a course is the one an owner is least likely to have a routine for.
 - With notifications denied or the `doses` channel muted, doses present as **blocked**, and creating a course
   still works.
 - **A two-page scanned document reopens after restart**, its pages in the order they were left in, legible
@@ -2652,6 +2783,10 @@ Each checkpoint is meant to survive being picked up cold, so read its decisions 
 - **A visit-recorded weight appears in the chart**, exactly once, and deleting the visit offers the stated
   choice — keeping it leaves a standalone weighing, removing it takes both. Deleting the **vet** leaves the
   visit standing with no vet named.
+- **A visit's weighing cannot be overwritten from the weight side** (ADR-0021): it opens read-only with a
+  route to the visit, and entering a manual weighing at the same noon offers *add a second* or *open the
+  visit* — never replace. Checked with **two visits on one day**, which is where the collision is reachable
+  without anyone trying.
 - **Logging a weight at a visit satisfies a weigh-in care reminder** without any tick, exactly as a manual
   weighing does.
 - **Shortening a course removes its future due doses without touching recorded ones**, and closing an open

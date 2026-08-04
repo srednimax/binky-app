@@ -67,6 +67,28 @@ owner chose to keep. Exact match only: a fuzzy window would need its own tuning 
 genuine re-weigh. The prompt is UI-level, so writes through the repository still produce the tied rows the
 trend tests want.
 
+### Amended at Phase 5: a weighing that belongs to a visit is not the resolver's to replace
+
+*Replace* was written when every weighing had one owner and one editor. From 1.2 a weighing can carry a
+`visitId` (ADR-0017), and a visit weighing lands at `min(noon on visitedOn, now)` — a timestamp the owner
+never typed and can collide with by accident, since **noon is where every visit on that day lands**.
+
+Under the rule above, the default action then rewrites a row the owner is not looking at. Adding a manual
+weighing at an occupied timestamp *updates the row already there*, so the vet's number is silently replaced
+while the row keeps its `visitId` and the visit goes on displaying a figure nobody recorded at it. Editing a
+weighing onto that timestamp *deletes* the clashing row, so the visit's weighing disappears with none of
+ADR-0017's stated-choice dialog and none of ADR-0004's ceremony. Neither is a drift the unique index catches:
+it stops two rows claiming one visit, not one row being quietly rewritten.
+
+So **a visit-tagged row is excluded from `replacing`**. A clash against one offers *add a second weighing* or
+*open the visit*, and the destructive option is absent rather than merely not-default — the resolver cannot
+be trusted to be careful about a row whose edits belong to another screen. For the same reason a visit-tagged
+weighing is **read-only in the weight editor**: grams, date and deletion are the visit's, which is what keeps
+the visit's re-derivation of the timestamp the single path and stops the two disagreeing.
+
+The visit write path never prompts at all. Two visits on one day both landing at noon is intended, and the
+total order above already handles the tie by `createdAt`.
+
 ## Accepted limitation: a trailing median lags a level shift by one reading
 
 | recordedAt | grams | priors | baseline | fires? |
