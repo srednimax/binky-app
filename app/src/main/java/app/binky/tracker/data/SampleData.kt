@@ -59,6 +59,8 @@ suspend fun seedSampleData(
     photos: PhotoRepository,
     care: CareRepository,
     watches: WatchRepository,
+    vets: VetRepository,
+    visits: VisitRepository,
     cacheDir: File,
     now: Instant = Instant.now(),
 ): Boolean {
@@ -82,7 +84,80 @@ suspend fun seedSampleData(
     seedPhotos(photos, cacheDir, bijou, nugget, now)
     seedCare(care, bijou, nugget, now)
     seedWatches(watches, bijou, nugget, now)
+    seedVisits(vets, visits, bijou, nugget, now)
     return true
+}
+
+/**
+ * The vet half: **two directory entries and three visits**, chosen so every branch 5c draws is on
+ * screen without waiting for a real appointment.
+ *
+ * - **A visit with a weighing**, which is the one that has to be looked at hardest: it puts a
+ *   visit-tagged row in Bijou's weight history, where *Edit* and *Delete* are replaced by *Open the
+ *   visit*, and it is the row the entry form refuses to overwrite (ADR-0021's amendment).
+ * - **A visit with no vet**, because `vetId` is nullable and a visit that names nobody still has to
+ *   render — an owner who saw an out-of-hours locum has no directory entry for them.
+ * - **A visit on the housemate**, so deleting one bunny can be seen not to take the other's, and so
+ *   the second directory entry is in use rather than decorative.
+ *
+ * Written **through the repositories**, like everything else here, so the weighing lands through the
+ * same one transaction an owner's does rather than as two rows a seeder arranged by hand.
+ */
+private suspend fun seedVisits(
+    vets: VetRepository,
+    visits: VisitRepository,
+    bijou: String,
+    nugget: String,
+    now: Instant,
+) {
+    val zone = ZoneId.systemDefault()
+    val today = now.atZone(zone).toLocalDate()
+
+    val kowalska =
+        vets.add(
+            VetEntity(
+                name = "Dr Kowalska",
+                clinic = "Klinika Ada",
+                phone = "+48 22 000 00 00",
+                notes = "Exotics on Tuesdays and Thursdays.",
+            ),
+        )
+    val nowak = vets.add(VetEntity(name = "Dr Nowak", clinic = "Przychodnia Mokotów"))
+
+    // The weight is deliberately a little under the series around it, so the visit's number is
+    // recognisable in the chart rather than lost among the seeded weighings.
+    visits.add(
+        VisitEntity(
+            bunnyId = bijou,
+            vetId = kowalska,
+            visitedOn = today.minusDays(9),
+            reason = "Molar check",
+            notes = "Spurs filed. Back in six months unless she goes off her food.",
+        ),
+        grams = 2380,
+        now = now,
+        zone = zone,
+    )
+    visits.add(
+        VisitEntity(
+            bunnyId = bijou,
+            visitedOn = today.minusMonths(7),
+            reason = "Vaccination",
+        ),
+        now = now,
+        zone = zone,
+    )
+    visits.add(
+        VisitEntity(
+            bunnyId = nugget,
+            vetId = nowak,
+            visitedOn = today.minusDays(40),
+            reason = "Scratched eye",
+            notes = "Drops for five days.",
+        ),
+        now = now,
+        zone = zone,
+    )
 }
 
 /**

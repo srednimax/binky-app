@@ -53,6 +53,7 @@ import app.binky.tracker.ui.bunny.BunnyEditorScreen
 import app.binky.tracker.ui.care.CareAndMedsScreen
 import app.binky.tracker.ui.care.CareReminderEditorScreen
 import app.binky.tracker.ui.care.CareReminderScreen
+import app.binky.tracker.ui.care.VisitEditorScreen
 import app.binky.tracker.ui.home.HomeScreen
 import app.binky.tracker.ui.more.MoreScreen
 import app.binky.tracker.ui.observations.ChooseBunnyDialog
@@ -66,6 +67,8 @@ import app.binky.tracker.ui.setup.SetupRemindersStep
 import app.binky.tracker.ui.shell.AppShellViewModel
 import app.binky.tracker.ui.shell.BunnySwitcher
 import app.binky.tracker.ui.shell.ShellUiState
+import app.binky.tracker.ui.vet.VetEditorScreen
+import app.binky.tracker.ui.vet.VetsScreen
 import app.binky.tracker.ui.watch.WatchExpiryHost
 import app.binky.tracker.ui.weight.WeightEntryScreen
 import app.binky.tracker.ui.weight.WeightScreen
@@ -400,6 +403,11 @@ private fun AppShell(
                             onEditWeight = { bunnyId, weightId ->
                                 backStack.add(WeightEntry(bunnyId, weightId))
                             },
+                            // A visit-recorded weighing is edited at the visit, never here
+                            // (ADR-0017), so the row offers the visit instead of the form.
+                            onOpenVisit = { bunnyId, visitId ->
+                                backStack.add(VisitEditor(bunnyId, visitId))
+                            },
                         )
                     }
                     entry<Observations> {
@@ -423,6 +431,10 @@ private fun AppShell(
                             // A weigh-in is completed by weighing, so *Done* opens the weight form
                             // rather than writing a tick with no number behind it.
                             onRecordWeight = { bunnyId -> backStack.add(WeightEntry(bunnyId)) },
+                            onAddVisit = { bunnyId -> backStack.add(VisitEditor(bunnyId)) },
+                            onOpenVisit = { bunnyId, visitId ->
+                                backStack.add(VisitEditor(bunnyId, visitId))
+                            },
                         )
                     }
                     entry<CareReminder> { key ->
@@ -449,6 +461,7 @@ private fun AppShell(
                         MoreScreen(
                             onOpenArchived = { backStack.add(ArchivedBunnies) },
                             onOpenSettings = { backStack.add(Settings) },
+                            onOpenVets = { backStack.add(Vets) },
                             // Null while there is no bunny to have photos of — the row is then one
                             // of ADR-0015's inert entries rather than a way into an empty screen.
                             onOpenPhotos =
@@ -477,6 +490,32 @@ private fun AppShell(
                         WeightEntryScreen(
                             bunnyId = key.bunnyId,
                             weightId = key.weightId,
+                            onOpenVisit = { visitId ->
+                                backStack.add(VisitEditor(key.bunnyId, visitId))
+                            },
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
+                    entry<VisitEditor> { key ->
+                        VisitEditorScreen(
+                            bunnyId = key.bunnyId,
+                            visitId = key.visitId,
+                            // The archived scope is the only read-only one, and a visit is reachable
+                            // only through the bunny it belongs to (ADR-0004).
+                            readOnly = state.readOnly,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
+                    entry<Vets> {
+                        VetsScreen(
+                            onBack = { backStack.removeLastOrNull() },
+                            onAddVet = { backStack.add(VetEditor()) },
+                            onEditVet = { vetId -> backStack.add(VetEditor(vetId)) },
+                        )
+                    }
+                    entry<VetEditor> { key ->
+                        VetEditorScreen(
+                            vetId = key.vetId,
                             onBack = { backStack.removeLastOrNull() },
                         )
                     }

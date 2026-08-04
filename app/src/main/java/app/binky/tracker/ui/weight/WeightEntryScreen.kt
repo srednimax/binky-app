@@ -16,6 +16,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +49,7 @@ import app.binky.tracker.ui.watch.StartWatchAction
 fun WeightEntryScreen(
     bunnyId: String,
     weightId: String?,
+    onOpenVisit: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -78,7 +80,13 @@ fun WeightEntryScreen(
                     )
                 }
             },
-            actions = { TextButton(onClick = viewModel::save) { Text(stringResource(R.string.action_save)) } },
+            // No Save on a visit-recorded weighing (ADR-0017): the visit owns that number, so the
+            // action is to go there rather than one that refuses when tapped.
+            actions = {
+                if (state.visitId == null) {
+                    TextButton(onClick = viewModel::save) { Text(stringResource(R.string.action_save)) }
+                }
+            },
             // The shell's Scaffold is the one owner of window insets; padding here would double it.
             windowInsets = WindowInsets(0, 0, 0, 0),
         )
@@ -89,6 +97,20 @@ fun WeightEntryScreen(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // The whole form is read-only behind this, and the line says why rather than leaving
+            // the owner to discover that nothing here takes a keystroke.
+            state.visitId?.let { visitId ->
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = stringResource(R.string.weight_visit_owned),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(onClick = { onOpenVisit(visitId) }) {
+                        Text(stringResource(R.string.weight_open_visit))
+                    }
+                }
+            }
             GramsField(state = state, onGramsChanged = viewModel::onGramsChanged)
             // Shared with the observation form: back-dating allowed, the future refused with the
             // reason stated. Only the wording differs between the two.
@@ -101,17 +123,29 @@ fun WeightEntryScreen(
                 inFuture = state.inFuture,
                 onDateChanged = viewModel::onDateChanged,
                 onTimeChanged = viewModel::onTimeChanged,
+                // A visit's weighing is stamped from the visit's date — `min(noon, now)` — so
+                // changing it here would be a second path to a derived fact (ADR-0017).
+                enabled = state.visitId == null,
             )
         }
     }
 
     if (state.collision.isNotEmpty()) {
-        CollisionDialog(
-            count = state.collision.size,
-            onReplace = viewModel::replaceExisting,
-            onAddSecond = viewModel::addSecond,
-            onDismiss = viewModel::cancelCollision,
-        )
+        val clashingVisit = state.collisionVisitId
+        if (clashingVisit == null) {
+            CollisionDialog(
+                count = state.collision.size,
+                onReplace = viewModel::replaceExisting,
+                onAddSecond = viewModel::addSecond,
+                onDismiss = viewModel::cancelCollision,
+            )
+        } else {
+            VisitCollisionDialog(
+                onAddSecond = viewModel::addSecond,
+                onOpenVisit = { onOpenVisit(clashingVisit) },
+                onDismiss = viewModel::cancelCollision,
+            )
+        }
     }
 
     state.flagDrop?.let { drop ->
@@ -152,6 +186,7 @@ private fun GramsField(
                 }
             },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            enabled = state.visitId == null,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -186,5 +221,32 @@ private fun CollisionDialog(
         dismissButton = {
             TextButton(onClick = onAddSecond) { Text(stringResource(R.string.weight_collision_add_second)) }
         },
+    )
+}
+
+/**
+ * The same collision, against a **visit-recorded** weighing — and *replace* is not on it (ADR-0021's
+ * amendment).
+ *
+ * Every visit on a day lands at the same noon, so this is reachable by accident rather than by
+ * contrivance: without it, typing a weight for a day the bunny saw the vet would quietly rewrite the
+ * vet's number while the row went on claiming the visit. The two honest answers are to keep both
+ * readings, or to go and correct the visit — so those are the two buttons, and the third is absent
+ * rather than merely not the default.
+ */
+@Composable
+private fun VisitCollisionDialog(
+    onAddSecond: () -> Unit,
+    onOpenVisit: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.weight_collision_title)) },
+        text = { Text(stringResource(R.string.weight_collision_visit_body)) },
+        confirmButton = {
+            TextButton(onClick = onAddSecond) { Text(stringResource(R.string.weight_collision_add_second)) }
+        },
+        dismissButton = { TextButton(onClick = onOpenVisit) { Text(stringResource(R.string.weight_open_visit)) } },
     )
 }

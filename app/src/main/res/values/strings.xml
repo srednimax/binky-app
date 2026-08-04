@@ -120,6 +120,12 @@
     </plurals>
     <string name="weight_collision_replace">Replace it</string>
     <string name="weight_collision_add_second">Add a second</string>
+    <!-- The same collision against a weighing the vet recorded (ADR-0017, ADR-0021). "Replace it" is
+         absent from this one on purpose, so the copy has to offer two ways out rather than three. -->
+    <string name="weight_collision_visit_body">The weighing already at that time was recorded at a vet visit. Binky will not overwrite it — add a second reading, or correct the number on the visit itself.</string>
+    <string name="weight_from_visit">Recorded at a vet visit</string>
+    <string name="weight_open_visit">Open the visit</string>
+    <string name="weight_visit_owned">This weighing was recorded at a vet visit, so it is changed there. The visit\'s date is what decides when it was taken.</string>
 
     <!-- How a stored weight is rendered. Three decimal places, because storage is whole grams and
          two would hide them. Changes are ALWAYS in grams, whatever the display unit says. -->
@@ -616,6 +622,57 @@
         <item quantity="other">%d care reminders due</item>
     </plurals>
 
+    <!-- Vet visits on the Care tab (ADR-0017). A health record, never an expense: nothing here asks
+         what it cost, and the weight is the vet's own reading of the one number this app is about. -->
+    <string name="care_reminders_heading">Care reminders</string>
+    <string name="visits_heading">Vet visits</string>
+    <string name="visits_empty">No visits recorded yet. A visit is a health record: the day, what it was for, and the weight if the vet took one.</string>
+    <string name="visit_add">Add a visit</string>
+    <string name="visit_row_with_vet">%1$s · %2$s</string>
+    <string name="visit_row_weighed">Weighed %1$s</string>
+
+    <string name="visit_editor_add_title">New visit</string>
+    <string name="visit_editor_edit_title">Edit visit</string>
+    <string name="visit_date_label">When was it?</string>
+    <string name="visit_future_rejected">That day has not happened yet.</string>
+    <string name="visit_reason_label">What was it for?</string>
+    <string name="visit_reason_required">Say what it was for, so the record still means something in a year.</string>
+    <string name="visit_notes_label">Notes, if you want them</string>
+    <string name="visit_vet_label">Vet</string>
+    <string name="visit_vet_none">Not recorded</string>
+    <string name="visit_vet_choose">Choose</string>
+    <string name="visit_vet_clear">Clear</string>
+    <string name="visit_vet_picker_title">Which vet?</string>
+    <string name="visit_vet_add_typed">Add “%1$s” as a new vet</string>
+    <!-- Optional, and empty is the ordinary case: most visits are consultations. The help line says
+         "once" because it is one row in the weight history, not a second copy of the number. -->
+    <string name="visit_weight_label">Weight in grams, if they weighed them</string>
+    <string name="visit_weight_help">Optional. It is recorded once, as this bunny\'s weighing for that day.</string>
+    <string name="visit_weight_invalid">Whole grams, or leave it empty.</string>
+
+    <string name="visit_delete_title">Delete this visit?</string>
+    <string name="visit_delete_body">The visit on %1$s goes, with its notes.</string>
+    <!-- The choice is stated rather than guessed: a weighing outlives the visit perfectly well, and
+         removing it takes the vet's own reading out of the weight history (PLAN 5c). -->
+    <string name="visit_delete_weighing">A weighing of %1$s was recorded at it.</string>
+    <string name="visit_delete_keep_weighing">Keep the weighing on its own</string>
+    <string name="visit_delete_remove_weighing">Delete the weighing too</string>
+
+    <!-- The vet directory, reached from More. App-wide, because a household's bunnies see the same
+         vet, and it outlives the visits that name it (ADR-0017). -->
+    <string name="vets_title">Vets</string>
+    <string name="vets_empty">No vets yet. Add the practice you use and any visit can name it — or add one while you are typing a visit.</string>
+    <string name="vet_add">Add a vet</string>
+    <string name="vet_editor_add_title">New vet</string>
+    <string name="vet_editor_edit_title">Edit vet</string>
+    <string name="vet_name_label">Name</string>
+    <string name="vet_name_required">Give them a name so you can find them again.</string>
+    <string name="vet_clinic_label">Clinic, if any</string>
+    <string name="vet_phone_label">Phone, if any</string>
+    <string name="vet_notes_label">Notes, if you want them</string>
+    <string name="vet_delete_title">Remove this vet?</string>
+    <string name="vet_delete_body">%1$s goes from the directory. Every visit that named them stays exactly as it is, without the name.</string>
+
     <!-- The watch (ADR-0001): opt-in, time-boxed, and framed about the owner's checking rather than
          about the bunny. Nothing here may read as a claim that anything is wrong — the app knows
          only that nothing has been logged, and silence means nobody looked. -->
@@ -648,6 +705,8 @@
     <string name="more_photos">Photos</string>
     <string name="more_photos_summary">Pictures of one bunny, kept on this phone.</string>
     <string name="more_documents">Documents</string>
+    <string name="more_vets">Vets</string>
+    <string name="more_vets_summary">Names and numbers, shared by every bunny.</string>
     <string name="more_settings">Settings</string>
     <string name="more_settings_summary">Weight units, language, backup and restore.</string>
     <string name="more_support">Support</string>

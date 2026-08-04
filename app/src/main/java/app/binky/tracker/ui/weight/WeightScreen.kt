@@ -47,6 +47,7 @@ import app.binky.tracker.ui.watch.StartWatchAction
 fun WeightScreen(
     onAddWeight: (String) -> Unit,
     onEditWeight: (String, String) -> Unit,
+    onOpenVisit: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: WeightViewModel = viewModel(factory = WeightViewModel.Factory, extras = appViewModelExtras())
@@ -62,6 +63,10 @@ fun WeightScreen(
                 state = state,
                 onAdd = { state.bunnyId?.let(onAddWeight) },
                 onEdit = { row -> state.bunnyId?.let { onEditWeight(it, row.id) } },
+                onOpenVisit = { row ->
+                    val bunnyId = state.bunnyId
+                    if (bunnyId != null && row.visitId != null) onOpenVisit(bunnyId, row.visitId)
+                },
                 onDelete = viewModel::requestDelete,
                 onAcknowledge = viewModel::acknowledge,
                 onStartWatch = viewModel::startWatch,
@@ -127,6 +132,7 @@ private fun History(
     state: WeightUiState,
     onAdd: () -> Unit,
     onEdit: (WeightRow) -> Unit,
+    onOpenVisit: (WeightRow) -> Unit,
     onDelete: (WeightRow) -> Unit,
     onAcknowledge: () -> Unit,
     onStartWatch: (WatchDuration) -> Unit,
@@ -185,18 +191,29 @@ private fun History(
                 unit = state.unit,
                 readOnly = state.readOnly,
                 onEdit = { onEdit(row) },
+                onOpenVisit = { onOpenVisit(row) },
                 onDelete = { onDelete(row) },
             )
         }
     }
 }
 
+/**
+ * One weighing, and **where it came from** (ADR-0017).
+ *
+ * A visit-recorded row says so and offers the visit; it offers neither *Edit* nor *Delete*, and
+ * that is the same rule as the entry form's read-only state rather than a second one. The visit owns
+ * that number — its date re-derives the timestamp and clearing its field deletes the row — so a
+ * second way to change it would be a second path to the fact ADR-0017 keeps in one place. The chart
+ * above plots it identically either way: a weight is a weight (ADR-0022).
+ */
 @Composable
 private fun WeighingRow(
     row: WeightRow,
     unit: WeightUnit,
     readOnly: Boolean,
     onEdit: () -> Unit,
+    onOpenVisit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -218,11 +235,22 @@ private fun WeighingRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (row.visitId != null) {
+                Text(
+                    text = stringResource(R.string.weight_from_visit),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             if (!readOnly) {
                 HorizontalDivider()
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onEdit) { Text(stringResource(R.string.action_edit)) }
-                    TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
+                    if (row.visitId == null) {
+                        TextButton(onClick = onEdit) { Text(stringResource(R.string.action_edit)) }
+                        TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
+                    } else {
+                        TextButton(onClick = onOpenVisit) { Text(stringResource(R.string.weight_open_visit)) }
+                    }
                 }
             }
         }

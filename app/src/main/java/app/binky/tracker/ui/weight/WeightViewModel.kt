@@ -46,6 +46,18 @@ data class WeightRow(
     val recordedAt: Instant,
     /** Null on the oldest row, which has nothing to have changed from. */
     val changeGrams: Int?,
+    /**
+     * The visit this weighing was recorded at, or null for a typed one (ADR-0017).
+     *
+     * **The whole origin tag**, carried up as the id rather than as a `WeightSource`, because the
+     * row does two things with it: it says where the number came from *and* it offers to open the
+     * visit. A derived enum would answer the first and lose the second.
+     *
+     * Defaulted to null like `WeightEntity.visitId` itself, which keeps the chart's tests saying
+     * what they are about: the chart plots a visit-recorded number identically (ADR-0022), so a
+     * chart fixture that had to state an origin would be stating something the chart never reads.
+     */
+    val visitId: String? = null,
 )
 
 data class WeightUiState(
@@ -265,5 +277,6 @@ private fun List<WeightEntity>.toRows(): List<WeightRow> =
             grams = weight.grams,
             recordedAt = weight.recordedAt,
             changeGrams = getOrNull(index + 1)?.let { older -> weight.grams - older.grams },
+            visitId = weight.visitId,
         )
     }
