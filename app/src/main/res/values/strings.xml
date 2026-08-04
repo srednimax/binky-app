@@ -221,6 +221,19 @@
     <string name="reminders_autostart_help">Some phones — Xiaomi above all — also keep an autostart list of their own. Binky cannot read it, so it cannot tell you whether it is set; this is just the way in.</string>
     <string name="reminders_autostart_action">Open autostart settings</string>
 
+    <!-- Dose delivery (ADR-0003, ADR-0025, ADR-0026, PLAN 5a). Three states again, but four
+         sentences: "best-effort" arrives for two different reasons with two different fixes, and the
+         copy has to say which one is missing or the button underneath it looks arbitrary. The
+         exact-alarm sentence is the one place the app says a *mechanism* has degraded rather than a
+         promise — the reminder is real, it is only imprecise, and claiming otherwise in either
+         direction would be the hedge that teaches an owner to stop reading the line. None of these
+         say anything about the medication itself (ADR-0026). -->
+    <string name="doses_state_blocked">Notifications are off, so dose reminders will only appear inside the app.</string>
+    <string name="doses_state_best_effort_exact">Dose reminders are on, but Android is not letting Binky set them to the minute — expect one within a few minutes of the time, not at it.</string>
+    <string name="doses_state_best_effort_battery">Dose reminders are on and set to the minute. This phone may still delay them while Binky is in the background.</string>
+    <string name="doses_state_armed">Dose reminders are on, set to the minute, and this phone is set up to let them through.</string>
+    <string name="doses_exact_alarm_action">Open alarm settings</string>
+
     <!-- Debug builds only, and never shown in a release build. -->
     <string name="settings_sample_data">Sample data</string>
     <string name="settings_sample_data_help">Debug builds only. Adds two bonded bunnies, a year of uneven, back-dated weighings and a handful of observations, so the chart, the trend flag and the timeline can be reviewed against real history.</string>
@@ -234,6 +247,13 @@
     <string name="settings_debug_reminder_scheduled">A test reminder will arrive in two minutes. Lock the phone and wait.</string>
     <string name="debug_reminder_notification_title">Test reminder</string>
     <string name="debug_reminder_notification_text">This is what a care reminder will look like. Nothing is due — the reminder was scheduled by hand from Settings.</string>
+    <string name="settings_debug_dose">Dose delivery</string>
+    <string name="settings_debug_dose_help">Debug builds only. Arms the app\'s one dose alarm, which no medication exists to fill yet. Two minutes proves the channel, the permission and the delivery while you watch; the overnight one is the only way to find out whether an exact alarm survives a night of Doze on this phone — arm it, unplug, and do not touch the phone until morning.</string>
+    <string name="settings_debug_dose_action">Dose in two minutes</string>
+    <string name="settings_debug_dose_overnight_action">Dose at the next 8 a.m.</string>
+    <string name="settings_debug_dose_scheduled">A test dose is armed for %1$s. Lock the phone and leave it alone.</string>
+    <string name="debug_dose_notification_title">Test dose</string>
+    <string name="debug_dose_notification_text">This is what a dose reminder will look like. No medication is recorded — the dose was armed by hand from Settings.</string>
 
     <!-- Notification channels. The owner sees these names in the phone's notification settings, and
          they are the only per-kind control they have: someone who mutes a daily watch nag must not
@@ -247,6 +267,11 @@
          share a channel with a vaccination. -->
     <string name="channel_backup_name">Backup reminders</string>
     <string name="channel_backup_description">An occasional prompt to export your records, at the interval you chose. Nothing to do with any bunny.</string>
+    <!-- The fourth channel, and the only one created at IMPORTANCE_HIGH: the only thing Binky posts
+         where being seen late has consequences. Its description says what it is *for* and not what
+         to do about it — Binky records doses and never advises on them (ADR-0026). -->
+    <string name="channel_doses_name">Medication doses</string>
+    <string name="channel_doses_description">A reminder at the time of a dose you have scheduled. Only while a course of medication is running.</string>
 
     <!-- Backup and restore (ADR-0005). The photo-gallery warning is not decoration: photos are the
          least protected data in the app, and ADR-0001's rule about silence says a gap the owner

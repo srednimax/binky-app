@@ -86,6 +86,80 @@ class ReminderDeliveryTest {
     }
 
     @Test
+    fun `a dose without exact alarms is best-effort, not blocked`() {
+        // **The distinction the whole fourth input exists for.** Without SCHEDULE_EXACT_ALARM the
+        // alarm still goes in, via setAndAllowWhileIdle, which pierces Doze inside a window the OS
+        // picks. Something arrives; it is merely imprecise. Calling that blocked would tell an owner
+        // mid-treatment that nothing is coming when something is.
+        assertEquals(
+            ReminderDelivery.BestEffort,
+            resolveReminderDelivery(
+                notificationsPermitted = true,
+                channelImportance = audible,
+                batteryExemptionConfirmed = true,
+                exactAlarmsPermitted = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `no permission still beats a missing exact alarm`() {
+        // Order matters between a certain failure and an imprecise one, and only in that direction:
+        // blocked is knowable, best-effort is a hedge, and hedging about something that definitely
+        // will not arrive is how a delivery line stops being read.
+        assertEquals(
+            ReminderDelivery.Blocked,
+            resolveReminderDelivery(
+                notificationsPermitted = false,
+                channelImportance = audible,
+                batteryExemptionConfirmed = true,
+                exactAlarmsPermitted = false,
+            ),
+        )
+        assertEquals(
+            ReminderDelivery.Blocked,
+            resolveReminderDelivery(
+                notificationsPermitted = true,
+                channelImportance = muted,
+                batteryExemptionConfirmed = true,
+                exactAlarmsPermitted = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `both mechanisms missing is still one best-effort`() {
+        // Two hedges do not stack into a third state. The resolver stays three-valued; which of the
+        // two facts is missing decides the sentence and the tap target, and that choice lives in the
+        // composable that has both facts in hand rather than in a fourth enum entry nobody could
+        // render honestly.
+        assertEquals(
+            ReminderDelivery.BestEffort,
+            resolveReminderDelivery(
+                notificationsPermitted = true,
+                channelImportance = audible,
+                batteryExemptionConfirmed = false,
+                exactAlarmsPermitted = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `the exact-alarm input defaults to true, so the sweep's channels are unaffected`() {
+        // Care, watch and backup are delivered by the daily sweep, where this permission changes
+        // nothing. The default is what keeps 4a's three call sites honest without each of them
+        // having to pass a fact about a mechanism they do not use.
+        assertEquals(
+            ReminderDelivery.Armed,
+            resolveReminderDelivery(
+                notificationsPermitted = true,
+                channelImportance = audible,
+                batteryExemptionConfirmed = true,
+            ),
+        )
+    }
+
+    @Test
     fun `a lowered but unmuted channel still delivers`() {
         // IMPORTANCE_LOW is a silent notification, not a suppressed one. An owner who took the sound
         // off a daily nag has not asked to stop being told.

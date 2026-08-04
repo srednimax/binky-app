@@ -8,12 +8,8 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import app.binky.tracker.AppContainer
 import app.binky.tracker.BinkyApplication
-import app.binky.tracker.data.BUNNY_DATABASE_FILE
-import app.binky.tracker.data.BUNNY_SCHEMA_VERSION
 import app.binky.tracker.data.dueOn
 import app.binky.tracker.data.needsNotifying
-import app.binky.tracker.data.readUserVersion
-import app.binky.tracker.data.schemaMismatchPending
 import app.binky.tracker.data.today
 import kotlinx.coroutines.flow.first
 import java.time.Duration
@@ -64,8 +60,10 @@ class ReminderSweepWorker(
         // forces the container — which, at a stale schema, destroys the database in the background
         // on a phone nobody is looking at. So this is asked *before* anything else, and answered
         // out of four bytes of the file header rather than by opening anything.
-        val onDisk = readUserVersion(applicationContext.getDatabasePath(BUNNY_DATABASE_FILE))
-        if (schemaMismatchPending(onDisk, BUNNY_SCHEMA_VERSION)) {
+        //
+        // The read and the predicate are `schemaWipePending()` since 5a, shared with the three dose
+        // receivers rather than re-derived in each of them.
+        if (applicationContext.schemaWipePending()) {
             // Success, and deliberately no re-enqueue. There is nothing wrong with the *work* — the
             // database is simply not this build's to open yet, and the consent screen is what
             // resolves that. Re-arming happens on the next launch, through the same path the boot
@@ -86,6 +84,14 @@ class ReminderSweepWorker(
         runCatching { sweepCare(container) }
         runCatching { sweepWatch(container) }
         runCatching { sweepExport(container) }
+
+        // **The sweep repairs the dose alarm, and never delivers a dose** (ADR-0025). It is already
+        // permanently enqueued, already self-perpetuating, and already the one mechanism with
+        // overnight-Doze evidence on the test device — so it is the cheapest place to heal an alarm
+        // lost to a schema guard, a permission revocation or a process death. The coupling runs one
+        // way only: this never posts on the `doses` channel and never decides when a dose is due.
+        // Its own `runCatching` for the same reason as the three above.
+        runCatching { applicationContext.rescheduleDoseAlarm() }
 
         // Before returning, not after: this is what keeps the sweep permanently enqueued, and a
         // sweep that only re-armed on a successful pass would go quiet the first time anything

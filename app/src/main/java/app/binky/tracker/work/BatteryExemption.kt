@@ -86,8 +86,12 @@ private fun autostartIntent(): Intent =
  *
  * An OEM screen that is present but not exported to us throws `SecurityException`, which is the same
  * outcome from here as it not being there at all.
+ *
+ * `internal` rather than private since 5a: [openExactAlarmSettings] walks the same fallback list for
+ * the same reason, and two copies of a three-line try/catch is how one of them quietly stops
+ * catching something.
  */
-private fun Context.startActivitySafely(intent: Intent): Boolean =
+internal fun Context.startActivitySafely(intent: Intent): Boolean =
     try {
         startActivity(intent)
         true

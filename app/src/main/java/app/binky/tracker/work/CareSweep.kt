@@ -55,10 +55,10 @@ fun careDueForNotifying(
 
 /**
  * Ids below this are spoken for: 1 is the debug reminder, 2 the care group summary, 3 the export
- * prompt.
+ * prompt, 4 the debug dose.
  *
- * A block rather than a handful of constants, so 4d's watch nag and 4e's export reminder had
- * somewhere to take an id from without revisiting the derivation below.
+ * A block rather than a handful of constants, so 4d's watch nag, 4e's export reminder and 5a's dose
+ * had somewhere to take an id from without revisiting the derivation below.
  */
 const val RESERVED_NOTIFICATION_IDS = 16
 

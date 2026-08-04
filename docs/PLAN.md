@@ -2308,7 +2308,16 @@ truth, as the ADR-0024 exception it is, now also carrying the 30-minute grace wi
 rebuild triggers; **ADR-0026**, the app records doses and never advises on them, on screen as well as in the
 copy.
 
-1. **5a — The exact-alarm path, proven while nothing depends on it.** No schema change at all, deliberately —
+1. **5a — The exact-alarm path, proven while nothing depends on it.** 🔨 *(built; lint 0/0, JVM tests green —
+   **not closed**: the overnight-Doze run is armable but unread, and the autostart state is unrecorded. Both are
+   readings off the phone, and the first of them can still reshape the phase, so the tick waits for them. What
+   the build added beyond the bullets below: the debug dose is **stored** and arms through
+   `rescheduleDoseAlarm()` rather than placing an alarm of its own — otherwise the three receivers have nothing
+   observable to rebuild at a checkpoint whose whole premise is proving them early — and it gained a second
+   action, **the next 08:00**, because a two-minute delay cannot answer an overnight question. 08:00 rather
+   than the sweep's 09:00 so one night can hold both mechanisms without their signatures colliding.
+   `DebugDose.kt` is the seam: 5d replaces two function bodies with the `dueDoses` derivation and deletes the
+   file.)* No schema change at all, deliberately —
    the same split 4a used, so a failure in the alarm path and a failure in the migration cannot be confused.
    - `SCHEDULE_EXACT_ALARM` enters the manifest and **`USE_EXACT_ALARM` does not** (ADR-0009): the latter is
      auto-granted but Play permits it only for apps whose core function is an alarm clock or calendar, and

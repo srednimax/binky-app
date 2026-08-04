@@ -11,6 +11,7 @@ import app.binky.tracker.data.destructiveMigrationAllowed
 import app.binky.tracker.data.preserveBeforeWipe
 import app.binky.tracker.data.readUserVersion
 import app.binky.tracker.work.ensureSweepEnqueued
+import app.binky.tracker.work.rescheduleDoseAlarm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -152,7 +153,16 @@ class BinkyApplication :
             // Off the main thread, because this coroutine is back on it: `openDatabase` moves its
             // own blocking work to IO and returns, and the first `WorkManager.getInstance` call is
             // what builds WorkManager's own database object.
-            withContext(Dispatchers.IO) { ensureSweepEnqueued(this@BinkyApplication) }
+            withContext(Dispatchers.IO) {
+                ensureSweepEnqueued(this@BinkyApplication)
+                // **The only rebuild that survives a force-stop** (ADR-0025). A force-stopped app
+                // runs no receivers and no workers until somebody opens it, so on a phone where
+                // autostart is denied — HyperOS's default, and unreadable — this is the one occasion
+                // that can put a lost dose alarm back. After the gate for the same reason the sweep
+                // is: it reads the database header, and doing that while the consent screen is up
+                // would be the app working over a database it had just said it could not open.
+                rescheduleDoseAlarm()
+            }
             onOpened()
         }
     }
