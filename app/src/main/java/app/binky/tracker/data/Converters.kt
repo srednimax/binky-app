@@ -3,6 +3,7 @@ package app.binky.tracker.data
 import androidx.room.TypeConverter
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * SQLite has no date or enum types, so Room needs a mapping in each direction. `java.time` is
@@ -33,6 +34,39 @@ class Converters {
 
     @TypeConverter
     fun localDateFromEpochDay(value: Long?): LocalDate? = value?.let(LocalDate::ofEpochDay)
+
+    /**
+     * A wall-clock time with no date and no zone, stored as **seconds since local midnight**.
+     *
+     * An integer for the same reason [localDateToEpochDay] is one: `ORDER BY time` and the unique
+     * index on `(courseId, time)` are then real comparisons rather than a lexicographic accident, and
+     * "08:00" and "8:00" cannot be two different rows.
+     *
+     * Sub-second precision is dropped, which costs nothing here — every [LocalTime] in this app comes
+     * from a clock picker at minute granularity (ADR-0002's dose slots).
+     */
+    @TypeConverter
+    fun localTimeToSecondOfDay(value: LocalTime?): Int? = value?.toSecondOfDay()
+
+    // `ofSecondOfDay` takes a `Long`; the column is an `Int` because a day has 86 400 seconds.
+    @TypeConverter
+    fun localTimeFromSecondOfDay(value: Int?): LocalTime? = value?.let { LocalTime.ofSecondOfDay(it.toLong()) }
+
+    @TypeConverter
+    fun doseStatusToName(value: DoseStatus): String = value.name
+
+    /**
+     * Falls back to [DoseStatus.GIVEN] rather than throwing, on the same reasoning as [sexFromName]:
+     * a name written by a future build must not crash every read of the row.
+     *
+     * **`GIVEN` rather than `SKIPPED`, and the choice is not arbitrary.** Both are wrong answers if
+     * this is ever reached, but the recorded row exists *because a person answered the slot* — so the
+     * honest fallback is the one that keeps the slot answered. Reading it back as `SKIPPED` would
+     * additionally assert something about the rabbit's treatment that nobody said (ADR-0026).
+     */
+    @TypeConverter
+    fun doseStatusFromName(value: String): DoseStatus =
+        DoseStatus.entries.firstOrNull { it.name == value } ?: DoseStatus.GIVEN
 
     @TypeConverter
     fun sexToName(value: Sex): String = value.name

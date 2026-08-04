@@ -76,7 +76,170 @@ val MIGRATION_4_5 =
     }
 
 /**
+ * **Phase 5's whole schema, in one migration** (PLAN 5b, ADR-0007).
+ *
+ * Seven new tables and — for the first time in this project — a **column added to a table that has
+ * already shipped with real data in it**. That is the part worth reading twice: `MIGRATION_4_5` only
+ * created things, so no owner's row was so much as read. This one touches `weights`.
+ *
+ * **Five of the seven tables are created here and left empty**: medications are 5d's and documents are
+ * 5g's, and neither has a screen until then. Creating them now costs one `execSQL` each and buys a
+ * single migration to test instead of six, none of which would correspond to a shape any shipped
+ * build ever held.
+ *
+ * **The `weights` change is two statements and the second one is the load-bearing one.** SQLite's
+ * `ADD COLUMN` cannot carry a `UNIQUE` constraint, and it accepts a foreign-keyed column at all only
+ * because the default is null — so the unique index is a separate `CREATE UNIQUE INDEX`, and it is the
+ * statement ADR-0017's "one row, never a copy" claim actually rests on. The `ALTER` on its own
+ * enforces nothing.
+ *
+ * **The SQL is a transcription of `schemas/6.json`, not a paraphrase of the entities** — same rule as
+ * above, and the instrumented `runMigrationsAndValidate` is what keeps it honest: Room compares the
+ * migrated database against that JSON and fails on a missing index, a wrong affinity, a foreign key
+ * with a different `ON DELETE`. As the shape churns across 5b–5g both are regenerated together, and
+ * neither is patched by hand.
+ */
+val MIGRATION_5_6 =
+    object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Vets before visits, visits before everything that references them: the order is the
+            // foreign-key graph, so the statements read top-down the way the schema does.
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `vets` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`name` TEXT NOT NULL, " +
+                    "`clinic` TEXT, " +
+                    "`phone` TEXT, " +
+                    "`notes` TEXT, " +
+                    "`createdAt` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`))",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `visits` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`bunnyId` TEXT NOT NULL, " +
+                    "`vetId` TEXT, " +
+                    "`visitedOn` INTEGER NOT NULL, " +
+                    "`reason` TEXT NOT NULL, " +
+                    "`notes` TEXT, " +
+                    "`createdAt` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`bunnyId`) REFERENCES `bunnies`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE , " +
+                    "FOREIGN KEY(`vetId`) REFERENCES `vets`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE SET NULL )",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_visits_bunnyId_visitedOn` " +
+                    "ON `visits` (`bunnyId`, `visitedOn`)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_visits_vetId` ON `visits` (`vetId`)",
+            )
+
+            // 5d's three tables, empty until then.
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `medication_courses` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`bunnyId` TEXT NOT NULL, " +
+                    "`name` TEXT NOT NULL, " +
+                    "`doseAmount` TEXT NOT NULL, " +
+                    "`startOn` INTEGER NOT NULL, " +
+                    "`endOn` INTEGER, " +
+                    "`notes` TEXT, " +
+                    "`remindersEnabled` INTEGER NOT NULL, " +
+                    "`createdAt` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`bunnyId`) REFERENCES `bunnies`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_medication_courses_bunnyId` " +
+                    "ON `medication_courses` (`bunnyId`)",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `medication_times` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`courseId` TEXT NOT NULL, " +
+                    "`time` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`courseId`) REFERENCES `medication_courses`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_medication_times_courseId_time` " +
+                    "ON `medication_times` (`courseId`, `time`)",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `doses` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`courseId` TEXT NOT NULL, " +
+                    "`scheduledOn` INTEGER, " +
+                    "`scheduledTime` INTEGER, " +
+                    "`recordedAt` INTEGER NOT NULL, " +
+                    "`status` TEXT NOT NULL, " +
+                    "`note` TEXT, " +
+                    "PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`courseId`) REFERENCES `medication_courses`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                    "`index_doses_courseId_scheduledOn_scheduledTime` " +
+                    "ON `doses` (`courseId`, `scheduledOn`, `scheduledTime`)",
+            )
+
+            // 5g's two, likewise.
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `documents` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`bunnyId` TEXT NOT NULL, " +
+                    "`visitId` TEXT, " +
+                    "`title` TEXT NOT NULL, " +
+                    "`capturedAt` INTEGER, " +
+                    "`createdAt` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`bunnyId`) REFERENCES `bunnies`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE , " +
+                    "FOREIGN KEY(`visitId`) REFERENCES `visits`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE SET NULL )",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_documents_bunnyId` ON `documents` (`bunnyId`)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_documents_visitId` ON `documents` (`visitId`)",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `document_pages` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`documentId` TEXT NOT NULL, " +
+                    "`path` TEXT NOT NULL, " +
+                    "`position` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`documentId`) REFERENCES `documents`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_document_pages_documentId_position` " +
+                    "ON `document_pages` (`documentId`, `position`)",
+            )
+
+            // The one statement in this migration that touches a table holding an owner's data.
+            // `ADD COLUMN` with a foreign key is accepted by SQLite **only** because the default is
+            // null; it cannot carry `UNIQUE`, which is why the index below is its own statement.
+            db.execSQL(
+                "ALTER TABLE `weights` ADD COLUMN `visitId` TEXT " +
+                    "REFERENCES `visits`(`id`) ON DELETE SET NULL DEFAULT NULL",
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_weights_visitId` ON `weights` (`visitId`)",
+            )
+        }
+    }
+
+/**
  * Every migration this app has, in one array so `buildBunnyDatabase` and the instrumented tests
  * register the same set — a test that listed its own would be proving a configuration nothing ships.
  */
-val BUNNY_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_4_5)
+val BUNNY_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_4_5, MIGRATION_5_6)

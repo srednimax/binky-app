@@ -85,6 +85,19 @@ interface BunnyDao {
      *   bunny and its events cascade from the reminder, so both land in the destroyed bucket. The
      *   events are counted separately rather than folded into the reminder, because a weigh-in with
      *   two years of history loses more than the one row the reminder is.
+     * - Visits, medication courses, their doses and documents likewise — all sole-owned, all
+     *   destroyed. Doses reach the bunny through their course, the same two-hop shape as care events,
+     *   and are counted separately for the same reason: a fortnight of a sick rabbit's antibiotics is
+     *   the most clinically meaningful history this app holds after the weights.
+     * - **Vets are not counted, and that is the one exception here.** The directory is app-wide, a
+     *   vet outlives its visits by `SET NULL` (ADR-0017), and a bunny's deletion must not read as
+     *   taking the clinic's phone number with it — because it does not.
+     * - Medication times and document pages are not counted either: they are parts of a row already
+     *   counted, not records of their own. "3 documents" is what the owner recognises; "3 documents
+     *   and 7 pages" is the same loss, stated twice.
+     *
+     * The four new counts are honestly zero until 5d and 5g fill their tables, which is why they can
+     * land here with the schema rather than waiting for the screens.
      * - A grouped observation counts as **shared** only while at least one row belongs to a *different*
      *   bunny, because those rows survive the delete.
      * - A grouped observation where this bunny is the **last participant** is destroyed by the delete,
@@ -110,6 +123,14 @@ interface BunnyDao {
                 JOIN care_reminders r ON r.id = e.reminderId
                 WHERE r.bunnyId = :bunnyId
             )
+            + (SELECT COUNT(*) FROM visits WHERE bunnyId = :bunnyId)
+            + (SELECT COUNT(*) FROM medication_courses WHERE bunnyId = :bunnyId)
+            + (
+                SELECT COUNT(*) FROM doses d
+                JOIN medication_courses c ON c.id = d.courseId
+                WHERE c.bunnyId = :bunnyId
+            )
+            + (SELECT COUNT(*) FROM documents WHERE bunnyId = :bunnyId)
             + (
                 SELECT COUNT(*) FROM observations o
                 WHERE o.bunnyId = :bunnyId

@@ -2406,6 +2406,26 @@ copy.
    - Tests, JVM: the extended delivery resolver as a case table across notification × channel × exact-alarm
      state; the ADR-0007 guard as a pure predicate, reused rather than re-derived.
 2. **5b — The whole schema: vets, visits, and the first column added to a shipped table. Schema 6.**
+   🔨 *(built; spotless, `assembleDebug` and JVM tests green, lint 0/0 — **not closed**: the schema-5
+   fixture is the one bullet still owed, see below. Instrumented: **141 tests on the Xiaomi, all
+   green**, 2026-08-04, run through `am instrument` after the split install refused. One install note
+   worth keeping, because it cost two rounds: HyperOS's first-install refusal applies **per package**,
+   so the app APK updated cleanly while `…debug.test` — dropped when an earlier split-install session
+   rolled back — was refused instantly every time, looking exactly like the USB-install gate being
+   shut. The fix is the one CLAUDE.md already names, and the tell is `pm list packages`. Three
+   decisions the plan's text did not settle, made here: the column is
+   **`visitId`, not `visit_id`** — every column in this database is camelCase and Room derives
+   `index_weights_visitId` from the property name, so the plan's snake_case above was a transcription
+   slip and not a naming choice; **`medication_times` and `document_pages` carry UUID primary keys of
+   their own**, which their field lists omitted, so that moving a time chip from 08:00 to 09:00 is an
+   update of a held row rather than a delete-and-insert a half-finished edit could leave as neither —
+   the unique index on `(courseId, time)` is unchanged and still what makes "08:00 twice" impossible;
+   and **the five empty tables get entities but no DAOs**, because Room validates schema 6 from
+   entities alone and a DAO written now would be a guess at 5d's and 5g's queries. `VetDao` and
+   `VisitDao` do land — 5c needs them, and 5b's own cascade tests read through them rather than
+   through raw SQL. One obligation this creates for **5g**: `BunnyRepository.delete` deletes photo
+   files by hand, and document pages will need the same, or a deleted bunny leaves its scans in
+   `documents/`. Nothing leaks today because the table is empty.)*
    - **Every id here is a `String` UUID**, as every entity since 1.0 has been, and the reason is worth
      stating correctly because the obvious version of it is wrong. **A restore does not merge rows** —
      `BackupRestorer` replaces the database wholesale and merges only *media*, and a preserved copy is a
@@ -2431,10 +2451,10 @@ copy.
      where it was.
    - **`MIGRATION_5_6` ships in this commit, whole**: **seven** `CREATE TABLE`s — `vets`, `visits`,
      `medication_courses`, `medication_times`, `doses`, `documents`, `document_pages` — their indices, and one
-     `ALTER TABLE weights ADD COLUMN visit_id TEXT REFERENCES visits(id) ON DELETE SET NULL DEFAULT NULL`
+     `ALTER TABLE weights ADD COLUMN visitId TEXT REFERENCES visits(id) ON DELETE SET NULL DEFAULT NULL`
      — the only form SQLite accepts for a foreign-keyed column added to an existing table, and it is accepted
      only because the default is null — **followed by its own
-     `CREATE UNIQUE INDEX index_weights_visit_id ON weights (visit_id)`**. The `ALTER` enforces nothing on its
+     `CREATE UNIQUE INDEX index_weights_visitId ON weights (visitId)`**. The `ALTER` enforces nothing on its
      own; `ADD COLUMN` cannot carry a `UNIQUE` constraint, so the index is a separate statement and it is the
      statement the "one row, never a copy" claim actually rests on. The five tables 5d and 5g will fill are
      created **here and left empty**: their entities and DAOs exist so Room can validate schema 6 as a whole,
@@ -2446,6 +2466,15 @@ copy.
      **schema-5 zip written by the shipped 1.1.0 build** joins it, both carrying fabricated bunnies and never
      real history, both restored through 3d's staged path in instrumented tests. Together they are the
      skipped-version upgrade, run in CI on every pull request instead of once by hand at the release.
+     ⏳ **Still owed, and it is the only thing keeping 5b open.** The schema-4 half already carries more
+     than it did: `RestoreStageMigrateSwapTest` restores that 1.0.1 archive and asserts the result lands at
+     `BUNNY_SCHEMA_VERSION`, so **4 → 5 → 6 through the staged restore path is proven as of this commit** —
+     the skipped-version upgrade is covered, and what the 1.1.0 zip adds is the single 5 → 6 step against an
+     artifact this build did not describe. It cannot be synthesised, for the reason the schema-4 one could
+     not: a fixture built from `5.json` contains only what *this* build believes 1.1.0 wrote, and the
+     discrepancy is the thing under test. Producing it is a device chore needing hands on the phone — build
+     the `v1.1.0` tag in a worktree, install, seed the sample data, export through the SAF picker (which
+     `adb` cannot drive), pull the zip — and the USB-install gate has to be reopened first.
    - `recordCounts` gains visits, courses, doses and documents — all **sole-owned**, so the destroyed bucket
      (ADR-0004), and all countable from here because the tables exist; a count of zero is an honest count
      until the features land. Vets are not: they are
