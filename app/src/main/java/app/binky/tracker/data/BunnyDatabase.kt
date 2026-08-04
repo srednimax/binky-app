@@ -12,7 +12,7 @@ import app.binky.tracker.BuildConfig
  * opens it and compares it against this (see `DatabasePreserve.kt`), so the two must stay in step —
  * which is why it is one constant used in both places.
  */
-const val BUNNY_SCHEMA_VERSION = 5
+const val BUNNY_SCHEMA_VERSION = 6
 
 /** The database file name, under the app's standard databases directory. */
 const val BUNNY_DATABASE_FILE = "bunny.db"
@@ -30,6 +30,16 @@ const val BUNNY_DATABASE_FILE = "bunny.db"
  * place** as the shape churns and `5.json` regenerated with it — the version does not climb per
  * checkpoint. What must stay true throughout, and is asserted by test, is that a release-shaped open
  * of a schema-4 file succeeds.
+ *
+ * **Version 6 is Phase 5's, and it arrives whole** (PLAN 5b). [MIGRATION_5_6] creates *every* table
+ * the phase needs — medications and documents included, empty and unread until 5d and 5g — because a
+ * version per checkpoint would mean six migrations to test instead of one, each proving a shape no
+ * shipped build ever held. The same rewritten-in-place rule applies across 5b–5g: the version does not
+ * climb, `6.json` is regenerated and the migration re-transcribed. It is frozen at 5i.
+ *
+ * From here the assertion has **two** halves, because 1.1.0 shipped: a release-shaped open of a
+ * schema-4 file *and* of a schema-5 file must both succeed. That is the skipped-version upgrade, and
+ * it is run per pull request rather than once by hand at the release.
  */
 @Database(
     entities = [
@@ -44,6 +54,16 @@ const val BUNNY_DATABASE_FILE = "bunny.db"
         CareReminderEntity::class,
         CareEventEntity::class,
         WatchEntity::class,
+        VetEntity::class,
+        VisitEntity::class,
+        // Created at 5b and left empty on purpose: the entities are here so Room validates schema 6
+        // as one shape, and the DAOs that read them arrive with the checkpoints that fill them —
+        // 5d for medications, 5g for documents. A DAO written now would be a guess at a query.
+        MedicationCourseEntity::class,
+        MedicationTimeEntity::class,
+        DoseEntity::class,
+        DocumentEntity::class,
+        DocumentPageEntity::class,
     ],
     version = BUNNY_SCHEMA_VERSION,
     exportSchema = true,
@@ -65,6 +85,10 @@ abstract class BunnyDatabase : RoomDatabase() {
     abstract fun careDao(): CareDao
 
     abstract fun watchDao(): WatchDao
+
+    abstract fun vetDao(): VetDao
+
+    abstract fun visitDao(): VisitDao
 }
 
 /**

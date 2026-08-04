@@ -19,8 +19,11 @@ import java.util.UUID
  * case — and it is what the chart and the trend baseline order by. [createdAt] is when the row was
  * typed, and its only job is breaking ties in that order (ADR-0021).
  *
- * No `source` / `visitId`: a weight recorded on a vet visit is Phase 5's, and adding the columns
- * now would lock in a guess (ADR-0007 makes that migration free when it arrives).
+ * **[visitId] is the whole origin tag, and there is deliberately no `source` column** (ADR-0017).
+ * [WeightSource] is derived from this one field, because two stored facts that can disagree is
+ * exactly what 4b refused for the intended day-of-month. `SET NULL` then makes "keep the weighing
+ * when the visit goes" correct *by construction* rather than by a repository remembering to clear a
+ * second field.
  */
 @Entity(
     tableName = "weights",
@@ -32,9 +35,22 @@ import java.util.UUID
             // A weighing is meaningless without the bunny it belongs to, so it goes with them.
             onDelete = ForeignKey.CASCADE,
         ),
+        ForeignKey(
+            entity = VisitEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["visitId"],
+            // Deleting the visit must not delete the number the vet read off the scale — it only
+            // stops claiming a visit it no longer has.
+            onDelete = ForeignKey.SET_NULL,
+        ),
     ],
     // Every read is "this bunny's series, in time order" — the composite index serves both halves.
-    indices = [Index(value = ["bunnyId", "recordedAt"])],
+    //
+    // The second index is **unique**, and that is load-bearing rather than tidy: nothing else stops
+    // two rows claiming one visit, and "one row, never a copy" (ADR-0017) has to be a property of the
+    // schema rather than of the editor being careful, or of a backup having been written by a build
+    // where it was. NULLs are distinct in SQLite, so every manual weighing stays unconstrained.
+    indices = [Index(value = ["bunnyId", "recordedAt"]), Index(value = ["visitId"], unique = true)],
 )
 data class WeightEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
@@ -42,7 +58,24 @@ data class WeightEntity(
     val grams: Int,
     val recordedAt: Instant,
     val createdAt: Instant = Instant.now(),
+    // Declared last because that is where `ALTER TABLE ... ADD COLUMN` physically puts it, and
+    // `MIGRATION_5_6` is a transcription of the schema JSON — keeping the two in the same order is
+    // one less difference to explain when reading them side by side.
+    val visitId: String? = null,
 )
+
+/**
+ * Where a weighing came from. **Derived, never stored** (ADR-0017) — see [WeightEntity.visitId].
+ *
+ * Kotlin note: an extension property rather than a field, so there is no way to construct a
+ * `WeightEntity` whose source disagrees with its `visitId`. This is the closed-vocabulary equivalent
+ * of a getter on a JS object that reads another field, except the compiler enforces that nobody
+ * assigns to it.
+ */
+enum class WeightSource { MANUAL, VISIT }
+
+val WeightEntity.source: WeightSource
+    get() = if (visitId != null) WeightSource.VISIT else WeightSource.MANUAL
 
 /**
  * The trend flag's **only** persisted piece: the episode-scoped acknowledgment watermark (ADR-0001).
