@@ -35,7 +35,7 @@
     <string name="destination_home">Start</string>
     <string name="destination_weight">Waga</string>
     <string name="destination_observations">Obserwacje</string>
-    <string name="destination_care">Opieka</string>
+    <string name="destination_care">Opieka i leki</string>
     <string name="destination_more">Więcej</string>
 
     <!-- The bunny switcher -->
@@ -59,6 +59,7 @@
     <string name="action_delete">Usuń</string>
     <string name="action_ok">OK</string>
     <string name="action_done">Gotowe</string>
+    <string name="action_open">Otwórz</string>
     <string name="action_undo">Cofnij</string>
     <string name="add_a_bunny_first">Najpierw dodaj królika.</string>
 
@@ -667,6 +668,78 @@
 
     <!-- Obserwacja (ADR-0001). Pytanie jest o to, czy ktoś zajrzał — nigdy o to, co królikowi jest.
          Formy bezosobowe i bezokoliczniki, imię zawsze po dwukropku (zasady 1 i 2 na górze pliku). -->
+    <string name="med_heading">Leki</string>
+    <string name="med_today_heading">Dzisiaj</string>
+    <string name="med_add_course">Dodaj kurację</string>
+    <string name="med_empty">Nie ma tu jeszcze żadnych leków. Kuracja to, co przepisał weterynarz — co to jest, ile i o jakich porach, jeśli są.</string>
+    <string name="med_disclaimer">To, co przepisał weterynarz, tak jak zostało zapisane. Binky nigdy nie sprawdza dawek ani interakcji.</string>
+
+    <string name="med_dose_row">%1$s o %2$s</string>
+    <string name="med_dose_answered">%1$s o %2$s</string>
+    <string name="dose_status_given">Podana</string>
+    <string name="dose_status_skipped">Pominięta</string>
+
+    <string name="med_schedule_none">Bez harmonogramu — dawki zapisuje się ręcznie</string>
+    <string name="med_schedule_once">Raz dziennie o %1$s</string>
+    <string name="med_schedule_times">%1$s codziennie</string>
+    <string name="med_next_today">Następna dawka o %1$s</string>
+    <string name="med_next_tomorrow">Następna dawka jutro o %1$s</string>
+    <string name="med_next_later">Następna dawka %1$s o %2$s</string>
+    <string name="med_next_not_started">Zaczyna się %1$s</string>
+    <string name="med_next_ended">Zakończona %1$s</string>
+    <string name="med_next_done">Nic więcej nie jest zaplanowane</string>
+    <string name="med_range_open">Od %1$s</string>
+    <string name="med_range_closed">%1$s – %2$s</string>
+
+    <string name="med_delete_title">Usunąć tę kurację?</string>
+    <string name="med_delete_body">Znika %1$s razem z harmonogramem.</string>
+    <plurals name="med_delete_doses">
+        <item quantity="one">Usunie to także %d zapisaną dawkę.</item>
+        <item quantity="few">Usunie to także %d zapisane dawki.</item>
+        <item quantity="many">Usunie to także %d zapisanych dawek.</item>
+        <item quantity="other">Usunie to także %d zapisanej dawki.</item>
+    </plurals>
+    <string name="med_delete_end_help">Zakończenie zachowuje wszystkie dawki i tylko zatrzymuje harmonogram od dzisiaj.</string>
+    <string name="med_delete_end_action">Zamiast tego zakończ kurację</string>
+
+    <string name="med_history_title">Zapisane dawki</string>
+    <string name="med_history_empty">Nic jeszcze nie zapisano.</string>
+    <string name="med_history_row">%1$s · %2$s o %3$s</string>
+    <string name="med_history_ad_hoc">Poza zaplanowaną porą</string>
+    <string name="med_history_for_slot">Do dawki o %1$s</string>
+    <string name="med_end_action">Zakończ kurację</string>
+    <string name="med_end_help">Ustawia koniec na dzisiaj. Wszystkie zapisane dawki zostają.</string>
+    <string name="med_dose_delete_title">Usunąć ten zapis?</string>
+    <string name="med_dose_delete_body">Zapis znika. Jeśli odpowiadał zaplanowanej porze, ta pora znów zostaje bez odpowiedzi.</string>
+
+    <string name="med_record_title">Zapisz dawkę</string>
+    <string name="med_record_edit_title">Edytuj ten zapis</string>
+    <string name="med_record_status">Co się stało?</string>
+    <string name="med_record_when">Kiedy?</string>
+    <string name="med_record_when_help">Domyślnie teraz. Datę można cofnąć, jeśli zapis powstaje później.</string>
+    <string name="med_record_future">To jest później niż teraz.</string>
+    <string name="med_record_note">Notatka, jeśli się przyda</string>
+    <string name="med_record_action">Zapisz</string>
+
+    <string name="med_editor_add_title">Nowa kuracja</string>
+    <string name="med_editor_edit_title">Edytuj kurację</string>
+    <string name="med_editor_name">Co to jest?</string>
+    <string name="med_editor_name_required">Warto wpisać nazwę z opakowania, żeby zapis coś znaczył także za rok.</string>
+    <string name="med_editor_amount">Ile, jeśli tak powiedziano</string>
+    <string name="med_editor_amount_help">Dokładnie tak, jak powiedział weterynarz — „0,3 ml”, „pół tabletki”. Binky tego nigdy nie czyta.</string>
+    <string name="med_editor_start">Początek</string>
+    <string name="med_editor_ongoing">W trakcie</string>
+    <string name="med_editor_ongoing_help">Włączone dla kuracji bez widocznego końca. Wyłączenie pozwala ustawić ostatni dzień.</string>
+    <string name="med_editor_end">Koniec</string>
+    <string name="med_editor_end_before_start">To jest przed początkiem kuracji.</string>
+    <string name="med_editor_schedule">Pory dnia</string>
+    <string name="med_editor_schedule_help">Opcjonalne. Puste dla kuracji, przy której dawki zapisuje się ręcznie.</string>
+    <string name="med_editor_add_time">Dodaj porę</string>
+    <string name="med_editor_remove_time">Usuń %1$s</string>
+    <string name="med_editor_reminders">Przypominaj o tych porach</string>
+    <string name="med_editor_reminders_help">Binky ustawia jeden alarm — na najbliższą dawkę ze wszystkich kuracji. Linia u góry zakładki mówi, co ten telefon z nim faktycznie zrobi.</string>
+    <string name="med_editor_notes">Notatki, jeśli się przydadzą</string>
+
     <string name="watch_start">Rozpocznij obserwację</string>
     <string name="watch_start_title">Mieć oko na: %1$s?</string>
     <string name="watch_start_body">Każdego ranka Binky pyta, czy udało się już zajrzeć do tego królika. Cokolwiek zapisanego tego dnia zamyka sprawę — zdrowy dzień też się liczy. Obserwacja kończy się sama, gdy minie czas.</string>

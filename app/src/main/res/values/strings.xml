@@ -10,11 +10,11 @@
     <string name="destination_home">Home</string>
     <string name="destination_weight">Weight</string>
     <string name="destination_observations">Observations</string>
-    <!-- "Care" for 1.1 and "Care &amp; Meds" again at 1.2. A tab labelled for medications with no
-         medications behind it advertises a feature that is not there — 3f's objection to a stub, one
-         layer up. Only the label moves; the nav key keeps its name, because a back stack saved by
-         1.0 has to stay resolvable. -->
-    <string name="destination_care">Care</string>
+    <!-- "Care" for 1.1 and "Care &amp; Meds" again at 1.2, which is 5e: a tab labelled for
+         medications with none behind it advertises a feature that is not there — 3f's objection to a
+         stub, one layer up — and 5e is the checkpoint that puts them there. Only the label moves;
+         the nav key keeps its name, because a back stack saved by 1.0 has to stay resolvable. -->
+    <string name="destination_care">Care &amp; Meds</string>
     <string name="destination_more">More</string>
 
     <!-- The bunny switcher -->
@@ -39,6 +39,7 @@
     <string name="action_delete">Delete</string>
     <string name="action_ok">OK</string>
     <string name="action_done">Done</string>
+    <string name="action_open">Open</string>
     <string name="action_undo">Undo</string>
     <string name="add_a_bunny_first">Add a bunny first.</string>
 
@@ -676,6 +677,92 @@
     <!-- The watch (ADR-0001): opt-in, time-boxed, and framed about the owner's checking rather than
          about the bunny. Nothing here may read as a claim that anything is wrong — the app knows
          only that nothing has been logged, and silence means nobody looked. -->
+    <!-- Medications (PLAN 5e). This is the closest the app ever comes to medical advice, so the
+         rule is stated in an ADR *and* on screen: it records what the owner was told to give and
+         reasons about none of it (ADR-0026). Nothing here may say a dose was missed, warn, or
+         suggest — an unanswered slot is unanswered, which is a fact about the record and not about
+         the rabbit (ADR-0001). There is no word for "missed" below because there is no status for
+         it in the database either. -->
+    <string name="med_heading">Medications</string>
+    <string name="med_today_heading">Today</string>
+    <string name="med_add_course">Add a course</string>
+    <string name="med_empty">No medication recorded. A course is what the vet prescribed — what it is, how much, and the times of day if there are any.</string>
+    <!-- The one permanent line the phase owes the owner, who cannot read an ADR. -->
+    <string name="med_disclaimer">What your vet prescribed, as you recorded it. Binky never checks doses or interactions.</string>
+
+    <string name="med_dose_row">%1$s at %2$s</string>
+    <string name="med_dose_answered">%1$s at %2$s</string>
+    <string name="dose_status_given">Given</string>
+    <string name="dose_status_skipped">Skipped</string>
+
+    <string name="med_schedule_none">No schedule — doses are recorded by hand</string>
+    <string name="med_schedule_once">Once a day at %1$s</string>
+    <string name="med_schedule_times">%1$s every day</string>
+    <!-- The day is relative and the time is not: the clock time is what the vet actually said, and
+         "in about four hours" would make the owner work back to it. -->
+    <string name="med_next_today">Next dose at %1$s</string>
+    <string name="med_next_tomorrow">Next dose tomorrow at %1$s</string>
+    <string name="med_next_later">Next dose %1$s at %2$s</string>
+    <string name="med_next_not_started">Starts %1$s</string>
+    <string name="med_next_ended">Ended %1$s</string>
+    <string name="med_next_done">Nothing further scheduled</string>
+    <string name="med_range_open">From %1$s</string>
+    <string name="med_range_closed">%1$s to %2$s</string>
+
+    <!-- The count is named because a course's doses are, after weights, the most clinically
+         meaningful history this app holds (PLAN 5e). -->
+    <string name="med_delete_title">Delete this course?</string>
+    <string name="med_delete_body">%1$s goes, with its schedule.</string>
+    <plurals name="med_delete_doses">
+        <item quantity="one">This also deletes %d recorded dose.</item>
+        <item quantity="other">This also deletes %d recorded doses.</item>
+    </plurals>
+    <string name="med_delete_end_help">Ending it keeps every dose and simply stops the schedule from today.</string>
+    <string name="med_delete_end_action">End the course instead</string>
+
+    <string name="med_history_title">Recorded doses</string>
+    <string name="med_history_empty">Nothing recorded yet.</string>
+    <string name="med_history_row">%1$s · %2$s at %3$s</string>
+    <!-- An ad-hoc dose says so rather than showing a blank: "no scheduled time" is a fact about the
+         dose, not missing information (ADR-0002). -->
+    <string name="med_history_ad_hoc">Not against a scheduled time</string>
+    <string name="med_history_for_slot">For the %1$s dose</string>
+    <string name="med_end_action">End the course</string>
+    <string name="med_end_help">Sets the end to today. Every dose already recorded stays.</string>
+    <string name="med_dose_delete_title">Delete this dose?</string>
+    <string name="med_dose_delete_body">The record goes. If it answered a scheduled time, that time goes back to unanswered.</string>
+
+    <string name="med_record_title">Record a dose</string>
+    <string name="med_record_edit_title">Edit this dose</string>
+    <string name="med_record_status">What happened?</string>
+    <string name="med_record_when">When?</string>
+    <string name="med_record_when_help">Defaults to now. Back-date it if you are writing it down later.</string>
+    <string name="med_record_future">That is later than now.</string>
+    <string name="med_record_note">Note, if you want one</string>
+    <string name="med_record_action">Record</string>
+
+    <string name="med_editor_add_title">New course</string>
+    <string name="med_editor_edit_title">Edit course</string>
+    <string name="med_editor_name">What is it?</string>
+    <string name="med_editor_name_required">Give it the name on the box, so the record still means something in a year.</string>
+    <!-- Free text and never required: an owner told "one syringe, morning and night" has nothing to
+         type in a number field, and insisting would make them invent a figure the app would then
+         show as if the vet had said it (ADR-0002). -->
+    <string name="med_editor_amount">How much, if you were told</string>
+    <string name="med_editor_amount_help">Exactly as the vet said it — “0.3 ml”, “half a tablet”. Binky never reads it.</string>
+    <string name="med_editor_start">Starts</string>
+    <string name="med_editor_ongoing">Ongoing</string>
+    <string name="med_editor_ongoing_help">On for a course with no end in sight. Turn it off to set the last day.</string>
+    <string name="med_editor_end">Ends</string>
+    <string name="med_editor_end_before_start">That is before the course starts.</string>
+    <string name="med_editor_schedule">Times of day</string>
+    <string name="med_editor_schedule_help">Optional. Leave it empty for a course you record doses against by hand.</string>
+    <string name="med_editor_add_time">Add a time</string>
+    <string name="med_editor_remove_time">Remove %1$s</string>
+    <string name="med_editor_reminders">Remind me at these times</string>
+    <string name="med_editor_reminders_help">Binky sets one alarm, for the next dose across every course. The line at the top of the tab says what this phone will actually do with it.</string>
+    <string name="med_editor_notes">Notes, if you want them</string>
+
     <string name="watch_start">Start a watch</string>
     <string name="watch_start_title">Keep an eye on %1$s?</string>
     <string name="watch_start_body">Each morning Binky asks whether you have checked on them. Logging anything for that bunny settles the day — a healthy day counts. It stops on its own when the time is up.</string>

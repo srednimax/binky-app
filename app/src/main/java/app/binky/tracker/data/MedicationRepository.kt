@@ -151,6 +151,9 @@ class MedicationRepository(
         dao.deleteCourseById(id)
     }
 
+    /** What [delete] would destroy, so the dialog can say the number rather than "some records". */
+    suspend fun doseCount(id: String): Int = dao.doseCount(id)
+
     /**
      * Answers a derived slot: given or skipped, once.
      *

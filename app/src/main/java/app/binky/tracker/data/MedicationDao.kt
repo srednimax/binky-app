@@ -136,6 +136,16 @@ interface MedicationDao {
     @Query("SELECT * FROM doses WHERE id = :id")
     suspend fun doseNow(id: String): DoseEntity?
 
+    /**
+     * How many recorded doses the `CASCADE` below would take with the course.
+     *
+     * Read for one reason only: 5e's delete dialog **names the number before it destroys it**. After
+     * weights, a course's doses are the most clinically meaningful history the app holds, and "this
+     * also deletes 40 recorded doses" is the difference between a confirmation and a formality.
+     */
+    @Query("SELECT COUNT(*) FROM doses WHERE courseId = :courseId")
+    suspend fun doseCount(courseId: String): Int
+
     @Insert
     suspend fun insertCourse(course: MedicationCourseEntity)
 
