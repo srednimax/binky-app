@@ -2897,6 +2897,50 @@ copy.
      round-trips them**, which is free — `BackupScope.Records` has listed `MediaKind.Document` since 3d — and
      is asserted rather than assumed.
 8. **5h — The backup agent's document admission, and the exclusion notice.**
+   ✅ *(built. spotless, `assembleDebug` and JVM tests green; no schema change, no instrumented run —
+   every decision here is arithmetic over `File`s. **And then run for real on the Xiaomi**, against
+   `com.android.localtransport/.LocalTransport` so nothing left the phone, with the transport put back
+   to Google's afterwards.*
+
+   ***The device run found a defect no JVM test would have.*** *`POST_NOTIFICATIONS` was denied on the
+   debug app at the time, so `postReminderNotification` returned silently — and the flag recording
+   "the owner has been told" was written anyway. A one-time notice consumed by a notification nobody
+   saw, on the exact phone whose owner would then grant the permission and never hear about it. The
+   fix is one check against the vocabulary Phase 4 already built: `ReminderDelivery.Blocked` means
+   nothing will arrive and the flag stays unset, so the next launch asks again; `BestEffort` still
+   delivers something and still counts. This is the failure ADR-0005 names — data quietly not
+   protected — arriving through the notice meant to prevent it.*
+
+   ***What the phone proved, end to end.** 48 document pages / 23.4 MB on disk (5g's fixture, padded
+   with copies under fresh uuids — the agent admits from the filesystem, so copies are faithful
+   input). `bmgr backupnow` transferred 20,830,208 bytes and succeeded, and the agent — in its own
+   process, with no `AppContainer` — wrote `excludedDocuments=7` into the marker. The Backup screen
+   read **7**, the notification read **7**: one number, two renderings, which is the property the
+   marker was given the field for. A second launch with the condition unchanged posted **nothing**.
+   Padding removed, a fresh run wrote `excludedDocuments=0` and the next launch posted nothing again.
+   The re-arm after a cleared episode is JVM-tested only; the device saw the flag set and the silent
+   states, not a second episode.*
+
+   ***Five decisions the plan's text left open, made here.*** *The **ceiling is 20 MiB**, not the
+   ~25 MB quota: the quota is undocumented as an API, the penalty for crossing it is rejection of the
+   whole dataset rather than a trim, and the headroom buys the core arriving even when this file's
+   arithmetic disagrees with the transport's — tar overhead, or a database that grew between the set
+   being computed and the bytes being read. The real run landed 20,830,208 bytes against a 20,971,520
+   ceiling, which is that margin doing its job. Admission **skips rather than stops**: one oversized
+   scan must not exclude the smaller history behind it, so newest-first buys *priority* — an older
+   document never displaces a newer one that fits — rather than a prefix. A **device-to-device
+   transfer carries every document**, with the ceiling not consulted at all, for the reason the
+   gallery already travels there: no cloud account, no quota, and dropping half an owner's paperwork
+   on a phone upgrade is the worse failure. "Newest" is the **file's own mtime**, because the agent
+   has no database to ask and `MediaFiles` writes the file before the row anyway (ADR-0020); the
+   filename breaks ties so an unchanged phone produces an unchanged set. And the notice is **once per
+   episode, not once ever** — the flag clears when the count returns to zero, so an exclusion that
+   recurs years later is still allowed to speak. The channel is the existing `backup` one at
+   `IMPORTANCE_DEFAULT`, as the plan required.*
+
+   *The marker's tolerance now runs **both** ways and is tested both ways: an unknown key is ignored
+   (which is what let this field be added at all), and a **missing** count reads as zero, so a marker
+   written by 1.0 or 1.1 describes a backup that happened rather than a file that will not parse.)*
    - **`admitDocuments(coreBytes, documentsNewestFirst, budget)` as a pure function over `File`s** — no
      `Context`, per ADR-0005, because the agent runs in a process where `AppContainer` does not exist and
      reaching for it would force the very `lazy` ADR-0007 guards. The budget is **dynamic**: documents get

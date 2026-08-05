@@ -55,7 +55,7 @@ fun careDueForNotifying(
 
 /**
  * Ids below this are spoken for: 1 is the debug reminder, 2 the care group summary, 3 the export
- * prompt, 4 the debug dose.
+ * prompt, 4 the debug dose, 5 the excluded-documents notice.
  *
  * A block rather than a handful of constants, so 4d's watch nag, 4e's export reminder and 5a's dose
  * had somewhere to take an id from without revisiting the derivation below.
@@ -70,6 +70,13 @@ const val CARE_SUMMARY_NOTIFICATION_ID = 2
  * export reminder in the app, so there is nothing to derive it from and nothing to collide with.
  */
 const val EXPORT_NOTIFICATION_ID = 3
+
+/**
+ * The one-time notice that documents were left out of an automatic backup (PLAN 5h). Fixed for the
+ * same reason the export prompt's is: there is one of it, describing one standing condition, and a
+ * second launch while the condition holds must replace it rather than stack a duplicate.
+ */
+const val BACKUP_EXCLUSION_NOTIFICATION_ID = 5
 
 /**
  * A notification id **derived from the reminder id**, and therefore stable across sweeps.

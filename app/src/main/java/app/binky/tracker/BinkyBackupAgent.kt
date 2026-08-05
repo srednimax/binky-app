@@ -48,17 +48,23 @@ class BinkyBackupAgent : BackupAgent() {
             val databaseFile = getDatabasePath(BUNNY_DATABASE_FILE)
             if (databaseFile.isFile) checkpointDatabaseTo(databaseFile, staged)
 
-            autoBackupFileSet(
-                filesDir = filesDir,
-                stagedDatabase = staged,
-                includePhotos = data.isDeviceToDeviceTransfer(),
-            ).forEach { file -> fullBackupFile(file, data) }
+            val set =
+                autoBackupFileSet(
+                    filesDir = filesDir,
+                    stagedDatabase = staged,
+                    deviceToDeviceTransfer = data.isDeviceToDeviceTransfer(),
+                )
+            set.files.forEach { file -> fullBackupFile(file, data) }
 
             // The last honest moment: the transport can still fail after this returns, and there is
             // no callback for that. Overstating by one failed upload is the mild direction — the
             // marker ages out at 14 days either way, and the state that must never be wrong is the
             // *absence* of a backup, which no write here can invent.
-            writeAutoBackupMarker(filesDir, Instant.now())
+            //
+            // The excluded count rides along because this process cannot say it any other way: the
+            // app's DataStore is unreachable from here and its writes are `suspend` inside these
+            // blocking callbacks. The marker is the message, and the app reads it on next launch.
+            writeAutoBackupMarker(filesDir, Instant.now(), excludedDocuments = set.excludedDocuments)
         } finally {
             staged.delete()
             staged.parentFile?.delete()

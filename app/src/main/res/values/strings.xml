@@ -295,7 +295,20 @@
     <string name="backup_auto_recorded">Last automatic backup: %1$s.</string>
     <string name="backup_auto_stale">The last automatic backup was on %1$s — more than two weeks ago. Something may have turned it off.</string>
     <string name="backup_auto_photos">It covers your records, your settings and your bunny avatars. Your photo gallery is not in it.</string>
+    <!-- Said out loud rather than left to be discovered at a restore: Android's automatic backup has
+         a size limit, and documents are the first thing to go over it. The manual export has no
+         limit, which is why the sentence ends with the way out rather than with the problem. -->
+    <plurals name="backup_auto_excluded">
+        <item quantity="one">%d document was too large to include. Use manual export to keep it.</item>
+        <item quantity="other">%d documents were too large to include. Use manual export to keep them.</item>
+    </plurals>
     <string name="backup_auto_settings_action">Open Android backup settings</string>
+
+    <string name="backup_excluded_notification_title">Some documents are not backed up</string>
+    <plurals name="backup_excluded_notification_text">
+        <item quantity="one">Android\'s automatic backup could not fit %d document. Export manually to keep a copy of it.</item>
+        <item quantity="other">Android\'s automatic backup could not fit %d documents. Export manually to keep a copy of them.</item>
+    </plurals>
 
     <string name="backup_scope_title">What an export includes</string>
     <string name="backup_scope_essential">Essential</string>

@@ -11,6 +11,7 @@ import app.binky.tracker.data.destructiveMigrationAllowed
 import app.binky.tracker.data.preserveBeforeWipe
 import app.binky.tracker.data.readUserVersion
 import app.binky.tracker.work.ensureSweepEnqueued
+import app.binky.tracker.work.postBackupExclusionNoticeIfDue
 import app.binky.tracker.work.rescheduleDoseAlarm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -162,6 +163,11 @@ class BinkyApplication :
                 // is: it reads the database header, and doing that while the consent screen is up
                 // would be the app working over a database it had just said it could not open.
                 rescheduleDoseAlarm()
+                // **The app posts what the agent could only write down** (PLAN 5h). The marker may
+                // record that last night's automatic backup left documents behind; the agent had no
+                // way to say so and no way to remember having said it. Here, once, and never again
+                // until the condition clears.
+                postBackupExclusionNoticeIfDue(container.preferences)
             }
             onOpened()
         }
