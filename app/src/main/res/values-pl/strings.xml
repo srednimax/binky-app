@@ -265,13 +265,12 @@
     <string name="settings_debug_reminder_scheduled">Testowe przypomnienie przyjdzie za dwie minuty. Zablokuj telefon i poczekaj.</string>
     <string name="debug_reminder_notification_title">Testowe przypomnienie</string>
     <string name="debug_reminder_notification_text">Tak będzie wyglądać przypomnienie o opiece. Nic nie jest zaplanowane — to przypomnienie ustawiono ręcznie w Ustawieniach.</string>
-    <string name="settings_debug_dose">Dostarczanie dawek</string>
-    <string name="settings_debug_dose_help">Tylko w wersji deweloperskiej. Uzbraja jedyny alarm dawki w aplikacji — nie ma jeszcze żadnego leku, który by go wypełnił. Dwie minuty sprawdzają kanał, uprawnienie i dostarczenie na oczach; wersja nocna jako jedyna odpowiada, czy dokładny alarm przetrwa na tym telefonie noc w trybie Doze — uzbrój, odłącz od ładowarki i nie dotykaj telefonu do rana.</string>
-    <string name="settings_debug_dose_action">Dawka za dwie minuty</string>
-    <string name="settings_debug_dose_overnight_action">Dawka o najbliższej 8:00</string>
-    <string name="settings_debug_dose_scheduled">Testowa dawka jest uzbrojona na %1$s. Zablokuj telefon i zostaw go w spokoju.</string>
-    <string name="debug_dose_notification_title">Testowa dawka</string>
-    <string name="debug_dose_notification_text">Tak będzie wyglądać przypomnienie o dawce. Żaden lek nie jest zapisany — tę dawkę uzbrojono ręcznie w Ustawieniach.</string>
+
+    <!-- Powiadomienie o dawce: tytułem jest nazwa leku, a to wiersz pod nim. Podaje dawkę dokładnie
+         tak, jak zapisał ją weterynarz, i nigdy jej nie interpretuje (ADR-0002); nie mówi też, czy
+         dawka jest spóźniona, pominięta czy wskazana (ADR-0026, ADR-0001). -->
+    <string name="dose_notification_amount">%1$s dla: %2$s</string>
+    <string name="dose_notification_no_amount">Dla: %1$s</string>
 
     <!-- Kanały powiadomień. Te nazwy właściciel widzi w ustawieniach powiadomień telefonu i to jego
          jedyna kontrola nad każdym rodzajem osobno. -->

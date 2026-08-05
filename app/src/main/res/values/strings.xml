@@ -254,13 +254,14 @@
     <string name="settings_debug_reminder_scheduled">A test reminder will arrive in two minutes. Lock the phone and wait.</string>
     <string name="debug_reminder_notification_title">Test reminder</string>
     <string name="debug_reminder_notification_text">This is what a care reminder will look like. Nothing is due — the reminder was scheduled by hand from Settings.</string>
-    <string name="settings_debug_dose">Dose delivery</string>
-    <string name="settings_debug_dose_help">Debug builds only. Arms the app\'s one dose alarm, which no medication exists to fill yet. Two minutes proves the channel, the permission and the delivery while you watch; the overnight one is the only way to find out whether an exact alarm survives a night of Doze on this phone — arm it, unplug, and do not touch the phone until morning.</string>
-    <string name="settings_debug_dose_action">Dose in two minutes</string>
-    <string name="settings_debug_dose_overnight_action">Dose at the next 8 a.m.</string>
-    <string name="settings_debug_dose_scheduled">A test dose is armed for %1$s. Lock the phone and leave it alone.</string>
-    <string name="debug_dose_notification_title">Test dose</string>
-    <string name="debug_dose_notification_text">This is what a dose reminder will look like. No medication is recorded — the dose was armed by hand from Settings.</string>
+
+    <!-- A dose notification: the medicine is the title, this is the line under it. It names the
+         amount exactly as the vet wrote it and never reasons about it (ADR-0002), and it says
+         nothing about whether the dose is late, missed or advisable (ADR-0026, ADR-0001). The two
+         buttons reuse dose_status_given / dose_status_skipped, because the same tap answered from
+         the shade and from the course screen must not be called two different things. -->
+    <string name="dose_notification_amount">%1$s for %2$s</string>
+    <string name="dose_notification_no_amount">For %1$s</string>
 
     <!-- Notification channels. The owner sees these names in the phone's notification settings, and
          they are the only per-kind control they have: someone who mutes a daily watch nag must not

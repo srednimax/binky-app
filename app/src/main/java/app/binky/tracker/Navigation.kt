@@ -278,6 +278,7 @@ private fun AppShell(
             when (tap) {
                 is ReminderTap.Care -> tap.bunnyId
                 is ReminderTap.LogObservation -> tap.bunnyId
+                is ReminderTap.Medication -> tap.bunnyId
                 // "The app as it stands" means exactly that: nothing to select and nowhere to send
                 // them, so the stack is left where the owner last had it.
                 ReminderTap.OpenApp -> {
@@ -305,6 +306,14 @@ private fun AppShell(
                     // the form lands on Home rather than on nothing.
                     backStack.showTopLevel(TopLevelDestination.HOME)
                     backStack.add(LogObservation(target))
+                }
+                // Care & Meds first, then the course on top: the same two-entry stack, and the tab
+                // under it is the one the course is normally reached from. The selection has just
+                // been written above, which is what makes `MedicationCourse`'s course-only key safe
+                // to land on.
+                is ReminderTap.Medication -> {
+                    backStack.showTopLevel(TopLevelDestination.CARE)
+                    backStack.add(MedicationCourse(tap.courseId))
                 }
                 ReminderTap.OpenApp, ReminderTap.OpenBackup -> Unit
             }

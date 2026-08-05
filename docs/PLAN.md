@@ -2700,6 +2700,44 @@ copy.
    - In the `Archived(id)` scope the list renders read-only and no alarm is ever placed for an archived bunny —
      a fact about the derivation, as 4c made it for the sweep.
 6. **5f — Dose reminders on the real alarm path.**
+   ✅ *(built and closed. spotless, `assembleDebug` and JVM tests green, lint **0 errors and 0
+   warnings**; instrumented **187 tests on the Xiaomi, all green** — 5d's 171 plus sixteen new ones in
+   `DoseAlarmTest` — 2026-08-05, through `am instrument` after two plain installs. **No schema
+   change**, so `6.json` is untouched. Twenty new JVM cases in `ArmedDosesTest`. `DebugDose.kt` is
+   deleted as 5d promised, and with it the two Settings actions — **the overnight run is armed with a
+   real course from here on**, which is what 5i asks for anyway. Nine decisions the plan's text did
+   not settle, made here: **firing hands the rebuild a `postedThrough` instant**, which is a loop the
+   5a fixture could not have — that fixture *cleared* its stored slot after posting, where a real dose
+   notification does not answer its own slot, so the slot stays derived and stays answerable for
+   another half hour and a plain rebuild would arm the same instant, fire immediately and go round
+   forever; the receiver therefore passes back the latest slot it posted and the rebuild skips
+   anything at or before it, with **no persisted "last posted" state**, because ADR-0025 says nothing
+   incremental; **the three exclusions are a Kotlin predicate rather than the `WHERE` clause** this
+   checkpoint's own wording describes, following `careDueForNotifying` — "reminders on, bunny not
+   archived" are ADR-0001 and ADR-0004 rules, and a rule in SQL is a rule no JVM case table can
+   assert, so the DAO reads every course joined to its bunny and `armedDoses` decides; **`endOn` is
+   not one of those exclusions at all**, because `dueDoses` already clamps the window at it and
+   restating the rule would be two facts that can disagree; **the horizon is one constant shared with
+   the screens** (`DOSE_HORIZON_DAYS`), so a row reading *Next dose Sunday* and an alarm armed on
+   nothing cannot both be the app's answer to one sentence; **the rebuild is a `DoseAlarmScheduler`
+   the repositories hold**, defaulting to a no-op so a test constructs one without a phone, and it
+   fires after **every** write including the two that cannot change the answer — an ad-hoc dose
+   answers no slot and a note correction moves nothing — because deciding per write which ones deserve
+   one is the enumeration that lost the bunny-level paths the first time; **dose notifications carry
+   `setOnlyAlertOnce` and no group**, the first because any rebuild inside the grace window can re-post
+   a slot that is already in the shade and the second because bundling puts an expand between the
+   owner and the one tap the feature exists for; **the two buttons reuse the course screen's own
+   `Given` / `Skipped` labels** rather than this checkpoint's "Given / Skip", since the same tap
+   answered from two places must not have two names; **cancelling destroys the `PendingIntent` and not
+   only the alarm**, asked for with `FLAG_NO_CREATE`, which is what turns "none when no course is
+   armed" into something assertable rather than merely true of the alarm list; and **the action
+   receiver does not re-arm for itself** — `answer()` rebuilds, because ADR-0025 puts the rebuild at
+   the repository and a call-site rebuild would contradict the thing it is there to prevent. Read on
+   the phone after the run: **no pending dose alarm, and that is the correct state** — the seeded
+   fixture's Metacam ends today with both of today's slots answered from 5e's review, Recovery food
+   has reminders on and no times, and Panacur has reminders off, so the derivation is right to arm
+   nothing. **What is still unproven is delivery itself**, which is the overnight run's question and
+   not something a green suite can answer.)*
    - **One pending alarm, rebuilt from truth** (ADR-0025): the earliest unanswered derived slot at or after
      now. One request code, one `PendingIntent`, `FLAG_UPDATE_CURRENT`. Recomputed after every course, time
      or dose write, **after every bunny archive, un-archive or delete**, on boot, on zone or clock change,

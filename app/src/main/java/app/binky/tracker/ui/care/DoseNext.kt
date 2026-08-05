@@ -1,5 +1,6 @@
 package app.binky.tracker.ui.care
 
+import app.binky.tracker.data.DOSE_HORIZON_DAYS
 import app.binky.tracker.data.MedicationCourseEntity
 import app.binky.tracker.data.ScheduledDose
 import java.time.Instant
@@ -65,8 +66,12 @@ sealed interface DoseNext {
  * tomorrow, or one whose slots today have all been answered, has a real next dose that a one-day
  * window cannot see, and a row saying nothing is coming would be false. A week is far enough that
  * anything beyond it is better said as a start date than as a countdown.
+ *
+ * It is [DOSE_HORIZON_DAYS] rather than a number of its own, because 5f's alarm derives over the
+ * same horizon: a row reading *Next dose Sunday* while the alarm had armed nothing would be the app
+ * disagreeing with itself about the sentence below.
  */
-internal const val NEXT_DOSE_DAYS = 8L
+internal const val NEXT_DOSE_DAYS = DOSE_HORIZON_DAYS
 
 /**
  * The next dose [course] is waiting on, given the slots already derived for it.

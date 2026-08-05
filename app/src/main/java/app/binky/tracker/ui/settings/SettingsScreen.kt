@@ -31,7 +31,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,19 +44,8 @@ import app.binky.tracker.BuildConfig
 import app.binky.tracker.R
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.ui.appViewModelExtras
-import app.binky.tracker.ui.reminders.DoseDeliveryLine
 import app.binky.tracker.ui.reminders.RemindersOptIn
-import app.binky.tracker.work.armDebugDose
-import app.binky.tracker.work.armOvernightDebugDose
 import app.binky.tracker.work.scheduleDebugReminder
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-import java.util.Locale
 
 /**
  * Settings, reached from More. A detail screen, the same shape as the archived bunnies list.
@@ -109,8 +97,6 @@ fun SettingsScreen(
                 )
                 HorizontalDivider()
                 DebugReminderSetting()
-                HorizontalDivider()
-                DebugDoseSetting()
             }
         }
     }
@@ -324,80 +310,6 @@ private fun DebugReminderSetting() {
                 TextButton(
                     onClick = { scheduled = false },
                 ) { Text(stringResource(R.string.action_ok)) }
-            },
-        )
-    }
-}
-
-/**
- * **What makes 5a provable with no medication in existence** (PLAN 5a): a dose alarm on its own
- * one-shot path, since no course exists to schedule one.
- *
- * It is not a second alarm, though. Both actions write a slot and then call `rescheduleDoseAlarm()`,
- * so the dose goes in through the same single pending alarm every receiver rebuilds (ADR-0025) — a
- * debug path that placed its own would leave the three receivers with nothing observable to do, and
- * the single-alarm invariant is half of what this checkpoint exists to prove.
- *
- * **Two delays, two different questions.** Two minutes proves the permission, the channel, the
- * receiver and the delivery while somebody is watching. Only the overnight one can answer the
- * question the checkpoint is actually here for — whether `setExactAndAllowWhileIdle` fires *on time*
- * on HyperOS after twelve hours idle — because a screen-on phone is not in Doze and neither is any
- * emulator. Arm it in the evening, unplug the phone, and read `dumpsys` before touching the shade.
- *
- * The delivery line above the buttons is the same composable 5d puts on every course row, here at
- * the only place a dose exists yet.
- *
- * Debug builds only; the caller renders it behind `BuildConfig.DEBUG`.
- */
-@Composable
-private fun DebugDoseSetting() {
-    val context = LocalContext.current
-    // Arming reads the database header for ADR-0007's guard, so it is disk work — off the main
-    // thread even here, where it is a debug button and a few milliseconds.
-    val scope = rememberCoroutineScope()
-    // The instant it actually landed on, already formatted. Formatted **outside** composition on
-    // purpose: `Locale.getDefault()` is not observable state, so reading it in a composable is a
-    // lint error and, worse, a value that would not follow an in-app language change (ADR-0013).
-    // Here it is a snapshot taken at the moment of arming, which is exactly what it describes.
-    var armedAt by remember { mutableStateOf<String?>(null) }
-
-    fun arm(place: suspend () -> Instant) {
-        scope.launch {
-            armedAt =
-                withContext(Dispatchers.IO) {
-                    // The instant it landed on, not the words that asked for it: an overnight arm at
-                    // 07:55 lands on tomorrow's 08:00, and "the next 08:00" would leave which one to
-                    // guesswork.
-                    DateTimeFormatter
-                        .ofLocalizedDateTime(FormatStyle.SHORT)
-                        .withLocale(Locale.getDefault())
-                        .format(place().atZone(ZoneId.systemDefault()))
-                }
-        }
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text = stringResource(R.string.settings_debug_dose), style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = stringResource(R.string.settings_debug_dose_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        DoseDeliveryLine()
-        TextButton(onClick = { arm { context.armDebugDose() } }) {
-            Text(stringResource(R.string.settings_debug_dose_action))
-        }
-        TextButton(onClick = { arm { context.armOvernightDebugDose() } }) {
-            Text(stringResource(R.string.settings_debug_dose_overnight_action))
-        }
-    }
-
-    armedAt?.let { at ->
-        AlertDialog(
-            onDismissRequest = { armedAt = null },
-            text = { Text(stringResource(R.string.settings_debug_dose_scheduled, at)) },
-            confirmButton = {
-                TextButton(onClick = { armedAt = null }) { Text(stringResource(R.string.action_ok)) }
             },
         )
     }

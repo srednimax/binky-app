@@ -45,10 +45,14 @@ internal fun Context.schemaWipePending(): Boolean =
  * receiver has none), which is exactly why the `finish()` in `finally` is not optional: it is what
  * tells Android the work is over, and skipping it on a throw would hold the process open for the
  * ten seconds Android allows before killing it anyway.
+ *
+ * [work] is `suspend` because from 5f every one of these bodies queries Room, and Room's `suspend`
+ * DAOs are the only shape available — the JS analogue is that the callback is an `async` function and
+ * the `launch` above is what awaits it.
  */
 internal fun BroadcastReceiver.rebuildInBackground(
     context: Context,
-    work: (Context) -> Unit,
+    work: suspend (Context) -> Unit,
 ) {
     val pending = goAsync()
     // The receiver's own Context is short-lived; the application one outlives the broadcast.

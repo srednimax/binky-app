@@ -5,6 +5,8 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import app.binky.tracker.BinkyApplication
+import app.binky.tracker.data.MedicationRepository
 import java.time.Duration
 import java.time.Instant
 
@@ -82,14 +84,32 @@ class DoseAlarmReceiver : BroadcastReceiver() {
             if (appContext.schemaWipePending()) return@rebuildInBackground
 
             val now = Instant.now()
-            // Post, then mark, then rebuild — in that order, and the order is what stops a loop.
-            // Rescheduling arms the earliest *answerable* slot, and a slot just posted is still
-            // answerable for another half hour; marking it is what takes it out of the derivation
-            // so the rebuild below looks forward instead of arming the same instant again.
-            appContext.postDueDoses(now)
-            appContext.rescheduleDoseAlarm(now)
+            // **Post, then rebuild past what was posted** — and the second half is what stops a loop
+            // rather than an optimisation. A dose notification does not answer its own slot (only
+            // the owner does), so the slot stays in the derivation and is still *answerable* for
+            // another half hour; a plain rebuild here would arm the same instant again, fire
+            // immediately, and go round. Handing the rebuild the latest slot just posted is what
+            // makes it look forward — see [rescheduleDoseAlarm]'s `postedThrough`.
+            val postedThrough = appContext.postDueDoses(now)
+            appContext.rescheduleDoseAlarm(now = now, postedThrough = postedThrough)
         }
     }
+}
+
+/**
+ * The medication repository, or null if this process must not touch the database.
+ *
+ * **ADR-0007's guard is the first half of it**, which is why every entry point into the alarm path
+ * goes through here rather than reaching for the container directly: forcing `AppContainer` over a
+ * stale schema destroys the database in the background on a phone nobody is looking at.
+ *
+ * The cast is safe-by-default rather than checked: a `Context` that is not this app's `Application`
+ * has no container to offer, and the honest answer there is "no alarm" rather than a crash inside a
+ * broadcast.
+ */
+internal fun Context.doseMedications(): MedicationRepository? {
+    if (schemaWipePending()) return null
+    return (applicationContext as? BinkyApplication)?.container?.medicationRepository
 }
 
 /**
@@ -102,20 +122,51 @@ class DoseAlarmReceiver : BroadcastReceiver() {
  * same single alarm behind.
  *
  * @param now injectable so the arithmetic is testable; every caller passes the real clock.
+ * @param postedThrough slots at or before this instant are ignored — see the overload below.
  */
-fun Context.rescheduleDoseAlarm(now: Instant = Instant.now()) {
+suspend fun Context.rescheduleDoseAlarm(
+    now: Instant = Instant.now(),
+    postedThrough: Instant? = null,
+) {
+    val medications = doseMedications() ?: return
+    rescheduleDoseAlarm(medications, now, postedThrough)
+}
+
+/**
+ * The same rebuild against an explicit repository — what an instrumented test drives, and what
+ * [AppContainer][app.binky.tracker.AppContainer] hands its own writes.
+ *
+ * @param postedThrough the latest slot a firing has just posted, or null everywhere else. Slots at
+ *   or before it are skipped, because a posted slot is still unanswered and still answerable for
+ *   another half hour — arming it again would fire immediately and repeat forever. Everything else
+ *   passes null and gets the plain "earliest answerable slot", which is what lets a rebuild after a
+ *   force-stop deliver a dose the phone slept through the alarm for.
+ */
+suspend fun Context.rescheduleDoseAlarm(
+    medications: MedicationRepository,
+    now: Instant = Instant.now(),
+    postedThrough: Instant? = null,
+) {
     if (schemaWipePending()) return
     val alarms = getSystemService(AlarmManager::class.java) ?: return
-    val pending = doseAlarmPendingIntent()
 
-    val slot = nextAnswerableDoseSlot(now)
+    val slot = medications.nextAnswerableDoseSlot(now, postedThrough)
     if (slot == null) {
         // Nothing armed is a real state, not a failure — and it is also what a cancelled course, an
         // archived bunny and a finished treatment all look like. Cancelling rather than leaving a
         // stale alarm is what keeps the `dumpsys` invariant checkable.
-        alarms.cancel(pending)
+        //
+        // Asked with `FLAG_NO_CREATE`, so a rebuild that finds nothing to arm does not mint a
+        // `PendingIntent` purely in order to cancel an alarm with it — and the object is cancelled
+        // too, which is what makes "none when no course is armed" true of the app's state and not
+        // only of the alarm list.
+        existingDoseAlarmPendingIntent()?.let { pending ->
+            alarms.cancel(pending)
+            pending.cancel()
+        }
         return
     }
+    val pending = doseAlarmPendingIntent()
 
     // A slot already past but inside grace is passed through unchanged: AlarmManager fires a trigger
     // in the past immediately, which is precisely what a rebuild that found an undelivered dose
@@ -136,6 +187,51 @@ fun Context.rescheduleDoseAlarm(now: Instant = Instant.now()) {
     // is the path DOSE_GRACE exists for.
     alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending)
 }
+
+/**
+ * The earliest dose slot still worth arming for, or null when nothing is.
+ *
+ * "Earliest unanswered slot at or after now" is ADR-0025's sentence, and this is all of it: the
+ * repository returns unanswered armed slots in chronological order, so the answer is the first one
+ * the grace predicate accepts. A stale slot — the phone was off for hours — fails that predicate, so
+ * a rebuild after a long sleep cancels the alarm rather than arming one that would fire and post
+ * nothing.
+ *
+ * Kotlin note: an extension on the repository rather than a method on it, because the grace window
+ * is the alarm path's rule and not the data layer's — `MedicationRepository` should not have to know
+ * what an alarm is.
+ */
+private suspend fun MedicationRepository.nextAnswerableDoseSlot(
+    now: Instant,
+    postedThrough: Instant?,
+): Instant? =
+    armedDosesNow()
+        .firstOrNull { armed ->
+            doseSlotAnswerable(armed.due.at, now) &&
+                (postedThrough == null || armed.due.at.isAfter(postedThrough))
+        }?.due
+        ?.at
+
+/**
+ * Whether the one pending dose alarm exists at this moment.
+ *
+ * The in-process form of the `dumpsys alarm` line ADR-0025 makes the gate's invariant — *at most one
+ * pending dose alarm exists, and none when no course is armed*. "At most one" needs no assertion
+ * anywhere: there is a single request code, so a second one is not expressible.
+ *
+ * `FLAG_NO_CREATE` is what makes this a question rather than an answer — it returns the existing
+ * `PendingIntent` or null, and never brings one into being.
+ */
+internal fun Context.hasPendingDoseAlarm(): Boolean = existingDoseAlarmPendingIntent() != null
+
+/** The pending dose alarm's intent if one exists, and never a newly created one. */
+private fun Context.existingDoseAlarmPendingIntent(): PendingIntent? =
+    PendingIntent.getBroadcast(
+        this,
+        DOSE_ALARM_REQUEST,
+        Intent(this, DoseAlarmReceiver::class.java),
+        PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
+    )
 
 private fun Context.doseAlarmPendingIntent(): PendingIntent =
     PendingIntent.getBroadcast(

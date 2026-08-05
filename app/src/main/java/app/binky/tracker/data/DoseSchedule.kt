@@ -129,6 +129,75 @@ fun dueDoses(
 }
 
 /**
+ * How far ahead everything that asks "what is the next dose" derives, in days including today.
+ *
+ * **One horizon, shared by the screens and by the alarm**, and that is the whole reason it is a
+ * constant rather than a default argument in two places. A course row saying *Next dose Sunday* while
+ * the alarm had armed nothing would be the app disagreeing with itself about the same sentence
+ * (`doseNext`, ADR-0025), and the cheapest way to make that impossible is one number.
+ *
+ * Eight days is far enough that anything beyond it is better said as a start date than as a
+ * countdown, and short enough that the derivation stays a handful of slots.
+ */
+const val DOSE_HORIZON_DAYS: Long = 8
+
+/**
+ * One unanswered slot on a course whose reminders are live — **what the single pending alarm is
+ * armed from** (ADR-0025).
+ *
+ * It carries [bunnyName] because the notification says whose dose it is and the alarm path has no
+ * other read of the bunnies table; the bunny's *id* is already on the course.
+ */
+data class ArmedDose(
+    val bunnyName: String,
+    val course: MedicationCourseEntity,
+    val due: DueDose,
+)
+
+/**
+ * Every unanswered slot the app would remind about, chronological — the derivation behind
+ * `rescheduleDoseAlarm` (ADR-0025).
+ *
+ * **Defined by what it excludes**, and there are exactly two exclusions here:
+ *
+ * - **reminders switched off** for the course (ADR-0003's per-course switch), and
+ * - **an archived bunny**, whose courses arm nothing at all (ADR-0004) — the same rule
+ *   `careDueForNotifying` applies to reminders, applied to doses.
+ *
+ * **A course having ended is not a third one**, deliberately: [dueDoses] already clamps its window
+ * at `endOn`, so an ended course yields no slots without anything here saying so. Repeating the rule
+ * would be two facts that can disagree, which is the pattern this project keeps refusing.
+ *
+ * **And whether a course has *started* is not an exclusion either** — that is the mistake ADR-0025
+ * names. The clamp opens at `max(startOn, today)`, so a course beginning tomorrow contributes
+ * tomorrow's first slot to a rebuild run tonight. Filtering on `startOn` here would arm nothing on
+ * the evening a course is created, and the next rebuild after that is the following morning's care
+ * sweep — an hour after the 08:00 dose it was meant to announce. "Starts tomorrow morning" is how
+ * most courses are created, so that reading loses the first dose of nearly all of them.
+ *
+ * Slots already answered are dropped, given or skipped alike: an answered slot is a slot the owner
+ * has spoken about, and re-arming for it would be the app asking twice.
+ */
+fun armedDoses(
+    courses: List<ArmedCourse>,
+    answers: List<DoseEntity>,
+    window: DoseWindow,
+    zone: ZoneId,
+): List<ArmedDose> =
+    courses
+        .filterNot { it.bunnyArchived }
+        .filter { it.course.remindersEnabled }
+        .flatMap { armed ->
+            dueDoses(armed.course, armed.times, window, zone)
+                .filterNot { slot -> answers.any { it.answers(slot) } }
+                .map { slot -> ArmedDose(bunnyName = armed.bunnyName, course = armed.course, due = slot) }
+        }
+        // Chronological, so "the earliest slot still worth arming for" is `firstOrNull` over a
+        // predicate rather than a search. The two tiebreakers only decide the order of two courses
+        // due at the same minute, and they are the ones the medication screen already sorts by.
+        .sortedWith(compareBy({ it.due.at }, { it.course.name.lowercase() }, { it.course.id }))
+
+/**
  * Whether this recorded row is the answer to [slot] — **matched on the local key, not on [DueDose.at]**
  * (ADR-0002).
  *
