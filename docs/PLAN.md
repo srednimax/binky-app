@@ -2309,8 +2309,9 @@ rebuild triggers; **ADR-0026**, the app records doses and never advises on them,
 copy.
 
 1. **5a — The exact-alarm path, proven while nothing depends on it.** 🔨 *(built; lint 0/0, JVM tests green —
-   **not closed**: the overnight-Doze run is unread, and it can still reshape the phase, so the tick waits for
-   it. **Everything else is proven on the device**, 2026-08-04 on the Xiaomi: the two-minute dose arrived, with
+   **not closed**: the overnight-Doze run has now been read once — the night of 4→5 August, result under its
+   bullet below — but it fired on the **best-effort** path, so the question the three outcomes were written for
+   is untouched and the tick still waits. **Everything else is proven on the device**, 2026-08-04 on the Xiaomi: the two-minute dose arrived, with
    `1 wakeups` recorded against `DoseAlarmReceiver` — so the alarm woke the phone rather than riding somebody
    else's wakeup; `doses` exists at `mImportance=4` with the other three at 3; the appop went `default` →
    `allow` through the app's own deep link, so the permission path works end to end; the slot store is empty
@@ -2399,6 +2400,32 @@ copy.
         function, and only the trigger differs. Shipping the channel, four receivers, the deep link and
         ADR-0025's apparatus so the app can say "best-effort" in words would be a lot of machinery to keep
         after its premise had been disproven on the only hardware in the project.
+   - **The first run, read 2026-08-05 08:26 — it answered a question, and not this one.** The dose posted at
+     **08:14:46** for its 08:00 slot: **14m46s late, inside grace**. `dumpsys batterystats --history` puts
+     `device_idle=full` **07:38:39 → 08:23:05** unbroken across that, on battery, and `plug=usb` at **08:23:29**
+     — nine minutes *after* the alarm, so unlike 4g's run nothing was awake or on power when it fired. (Same
+     anchor 4g used: `plug=usb` at `+1d09h57m57s` puts offset 0 at 2026-08-03 22:25:32. The stretch before it
+     was another unbroken `device_idle=full` 03:11 → 07:08, ~10 h idle in all.) The alarm woke the phone itself
+     — `*walarm*:…/DoseAlarmReceiver`, `1 wakeups`. Exactly **one** notification on `doses` at `importance=4`;
+     `debug-dose.xml` is `<map />` with mtime 08:14, so post-then-mark holds overnight and not only on a
+     screen-on phone; no pending alarm remains, binky appearing in history alone.
+     **But `SCHEDULE_EXACT_ALARM` had reverted to `default`** — `allow` on 2026-08-04 through the deep link,
+     denied again by the time it fired, most likely an uninstall during 5b/5c — and `dumpsys alarm` agrees:
+     *Allow while idle history* is empty while binky sits in ***Allow while idle compat history***, the
+     `setAndAllowWhileIdle` bucket. `setExactAndAllowWhileIdle` was never placed, the three outcomes above do
+     not apply, and **the exact-alarm night is still owed**. Read the appop before trusting any rerun; a
+     reinstall silently downgrades the mechanism under test while every other signature looks identical.
+     What it does prove, which no result in the project held before: the **default** Android-14 configuration —
+     exact-alarm permission denied, no battery exemption — delivers a dose through deep Doze on HyperOS, and
+     the resolver picked that path on its own rather than throwing. And the grace window is **load-bearing,
+     not theoretical**: the bullet above predicted 08:04 and the device produced 08:14:46, so without
+     `DOSE_GRACE` this morning posts nothing and re-arms — the silent failure that looks exactly like the
+     correct quiet of nothing being armed. Half the constant spent on one ordinary night is also the first
+     evidence about how wide it should be; if the exact path runs as late, outcome 2 is live rather than
+     hypothetical. **Autostart was not read for this run**, so it is recorded as unknown — the omission the
+     bullet below exists to prevent, and it must not repeat. Re-armed for the night of **5→6 August**,
+     alongside the sweep rerun that catches Bijou's watch expiring: re-grant the permission through the deep
+     link first, or the night proves this same thing twice.
    - **The phone's autostart state is read and recorded here, before anything else** (ADR-0025). It is one
      look at *Ustawienia → Aplikacje → Autostart*, and it decides what every reboot result the project
      already holds actually proved — 4h's gate reboot passed in a state nobody wrote down, and two of the
