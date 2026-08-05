@@ -2576,6 +2576,29 @@ copy.
      about the derivation so it cannot regress.
    - In the `Archived(id)` scope, visits and the vet picker render read-only (ADR-0004).
 4. **5d — Medication courses and derived due doses: the data layer and the arithmetic.**
+   ✅ *(built and closed. spotless, `assembleDebug` and JVM tests green, lint **0/0**; instrumented
+   **171 tests on the Xiaomi, all green** — 5c's 153 plus eighteen new ones in
+   `MedicationRepositoryTest` — 2026-08-05, through `am instrument` after two plain installs. **No
+   schema change**: 5b's three entities were right, so `6.json` is untouched and this checkpoint is
+   DAO, repository, arithmetic and tests only. Six decisions the plan's text did not settle, made
+   here: **`DoseWindow` is a type whose only constructor opens on today**, so "derivation looks
+   forward" is something the compiler holds rather than a rule each call site has to remember —
+   there is no window reaching into the past to hand `dueDoses` in the first place; **a second answer
+   to a slot corrects the first rather than throwing**, because the unique index is the guarantee and
+   `answer` is the code that stays on the right side of it — an owner who taps *Given* having already
+   tapped *Skip* in 5f's shade has changed their mind, not hit a data error; **`setTimes` is
+   delete-then-insert inside one transaction with the editor's row ids carried through**, which keeps
+   the identity `MedicationTimeEntity`'s UUID exists for while sidestepping the one case a per-row
+   diff cannot survive — two chips swapping times trips the unique index halfway through, an empty
+   table for the length of the transaction cannot; **`CourseWithTimes` is a Room `@Relation`** (one
+   flow, `@Transaction`) rather than two flows combined, which care could not do because its sort key
+   is derived and this one is a column; **active-before-ended is ordered in SQL with `today` as a
+   parameter**, for the same reason — and a parameter rather than `date('now')`, whose day is UTC's
+   and not the owner's; and **the amount is trimmed but never required**, unlike the name, because an
+   owner told "one syringe, morning and night" has nothing to type in it and insisting would make
+   them invent a number the app would then show as if the vet had said it. `DebugDose.kt`'s
+   "**5d** replaces this body" comments now say **5f**: the swap to real derivation belongs with the
+   real alarm path, and 5d only supplies the `dueDoses` it will read.)*
    - `MedicationCourseEntity` — `id`, `bunnyId` FK `CASCADE` indexed, `name`, `doseAmount: String` (free text,
      ADR-0002 — the app never sums, converts or reasons over it), `startOn: LocalDate`, `endOn: LocalDate?`
      (null = ongoing), `notes: String?`, `remindersEnabled: Boolean`, `createdAt`.

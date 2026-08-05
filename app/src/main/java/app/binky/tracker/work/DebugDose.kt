@@ -17,7 +17,7 @@ import java.time.ZoneId
  * observable to do.
  *
  * So the debug dose is stored, in one long in a `SharedPreferences` file of its own, and the two
- * functions below are the derivation the alarm path reads. 5d replaces **their bodies** with
+ * functions below are the derivation the alarm path reads. 5f replaces **their bodies** with
  * `dueDoses` over the courses table and deletes this file; nothing above them changes, which is the
  * point of putting the seam here.
  *
@@ -32,7 +32,7 @@ private const val KEY_SLOT_MILLIS = "slot-millis"
 /**
  * The debug dose's notification id — **4**, from the block `RESERVED_NOTIFICATION_IDS` holds open.
  *
- * Fixed, so arming twice replaces the pending notification rather than stacking two. 5d derives one
+ * Fixed, so arming twice replaces the pending notification rather than stacking two. 5f derives one
  * id per course from the same block, the way `careNotificationId` already does.
  */
 private const val DEBUG_DOSE_NOTIFICATION_ID = 4
@@ -53,7 +53,7 @@ private val DEBUG_DOSE_OVERNIGHT_AT: LocalTime = LocalTime.of(8, 0)
 /**
  * The earliest dose slot still worth arming for, or null when nothing is.
  *
- * **5d replaces this body** with the `dueDoses` derivation over the courses table; the grace
+ * **5f replaces this body** with the `dueDoses` derivation over the courses table; the grace
  * predicate around it does not change. A stored slot that has aged past [DOSE_GRACE] answers null
  * here, so a rebuild after a long sleep cancels the alarm instead of arming one that would fire and
  * post nothing.
@@ -69,7 +69,7 @@ internal fun Context.nextAnswerableDoseSlot(now: Instant): Instant? =
  *
  * The mark is also what breaks the fire-then-rebuild loop: a slot that has just been posted is still
  * *answerable* for another half hour, so without taking it out of the derivation the rebuild would
- * arm the same instant again and fire immediately. **5d replaces this body** with one post per due
+ * arm the same instant again and fire immediately. **5f replaces this body** with one post per due
  * course and the same shape of mark.
  */
 internal fun Context.postDueDoses(now: Instant) {

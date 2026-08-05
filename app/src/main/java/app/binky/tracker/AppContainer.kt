@@ -11,6 +11,7 @@ import app.binky.tracker.data.BunnyRepository
 import app.binky.tracker.data.BunnySelection
 import app.binky.tracker.data.CareRepository
 import app.binky.tracker.data.FluffleRepository
+import app.binky.tracker.data.MedicationRepository
 import app.binky.tracker.data.ObservationRepository
 import app.binky.tracker.data.PRESERVED_DIRECTORY
 import app.binky.tracker.data.PhotoRepository
@@ -163,6 +164,14 @@ class AppContainer(
     val visitRepository = VisitRepository(database, weightRepository)
 
     val watchRepository = WatchRepository(database)
+
+    /**
+     * Courses, their schedules and the doses recorded against them. Takes the database alone: what is
+     * *due* is derived on read (ADR-0002), so there is no scheduler state for this to hold — 5f adds
+     * the alarm rebuild to its write paths, and that reaches the system through a `Context` this
+     * container already has.
+     */
+    val medicationRepository = MedicationRepository(database)
 
     /**
      * Posting and cancelling care notifications, which needs a `Context` that a `ViewModel` has no
