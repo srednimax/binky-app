@@ -2493,15 +2493,23 @@ copy.
      **schema-5 zip written by the shipped 1.1.0 build** joins it, both carrying fabricated bunnies and never
      real history, both restored through 3d's staged path in instrumented tests. Together they are the
      skipped-version upgrade, run in CI on every pull request instead of once by hand at the release.
-     ⏳ **Still owed, and it is the only thing keeping 5b open.** The schema-4 half already carries more
-     than it did: `RestoreStageMigrateSwapTest` restores that 1.0.1 archive and asserts the result lands at
-     `BUNNY_SCHEMA_VERSION`, so **4 → 5 → 6 through the staged restore path is proven as of this commit** —
-     the skipped-version upgrade is covered, and what the 1.1.0 zip adds is the single 5 → 6 step against an
-     artifact this build did not describe. It cannot be synthesised, for the reason the schema-4 one could
-     not: a fixture built from `5.json` contains only what *this* build believes 1.1.0 wrote, and the
-     discrepancy is the thing under test. Producing it is a device chore needing hands on the phone — build
-     the `v1.1.0` tag in a worktree, install, seed the sample data, export through the SAF picker (which
-     `adb` cannot drive), pull the zip — and the USB-install gate has to be reopened first.
+     ✅ **Done at 5j, which closes 5b.** `bunny-schema-5-fixture.zip` is committed and
+     `aSchemaFiveBackupWrittenBy110MigratesTheLastStep` restores it: manifest `schemaVersion` 5 in,
+     `BUNNY_SCHEMA_VERSION` out, the 1.0.1-era counts unchanged (43 weighings, 5 observations, 5 photos, 2
+     symptom links — **identical to the schema-4 fixture**, because the seeder and the pinned `now` are the
+     same), 1.1's own rows carried through a *second* migration (4 care reminders, 2 care events, 2 watches —
+     the half the schema-4 fixture can only ever show as empty), and `vets`, `visits`, `medication_courses`
+     and `documents` present-and-empty, which is the correct outcome for a build that had none.
+     **Producing it turned out not to need hands on the phone**, and the note that it did was wrong in an
+     instructive way. `adb` cannot drive the SAF picker — still true, and by 5j it could not drive taps at
+     all — but the picker only chooses *where the bytes land*: `exportTo` has already built the archive into
+     `cache/exports` before the share sheet is ever shown. So an `androidTest` class on the `v1.1.0`
+     worktree, calling the real `AppContainer`'s repositories and `backupExporter` with a pinned
+     `2026-08-05T12:00:00Z`, writes a faithful archive in 1.4 s and is re-runnable, where the manual route
+     was neither. The provenance requirement was always *"written by the shipped build's own container,
+     seeder, Room and exporter"* — never *"written by a human tapping"*. Generalised in
+     `docs/adr/0007`-adjacent practice: when a flow's **output** is what matters rather than its screens,
+     check whether the shipped code can be called directly before booking a device chore.
    - `recordCounts` gains visits, courses, doses and documents — all **sole-owned**, so the destroyed bucket
      (ADR-0004), and all countable from here because the tables exist; a count of zero is an honest count
      until the features land. Vets are not: they are
@@ -3043,6 +3051,13 @@ copy.
       whatever version a real device is on, forward to 1.2, real bunny history intact. This is 4h's carried
       item, and 1.2 is where it is finally cheap to do properly, because the fixtures already say what the
       answer should be.
+      ✅ **The CI half is done** — both fixtures are committed and both migrate to 6 on every pull request at
+      API 26 / 34 / 36 (see 5b). ⏳ **The phone half is carried again, and the chain got longer than
+      expected**: the Xiaomi's Play build is on **1.0.0**, not the 1.0.1 that 4h assumed, so the field chain
+      is 1.0.0 → 1.2 across *both* hand-written migrations. It cannot be run locally — the installed build is
+      signed by Play's app-signing key and a locally built APK is refused over it with a signature mismatch,
+      so the update has to arrive **from a track**. That makes this strictly downstream of the upload below,
+      and the upload is downstream of Play's 12-testers / 14-day count, which was still running at 5j.
     - **`docs/play-app-content.md` re-verified, with one live question rather than three**: §7 Data safety,
       if ML Kit changed the permission set. §4 and §10 are **re-reads, not open questions** — the document
       answered both at Phase 3 with reasoning that medication does not disturb: Play's Health apps policy and

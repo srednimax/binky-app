@@ -43,6 +43,9 @@ class RestoreStageMigrateSwapTest {
     /** Committed under `app/src/androidTest/assets/`, produced once by the tagged 1.0.1 build. */
     private val schemaFourFixture = "bunny-schema-4-fixture.zip"
 
+    /** The same, produced once by the tagged 1.1.0 build — see [aSchemaFiveBackupWrittenBy110MigratesTheLastStep]. */
+    private val schemaFiveFixture = "bunny-schema-5-fixture.zip"
+
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
     private lateinit var filesDir: File
@@ -437,6 +440,66 @@ class RestoreStageMigrateSwapTest {
             // to carry, so an empty pair of tables is the correct outcome rather than a missing one.
             assertEquals(0, rowsIn(liveName, "care_reminders"))
             assertEquals(0, rowsIn(liveName, "care_events"))
+        }
+
+    /**
+     * **The single 5 → 6 step, against an artifact this build did not describe** (PLAN 5b/5j).
+     *
+     * The schema-4 fixture above already proves 4 → 5 → 6 through the staged path, so the
+     * skipped-version upgrade is covered. What this one adds is the step that fixture cannot isolate:
+     * a database written by the shipped **1.1.0** build, migrated by `MIGRATION_5_6` alone. It cannot
+     * be synthesised for the same reason the schema-4 one could not — a fixture built from `5.json`
+     * contains only what *this* build believes 1.1.0 wrote, and that discrepancy is the thing under
+     * test.
+     *
+     * Regenerating it is a device chore: build the `v1.1.0` tag in a worktree, `pm clear`, install,
+     * and run the seeder and `AppContainer.backupExporter` against it with a pinned `now`
+     * (`2026-08-05T12:00:00Z`, which is what fixes the counts below). The owner-facing route would
+     * export through the SAF picker, but the picker only chooses where the bytes land — `exportTo`
+     * has already built the archive by then — and `adb` can drive neither the picker nor, on this
+     * phone, taps at all.
+     */
+    @Test
+    fun aSchemaFiveBackupWrittenBy110MigratesTheLastStep() =
+        runTest {
+            val liveName = databaseHolding("Already here")
+            val liveFile = context.getDatabasePath(liveName)
+
+            val outcome =
+                restorerFor(liveName).restore(
+                    open = {
+                        InstrumentationRegistry
+                            .getInstrumentation()
+                            .context.assets
+                            .open(schemaFiveFixture)
+                    },
+                )
+
+            val restored = outcome as? RestoreOutcome.Restored
+            assertTrue(outcome.toString(), restored != null)
+            assertEquals("the archive really is a 1.1.0 one", 5, restored!!.manifest.schemaVersion)
+            assertEquals(BUNNY_SCHEMA_VERSION, readUserVersion(liveFile))
+
+            // Everything 1.0.1 already had, unchanged by a second migration — the counts match the
+            // schema-4 fixture's exactly, because the seeder and the pinned `now` are the same.
+            assertEquals(listOf("Bijou", "Nugget"), bunnyNamesIn(liveName))
+            assertEquals(43, rowsIn(liveName, "weights"))
+            assertEquals(5, rowsIn(liveName, "observations"))
+            assertEquals(5, rowsIn(liveName, "photos"))
+            assertEquals(2, rowsIn(liveName, "observation_symptoms"))
+
+            // And what 1.1 added, which the schema-4 fixture could only ever show as empty: these
+            // arrived through `MIGRATION_4_5` in the shipped build and must survive `MIGRATION_5_6`.
+            assertEquals(4, rowsIn(liveName, "care_reminders"))
+            assertEquals(2, rowsIn(liveName, "care_events"))
+            assertEquals(2, rowsIn(liveName, "watches"))
+
+            // The tables `MIGRATION_5_6` is *for*: present and empty, because 1.1.0 had no vet
+            // visits, courses or documents to carry. Present-and-empty is the correct outcome.
+            assertEquals(0, rowsIn(liveName, "vets"))
+            assertEquals(0, rowsIn(liveName, "visits"))
+            assertEquals(0, rowsIn(liveName, "medication_courses"))
+            assertEquals(0, rowsIn(liveName, "documents"))
         }
 
     /** A sanity check that the throwaway live database really is a Binky one. */
