@@ -293,7 +293,21 @@
     <string name="backup_auto_recorded">Ostatnia automatyczna kopia zapasowa: %1$s.</string>
     <string name="backup_auto_stale">Ostatnia automatyczna kopia zapasowa powstała %1$s — ponad dwa tygodnie temu. Coś mogło ją wyłączyć.</string>
     <string name="backup_auto_photos">Obejmuje zapisy, ustawienia i zdjęcia profilowe królików. Galerii zdjęć w niej nie ma.</string>
+    <plurals name="backup_auto_excluded">
+        <item quantity="one">%d dokument był zbyt duży, żeby się zmieścić. Zrób ręczny eksport, żeby go zachować.</item>
+        <item quantity="few">%d dokumenty były zbyt duże, żeby się zmieściły. Zrób ręczny eksport, żeby je zachować.</item>
+        <item quantity="many">%d dokumentów było zbyt dużych, żeby się zmieściły. Zrób ręczny eksport, żeby je zachować.</item>
+        <item quantity="other">%d dokumentów było zbyt dużych, żeby się zmieściły. Zrób ręczny eksport, żeby je zachować.</item>
+    </plurals>
     <string name="backup_auto_settings_action">Otwórz ustawienia kopii zapasowej Androida</string>
+
+    <string name="backup_excluded_notification_title">Część dokumentów nie ma kopii zapasowej</string>
+    <plurals name="backup_excluded_notification_text">
+        <item quantity="one">Automatyczna kopia zapasowa Androida nie zmieściła %d dokumentu. Zrób ręczny eksport, żeby zachować jego kopię.</item>
+        <item quantity="few">Automatyczna kopia zapasowa Androida nie zmieściła %d dokumentów. Zrób ręczny eksport, żeby zachować ich kopię.</item>
+        <item quantity="many">Automatyczna kopia zapasowa Androida nie zmieściła %d dokumentów. Zrób ręczny eksport, żeby zachować ich kopię.</item>
+        <item quantity="other">Automatyczna kopia zapasowa Androida nie zmieściła %d dokumentów. Zrób ręczny eksport, żeby zachować ich kopię.</item>
+    </plurals>
 
     <!-- The scope names are quoted wherever they appear inside a sentence below, so that a name
          chosen at run time never has to agree with anything around it. -->

@@ -137,6 +137,28 @@ class AppPreferences(
     }
 
     /**
+     * Whether the owner has already been told that Auto Backup is leaving documents behind
+     * (PLAN 5h).
+     *
+     * This is the half of that notice the backup agent cannot hold. The agent writes the count into
+     * its marker file and stops there — it runs in a process with no `AppContainer`, and a DataStore
+     * write is `suspend` inside a blocking backup callback. Auto Backup runs roughly daily, so
+     * without somewhere to record "said already" a one-time notice becomes a nightly one on the
+     * `backup` channel, and an owner who mutes that channel loses the *export* prompt with it.
+     *
+     * Cleared again when nothing is being excluded, which makes it once per episode rather than once
+     * ever — see `ExclusionNotice`.
+     */
+    val excludedDocumentsNotified: Flow<Boolean> =
+        dataStore.data
+            .catch { cause -> if (cause is IOException) emit(emptyPreferences()) else throw cause }
+            .map { preferences -> preferences[EXCLUDED_DOCUMENTS_NOTIFIED] == true }
+
+    suspend fun setExcludedDocumentsNotified(notified: Boolean) {
+        dataStore.edit { preferences -> preferences[EXCLUDED_DOCUMENTS_NOTIFIED] = notified }
+    }
+
+    /**
      * **One app-wide time of day** for every care reminder, defaulting to 09:00.
      *
      * Not per reminder, and that is a decision rather than an omission: per-reminder clock times
@@ -259,6 +281,7 @@ class AppPreferences(
         val BACKUP_SCOPE = stringPreferencesKey("backup_scope")
         val SETUP_PROGRESS = stringPreferencesKey("setup_progress")
         val BATTERY_EXEMPTION_ASKED = booleanPreferencesKey("battery_exemption_asked")
+        val EXCLUDED_DOCUMENTS_NOTIFIED = booleanPreferencesKey("excluded_documents_notified")
         val REMINDER_TIME = stringPreferencesKey("reminder_time")
         val EXPORT_FOLDER = stringPreferencesKey("export_folder")
         val EXPORT_REMINDER_EVERY = stringPreferencesKey("export_reminder_every")

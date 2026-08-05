@@ -54,6 +54,69 @@ const val AUTO_BACKUP_MARKER_FILE = "auto-backup-marker.txt"
 val AUTO_BACKUP_STALE_AFTER: Duration = Duration.ofDays(14)
 
 private const val MARKER_LAST_BACKUP_KEY = "lastBackupAtEpochMilli"
+private const val MARKER_EXCLUDED_DOCUMENTS_KEY = "excludedDocuments"
+
+/**
+ * The ceiling documents are admitted under, deliberately **below** the ~25 MB Auto Backup quota.
+ *
+ * The quota is a number Android neither publishes as an API nor promises to keep, and the penalty
+ * for crossing it is not a trim but a rejection of the *whole* dataset — the database included. So
+ * the ceiling is a fixed figure with headroom underneath the documented one, and every byte of that
+ * headroom is buying the same thing: the evidential core arriving even when this file's arithmetic
+ * disagrees slightly with the transport's (compression, per-file overhead, a database that grew
+ * between the set being computed and the bytes being read).
+ */
+const val AUTO_BACKUP_BUDGET_BYTES: Long = 20L * 1024 * 1024
+
+/**
+ * What a backup carries, and **what it had to leave behind** (ADR-0005).
+ *
+ * The count travels with the files rather than being recomputed by whoever wants to display it: the
+ * only moment the answer is knowable is the moment the set was built, against the directory as it
+ * stood then. Everything downstream — the marker, the status line, the one-time notice — reads this
+ * one number, so the words and the notification cannot disagree.
+ */
+data class AutoBackupSet(
+    val files: List<File>,
+    val excludedDocuments: Int,
+)
+
+/**
+ * Which documents fit under [budget] once the core has taken its share — **a pure function over
+ * `File`s**, per ADR-0005, because the agent runs in a process where `AppContainer` does not exist
+ * and reaching for one would force the `lazy` ADR-0007 guards.
+ *
+ * The budget is **dynamic**: documents get what is left after the core, so a growing database
+ * shrinks the document allowance rather than taking the whole dataset over quota. That ordering is
+ * the ADR's, and it is not a preference — Android rejects an over-quota dataset entire, so admitting
+ * one document too many does not cost that document, it costs the database.
+ *
+ * **Skips rather than stops.** A document that does not fit is passed over and the walk continues,
+ * so one oversized scan cannot exclude the smaller history behind it. What newest-first buys is
+ * *priority* — an older document never displaces a newer one that would have fit — and that is the
+ * part the order has to be trusted for.
+ *
+ * @param coreBytes the unconditional part: staged database, preferences, avatars. May already
+ *   exceed [budget], in which case nothing is admitted rather than the arithmetic going negative.
+ * @param documentsNewestFirst every document page on disk, newest first. The caller orders them —
+ *   there is no database in this process to ask, so "newest" is the file's own timestamp.
+ */
+fun admitDocuments(
+    coreBytes: Long,
+    documentsNewestFirst: List<File>,
+    budget: Long = AUTO_BACKUP_BUDGET_BYTES,
+): AutoBackupSet {
+    var remaining = (budget - coreBytes).coerceAtLeast(0)
+    val admitted = mutableListOf<File>()
+    for (document in documentsNewestFirst) {
+        val size = document.length()
+        if (size <= remaining) {
+            admitted += document
+            remaining -= size
+        }
+    }
+    return AutoBackupSet(files = admitted, excludedDocuments = documentsNewestFirst.size - admitted.size)
+}
 
 /**
  * The set of files Auto Backup carries, ADR-0005's evidential core.
@@ -62,52 +125,97 @@ private const val MARKER_LAST_BACKUP_KEY = "lastBackupAtEpochMilli"
  * `avatars/`. Absent by construction, because a file that is not returned here is a file the agent
  * never offers:
  *
- * - **`photos/`**, unless [includePhotos] — the per-app quota is small and Android rejects the
- *   *entire* over-quota dataset rather than trimming it, so a growing gallery would one day take the
- *   database down with it. That gap is stated in words on the Backup screen rather than left to be
- *   discovered.
+ * - **`photos/`**, unless [deviceToDeviceTransfer] — the per-app quota is small and Android rejects
+ *   the *entire* over-quota dataset rather than trimming it, so a growing gallery would one day take
+ *   the database down with it. That gap is stated in words on the Backup screen rather than left to
+ *   be discovered.
  * - **`preserved/`**, for a different reason (ADR-0007): it is the app's one unbounded, never-pruned
  *   directory, and admitting an unbounded set into an all-or-nothing quota means one day losing the
  *   database in order to have protected a duplicate. The owner's *share* tap is what makes a
  *   preserved copy safe.
  * - **the marker itself**, so it cannot travel onto another phone and vouch there for a backup that
  *   phone never made.
- * - **`documents/`** — Phase 5's, with the newest-first admission ceiling ADR-0005 describes. The
- *   directory is empty until then, so a ceiling built now would admit nothing and be untestable.
  *
- * @param includePhotos true only for a **device-to-device transfer**, which has no cloud account and
- *   no quota, so neither reason above applies and silently dropping a whole gallery on a phone
- *   upgrade would be the worse failure. This is the distinction the two template XML files used to
- *   draw between `cloud-backup` and `device-transfer`, kept when they were deleted.
+ * **`documents/` is the one conditional set** (PLAN 5h): admitted newest-first by [admitDocuments]
+ * under what is left of [budget] after the core, and the number left behind is carried out in
+ * [AutoBackupSet.excludedDocuments] so it can be said in words rather than discovered at a restore.
+ * The gallery's flat exclusion would have been the cheaper rule here too, and it is the wrong one —
+ * a scanned prescription is the sort of thing an owner keeps precisely because it is hard to
+ * reproduce, and most phones will have few enough of them to fit comfortably.
+ *
+ * @param deviceToDeviceTransfer a transfer straight to another phone, which has **no cloud account
+ *   and no quota** — so neither the gallery's exclusion nor the document ceiling applies, and both
+ *   travel whole. Silently dropping half an owner's history on a phone upgrade would be the worse
+ *   failure by far. This is the distinction the two template XML files used to draw between
+ *   `cloud-backup` and `device-transfer`, kept when they were deleted.
  */
 fun autoBackupFileSet(
     filesDir: File,
     stagedDatabase: File,
-    includePhotos: Boolean,
-): List<File> {
+    deviceToDeviceTransfer: Boolean,
+    budget: Long = AUTO_BACKUP_BUDGET_BYTES,
+): AutoBackupSet {
     // Kotlin note: `buildList` is the idiomatic build-then-freeze — a mutable list inside the
     // lambda, an immutable `List` out of it, so no caller can add `photos/` to a set after the fact.
     val kinds =
         buildList {
             add(MediaKind.Avatar)
-            if (includePhotos) add(MediaKind.Photo)
+            if (deviceToDeviceTransfer) add(MediaKind.Photo)
         }
 
-    return buildList {
-        // Missing on a phone whose database has never been opened. Nothing to back up is an
-        // ordinary state, not an error.
-        if (stagedDatabase.isFile) add(stagedDatabase)
-        val preferences = File(filesDir, PREFERENCES_FILE_PATH)
-        if (preferences.isFile) add(preferences)
-        // The same uuid allowlist the export uses, so a stray file in a media directory is skipped
-        // here rather than shipped and then refused at the far end.
-        addAll(mediaFilesFor(kinds, filesDir).map { it.file })
-    }
+    val core =
+        buildList {
+            // Missing on a phone whose database has never been opened. Nothing to back up is an
+            // ordinary state, not an error.
+            if (stagedDatabase.isFile) add(stagedDatabase)
+            val preferences = File(filesDir, PREFERENCES_FILE_PATH)
+            if (preferences.isFile) add(preferences)
+            // The same uuid allowlist the export uses, so a stray file in a media directory is
+            // skipped here rather than shipped and then refused at the far end.
+            addAll(mediaFilesFor(kinds, filesDir).map { it.file })
+        }
+
+    val documents = documentsNewestFirst(filesDir)
+    val admission =
+        if (deviceToDeviceTransfer) {
+            AutoBackupSet(files = documents, excludedDocuments = 0)
+        } else {
+            admitDocuments(
+                coreBytes = core.sumOf { it.length() },
+                documentsNewestFirst = documents,
+                budget = budget,
+            )
+        }
+
+    return AutoBackupSet(files = core + admission.files, excludedDocuments = admission.excludedDocuments)
 }
 
-/** When Auto Backup last ran on this phone. Phase 5 adds the excluded-document count beside it. */
+/**
+ * Every document page on disk, newest first.
+ *
+ * By **file timestamp**, not by the `documents` table: this runs in a process with no database open
+ * and ADR-0005 keeps it that way. The two agree in practice — `MediaFiles` writes the file before
+ * the row (ADR-0020), so the page's mtime is within milliseconds of its `createdAt` — and where they
+ * could drift, the file's own date is the honest answer for a decision about files.
+ *
+ * The name is the tie-break, so two pages written in the same millisecond do not reorder between
+ * runs and turn an unchanged phone into a changed backup set.
+ */
+private fun documentsNewestFirst(filesDir: File): List<File> =
+    mediaFilesFor(listOf(MediaKind.Document), filesDir)
+        .map { it.file }
+        .sortedWith(compareByDescending<File> { it.lastModified() }.thenBy { it.name })
+
+/**
+ * When Auto Backup last ran on this phone, and how many documents it could not carry.
+ *
+ * @param excludedDocuments zero on a marker written by 1.0 or 1.1, which had no documents to
+ *   exclude and no key for the count. Absent reads as zero rather than as unknown: the app never
+ *   claims documents were dropped on the strength of a field that was not written.
+ */
 data class AutoBackupMarker(
     val lastBackupAt: Instant,
+    val excludedDocuments: Int = 0,
 )
 
 /**
@@ -117,12 +225,16 @@ data class AutoBackupMarker(
 fun writeAutoBackupMarker(
     filesDir: File,
     at: Instant,
+    excludedDocuments: Int = 0,
 ) {
     val marker = File(filesDir, AUTO_BACKUP_MARKER_FILE)
     val part = File(filesDir, "$AUTO_BACKUP_MARKER_FILE.part")
     try {
         filesDir.mkdirs()
-        part.writeText("$MARKER_LAST_BACKUP_KEY=${at.toEpochMilli()}\n")
+        part.writeText(
+            "$MARKER_LAST_BACKUP_KEY=${at.toEpochMilli()}\n" +
+                "$MARKER_EXCLUDED_DOCUMENTS_KEY=$excludedDocuments\n",
+        )
         if (!part.renameTo(marker)) {
             part.copyTo(marker, overwrite = true)
             part.delete()
@@ -138,9 +250,11 @@ fun writeAutoBackupMarker(
 /**
  * Read the marker, or null when there is none.
  *
- * Line-based `key=value` with unknown keys ignored, so Phase 5 can add the excluded-document count
- * without a marker written by 1.0 becoming unreadable. Anything that does not parse is treated as
- * absent — the state this app can always describe truthfully.
+ * Line-based `key=value` with unknown keys ignored, which is what let Phase 5 add the
+ * excluded-document count without a marker written by 1.0 becoming unreadable. The tolerance runs
+ * both ways: a *missing* count reads as zero, so a 1.0 marker on a phone that has just taken 1.2
+ * describes a backup that happened rather than a file that does not parse. Anything that does not
+ * parse at all is treated as absent — the state this app can always describe truthfully.
  */
 fun readAutoBackupMarker(filesDir: File): AutoBackupMarker? {
     val marker = File(filesDir, AUTO_BACKUP_MARKER_FILE)
@@ -153,7 +267,14 @@ fun readAutoBackupMarker(filesDir: File): AutoBackupMarker? {
                     val separator = line.indexOf('=')
                     if (separator <= 0) null else line.substring(0, separator) to line.substring(separator + 1)
                 }.toMap()
-        values[MARKER_LAST_BACKUP_KEY]?.trim()?.toLongOrNull()?.let { AutoBackupMarker(Instant.ofEpochMilli(it)) }
+        values[MARKER_LAST_BACKUP_KEY]?.trim()?.toLongOrNull()?.let { millis ->
+            AutoBackupMarker(
+                lastBackupAt = Instant.ofEpochMilli(millis),
+                // A count that is missing, negative or not a number is no count at all. Zero is the
+                // reading that cannot invent an exclusion nobody recorded.
+                excludedDocuments = values[MARKER_EXCLUDED_DOCUMENTS_KEY]?.trim()?.toIntOrNull()?.coerceAtLeast(0) ?: 0,
+            )
+        }
     } catch (e: IOException) {
         null
     }
@@ -184,6 +305,12 @@ sealed interface AutoBackupStatus {
     data class Recorded(
         val at: Instant,
         val stale: Boolean,
+        /**
+         * How many documents the last run had to leave behind — **said in words on the screen, never
+         * dropped silently** (ADR-0005). Read from the marker rather than recomputed, so the status
+         * line and the one-time notification are two renderings of one number.
+         */
+        val excludedDocuments: Int = 0,
     ) : AutoBackupStatus
 }
 
@@ -196,8 +323,48 @@ fun autoBackupStatus(
     // reported as fresh: `isNegative` age is below any threshold, and inventing a fourth state for a
     // wrong clock would cost copy in every language to describe something the owner cannot act on.
     val age = Duration.between(marker.lastBackupAt, now)
-    return AutoBackupStatus.Recorded(at = marker.lastBackupAt, stale = age > AUTO_BACKUP_STALE_AFTER)
+    return AutoBackupStatus.Recorded(
+        at = marker.lastBackupAt,
+        stale = age > AUTO_BACKUP_STALE_AFTER,
+        excludedDocuments = marker.excludedDocuments,
+    )
 }
+
+/**
+ * What the app should do about an exclusion count when it next starts (PLAN 5h).
+ *
+ * **The agent writes, the app posts**, and the split is forced rather than chosen: the agent cannot
+ * reach the app's DataStore — its writes are `suspend` inside blocking backup callbacks — so it has
+ * nowhere to record that a notice has already fired. Auto Backup runs roughly daily, which would
+ * turn a "one-time" notice into a nightly one on the channel an owner is most likely to mute. So the
+ * agent leaves the count in the marker and this decides, once, on the next launch.
+ *
+ * [Clear] is what makes it once-*per-episode* rather than once-ever. An exclusion that resolves —
+ * documents deleted, the database shrunk, the owner exported and cleared some out — takes the flag
+ * with it, so if the condition comes back years later it is allowed to say so again. The alternative
+ * is a notice that fires for the first exclusion in the app's life and stays silent through every
+ * one after it.
+ */
+enum class ExclusionNotice {
+    /** Post it, then record that it was posted. */
+    Post,
+
+    /** Nothing is being excluded any more: forget that the notice fired. */
+    Clear,
+
+    /** Either nothing to say, or it has already been said. */
+    Nothing,
+}
+
+fun exclusionNotice(
+    excludedDocuments: Int,
+    alreadyNotified: Boolean,
+): ExclusionNotice =
+    when {
+        excludedDocuments <= 0 -> if (alreadyNotified) ExclusionNotice.Clear else ExclusionNotice.Nothing
+        alreadyNotified -> ExclusionNotice.Nothing
+        else -> ExclusionNotice.Post
+    }
 
 /**
  * Move a restored database copy into place, and report whether it was there.

@@ -274,6 +274,19 @@ private fun AutomaticBackup(
             }
         Text(text = line, style = MaterialTheme.typography.bodyMedium)
 
+        // Never dropped silently (ADR-0005). The count comes from the marker the backup agent wrote,
+        // which is the same number the one-time notification is posted from — so the two cannot
+        // disagree about how much is missing. Its own line rather than folded into the sentence
+        // above: the date is about the net working, this is about a hole in it.
+        val excluded = (status as? AutoBackupStatus.Recorded)?.excludedDocuments ?: 0
+        if (excluded > 0) {
+            Text(
+                text = pluralStringResource(R.plurals.backup_auto_excluded, excluded, excluded),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+
         Text(
             text = stringResource(R.string.backup_auto_photos),
             style = MaterialTheme.typography.bodySmall,
