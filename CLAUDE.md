@@ -6,7 +6,11 @@ care. Free, ad-free, no server, all data on the device.
 
 - **Vocabulary:** [`CONTEXT.md`](CONTEXT.md) — use these terms in code and UI.
 - **Decisions and why:** [`docs/adr/`](docs/adr/) — read before changing anything they cover.
-- **Roadmap and status:** [`docs/PLAN.md`](docs/PLAN.md).
+- **What's still open:** [`docs/DOD.md`](docs/DOD.md) — the live checklist. **Read this one first**;
+  it is short by design, and `PLAN.md` is the long record behind it.
+- **The phases still open:** each in its own `docs/phase-N.md` — [`phase-6.md`](docs/phase-6.md),
+  [`phase-7.md`](docs/phase-7.md). Finished phases stay in `PLAN.md`; don't load it to build one.
+- **Roadmap and status:** [`docs/PLAN.md`](docs/PLAN.md) — read the phase you're in, not the file.
 - **Commits & releasing:** [`docs/RELEASING.md`](docs/RELEASING.md). Commit subjects **must** be
   [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `feat!:`, `docs:`, …) — a
   `commit-msg` hook rejects anything else, and release-please derives the version + `CHANGELOG.md` from them.
