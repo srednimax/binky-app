@@ -4,6 +4,16 @@ Sequence and status only. Decisions and their reasoning live in [`docs/adr/`](ad
 [`CONTEXT.md`](../CONTEXT.md); commands, layout and house rules live in [`CLAUDE.md`](../CLAUDE.md).
 The data model lives in the Room entities, so it cannot drift from the code.
 
+**This file is the record, not the worklist.** What is still open — the boxes to tick, with the device
+state and the commands to read it — lives in [`DOD.md`](DOD.md), which stays short enough to open every
+session. Read the phase you are in here; read `DOD.md` to know what to do next. When something closes,
+its *result* is written back into the checkpoint below and its detail deleted from `DOD.md`.
+
+**A phase still being planned or built gets its own file** — `phase-N.md` beside this one — so that
+working on it costs the phase rather than the whole history. It moves in here, or simply stops being
+read, once it closes. Phases 0–5 are finished and live below; **Phase 6 is in
+[`phase-6.md`](phase-6.md)**.
+
 ## Status
 
 - [x] **Phase 0** — Toolchain, project skeleton, docs
@@ -13,6 +23,8 @@ The data model lives in the Room entities, so it cannot drift from the code.
 - [x] **Phase 4** — Care reminders and watch — **ships as 1.1** *(closed on the build; the Console half and
   one night's evidence are carried into Phase 5)*
 - [ ] **Phase 5** — Vet, medications, documents, dose reminders — **ships as 1.2**
+- [ ] **Phase 6** — Support contact — **ships as 1.3** — planned in [`phase-6.md`](phase-6.md), not here
+- [ ] **Phase 7** — Nine languages — **ships as 1.4** — planned in [`phase-7.md`](phase-7.md), not here
 
 The rule is **no release before the data is safe**, which Phase 3 satisfies (ADR-0019). It replaces the
 former blanket ban on shipping before every phase was complete — a rule that held the weight trend flag,
@@ -3189,7 +3201,7 @@ Each checkpoint is meant to survive being picked up cold, so read its decisions 
   (ADR-0001).
 - Then the 1.2 release: internal track, then closed, installable from Play on the Xiaomi.
 
-## Releasing — at the end of Phases 3, 4 and 5
+## Releasing — at the end of Phases 3, 4, 5 and 6
 
 Signed release build, keystore out of git, signing config from `local.properties`. A Play listing cannot
 change its signing key, so the key is generated **once**, backed up off this machine, and never
