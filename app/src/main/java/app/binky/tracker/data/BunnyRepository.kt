@@ -27,6 +27,12 @@ class BunnyRepository(
     /** Only for the delete path: a cascade removes photo rows, and never their files. */
     private val photoDao = database.photoDao()
 
+    /**
+     * The same, for scanned pages — and these are the **largest** files the app holds, so missing
+     * them orphans more than every other kind put together (PLAN 5g).
+     */
+    private val documentPageDao = database.documentPageDao()
+
     /** Only for the archive path: archiving closes any watch (ADR-0004, ADR-0001). */
     private val watchDao = database.watchDao()
 
@@ -109,12 +115,16 @@ class BunnyRepository(
     suspend fun delete(id: String) {
         var avatarPath: String? = null
         var photoPaths: List<String> = emptyList()
+        var documentPaths: List<String> = emptyList()
         database.withTransaction {
             val bunny = bunnyDao.bunnyNow(id) ?: return@withTransaction
             avatarPath = bunny.avatarPath
             // Read while the rows still exist: the cascade is about to take them, and after that
             // there is nothing left to ask where the files were.
             photoPaths = photoDao.pathsOf(id)
+            // Two cascades deep — documents go with the bunny, pages go with the document — so by
+            // the time the delete returns there is nothing left that even names this bunny.
+            documentPaths = documentPageDao.pathsOfBunny(id)
             bunnyDao.deleteById(id)
             bunny.fluffleId?.let { fluffles.dissolveIfBelowTwo(it) }
         }
@@ -123,6 +133,7 @@ class BunnyRepository(
         // exists to avoid, in reverse.
         avatarPath?.let { media.delete(it) }
         photoPaths.forEach(media::delete)
+        documentPaths.forEach(media::delete)
         preferences.clearSelectionIfSet(id)
         // The cascade took this bunny's courses with no medication write happening anywhere, which is
         // the path ADR-0025 says a rebuild hung off the medication tables alone would miss.

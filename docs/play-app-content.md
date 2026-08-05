@@ -43,7 +43,7 @@ service, and three of the strings in this artifact are the latter.
 | `android.permission.POST_NOTIFICATIONS` | yes | Care reminders and the watch check-in. Runtime on API 33+, install-time below. **Not a Play sensitive permission** and there is no declaration form for it — it needs no justification, only that the Data safety answers and the store listing stop implying the app never notifies. It is never requested from a bare system dialog: ADR-0006 puts our own screen in front of it, in first-run setup and at the point of use. |
 | `android.permission.RECEIVE_BOOT_COMPLETED` | yes | Puts the daily sweep back after a restart (ADR-0024). Install-time, invisible to the owner, not sensitive, no declaration form. |
 | `android.permission.WAKE_LOCK` | **WorkManager** | Holds the CPU awake for the few seconds a worker runs. Normal, install-time, invisible, not sensitive, no declaration form. |
-| `android.permission.ACCESS_NETWORK_STATE` | **WorkManager** | Lets WorkManager evaluate a `NetworkType` constraint. **This is not network access** and must not be read as contradicting the "no `INTERNET` permission" row above — it reads connectivity state, it does not open a socket. `INTERNET` is still absent from the artifact, which is what the Data safety answer rests on. This app sets no network constraint on any work, so the capability is never exercised either. |
+| `android.permission.ACCESS_NETWORK_STATE` | **WorkManager** | Lets WorkManager evaluate a `NetworkType` constraint. **This is not network access** — it reads connectivity state, it does not open a socket. This app sets no network constraint on any work, so the capability is never exercised either. *(At 1.1 this row also said `INTERNET` was absent from the artifact. That stopped being true at 1.2 — see below.)* |
 | `android.permission.FOREGROUND_SERVICE` | **WorkManager** | ⚠ See below — the only one of the three with a Console consequence worth reading twice. |
 | `binky.bunny.and.rabbit.tracker.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | AndroidX | Signature-level, self-defined and self-used, for AndroidX's own non-exported receivers. Not user-visible, not a Play sensitive permission, nothing to declare — unchanged from 1.0.1. |
 
@@ -75,10 +75,75 @@ Two permissions this app **deliberately does not declare**, both of which would 
   it, and opens the screen where the owner decides.
 - **`SCHEDULE_EXACT_ALARM`.** Care reminders are day-granularity and use WorkManager (ADR-0003); the
   exact-alarm path is Phase 5's, with medication doses, and this table will need revisiting then.
+  *(It did: 1.2 declares it — see below.)*
 
 The `<queries>` element added alongside them names one package, `com.miui.securitycenter`, so the app
 can tell whether Xiaomi's autostart screen exists before offering to open it. Package visibility is
 not a permission and needs no Console answer; `QUERY_ALL_PACKAGES`, which would, is not used.
+
+### 1.2 declares eight permissions, and one of them changes an answer
+
+Written at **5g**, when the document scanner entered the build, and read out of the artifact with
+`scripts/aab-permissions.py` rather than out of the source.
+
+The two additions are **`SCHEDULE_EXACT_ALARM`**, which is ours and was expected, and
+**`android.permission.INTERNET`**, which is not ours and was not.
+
+| Permission | Ours? | Why, and what it changes on the Console |
+| --- | --- | --- |
+| `android.permission.SCHEDULE_EXACT_ALARM` | yes | Medication dose reminders fire at a clock time (ADR-0003). Deliberately **not** `USE_EXACT_ALARM`, which is auto-granted but restricted by Play to apps whose core purpose is alarms or calendars — a pet health tracker is not one (ADR-0009). On Android 14+ it is denied by default and the app deep-links to the system screen; denied, doses still arrive best-effort and the app says so in words. |
+| `android.permission.INTERNET` | **no — ML Kit** | ⚠ See below. |
+
+#### ⚠ `INTERNET`, and the claim it forces us to reword
+
+The row at the top of this file said *"No network code of our own — no `INTERNET` permission is
+declared."* **The second half of that sentence stopped being true at 1.2, and the first half did
+not.** It is reworded here rather than deleted, because what it was actually asserting is still the
+case and is still what the Data safety answers rest on.
+
+The permission is merged in by `com.google.android.datatransport:transport-backend-cct:2.3.3`, which
+arrives as a transitive of the ML Kit document scanner — Google's own telemetry transport, not the
+scanner API. Traced from the manifest merger's blame report, not guessed:
+
+```
+uses-permission#android.permission.INTERNET
+ADDED from [com.google.android.datatransport:transport-backend-cct:2.3.3]
+```
+
+It is the same hazard as 4h's WorkManager finding and the advertising-ID section below, arriving a
+third time — and this one is bigger, because it touches a claim rather than only a list.
+
+What is true, and what should be said on the Console:
+
+- **No code in `app/src/main/java` opens a socket.** ADR-0011 forbids it. The app has no backend, no
+  analytics, no crash reporter and no update check of its own. That is a property of *this app's*
+  code and it is unchanged.
+- **A Google library on the device may talk to Google**, as Play services already does for every app
+  on the phone. The bunny's records are not what it would carry: nothing in this app hands any record
+  to any Google API. The scanner is given a camera session and returns image files; it is never
+  passed a name, a weight, a dose or a document.
+- **The honest phrasing** is therefore *"Binky's own code makes no network requests"*, not *"the app
+  cannot reach the network"*. §7 below says it that way, and so does the privacy policy — the two
+  move together, per this file's own rule at the top.
+
+If that trade is ever judged not worth it, the contingency is written down and cheap: ADR-0009 puts
+the scanner behind an interface with a plain-camera fallback, so dropping ML Kit is one line in
+`AppContainer` and loses auto-crop and page detection only. Documents as *data* bring no dependency
+at all. Measured at 5g, the dependency also costs **+534 KB** of AAB (11,404,302 → 11,951,123 bytes).
+
+#### What ML Kit did **not** bring, asserted rather than assumed
+
+- **No `CAMERA` permission.** The scanner's own UI and the `TakePicture` fallback both run on the
+  system camera intent, which needs none. Declaring it would make a camera *required at install* and
+  change who can see the app on Play. `scripts/aab-permissions.py` now lists `CAMERA` as **forbidden**,
+  so a future dependency that merges one fails the check instead of shipping quietly.
+- **No `<uses-feature>` at all** — the half of the merged manifest no permission list would show. A
+  merged `android.hardware.camera` at `required="true"` (the default when the attribute is omitted)
+  would filter the app off every device without a camera. The script grew a `uses-feature` section at
+  5g precisely so this is checked; the artifact declares none.
+- **No media permission.** `setGalleryImportAllowed(false)` is set on the scanner options for that
+  reason as much as for the UX one — importing from the gallery is the Photo Picker's job elsewhere
+  in this app.
 
 ---
 
@@ -147,9 +212,16 @@ child-directed language, characters or play patterns.
 
 > **No.**
 
-Play defines *collection* as transmitting data off the device. Binky's own code makes no network
-requests — it declares no `INTERNET` permission — so nothing the owner enters leaves the phone.
-Everything is in the app's private storage, readable only by the app.
+Play defines *collection* as transmitting data off the device. **Binky's own code makes no network
+requests**, so nothing the owner enters leaves the phone. Everything is in the app's private storage,
+readable only by the app.
+
+Reworded at **1.2**, and the wording is the point. Until 1.1 this paragraph rested on the artifact
+declaring no `INTERNET` permission; from 1.2 the artifact declares one, merged in by a transitive of
+the ML Kit document scanner (see §1.2 above). The claim that matters is unchanged and is now stated
+as what it always was: a claim about **this app's code**, not about what a Google library on the
+device is capable of. No record — no name, weight, dose, observation or document — is handed to any
+API that could send it anywhere. The scanner is given a camera session and returns image files.
 
 That single answer collapses most of the form. What may still be asked:
 
@@ -184,6 +256,18 @@ unzip -p app/build/outputs/bundle/release/app-release.aab base/manifest/AndroidM
   | strings | grep -i AD_ID
 ./gradlew -q app:dependencies --configuration releaseRuntimeClasspath | grep -i play-services
 ```
+
+**Done at 5g, and the answer still holds — for a different reason than before.** GMS is now on the
+classpath: `play-services-mlkit-document-scanner`, `play-services-base`, `play-services-basement`,
+`play-services-tasks`, `com.google.mlkit:common`, four `firebase-*` encoder artifacts and three
+`datatransport` ones. So the old proof — *"there is no SDK present that could merge it"* — is gone,
+and it is replaced by the weaker but sufficient one: **the artifact contains no `AD_ID`**, asserted by
+`scripts/aab-permissions.py` on every run rather than by a grep somebody remembers to type. That is a
+real downgrade in the *kind* of evidence available, and it is written down here rather than glossed,
+because the next dependency that touches ads would now have somewhere to hide.
+
+The same dependency did merge `INTERNET` (§1.2) — which is the mechanism this section describes
+firing for a third time, and the reason the assertion has to live in a script rather than in prose.
 
 A related non-finding worth writing down so it is not re-investigated: `android.permission.DUMP`
 appears in the merged manifest as `android:permission` on `androidx.profileinstaller`'s

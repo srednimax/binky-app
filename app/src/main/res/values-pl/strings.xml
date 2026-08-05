@@ -772,6 +772,7 @@
     <string name="more_photos">Zdjęcia</string>
     <string name="more_photos_summary">Zdjęcia jednego królika, trzymane na tym telefonie.</string>
     <string name="more_documents">Dokumenty</string>
+    <string name="more_documents_summary">Zeskanowane dokumenty jednego królika, trzymane w tym telefonie.</string>
     <string name="more_vets">Weterynarze</string>
     <string name="more_vets_summary">Nazwy i numery, wspólne dla wszystkich królików.</string>
     <string name="more_settings">Ustawienia</string>
@@ -815,6 +816,52 @@
     <string name="photo_caption_edit">Edytuj</string>
     <string name="photo_delete">Usuń zdjęcie</string>
     <string name="photo_delete_body">Usunąć to zdjęcie? Zniknie z tego telefonu na dobre.</string>
+
+    <!-- Dokumenty: zeskanowane papiery jednego królika, z zakładki Więcej (ADR-0017, ADR-0009) -->
+    <string name="document_which_bunny">Czyje dokumenty?</string>
+    <string name="documents_title">Dokumenty: %1$s</string>
+    <string name="documents_empty">Brak dokumentów.</string>
+    <string name="documents_empty_help">Zeskanuj książeczkę szczepień, wynik badania albo wypis. Zostaną w tym telefonie.</string>
+    <string name="document_scan">Zeskanuj dokument</string>
+    <string name="document_default_title">Zeskanowany dokument</string>
+    <plurals name="document_page_count">
+        <item quantity="one">%d strona</item>
+        <item quantity="few">%d strony</item>
+        <item quantity="many">%d stron</item>
+        <item quantity="other">%d stron</item>
+    </plurals>
+    <string name="document_scan_camera_used">Zeskanowano aparatem — bez automatycznego kadrowania i wykrywania stron.</string>
+    <string name="document_scan_failed">Nie udało się zapisać skanu. Spróbuj ponownie.</string>
+    <string name="document_dated_on">Data na dokumencie: %1$s</string>
+    <string name="document_scanned_on">Zeskanowano %1$s</string>
+    <string name="document_no_date">Brak daty na dokumencie</string>
+    <string name="document_from_visit">Z wizyty %1$s — %2$s</string>
+    <string name="document_actions">Działania na dokumencie</string>
+    <string name="document_rename">Zmień nazwę</string>
+    <string name="document_title_label">Nazwa</string>
+    <string name="document_set_date">Ustaw datę na dokumencie</string>
+    <string name="document_clear_date">Usuń datę</string>
+    <string name="document_date_label">Data na dokumencie</string>
+    <string name="document_attach_visit">Przypisz do wizyty</string>
+    <string name="document_attach_none">Nie z wizyty</string>
+    <string name="document_attach_no_visits">Ten królik nie ma jeszcze zapisanych wizyt.</string>
+    <string name="document_add_page">Dodaj stronę</string>
+    <string name="document_manage_pages">Zmień kolejność lub usuń strony</string>
+    <string name="document_page_number">Strona %1$d</string>
+    <string name="document_page_up">W górę</string>
+    <string name="document_page_down">W dół</string>
+    <string name="document_page_position">Strona %1$d z %2$d</string>
+    <string name="document_page_description">Strona %1$d dokumentu %2$s</string>
+    <string name="document_no_pages">Ten dokument nie ma stron.</string>
+    <string name="document_no_pages_help">Nazwa i data zostają. Dodaj stronę albo usuń dokument.</string>
+    <string name="document_delete">Usuń dokument</string>
+    <string name="document_delete_body">Usunąć „%1$s”? Każda strona zniknie z tego telefonu na dobre.</string>
+    <string name="visit_documents_label">Dokumenty</string>
+    <string name="visit_documents_save_first">Najpierw zapisz wizytę, potem zeskanuj lub przypisz jej dokumenty.</string>
+    <string name="visit_documents_none">Do tej wizyty nic nie przypisano.</string>
+    <string name="visit_documents_attach_existing">Przypisz istniejący</string>
+    <string name="visit_documents_none_free">Wszystkie dokumenty tego królika należą już do wizyt. Najpierw odłącz go tam.</string>
+    <string name="visit_documents_detach">Odłącz</string>
 
     <!-- The archived list (ADR-0004) -->
     <string name="archived_title">Króliki w archiwum</string>

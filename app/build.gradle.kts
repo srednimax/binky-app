@@ -297,6 +297,18 @@ dependencies {
     // ordering between the two has to be a decision rather than a merged-manifest accident.
     implementation(libs.androidx.work.runtime)
 
+    // The guided document scanner (ADR-0009). **The one dependency in this file that is allowed to
+    // be absent at runtime**: it is delivered by Google Play services, so a device without them
+    // runs the plain-camera fallback instead — which is why nothing outside `scan/` names it, and
+    // why dropping it is a one-line change in `AppContainer` rather than a rewrite.
+    //
+    // It is also the one whose *merged manifest* is checked rather than assumed. 4h's finding was
+    // that a dependency can write permissions nobody declared; `scripts/aab-permissions.py` runs
+    // against the artifact at 5g for exactly this, and its `uses-feature` section exists because a
+    // merged `android.hardware.camera` at required="true" would filter the app off every device
+    // without a camera on Play — a distribution change no permission list would show.
+    implementation(libs.mlkit.document.scanner)
+
     // Navigation
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)

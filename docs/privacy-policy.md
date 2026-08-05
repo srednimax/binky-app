@@ -5,7 +5,7 @@ title: Privacy Policy — Binky
 
 # Privacy Policy — Binky
 
-_Last updated: 27 July 2026_
+_Last updated: 5 August 2026_
 
 Binky is an Android app for keeping track of a pet rabbit's health. This policy describes what the
 app does with the information you put into it. It is short because the app does very little.
@@ -20,11 +20,11 @@ device**, and is readable only by the app.
 
 ## The app shares nothing
 
-No analytics. No advertising. No crash-reporting SDK. No third-party trackers of any kind. The app's own
-code makes no network requests at all.
+No analytics. No advertising. No crash-reporting SDK. No third-party trackers of any kind. **The app's
+own code makes no network requests at all**, and nothing you record is ever sent anywhere.
 
-Two things happen outside the app that are worth naming, because they are the operating system's doing
-rather than ours and you control both:
+Three things happen outside the app that are worth naming, because they are the operating system's or
+Google's doing rather than ours:
 
 - **Android Auto Backup.** If you have backup enabled on your device with a Google account signed in,
   Android may back up the app's data to your own Google account, encrypted, in the same way it does for
@@ -33,6 +33,13 @@ rather than ours and you control both:
 - **Google Play.** If you installed the app from Google Play, Play collects its own installation and
   crash-diagnostic information under Google's privacy policy. This is collected by the Play Store and the
   operating system, not by the app.
+- **The document scanner.** Scanning a document uses Google's on-device scanner, which is part of Google
+  Play services. Because that component is bundled with the app, the app's installation listing shows a
+  network permission that Google's component brings with it. **The scanner does not receive any of your
+  records** — not a rabbit's name, weight, dose, observation or note. It is handed the camera and gives
+  back the picture, which is then stored on your device like any other. Google may collect its own
+  diagnostics about that component under Google's privacy policy. On a device without Play services the
+  app quietly uses the plain camera instead, and scanning still works.
 
 ## What you choose to send
 
@@ -42,9 +49,12 @@ Nothing is sent automatically.
 
 ## Permissions
 
-The app requests no runtime permissions to function. Taking a photo uses the system camera, and choosing
-photos uses Android's Photo Picker — neither requires granting the app access to your camera roll or
-storage.
+The app asks for one thing: permission to show notifications, so reminders can reach you. You can say no
+and the rest of the app works.
+
+Taking a photo uses the system camera, choosing photos uses Android's Photo Picker, and scanning a
+document uses the system camera too — none of these requires granting the app access to your camera or
+your photo library.
 
 ## Children
 

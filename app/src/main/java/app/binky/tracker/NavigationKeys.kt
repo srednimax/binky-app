@@ -147,6 +147,29 @@ data class PhotoGallery(
 ) : NavKey
 
 /**
+ * One bunny's scanned paperwork, reached from More — the same shape and the same reason as
+ * [PhotoGallery], keyed by the bunny rather than reading the shell's selection so a restored back
+ * stack records *whose* documents were open.
+ */
+@Serializable
+data class Documents(
+    val bunnyId: String,
+) : NavKey
+
+/**
+ * One document: its pages, what it is, and the visit it came from (ADR-0017).
+ *
+ * Keyed by the document alone, exactly as [CareReminder] is keyed by the reminder and
+ * [MedicationCourse] by the course. The bunny is not carried because it cannot disagree — a document
+ * belongs to one bunny by its foreign key, and a second copy of that fact in the back stack would
+ * be the one that goes stale.
+ */
+@Serializable
+data class DocumentDetail(
+    val documentId: String,
+) : NavKey
+
+/**
  * The vet directory, reached from More — a detail route off a tab, like [ArchivedBunnies].
  *
  * **In More rather than on the Care tab, and that is ADR-0015's rule rather than a preference.** A

@@ -62,6 +62,7 @@ suspend fun seedSampleData(
     vets: VetRepository,
     visits: VisitRepository,
     medications: MedicationRepository,
+    documents: DocumentRepository,
     cacheDir: File,
     now: Instant = Instant.now(),
 ): Boolean {
@@ -85,8 +86,9 @@ suspend fun seedSampleData(
     seedPhotos(photos, cacheDir, bijou, nugget, now)
     seedCare(care, bijou, nugget, now)
     seedWatches(watches, bijou, nugget, now)
-    seedVisits(vets, visits, bijou, nugget, now)
+    val seededVisits = seedVisits(vets, visits, bijou, nugget, now)
     seedMedications(medications, bijou, now)
+    seedDocuments(documents, cacheDir, bijou, nugget, seededVisits, now)
     return true
 }
 
@@ -241,7 +243,7 @@ private suspend fun seedVisits(
     bijou: String,
     nugget: String,
     now: Instant,
-) {
+): SeededVisits {
     val zone = ZoneId.systemDefault()
     val today = now.atZone(zone).toLocalDate()
 
@@ -258,39 +260,55 @@ private suspend fun seedVisits(
 
     // The weight is deliberately a little under the series around it, so the visit's number is
     // recognisable in the chart rather than lost among the seeded weighings.
-    visits.add(
-        VisitEntity(
-            bunnyId = bijou,
-            vetId = kowalska,
-            visitedOn = today.minusDays(9),
-            reason = "Molar check",
-            notes = "Spurs filed. Back in six months unless she goes off her food.",
-        ),
-        grams = 2380,
-        now = now,
-        zone = zone,
-    )
-    visits.add(
-        VisitEntity(
-            bunnyId = bijou,
-            visitedOn = today.minusMonths(7),
-            reason = "Vaccination",
-        ),
-        now = now,
-        zone = zone,
-    )
-    visits.add(
-        VisitEntity(
-            bunnyId = nugget,
-            vetId = nowak,
-            visitedOn = today.minusDays(40),
-            reason = "Scratched eye",
-            notes = "Drops for five days.",
-        ),
-        now = now,
-        zone = zone,
-    )
+    val molars =
+        visits.add(
+            VisitEntity(
+                bunnyId = bijou,
+                vetId = kowalska,
+                visitedOn = today.minusDays(9),
+                reason = "Molar check",
+                notes = "Spurs filed. Back in six months unless she goes off her food.",
+            ),
+            grams = 2380,
+            now = now,
+            zone = zone,
+        )
+    val vaccination =
+        visits.add(
+            VisitEntity(
+                bunnyId = bijou,
+                visitedOn = today.minusMonths(7),
+                reason = "Vaccination",
+            ),
+            now = now,
+            zone = zone,
+        )
+    val eye =
+        visits.add(
+            VisitEntity(
+                bunnyId = nugget,
+                vetId = nowak,
+                visitedOn = today.minusDays(40),
+                reason = "Scratched eye",
+                notes = "Drops for five days.",
+            ),
+            now = now,
+            zone = zone,
+        )
+    return SeededVisits(molars = molars, vaccination = vaccination, nuggetEye = eye)
 }
+
+/**
+ * The visit ids the document half attaches to.
+ *
+ * Returned rather than re-queried, because "the vaccination visit" is a thing this fixture *knows*
+ * and a lookup by reason string would be the seeder asserting its own data back to itself.
+ */
+private data class SeededVisits(
+    val molars: String,
+    val vaccination: String,
+    val nuggetEye: String,
+)
 
 /**
  * The watch half: **one running and one already run out**, which is both of the states 4d has to
@@ -474,6 +492,164 @@ private fun writeSampleJpeg(
 /** EXIF's own format: local wall time, no zone — which is why the pipeline has to assume one. */
 private val EXIF_DATE: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss").withZone(ZoneId.systemDefault())
+
+/**
+ * The document half, matching the medication and photo halves above: generated pages through
+ * [DocumentRepository.add], which means through `MediaFiles.persist(Document)` — **no ML Kit
+ * anywhere**, so this runs on an emulator without Play services exactly as it does on the phone.
+ *
+ * The set is chosen for what it makes visible:
+ *
+ * - **A three-page document**, because a document is its pages and one-page fixtures never show the
+ *   pager, the page counter or the reorder dialog.
+ * - **One attached to a visit and one not**, which is the pair that makes "detaching leaves the
+ *   document with its bunny" checkable rather than argued.
+ * - **One with a date on the page and one without**, since `Dated` and `Scanned` are deliberately
+ *   different words and only a fixture with both shows that they are.
+ * - **One for the housemate**, so deleting one bunny can be seen not to take the other's paperwork.
+ * - **One page above the 3000 px cap**, so `MediaKind.Document`'s spec is actually exercised rather
+ *   than passed through.
+ *
+ * It also exists to put **weight on disk**: PLAN 5h admits documents into Auto Backup under a
+ * ~25 MB ceiling, and hand-scanning enough vet printouts to breach one is not a test anybody would
+ * re-run. The pages are drawn with text-like bars and speckle rather than flat colour for the same
+ * reason — a flat fill compresses to almost nothing and would make the fixture weigh nothing too,
+ * which is the opposite of useful for a budget.
+ */
+private suspend fun seedDocuments(
+    documents: DocumentRepository,
+    cacheDir: File,
+    bijou: String,
+    nugget: String,
+    visits: SeededVisits,
+    now: Instant,
+) {
+    val random = Random(SAMPLE_SEED)
+
+    suspend fun scan(
+        bunnyId: String,
+        title: String,
+        pages: Int,
+        visitId: String? = null,
+        datedDaysAgo: Long? = null,
+        wide: Boolean = false,
+    ) {
+        val sources = List(pages) { page -> writeSamplePage(cacheDir, random, page + 1, pages, wide) }
+        documents.add(
+            bunnyId = bunnyId,
+            title = title,
+            pages = sources,
+            visitId = visitId,
+            capturedAt = datedDaysAgo?.let { now.daysAgo(it) },
+        )
+        // The originals are rubbish the moment the pipeline has re-encoded them.
+        sources.forEach { source -> source.path?.let { File(it).delete() } }
+    }
+
+    scan(
+        bunnyId = bijou,
+        title = "Vaccination record",
+        pages = 2,
+        visitId = visits.vaccination,
+        // The date on the page is the visit's, months before this fixture was seeded — which is what
+        // makes the list's COALESCE ordering visible rather than merely believed.
+        datedDaysAgo = 213,
+    )
+    scan(
+        bunnyId = bijou,
+        title = "Dental X-ray report",
+        pages = 3,
+        visitId = visits.molars,
+        datedDaysAgo = 9,
+        // The one page above the long-edge cap, so the downsample is exercised on real bytes.
+        wide = true,
+    )
+    // Deliberately attached to nothing and dated by nothing: the two states the screens render
+    // differently, and the row the attach picker is allowed to offer.
+    scan(bunnyId = bijou, title = "Pet insurance policy", pages = 1)
+    scan(
+        bunnyId = nugget,
+        title = "Eye drops instructions",
+        pages = 1,
+        visitId = visits.nuggetEye,
+        datedDaysAgo = 40,
+    )
+}
+
+/**
+ * One generated page: a header bar, ruled "text" of varying length, a small table block and fine
+ * speckle.
+ *
+ * The speckle is load-bearing rather than decorative — JPEG reduces a flat fill to a few kilobytes,
+ * and a fixture whose documents weigh nothing cannot exercise a storage budget. The bars are what
+ * make the pinch-zoom review meaningful: something has to be small enough that zooming in is the
+ * only way to tell whether it is legible.
+ *
+ * No EXIF date is written, unlike the photo fixture. A document's date is what is *printed* on the
+ * page, which no camera tag can know — the seeder passes it to `capturedAt` explicitly for the same
+ * reason the app makes the owner type it.
+ */
+private fun writeSamplePage(
+    cacheDir: File,
+    random: Random,
+    page: Int,
+    ofPages: Int,
+    wide: Boolean,
+): Uri {
+    // A4 at ~200 dpi, or once above `MediaKind.Document`'s 3000 px cap so the reduction runs.
+    val width = if (wide) 3200 else 1654
+    val height = if (wide) 4525 else 2339
+
+    val bitmap = createBitmap(width, height)
+    val canvas = Canvas(bitmap)
+    canvas.drawColor(0xFFF7F5F0.toInt())
+
+    val ink = Paint().apply { color = 0xFF2B2B2B.toInt() }
+    val faint = Paint().apply { color = 0xFFBFB9AE.toInt() }
+    val margin = width * 0.08f
+    val lineHeight = height * 0.018f
+
+    // A header block, so a thumbnail of page one is distinguishable from page two at 56 dp.
+    canvas.drawRect(margin, margin, margin + width * 0.45f, margin + lineHeight * 2f, ink)
+    // A page marker down the side — the fixture's own "page 2 of 3", visible while paging.
+    canvas.drawRect(
+        width - margin - width * 0.04f * page,
+        margin,
+        width - margin,
+        margin + lineHeight,
+        faint,
+    )
+
+    var y = margin + lineHeight * 5f
+    while (y < height - margin - lineHeight * 8f) {
+        val runLength = 0.35f + random.nextFloat() * 0.55f
+        canvas.drawRect(margin, y, margin + (width - margin * 2f) * runLength, y + lineHeight * 0.42f, ink)
+        y += lineHeight * 1.6f
+    }
+
+    // A table, which is the shape of every lab result and the thing zoom exists for.
+    val tableTop = height - margin - lineHeight * 7f
+    for (row in 0..5) {
+        val rowY = tableTop + row * lineHeight
+        canvas.drawRect(margin, rowY, width - margin, rowY + 2f, faint)
+    }
+
+    // Speckle: enough entropy that JPEG cannot flatten the page to a few kilobytes, which is what
+    // makes this fixture weigh what a real scan weighs. One rectangle per dot is slow at any real
+    // density, so they are sparse and large rather than per-pixel noise.
+    val dots = (width * height) / 900
+    repeat(dots) {
+        val x = random.nextFloat() * width
+        val dotY = random.nextFloat() * height
+        val shade = 0xFF000000.toInt() or (random.nextInt(0x60, 0xE0) * 0x010101)
+        canvas.drawRect(x, dotY, x + 3f, dotY + 3f, Paint().apply { color = shade })
+    }
+
+    val file = File(cacheDir, "sample-page-$page-of-$ofPages-${UUID.randomUUID()}.jpg")
+    file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+    bitmap.recycle()
+    return Uri.fromFile(file)
+}
 
 /**
  * The observation half: three entries carrying the cases the timeline is reviewed against.
