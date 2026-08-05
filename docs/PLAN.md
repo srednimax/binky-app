@@ -3046,6 +3046,12 @@ copy.
     - Release-please cuts 1.2.0; the bundle is checked **against the artifact rather than the config** — 3a's
       lesson, reinforced by 4h's six-permissions finding — for `versionName`, `versionCode`, the upload key,
       the Polish strings in `base/resources.pb`, and the full permission list from `scripts/aab-permissions.py`.
+      ✅ **Done 2026-08-05.** `v1.2.0` → `4097448`, and the bundle built from it reads: `versionName` 1.2.0,
+      `versionCode` **211** (matching `git rev-list --count HEAD`), upload key `CN=Maksymilian Sredniawa,
+      O=Binky, C=PL` SHA384withRSA, **709/709** Polish strings present, and **8 permissions, all accounted
+      for, none of the four forbidden ones present, zero `<uses-feature>`**. The permission set is exactly
+      what 5g predicted from the pre-release build, so ML Kit changed nothing between 5g and the release —
+      which is the answer §7's one live question was waiting on.
     - **The upgrade proof, twice over.** The committed schema-4 and schema-5 fixtures migrate to 6 in CI on
       every pull request; on the phone, the run that matters is the **longest chain the field can produce** —
       whatever version a real device is on, forward to 1.2, real bunny history intact. This is 4h's carried
@@ -3066,10 +3072,35 @@ copy.
       recording a vet's prescription for a rabbit. ADR-0026's on-screen line is the visible half of the same
       position, and it lands in the screenshots.
     - **Screenshots for both listings**, deferred once at 4h and owed for the screens 1.1 and 1.2 both added.
+      ⏳ **Blocked at 5j on a device gate, not on the work.** `scripts/edge-to-edge.py` navigates with
+      `input tap` / `input swipe`, and on 2026-08-05 the Xiaomi went back to **dropping synthetic taps** —
+      exit 0, nothing delivered, on a screen provably on, unlocked and focused. `input keyevent` still works
+      (`KEYCODE_HOME` leaves the app), so the two go through different paths and keyevents working is **not**
+      evidence taps do; test the distinction with `KEYCODE_HOME` before planning any tap-driven run.
+      Presumably *Debugowanie USB (ustawienia zabezpieczeń)* was reset — it needs a Mi account, and it is the
+      same toggle that gates USB install. Nothing downstream is actually waiting: the listings cannot be
+      updated while the Play count runs, so this rides with the upload below.
     - Internal track first, then closed — the same order every release has taken. If 1.0.1's closed run has by
       then satisfied Play's 12-testers / 14-day requirement, **production becomes available for the first
       time**; whether 1.2 is the build that takes it is an ADR-0009 decision made then, not an automatic
       consequence of being allowed to.
+      ⏳ **Not done at 5j: the count was still running on 2026-08-05**, so nothing was uploaded and the
+      Console half carries for the second release running. This is the same blocker 4h recorded, and it is
+      Play's clock rather than anything in the build — the bundle itself is cut, signed and verified above.
+      The upgrade proof, the screenshots and the track uploads therefore all land together in one sitting
+      once the count clears, which is cheaper than the three separate device trips 4h imagined.
+
+    ***What 5j closed, and what it did not.*** *The build half is finished and evidenced: 1.2.0 is tagged and
+    artifact-verified, schema 6 is frozen and tagged (`schema-6` → `01a769e`, the same convention `schema-4`
+    and `schema-5` follow), and `bunny-schema-5-fixture.zip` closes 5b's last item so both hand-written
+    migrations are now proven on every pull request against archives this build did not describe. The Console
+    half is untouched, blocked entirely on Play's testing count. One assumption died usefully: the schema-5
+    fixture was written down as needing hands on the phone, and did not — the SAF picker only chooses where
+    the bytes land, so driving the shipped build's own exporter from an `androidTest` class produced a
+    faithful archive in 1.4 s. The generalisation is worth keeping: when a flow's* output *is what matters
+    rather than its screens, check whether the shipped code can be called directly before booking a device
+    chore. And a second assumption was corrected rather than died: the field chain is longer than 4h thought,
+    because the Xiaomi's Play build is on **1.0.0**, not 1.0.1.*
 
 `spotlessApply`, `assembleDebug` and `test` at every checkpoint; `connectedAndroidTest` at the end of 5b, 5d,
 5f and 5g — the migration, the two data layers and the media path — and again at the gate; `lint` at the gate,

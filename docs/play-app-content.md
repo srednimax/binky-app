@@ -86,6 +86,12 @@ not a permission and needs no Console answer; `QUERY_ALL_PACKAGES`, which would,
 Written at **5g**, when the document scanner entered the build, and read out of the artifact with
 `scripts/aab-permissions.py` rather than out of the source.
 
+✅ **Confirmed at 5j against the shipped 1.2.0 bundle** (`versionCode` 211, `versionName` 1.2.0,
+upload key `CN=Maksymilian Sredniawa, O=Binky, C=PL` SHA384withRSA, 709/709 Polish strings in
+`base/resources.pb`): **8 permissions, all accounted for, none of the four forbidden ones present,
+and zero `<uses-feature>`**. The set below is the release's, not a prediction made from a
+pre-release build — which is 3a's lesson and the reason 4h's "two permissions" claim was wrong.
+
 The two additions are **`SCHEDULE_EXACT_ALARM`**, which is ours and was expected, and
 **`android.permission.INTERNET`**, which is not ours and was not.
 
@@ -268,6 +274,12 @@ because the next dependency that touches ads would now have somewhere to hide.
 
 The same dependency did merge `INTERNET` (§1.2) — which is the mechanism this section describes
 firing for a third time, and the reason the assertion has to live in a script rather than in prose.
+
+**Re-verified at 5j on the shipped `versionCode` 211**, which is the run this section's expiry
+trigger was written for: `aab-permissions.py` passes with `AD_ID` among the four forbidden entries it
+checks, so the artifact carries none. This is now the *only* evidence for the answer — GMS has been
+on the classpath since 5g and the 3h-era proof is retired for good. The question therefore stays a
+per-release check rather than a settled fact, and §7's table above answers **No** on that basis.
 
 A related non-finding worth writing down so it is not re-investigated: `android.permission.DUMP`
 appears in the merged manifest as `android:permission` on `androidx.profileinstaller`'s
