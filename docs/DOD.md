@@ -146,10 +146,51 @@ overnight run and Play's count are outstanding.
 
 ---
 
-## 6 — Phase 7: nine languages 🟢 planned, not started
+## 6 — Phase 7: the redesign 🟢 sketched, not started
 
-Design in **[`phase-7.md`](phase-7.md)**. **Runs after Phase 6** — translating a string set about to
-gain a Support screen means translating it twice, in nine languages.
+Shape and decisions in **[`phase-7.md`](phase-7.md)**. **Same functionality, new looks** across all 26
+routes — no schema, no new nav key, no new dependency, so the test suite stays valid throughout and the
+phase ships screen by screen. **Runs after Phase 6** (so Support is designed once) and **before Phase 8**
+(so its copy is translated once).
+
+The per-screen worklist is **not written yet, on purpose** — it cannot be, before the visual language
+exists. These are the items that come first.
+
+- [ ] **Decide dynamic colour.** `Theme.kt` ships `dynamicColor = true`, so on Android 12+ the palette
+      comes from the user's wallpaper and `LightColorScheme` is only seen on API 26–30. Keep Material You
+      and redesign layout/hierarchy only, or turn it off (Settings toggle, default off) and own a brand.
+      **Recommendation: own a brand** — the theme is still `android create`'s `Purple40`, so there is
+      nothing to preserve. **Nothing else in this phase starts before this is answered.**
+- [ ] **Capture the before set** — all 26 routes, both locales, `adb exec-out screencap -p`. It is the
+      input to the design work and the only honest way to judge the result.
+- [ ] **Fix the visual language** — palette, type scale, spacing rhythm, list-row and card treatment,
+      empty states — plus `Home` and `Weight` drawn in full. Mocked in Claude Design (HTML, *not* Compose;
+      it is a mockup surface, not a codegen path). The other 24 routes go straight to Compose.
+- [ ] **Theme commit first**: `Color.kt`, `Type.kt`, `Theme.kt` stop being the scaffold's. One commit
+      moves the whole app; every screen after it is an adjustment, not a reinvention.
+- [ ] Then screen by screen, tab by tab, starting with the two that were mocked.
+- [ ] **Rules the new look inherits** — weight changes always in grams; the chart plots real timestamps,
+      not index; missing media is a placeholder, never a crash; image writes go through the media helper
+      (ADR-0020); no empty state infers a problem from silence (ADR-0001); no *missed*/*overdue* outside
+      care reminders (ADR-0026); every new string is a resource in **both** locales (ADR-0013).
+- [ ] **Gate: 4f's edge-to-edge matrix re-run in full**, both orientations, both navigation modes. A
+      visual overhaul is exactly what that matrix exists to catch.
+- [ ] Re-capture and compare, same routes, same locales. `lint` still 0 errors, 0 warnings.
+- [ ] **Answer whether any string changed** — a clean "no" would let Phase 8 start in parallel.
+- [ ] **Decide 1.4 vs 2.0 at the release**, not now: nothing breaks in the data, the schema or the backup
+      format, so 1.4 is the honest reading — but a single `feat!:` is what `release-please` reads as 2.0,
+      and an overhaul is the one moment a major bump tells a user something true.
+
+**§4's Play screenshots wait for this phase**, or they are taken twice and the first set is stale before
+the testing count clears.
+
+---
+
+## 7 — Phase 8: nine languages 🟢 planned, not started
+
+Design in **[`phase-8.md`](phase-8.md)**. **Runs after Phases 6 and 7** — translating a string set about
+to gain a Support screen, and then to have its copy rewritten by a redesign, means translating it twice
+in nine languages and having it read twice by nine native speakers.
 
 - [ ] Generalise `PolishTranslationTest` → `TranslationTest`, parameterised over the locale table, with
       **per-language plural categories from CLDR** (not a hardcoded set of four). Do this **first**, on
@@ -168,7 +209,7 @@ gain a Support screen means translating it twice, in nine languages.
 - [ ] Play listing title + short + full description in all nine. Screenshots may lag (Play falls back);
       `scripts/edge-to-edge.py` needs a `--locale` flag first.
 - [ ] **Decide the lagging-translation policy** when the test is generalised — strict red build, or a
-      dated `translations-pending` allowlist. See phase-7.md's open question.
+      dated `translations-pending` allowlist. See phase-8.md's open question.
 
 ---
 
