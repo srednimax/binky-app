@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0](https://github.com/srednimax/binky-app/compare/v1.1.0...v1.2.0) (2026-08-05)
+
+
+### Features
+
+* admit documents into Auto Backup under a ceiling, and say what was left out ([9602c5e](https://github.com/srednimax/binky-app/commit/9602c5ea55208ec0f703b762c6df0b3bbacb59e0))
+* arm the one dose alarm from the courses table ([753d910](https://github.com/srednimax/binky-app/commit/753d910627198f59b77d5e7c08c6b3d2ea9a7e8d))
+* carry Phase 5's whole schema forward to version 6 ([01a769e](https://github.com/srednimax/binky-app/commit/01a769e1883277d88f9e818c1831010af090cd27))
+* give medication courses a data layer and derive their doses ([51abbf7](https://github.com/srednimax/binky-app/commit/51abbf78bc291d029a912d32a806ac2cd5d1db56))
+* prove the exact-alarm path while nothing depends on it ([a22ee51](https://github.com/srednimax/binky-app/commit/a22ee5110f22a15c2ba6ae90ada987e544a558db))
+* put medication courses and their doses on screen ([d20a39c](https://github.com/srednimax/binky-app/commit/d20a39c032b375128a8225046d9aa541ba9746ac))
+* put visits and the vet directory on screen ([d4608c0](https://github.com/srednimax/binky-app/commit/d4608c0afed8a53e15e2a427f061e570cf4a1ab8))
+* scan documents, read them, and attach them to visits ([e6ce297](https://github.com/srednimax/binky-app/commit/e6ce297f3b6b41b93b3f770f19a3a6d9a783d551))
+
 ## [1.1.0](https://github.com/srednimax/binky-app/compare/v1.0.1...v1.1.0) (2026-08-03)
 
 
