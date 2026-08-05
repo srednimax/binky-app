@@ -1,140 +1,143 @@
-# Phase 7 — Nine languages — ships as 1.4
+# Phase 7 — The redesign — ships as 1.4
 
-**Status: planned, not started.** Boxes in [`DOD.md`](DOD.md) §6; this file is the reasoning. Finished
-phases are in [`PLAN.md`](PLAN.md) and are not needed to build this one.
+**Status: sketched, not planned in full.** This file holds the shape of the phase and the decisions that
+block it; the per-screen worklist is deliberately *not* written yet, because it cannot be written before
+the visual language exists. The boxes that do exist are in [`DOD.md`](DOD.md) §6. Finished phases live in
+[`PLAN.md`](PLAN.md), which is 3 000 lines of record and is not needed to build this one.
 
-**Prerequisite: Phase 6 ships first.** Translating a string set that is about to gain a Support screen
-means translating it twice, in nine languages.
+**Prerequisite: Phase 6 ships first.** It adds a Support screen; designing it in the old language and
+then again in the new one is the same screen drawn twice.
 
-**Decisions it leans on:** ADR-0013 (English base, in-app switcher, endonym labels), ADR-0001 and
-ADR-0026 (what the copy may never say — the reason this phase is not a mechanical job), ADR-0009 (the
-listing).
+**Nothing here blocks on Phase 5's open evidence.** No schema, no alarm, no permission, no dependency —
+the same reason Phase 6 is safe to build while the overnight run and Play's count are outstanding.
+
+**Decisions it leans on:** ADR-0001 (never infer a problem from missing data), ADR-0013 (every
+user-visible string is a resource), ADR-0020 (all image writes go through the media helper), ADR-0026
+(what the copy may never say).
 
 ## What ships
 
-Polish was the proof of concept: it proved the mechanism — `AppCompatDelegate`, the backport, the
-`locales_config.xml` / `AppLanguage` pair, and a test that holds the translation afterwards. **Seven
-languages join it**, taking the app to nine:
+**The same app, easier to use.** Every feature stays, every route stays, every table stays. What changes
+is the look: palette, type scale, spacing rhythm, how a list row and a card are drawn, what an empty
+screen says, and how much of a screen you must read before the useful thing is visible.
 
-| Locale | Resource directory | Plural categories *(verify against CLDR when it lands)* |
-| --- | --- | --- |
-| `en` | `values` | one, other |
-| `pl` | `values-pl` | one, few, many, other |
-| `de` | `values-de` | one, other |
-| `es` | `values-es` | one, many, other |
-| `fr` | `values-fr` | one, many, other |
-| `it` | `values-it` | one, many, other |
-| `pt-BR` | `values-pt-rBR` | one, many, other |
-| `cs` | `values-cs` | one, few, many, other |
-| `uk` | `values-uk` | one, few, many, other |
+**25 routes today, 26 once Phase 6's Support screen lands** — five tabs (`Home`, `Weight`,
+`Observations`, `CareAndMeds`, `More`) and the editors, galleries, viewers and setup screens behind them.
 
-**631 translatable resources × 7 ≈ 4 400 strings**, drafted by machine against a brief and **read by a
-native speaker before that language ships**. The plural table above is written from CLDR's rules and is
-**checked per row when the language lands, not trusted from this file** — a missing category is not an
-error, it silently resolves to `other` and renders a grammatically wrong sentence. Note the romance
-`many` category is unreachable for the integer counts this app produces (it is a large-number form), but
-it is declared anyway for the same reason Polish declares `other`.
+The scope constraint is what makes this tractable: **no schema change, no new nav key, no new dependency,
+no migration.** The existing test suite stays valid from the first commit to the last, so the phase ships
+**screen by screen** rather than as one long-lived branch, and every step is independently verifiable on
+the device.
 
-## The two facts that shape the workflow
+## The decision that blocks everything else
 
-- **Resource resolution does not consult `locales_config.xml`.** That file governs the *per-app language
-  picker* on Android 13+ and AppCompat's backport below it — it is not a delivery filter. The moment
-  `values-de/` exists in `res/`, **every phone set to German gets those strings**, reviewed or not. So a
-  wide tranche cannot be drafted in place and released language by language: drafts live **outside
-  `res/`**, in `translations/<locale>/strings.xml`, and *promotion is a file move*. The test suite reads
-  paths, so it can validate a staged draft exactly as it validates a shipped one — the review gate keeps
-  its teeth without the drafts being invisible. (`androidResources` locale filters could do the same job
-  from the build file; the staging directory is preferred because it needs no build configuration and
-  cannot be switched off by accident.)
-- **A language ships when its native review passes, not when its draft lands.** Promotion is four edits
-  and they go together, or the app offers a language it does not have: move the file into `res/`, add the
-  `<locale>` line, add the `AppLanguage` entry, add the endonym label. `AppLanguageTest` already asserts
-  the XML and the enum agree; it cannot see the other two.
+`theme/Theme.kt` ships `dynamicColor: Boolean = true`. On Android 12+ Binky takes its palette from the
+user's **wallpaper**, so `LightColorScheme` is only ever seen on API 26–30. A brand palette designed
+today would be invisible to most of the people who install the app.
 
-## Decisions
+That is a fork, not a detail, and the whole phase inherits whichever way it goes:
 
-- **The gate stops being named after one language.** `PolishTranslationTest` becomes `TranslationTest`,
-  parameterised over the locale table: every translatable resource present, nothing orphaned, format
-  arguments preserved, plural categories complete **per that language's own rules** rather than against a
-  hardcoded set of four. Its existing five assertions are already the right ones — this is generalisation,
-  not new test design, and the Polish-specific comments become the table's rows.
-- **The endonym labels become `translatable="false"`, which removes 81 duplicated entries.** ADR-0013
-  names each language in its own language *in every locale*, so `settings_language_polish` is `Polski`
-  everywhere — it is locale-*invariant*, which is what `translatable="false"` means. Today `values/` and
-  `values-pl/` carry byte-identical copies; at nine languages that becomes nine labels duplicated nine
-  times for no benefit. Marking them untranslatable collapses it to nine strings, and the existing
-  "untranslatable resources never appear in a translated file" assertion enforces it for free.
-- **The translator brief is a deliverable, and it is the part that makes machine drafting safe.** This
-  app's copy carries rules a translator cannot infer: ADR-0026 forbids *missed* and *overdue* outside
-  Phase 4's care reminders, ADR-0001 forbids language that infers a problem from silence, weight changes
-  are always stated in grams, and `CONTEXT.md`'s vocabulary is deliberate — *fluffle*, *watch*,
-  *observation*, *visit* — with an *Avoid* list per term. A translator without that produces fluent copy
-  that quietly turns an observation into a warning, in a language no reviewer here reads. So the brief
-  carries the vocabulary, the tone, and a **per-language banned-word list** (`verpasst`/`überfällig`,
-  `pominięta`/`zaległa`, …) written *with* the native reviewer rather than guessed at.
-- **Listing text for all nine; screenshots may lag.** Play falls back to the default listing's
-  screenshots when a language has none, but there is no fallback for *discovery* — an untranslated
-  listing means nobody in that market finds the app at all. So the title, short and full descriptions are
-  part of this phase for every language, and localised screenshots are taken for the languages with
-  installs once there are installs to count. `scripts/edge-to-edge.py` needs a `--locale` flag it does
-  not have today; the app's own switcher is what it drives, so this is a capture-time argument rather
-  than a second matrix.
-- **`values-pt-rBR`, not `values-pt-BR`.** The resource qualifier uses the `r` prefix for a region; the
-  BCP-47 tag in `locales_config.xml` and in `AppLanguage` does not (`pt-BR`). Two spellings of one
-  locale, in two files that must agree, is exactly the shape of mistake `AppLanguageTest` exists to
-  catch — extend it to compare the resource directory too.
-- **No RTL in this phase.** Arabic and Hebrew are not a translation job, they are a layout project:
-  mirroring, `supportsRtl`, and 4f's edge-to-edge matrix doubling. Excluded deliberately so that the cost
-  is a decision rather than a discovery.
+- **Keep Material You.** The redesign becomes layout, hierarchy, density and spacing; colour is used
+  through tonal *roles* (`primaryContainer`, `surfaceVariant`) and Binky looks different on every phone.
+- **Own a brand.** Dynamic colour goes off, or becomes a Settings toggle defaulting off, and
+  `theme/Color.kt` stops being `android create`'s `Purple40`.
 
-## The open question this phase owes
+**The recommendation is the second.** A listing with no reviews and no installs gets more from a
+recognisable app than from wallpaper harmony, and the current state is neither — the theme is still the
+scaffold's, so there is nothing to preserve. A toggle keeps Material You available for anyone who wants
+it, at the cost of one preference.
 
-**Nine locales means every future string is nine translations before the build goes green.** The current
-test makes a missing translation a red build, which is why Polish never rotted — and at nine languages
-that same strictness puts every future feature behind a translation round.
+**Decide this before any mockup exists.** Every other visual choice is downstream of it.
 
-The recommendation is **strict, with a visible escape**: the test reads a `translations-pending` list,
-each entry dated and naming its locale, and no release ships with an entry older than one release cycle.
-A lagging language then shows English mid-screen — bad, and *visible in the file that admits it* — rather
-than the alternative, which is quietly dropping the rule and letting eight languages rot at once. Decide
-it when the test is generalised, not before; it is cheap to change and expensive to get wrong by default.
+## Why it runs before Phase 8, not after
 
-## Tests
+Phase 8 is 631 translatable resources × 7 new languages ≈ 4 400 strings, each **read by a native speaker
+before its language ships**. A redesign aimed at *user-friendliness* rewrites copy by definition — the
+section header nobody understood, the empty state that explained nothing, the button whose label was the
+reason people tapped the wrong thing.
 
-JVM, and all of it mechanical: `TranslationTest` over the nine-row table (completeness, orphans, format
-arguments, plural categories per CLDR), `AppLanguageTest` extended to assert `locales_config.xml`, the
-`AppLanguage` enum **and** the resource directories all name the same nine locales. What no test can
-hold is tone — that is the native read-through, and it is why a language ships on a person's word.
+Ship the languages first and every one of those rewrites costs seven re-translations **and** seven
+re-reads. The ordering is not a preference; it is the difference between drafting a string set once and
+drafting it twice.
 
-## Gate
+*(If the phase turns out to be strictly pixels — not one string changed — the constraint relaxes. Do not
+assume that: assume copy moves, and let it be a pleasant surprise if it does not.)*
 
-- **Every screen read end to end in each language by a native speaker**, with no English left behind —
-  ADR-0013's original promise, now nine times. A language that has not had this does not ship.
-- `TranslationTest` green across all nine locales; `AppLanguageTest` green across all three declarations.
-- **Plural categories correct per language**, checked on a real count in each: 1, 2, 5 and 22 of
-  something, in `cs` and `uk` as well as `pl`, where the *few*/*many* split is where a wrong table shows.
-- No string in any locale says *missed* or *overdue* outside Phase 4's care reminders, and no banned-word
-  list entry appears in its own language's file.
-- The switcher offers nine languages by endonym, and switching to each restarts into that language.
-- `settings_language_*` are `translatable="false"` and appear in no `values-<locale>` file.
-- The Play listing carries title, short and full description in all nine.
-- **A device set to a language Binky does not ship** still falls back to English cleanly, including its
-  plurals.
-- Edge-to-edge unaffected: longest-string languages (German compounds, Ukrainian) do not clip or wrap
-  wrongly on the narrowest supported screen — the one visual risk a translation genuinely carries.
+## What the redesign may not change
 
-`spotlessApply`, `assembleDebug`, `test` and `lint` at the gate. No `connectedAndroidTest` is owed —
-there is no schema change and no media path.
+"Same functionality" is easy to say and easy to lose one screen at a time. These are the rules the new
+look inherits, all of them already load-bearing somewhere:
+
+- **Weight changes are always shown in grams**, whatever the display-unit preference — `−0.04 kg` hides
+  the signal that `−40 g` makes obvious. A prettier weight card that switches to kilograms is a
+  regression, not a redesign.
+- **The weight chart plots real timestamps, not list index.** Weighings are irregular; an evenly spaced
+  chart is a better-looking lie.
+- **Missing media renders as a placeholder, never a crash.** A restored backup may legitimately lack
+  photos, and a new photo grid must survive that on day one.
+- **All image writes still go through the media helper** (ADR-0020). A redesigned gallery that loads
+  full-resolution bitmaps to look sharper blows up in memory.
+- **Nothing infers a health problem from missing data** (ADR-0001), and no screen says *missed* or
+  *overdue* outside Phase 4's care reminders (ADR-0026). New empty states are exactly where this rule
+  gets broken — "no observations" must not become "nothing to worry about".
+- **Every user-visible string is a resource, in both locales** (ADR-0013). A redesign that hardcodes
+  English is a Phase 8 bug planted a phase early, and `PolishTranslationTest` is what catches it.
+- **Health features observe; they never advise.**
+
+## Where the design happens
+
+**Claude Design** (`claude.ai/design`) — beta, included in the Pro subscription, drawing on the same
+usage pool as everything else. It renders HTML/CSS, **not Compose**: nothing comes back as shippable
+code, and the translation to `Modifier` chains and `MaterialTheme.colorScheme` roles is done by hand.
+
+So it is a **mockup surface, not a codegen path**, and it is used for the part where iterating is
+expensive in Compose and cheap in HTML:
+
+- the **visual language** — palette, type scale, spacing rhythm, list-row and card treatment, empty
+  states, the shape of a primary action;
+- **two hero screens**, `Home` and `Weight`, drawn until they are right.
+
+**Then stop.** The remaining 24 routes are applied in Compose directly, against the language those three
+artefacts fix. Mocking a screen in HTML that will be hand-written in Kotlin anyway is work paid for
+twice — and the phone, not the browser, is where "easier to use" is actually judged.
+
+**The "before" set is an input.** Every screen captured with `adb exec-out screencap -p` before anything
+changes: it is what the design work is a response to, and afterwards it is the only way to answer
+"is this better?" with something other than an opinion.
 
 ## Order of work
 
-1. Generalise the test and the locale table **first**, on `en` + `pl` alone. It must be able to fail
-   before there is anything to check.
-2. Endonym labels to `translatable="false"`; the brief and the banned-word lists written.
-3. Draft all seven into `translations/`, validated by the test in place.
-4. Promote one language at a time as its native read completes — four edits, one commit, one language.
-5. Listing text for the promoted set; screenshots later, driven by install data.
+1. **Capture the before set** — all 26 routes, both locales, on the Xiaomi.
+2. **Settle dynamic colour.** Nothing else starts first.
+3. **Fix the visual language** in Claude Design, plus `Home` and `Weight`.
+4. **Theme commit first** — `Color.kt`, `Type.kt` and `Theme.kt` stop being the scaffold's. One commit,
+   and the whole app moves at once; every screen after it is an adjustment rather than a reinvention.
+5. **Screen by screen, tab by tab**, starting with the two that were mocked.
+6. **Re-capture and compare**, same routes, same locales.
+
+## Gate
+
+- **All 26 routes visited on the device**, in both locales, against the before set.
+- **4f's edge-to-edge matrix re-run in full** — both orientations, both navigation modes. A visual
+  overhaul is precisely the change that matrix exists to catch, and it is the one gate here that cannot
+  be argued down.
+- `PolishTranslationTest` green — a redesign that adds strings adds them in **two** languages.
+- `spotlessApply`, `assembleDebug`, `test` at each checkpoint; `lint` at the gate, holding at **0 errors
+  and 0 warnings**. No `connectedAndroidTest` is owed: no schema change and no media path.
+- **The Play screenshots owed from Phase 5 are taken after this, not before** — otherwise they are taken
+  twice, and the first set is obsolete before the count clears. See `DOD.md` §4.
+
+## Open questions
+
+- **1.4 or 2.0?** `release-please` derives the version from commit subjects, so a single `feat!:` would
+  make this 2.0. Nothing about the data, the schema or the backup format breaks — only the appearance —
+  so 1.4 is the honest reading. But a full visual overhaul is the one moment where a major bump says
+  something true to a user looking at a changelog. Decide at the release, not now.
+- **Does any string change?** Assume yes (see Phase 8's ordering). Worth answering properly once the
+  hero screens exist, because a "no" would let Phase 8 start in parallel.
+- **How is "more user friendly" judged?** Today the answer is one person's eye. That is acceptable for a
+  free app with no installs, and it should be *stated* rather than dressed up as a method.
 
 ## When it closes
 
-Write the results here, tick **Phase 7** in `PLAN.md`'s status list, and empty §6 of `DOD.md`.
+Write the results into this file, tick **Phase 7** in `PLAN.md`'s status list, and empty §6 of `DOD.md`.
