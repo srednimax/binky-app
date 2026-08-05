@@ -34,6 +34,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
 import app.binky.tracker.data.BunnySelection
+import app.binky.tracker.data.DoseStatus
+import app.binky.tracker.data.ScheduledDose
 import app.binky.tracker.data.interval
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.bunny.dateLabel
@@ -47,12 +49,16 @@ import app.binky.tracker.work.openBatteryOptimisationSettings
 import app.binky.tracker.work.reminderDelivery
 
 /**
- * Care — one bunny's recurring care, due first (ADR-0018), **and its vet visits** (ADR-0017).
+ * Care & Meds — one bunny's medication courses, recurring care due first (ADR-0018), **and its vet
+ * visits** (ADR-0017).
  *
  * **The tab is a hub from 1.2**, and that is a decision about where things live rather than a
- * layout: care reminders, vet visits and — at 5e — medication courses are all *this bunny's ongoing
- * care*, so they share the bunny-scoped tab. The **vet directory is not here**: a vet is app-wide,
- * so it lives in More (ADR-0015), and only the visits are per bunny.
+ * layout: medication courses, care reminders and vet visits are all *this bunny's ongoing care*, so
+ * they share the bunny-scoped tab. The **vet directory is not here**: a vet is app-wide, so it lives
+ * in More (ADR-0015), and only the visits are per bunny.
+ *
+ * **Medications go first** (PLAN 5e). A dose has a clock time today; a nail trim has a week. See
+ * `MedicationsSection.kt` for why the order is fixed rather than conditional on having any.
  *
  * **The tab is live from 1.1**, which is the one-value flip 3f left in place: this screen stopped
  * being a stub the moment there was something real behind it, and `StubScreen` lost its last caller
@@ -76,6 +82,8 @@ fun CareAndMedsScreen(
     onRecordWeight: (String) -> Unit,
     onAddVisit: (String) -> Unit,
     onOpenVisit: (String, String) -> Unit,
+    onAddCourse: (String) -> Unit,
+    onOpenCourse: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: CareViewModel = viewModel(factory = CareViewModel.Factory, extras = appViewModelExtras())
@@ -107,6 +115,10 @@ fun CareAndMedsScreen(
                 onAddVisit = { careState.bunnyId?.let(onAddVisit) },
                 onOpenVisit = { row -> careState.bunnyId?.let { onOpenVisit(it, row.id) } },
                 onDeleteVisit = viewModel::requestVisitDelete,
+                onAddCourse = { careState.bunnyId?.let(onAddCourse) },
+                onOpenCourse = { row -> onOpenCourse(row.id) },
+                onDeleteCourse = viewModel::requestCourseDelete,
+                onAnswer = viewModel::answer,
                 modifier = modifier,
             )
     }
@@ -144,6 +156,15 @@ fun CareAndMedsScreen(
             row = row,
             onConfirm = viewModel::confirmVisitDelete,
             onDismiss = viewModel::cancelVisitDelete,
+        )
+    }
+
+    careState.pendingCourseDelete?.let { pending ->
+        DeleteCourseDialog(
+            pending = pending,
+            onConfirm = viewModel::confirmCourseDelete,
+            onEndInstead = viewModel::endCourse,
+            onDismiss = viewModel::cancelCourseDelete,
         )
     }
 }
@@ -184,21 +205,37 @@ private fun CareList(
     onAddVisit: () -> Unit,
     onOpenVisit: (VisitRow) -> Unit,
     onDeleteVisit: (VisitRow) -> Unit,
+    onAddCourse: () -> Unit,
+    onOpenCourse: (CourseRow) -> Unit,
+    onDeleteCourse: (CourseRow) -> Unit,
+    onAnswer: (ScheduledDose, DoseStatus) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        medicationsSection(
+            state = state,
+            onAddCourse = onAddCourse,
+            onOpenCourse = onOpenCourse,
+            onDeleteCourse = onDeleteCourse,
+            onAnswer = onAnswer,
+        )
+
+        // Headed from 1.2, and not before: one list needs no header, and two unlabelled ones read
+        // as a single list whose rows have stopped making sense.
+        item { SectionHeader(stringResource(R.string.care_reminders_heading)) }
+
+        // Under its own heading from 1.2, where it used to head the whole tab: there are two
+        // notification channels behind this screen now, and a line about the care one floating
+        // above everything would read as a claim about doses too.
+        //
         // Not in the archived scope: an archived bunny is never swept, so a line about how reliably
         // its notifications arrive would be describing something that will not happen either way.
         if (!state.readOnly) {
             item { DeliveryLine() }
         }
-
-        // Headed from 1.2, and not before: one list needs no header, and two unlabelled ones read
-        // as a single list whose rows have stopped making sense.
-        item { SectionHeader(stringResource(R.string.care_reminders_heading)) }
 
         // No add / complete / edit affordances at all in the archived scope, rather than
         // affordances that refuse when tapped (ADR-0004).
@@ -259,8 +296,9 @@ private fun CareList(
     }
 }
 
+/** Shared with `MedicationsSection.kt`, so the tab's three headings cannot drift apart in style. */
 @Composable
-private fun SectionHeader(text: String) {
+internal fun SectionHeader(text: String) {
     Text(text = text, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
 }
 

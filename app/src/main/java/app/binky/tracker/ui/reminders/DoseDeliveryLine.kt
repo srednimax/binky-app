@@ -27,8 +27,8 @@ import app.binky.tracker.work.reminderDelivery
 /**
  * What will actually happen to a dose reminder, in one sentence — **and the sentence is tappable**.
  *
- * The state is on screen anyway (5d puts it on every course row), so the alternative to a tap target
- * is dead text describing a problem next to no way to fix it. That is not a second ask: ADR-0006
+ * The state is on screen anyway, so the alternative to a tap target is dead text describing a
+ * problem next to no way to fix it. That is not a second ask: ADR-0006
  * still gets exactly one, at the point a course first schedules something. This is the label
  * refusing to be inert, and it earns its place because revoking `SCHEDULE_EXACT_ALARM` on Android
  * 14+ drops the owner into best-effort **without their ever having chosen it** — there is no ask to
@@ -43,6 +43,13 @@ import app.binky.tracker.work.reminderDelivery
  * and back, so all of it is re-read on resume rather than remembered — coming back having granted
  * exact alarms has to redraw as armed, or the app is reporting a state that stopped being true while
  * it was in the background.
+ *
+ * **Hosted once per screen, not once per course** (PLAN 5e, decided at 5e against that checkpoint's
+ * own wording). What it describes is a fact about the *phone* — a permission, a channel, a battery
+ * policy — and a course does not change any of it, so a copy under every row would be the same four
+ * sentences repeated with nothing to distinguish them. `MedicationsSection.kt` also gates it on some
+ * course actually having times with reminders on: a warning about how reliably Android wakes the app
+ * is noise to an owner who has scheduled nothing to wake it for.
  */
 @Composable
 fun DoseDeliveryLine(modifier: Modifier = Modifier) {

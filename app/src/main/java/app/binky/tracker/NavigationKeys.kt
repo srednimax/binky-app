@@ -91,6 +91,32 @@ data class CareReminderEditor(
 ) : NavKey
 
 /**
+ * One medication course: its schedule, everything recorded against it, and the ad-hoc dose path
+ * (ADR-0002, ADR-0026).
+ *
+ * Keyed by the course alone, exactly as [CareReminder] is keyed by the reminder. The bunny is not
+ * carried because it cannot disagree — a course belongs to one bunny by its foreign key, and a
+ * second copy of that fact in the back stack would be the one that goes stale.
+ */
+@Serializable
+data class MedicationCourse(
+    val courseId: String,
+) : NavKey
+
+/**
+ * Add or edit a medication course. `null` [courseId] adds, mirroring [BunnyEditor].
+ *
+ * [bunnyId] is carried even when editing, for the reason [CareReminderEditor] and [VisitEditor]
+ * carry it: adding needs it, and a key that took it only sometimes would be two keys wearing one
+ * name.
+ */
+@Serializable
+data class MedicationCourseEditor(
+    val bunnyId: String,
+    val courseId: String? = null,
+) : NavKey
+
+/**
  * The archived bunnies list, reached from More (ADR-0004). A detail screen, not a destination:
  * archived bunnies are deliberately absent from the switcher, and this is the one way to them.
  */
@@ -204,8 +230,9 @@ enum class TopLevelDestination(
     // Hidden at 1.0, live again at 1.1 (ADR-0015, ADR-0019, PLAN 4c). It was hidden because its
     // screen was a stub and a fifth of primary navigation spent on a dead end is what this enum
     // exists to prevent; 4c gives it real care reminders, so the flip back is the one value 3f
-    // promised. The label moved to "Care" for 1.1 — see `destination_care` — while [CareAndMeds]
-    // keeps its name, because it is persisted back-stack state.
+    // promised. The label moved to "Care" for 1.1 and back to "Care & Meds" at 1.2 — see
+    // `destination_care` — while [CareAndMeds] keeps its name, because it is persisted back-stack
+    // state and a stack saved by 1.0 has to stay resolvable.
     CARE(CareAndMeds, R.string.destination_care, Icons.Filled.Favorite),
     MORE(More, R.string.destination_more, Icons.Filled.MoreVert),
 }

@@ -61,6 +61,7 @@ suspend fun seedSampleData(
     watches: WatchRepository,
     vets: VetRepository,
     visits: VisitRepository,
+    medications: MedicationRepository,
     cacheDir: File,
     now: Instant = Instant.now(),
 ): Boolean {
@@ -85,7 +86,138 @@ suspend fun seedSampleData(
     seedCare(care, bijou, nugget, now)
     seedWatches(watches, bijou, nugget, now)
     seedVisits(vets, visits, bijou, nugget, now)
+    seedMedications(medications, bijou, now)
     return true
+}
+
+/**
+ * The medication half: **three courses, all on Bijou**, chosen so every state 5e draws is on screen
+ * without waiting a week for one — and so 5f has something real to arm tonight.
+ *
+ * - **An open twice-daily course with a partial history**, which is the one that has to be looked at
+ *   hardest: it puts unanswered slots in today's list, answered ones behind it, and a deliberate
+ *   *skip* among them, so "skipped is a recorded fact, not an absence" is visible rather than
+ *   argued from a test. It is also the only course here with reminders on, which makes it the one
+ *   the delivery line is gated on and the one 5f's alarm will be rebuilt from.
+ * - **A course that ended last week**, so the active-then-ended ordering has something to order and
+ *   the *Ended* row can be read beside a running one.
+ * - **A course with no schedule at all**, because scheduling is optional (ADR-0002): no times means
+ *   no slots ever, no reminder switch in the editor, and an ad-hoc dose as the only way to record
+ *   anything — three branches nothing else here exercises.
+ *
+ * **Nugget deliberately gets none**, which puts the medications empty state on screen in the same
+ * fixture. The per-bunny scoping is already proven by the visits above.
+ *
+ * Written **through the repository**, like everything else here. The past days go in as hand-built
+ * [DueDose] keys — a slot is a local day and a local time and nothing else, so this writes exactly
+ * what the screen writes when the owner answers on the day — while **today's** slots are read back
+ * through [MedicationRepository.scheduleNow] and answered for real, because a fixture whose current
+ * day was assembled by hand would prove nothing about the derivation it is meant to demonstrate.
+ */
+private suspend fun seedMedications(
+    medications: MedicationRepository,
+    bijou: String,
+    now: Instant,
+) {
+    val zone = ZoneId.systemDefault()
+    val today = now.atZone(zone).toLocalDate()
+    val morning = LocalTime.of(8, 0)
+    val evening = LocalTime.of(20, 0)
+
+    val metacam =
+        medications.add(
+            MedicationCourseEntity(
+                bunnyId = bijou,
+                name = "Metacam",
+                doseAmount = "0.3 ml",
+                startOn = today.minusDays(6),
+                notes = "After food. Back to the vet if she stops eating.",
+            ),
+            times = listOf(morning, evening),
+        )
+
+    for (daysAgo in 5L downTo 1L) {
+        val day = today.minusDays(daysAgo)
+        for (time in listOf(morning, evening)) {
+            // One deliberate skip in the middle of an otherwise compliant week: a skip is a
+            // recorded decision, and the screen has to show it in the same voice as a dose given.
+            val skipped = daysAgo == 3L && time == evening
+            medications.answer(
+                slot =
+                    DueDose(
+                        courseId = metacam,
+                        scheduledOn = day,
+                        scheduledTime = time,
+                        at = day.atTime(time).atZone(zone).toInstant(),
+                    ),
+                status = if (skipped) DoseStatus.SKIPPED else DoseStatus.GIVEN,
+                note = if (skipped) "Spat it straight out. Tried again in the morning." else null,
+                // A few minutes after the slot, which is what a real answer looks like and keeps the
+                // history's clock times from being suspiciously exact.
+                recordedAt =
+                    day
+                        .atTime(time)
+                        .plusMinutes(4)
+                        .atZone(zone)
+                        .toInstant(),
+            )
+        }
+    }
+
+    // Today's earliest slot answered and the rest left open — so the tab opens on one of each, and
+    // 5f has an unanswered slot to arm tonight.
+    medications
+        .scheduleNow(bijou, zone = zone, today = today)
+        .firstOrNull { it.course.id == metacam }
+        ?.let { medications.answer(slot = it.due, status = DoseStatus.GIVEN, recordedAt = now) }
+
+    val panacur =
+        medications.add(
+            MedicationCourseEntity(
+                bunnyId = bijou,
+                name = "Panacur",
+                doseAmount = "1 ml",
+                startOn = today.minusDays(20),
+                endOn = today.minusDays(7),
+                notes = "Nine days for E. cuniculi. Finished.",
+                // Off, because the course is over — and because a course with reminders off is a
+                // state the editor's switch has to be able to show.
+                remindersEnabled = false,
+            ),
+            times = listOf(LocalTime.of(9, 0)),
+        )
+    for (daysAgo in listOf(9L, 8L)) {
+        val day = today.minusDays(daysAgo)
+        medications.answer(
+            slot =
+                DueDose(
+                    courseId = panacur,
+                    scheduledOn = day,
+                    scheduledTime = LocalTime.of(9, 0),
+                    at = day.atTime(LocalTime.of(9, 0)).atZone(zone).toInstant(),
+                ),
+            status = DoseStatus.GIVEN,
+            recordedAt = day.atTime(LocalTime.of(9, 5)).atZone(zone).toInstant(),
+        )
+    }
+
+    val recovery =
+        medications.add(
+            MedicationCourseEntity(
+                bunnyId = bijou,
+                name = "Recovery food",
+                // The case the free-text amount exists for: nobody was given a number to type.
+                doseAmount = "one syringe, as often as she will take it",
+                startOn = today.minusDays(2),
+            ),
+        )
+    medications.recordAdHoc(
+        courseId = recovery,
+        status = DoseStatus.GIVEN,
+        note = "Took most of it.",
+        recordedAt = now.daysAgo(1, LocalTime.of(22, 30)),
+        now = now,
+    )
 }
 
 /**

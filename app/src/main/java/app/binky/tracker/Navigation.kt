@@ -53,6 +53,8 @@ import app.binky.tracker.ui.bunny.BunnyEditorScreen
 import app.binky.tracker.ui.care.CareAndMedsScreen
 import app.binky.tracker.ui.care.CareReminderEditorScreen
 import app.binky.tracker.ui.care.CareReminderScreen
+import app.binky.tracker.ui.care.MedicationCourseEditorScreen
+import app.binky.tracker.ui.care.MedicationCourseScreen
 import app.binky.tracker.ui.care.VisitEditorScreen
 import app.binky.tracker.ui.home.HomeScreen
 import app.binky.tracker.ui.more.MoreScreen
@@ -435,6 +437,27 @@ private fun AppShell(
                             onOpenVisit = { bunnyId, visitId ->
                                 backStack.add(VisitEditor(bunnyId, visitId))
                             },
+                            onAddCourse = { bunnyId -> backStack.add(MedicationCourseEditor(bunnyId)) },
+                            onOpenCourse = { courseId -> backStack.add(MedicationCourse(courseId)) },
+                        )
+                    }
+                    entry<MedicationCourse> { key ->
+                        MedicationCourseScreen(
+                            courseId = key.courseId,
+                            // The archived scope is the only read-only one, and a course is
+                            // reachable only through the bunny it belongs to (ADR-0004).
+                            readOnly = state.readOnly,
+                            onBack = { backStack.removeLastOrNull() },
+                            onEdit = { bunnyId, courseId ->
+                                backStack.add(MedicationCourseEditor(bunnyId, courseId))
+                            },
+                        )
+                    }
+                    entry<MedicationCourseEditor> { key ->
+                        MedicationCourseEditorScreen(
+                            bunnyId = key.bunnyId,
+                            courseId = key.courseId,
+                            onBack = { backStack.removeLastOrNull() },
                         )
                     }
                     entry<CareReminder> { key ->

@@ -2645,6 +2645,31 @@ copy.
      index rejects a second answer to the same slot **and accepts any number of ad-hoc doses**;
      `recordCounts` counts courses and doses.
 5. **5e — Courses and doses on screen.**
+   ✅ *(built and closed. spotless, `assembleDebug` and JVM tests green, lint back to **0/0** — the one
+   warning was `LocalContextResourcesRead`, this file's own; **no schema change**, so `6.json` is
+   untouched and no instrumented run is owed here (PLAN's verification line puts `connectedAndroidTest`
+   at 5b, 5d, 5f, 5g and the gate). Ten new JVM cases in `DoseNextTest`. **Reviewed on the Xiaomi**,
+   2026-08-05, against the seeded fixture in both locales: the tab reads **Care & Meds**; today's two
+   Metacam slots render with one answered and one open; *Given* and *Skipped* each write on one tap and
+   the row updates with no refresh; answering tonight moved the course row from "Next dose at 8:00 PM"
+   to "Next dose tomorrow at 8:00 AM" on the same emission; the delete dialog named **12 recorded
+   doses** and *end course instead* kept every one of them; Nugget shows the empty state with **no
+   delivery line at all**; the archived scope renders every row with no affordance on it. Four
+   decisions the plan's text did not settle, made here: **the medications section goes first on the
+   tab**, fixed rather than conditional — a dose has a clock time today where a nail trim has a week,
+   and a screen that reorders itself under the owner costs more than the three lines an empty section
+   takes; **the delivery line is hosted once per section and not per course row**, against this
+   checkpoint's own wording, because what it describes is a fact about the *phone* and a copy under
+   every course would be the same four sentences repeated with nothing to tell them apart — it is
+   further gated on some course actually having times with reminders on, so a bunny with no schedule
+   is not warned about a mechanism that will not run; **a course gets its own detail screen**
+   (`MedicationCourse`, the mirror of 4c's `CareReminder`), because the editable dose history has two
+   actions per row and a fourth list of those inside a three-list tab is where the tab stops being
+   readable; and **answering is one tap with no dialog, correcting is another tap**, which 5d's
+   `answer` already made safe by treating a second answer as a change of mind rather than a constraint
+   violation. One case the arithmetic turned out to need a word for: a course ending **today** whose
+   remaining slots are all answered is running but derives nothing further — `DoseNext.Done`, distinct
+   from `Ended`, and it is what *end course instead* leaves on screen.)*
    - The course list per bunny: active first, then ended, each row naming its schedule in words and its next
      dose in relative time, carrying 5a's delivery state rather than presenting as an armed alarm — and that
      state is tappable, so best-effort is a route to the setting rather than a label the owner can only read.
