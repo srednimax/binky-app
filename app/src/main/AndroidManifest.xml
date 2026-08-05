@@ -191,6 +191,18 @@
         </receiver>
 
         <!--
+            The two buttons on a dose notification (PLAN 5f). No intent-filter, for the same reason
+            DoseAlarmReceiver has none: these are the targets of our own PendingIntents, addressed by
+            component. The action strings on those intents exist to keep `Given` and `Skipped` from
+            collapsing into one PendingIntent — extras alone do not distinguish them — and are never
+            broadcast by anybody else, which is what `exported="false"` says.
+        -->
+        <receiver
+            android:name=".work.DoseActionReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <!--
             Not a service anybody starts — `android:enabled="false"` means it can never run. It is
             a manifest entry used as a storage slot: AppCompat looks itself up here, reads the
             `autoStoreLocales` flag, and takes responsibility for persisting the chosen language on

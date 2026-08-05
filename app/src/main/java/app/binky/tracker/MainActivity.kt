@@ -16,6 +16,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.binky.tracker.theme.BinkyTheme
 import app.binky.tracker.ui.wipe.SchemaMismatchScreen
 import app.binky.tracker.work.EXTRA_CARE_BUNNY_ID
+import app.binky.tracker.work.EXTRA_DOSE_BUNNY_ID
+import app.binky.tracker.work.EXTRA_DOSE_COURSE_ID
 import app.binky.tracker.work.EXTRA_OPEN_BACKUP
 import app.binky.tracker.work.EXTRA_WATCH_BUNNY_ID
 import app.binky.tracker.work.ReminderTap
@@ -102,11 +104,16 @@ class MainActivity : AppCompatActivity() {
 /**
  * Which reminder, if any, this intent came from.
  *
- * Two extras rather than one plus a convention, so an intent cannot ask for the Care screen and the
- * observation form at once — and if a future one carries both, care wins here rather than in
- * whichever branch happened to be written last.
+ * One extra per destination rather than one plus a convention, so an intent cannot ask for the Care
+ * screen and the observation form at once — and the order below is the tie-break if a future one
+ * ever carries two, decided here rather than in whichever branch happened to be written last.
+ *
+ * **The dose is read first**, because it is the only one whose lateness has consequences (ADR-0003).
  */
 private fun Intent?.reminderTap(): ReminderTap? {
+    val doseBunny = this?.getStringExtra(EXTRA_DOSE_BUNNY_ID)
+    val doseCourse = this?.getStringExtra(EXTRA_DOSE_COURSE_ID)
+    if (doseBunny != null && doseCourse != null) return ReminderTap.Medication(doseBunny, doseCourse)
     val care = this?.getStringExtra(EXTRA_CARE_BUNNY_ID)
     if (care != null) return ReminderTap.Care(care)
     val watch = this?.getStringExtra(EXTRA_WATCH_BUNNY_ID)

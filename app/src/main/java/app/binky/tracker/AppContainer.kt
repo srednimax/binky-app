@@ -10,6 +10,7 @@ import app.binky.tracker.data.BunnyDatabase
 import app.binky.tracker.data.BunnyRepository
 import app.binky.tracker.data.BunnySelection
 import app.binky.tracker.data.CareRepository
+import app.binky.tracker.data.DoseAlarmScheduler
 import app.binky.tracker.data.FluffleRepository
 import app.binky.tracker.data.MedicationRepository
 import app.binky.tracker.data.ObservationRepository
@@ -32,6 +33,7 @@ import app.binky.tracker.media.MediaFiles
 import app.binky.tracker.work.CareNotifier
 import app.binky.tracker.work.ExportNotifier
 import app.binky.tracker.work.WatchNotifier
+import app.binky.tracker.work.rescheduleDoseAlarm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -140,9 +142,21 @@ class AppContainer(
             databaseName = databaseName,
         )
 
+    /**
+     * **What every write does to the one pending dose alarm** (ADR-0025).
+     *
+     * Declared before the repositories that take it, and deliberately routed through the no-argument
+     * `rescheduleDoseAlarm()` — which resolves this container back out of the application at *call*
+     * time. Passing `medicationRepository` directly would need it to exist before it is constructed;
+     * resolving late costs nothing, because by the time any write happens the container plainly
+     * exists. ADR-0007's guard is inside that call, so a rebuild triggered over a schema this build
+     * must not open still touches nothing.
+     */
+    private val doseAlarms = DoseAlarmScheduler { appContext.rescheduleDoseAlarm() }
+
     val fluffleRepository = FluffleRepository(database)
 
-    val bunnyRepository = BunnyRepository(database, fluffleRepository, preferences, mediaFiles)
+    val bunnyRepository = BunnyRepository(database, fluffleRepository, preferences, mediaFiles, doseAlarms)
 
     val weightRepository = WeightRepository(database)
 
@@ -166,12 +180,11 @@ class AppContainer(
     val watchRepository = WatchRepository(database)
 
     /**
-     * Courses, their schedules and the doses recorded against them. Takes the database alone: what is
-     * *due* is derived on read (ADR-0002), so there is no scheduler state for this to hold — 5f adds
-     * the alarm rebuild to its write paths, and that reaches the system through a `Context` this
-     * container already has.
+     * Courses, their schedules and the doses recorded against them. What is *due* is derived on read
+     * (ADR-0002), so there is no scheduler state to hold — [doseAlarms] is the whole of the coupling,
+     * and it reaches the system through a `Context` this container already has.
      */
-    val medicationRepository = MedicationRepository(database)
+    val medicationRepository = MedicationRepository(database, doseAlarms)
 
     /**
      * Posting and cancelling care notifications, which needs a `Context` that a `ViewModel` has no

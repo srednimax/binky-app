@@ -9,12 +9,18 @@ import java.time.Instant
  * Reads and writes bunnies. Thin over the DAO, and the owner of the things a DAO cannot own: the
  * fluffle dissolve predicate, clearing a deleted bunny out of the persisted selection, and removing
  * the avatar and gallery files a cascade cannot reach.
+ *
+ * **Three of its writes reach the dose alarm sideways** (ADR-0025). Archiving, un-archiving and
+ * deleting all change which dose is next without touching a medication table — and a delete takes
+ * the courses by cascade, so no course write happens at all — which is exactly why [alarms] is here
+ * rather than only on `MedicationRepository`.
  */
 class BunnyRepository(
     private val database: BunnyDatabase,
     private val fluffles: FluffleRepository,
     private val preferences: AppPreferences,
     private val media: MediaFiles,
+    private val alarms: DoseAlarmScheduler = DoseAlarmScheduler.None,
 ) {
     private val bunnyDao = database.bunnyDao()
 
@@ -70,16 +76,26 @@ class BunnyRepository(
     suspend fun archive(
         id: String,
         at: Instant = Instant.now(),
-    ) = database.withTransaction {
-        bunnyDao.setArchivedAt(id, at)
-        // One thing archiving *does* end: the watch. An archived bunny has died or been rehomed,
-        // and a daily "have you checked on them today?" is the same failure ADR-0001 names for a
-        // trend flag on a memorial page. In the same transaction as the archive, because a watch
-        // surviving a half-applied archive is precisely the row nobody would think to look for.
-        watchDao.deleteByBunnyId(id)
+    ) {
+        database.withTransaction {
+            bunnyDao.setArchivedAt(id, at)
+            // One thing archiving *does* end: the watch. An archived bunny has died or been rehomed,
+            // and a daily "have you checked on them today?" is the same failure ADR-0001 names for a
+            // trend flag on a memorial page. In the same transaction as the archive, because a watch
+            // surviving a half-applied archive is precisely the row nobody would think to look for.
+            watchDao.deleteByBunnyId(id)
+        }
+        // The other thing it ends, and it is one the medication tables never hear about: an archived
+        // bunny's courses arm nothing (ADR-0025). Outside the transaction, so a rollback cannot leave
+        // an alarm describing a state the database went back on.
+        alarms.rebuild()
     }
 
-    suspend fun unarchive(id: String) = bunnyDao.setArchivedAt(id, null)
+    suspend fun unarchive(id: String) {
+        bunnyDao.setArchivedAt(id, null)
+        // A bunny back from the archive brings their courses' schedules back with them.
+        alarms.rebuild()
+    }
 
     /**
      * The destructive, explicit path (ADR-0004). Removes the bunny, puts any fluffle it left
@@ -108,6 +124,9 @@ class BunnyRepository(
         avatarPath?.let { media.delete(it) }
         photoPaths.forEach(media::delete)
         preferences.clearSelectionIfSet(id)
+        // The cascade took this bunny's courses with no medication write happening anywhere, which is
+        // the path ADR-0025 says a rebuild hung off the medication tables alone would miss.
+        alarms.rebuild()
     }
 
     /** What deleting this bunny would destroy, for the confirmation (ADR-0004). */

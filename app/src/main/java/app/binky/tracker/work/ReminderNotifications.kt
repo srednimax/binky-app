@@ -64,7 +64,32 @@ sealed interface ReminderTap {
      * prompt's destination, and the only one carrying no bunny at all.
      */
     data object OpenBackup : ReminderTap
+
+    /**
+     * This course's own screen, with [bunnyId] selected first — where a dose reminder's *body* lands
+     * when the owner wants the history rather than the one-tap answer (PLAN 5f).
+     *
+     * The only destination carrying **two** ids, because `MedicationCourse` is keyed by the course
+     * alone (the bunny is not recoverable from it) and the app-wide selection has to be written
+     * before navigating, exactly as a care tap does.
+     */
+    data class Medication(
+        val bunnyId: String,
+        val courseId: String,
+    ) : ReminderTap
 }
+
+/**
+ * One button on a notification: a label and what tapping it does.
+ *
+ * Only doses have any (PLAN 5f). A care reminder's answer is *doing the thing*, which no button can
+ * record, and a watch nag's answer is a form — but a dose is two words and a row, so the shade can
+ * take the whole answer.
+ */
+data class ReminderAction(
+    val title: String,
+    val intent: PendingIntent,
+)
 
 /**
  * Posts one notification on [channel], or does nothing if it cannot.
@@ -86,6 +111,9 @@ sealed interface ReminderTap {
  *   everything but doses, which expire with their slot at local midnight (ADR-0025) — a shade that
  *   still offers a one-tap answer for a day the app has stopped deriving is offering to record
  *   something it would otherwise make the owner back-date deliberately.
+ * @param alertOnce whether re-posting under the same [id] may sound and vibrate again. True for
+ *   doses, which are re-posted by any rebuild inside the grace window with nothing having changed.
+ * @param actions buttons, in order. Doses only — see [ReminderAction].
  */
 fun Context.postReminderNotification(
     channel: ReminderChannel,
@@ -96,6 +124,8 @@ fun Context.postReminderNotification(
     group: String? = null,
     isGroupSummary: Boolean = false,
     timeoutAfter: Duration? = null,
+    alertOnce: Boolean = false,
+    actions: List<ReminderAction> = emptyList(),
 ) {
     ensureReminderChannel(channel)
 
@@ -120,6 +150,11 @@ fun Context.postReminderNotification(
                 // Non-positive would mean "withdraw immediately", so a slot already past its own
                 // expiry posts nothing rather than flashing and vanishing.
                 if (timeoutAfter != null) setTimeoutAfter(timeoutAfter.toMillis().coerceAtLeast(1))
+                if (alertOnce) setOnlyAlertOnce(true)
+                // Icon 0: Android has not drawn action icons in the shade since Nougat, and a
+                // silhouette repeated beside both buttons would only be noise on the wearables that
+                // still do.
+                actions.forEach { addAction(0, it.title, it.intent) }
             }.build()
 
     try {
@@ -160,6 +195,15 @@ private fun Context.openAppIntent(tap: ReminderTap): PendingIntent {
                 intent.putExtra(EXTRA_OPEN_BACKUP, true)
                 TAP_BACKUP_REQUEST
             }
+            is ReminderTap.Medication -> {
+                intent.putExtra(EXTRA_DOSE_BUNNY_ID, tap.bunnyId)
+                intent.putExtra(EXTRA_DOSE_COURSE_ID, tap.courseId)
+                // Keyed on the **course**, not the bunny: two courses on the same rabbit are two
+                // destinations, and a bunny-keyed code would collapse them into whichever posted
+                // last. Salted for the same reason the observation case is — a dose tap and a care
+                // tap about one bunny must not become one pending intent.
+                tap.courseId.hashCode() xor TAP_MEDICATION_SALT
+            }
         }
     return PendingIntent.getActivity(
         this,
@@ -173,6 +217,9 @@ private fun Context.openAppIntent(tap: ReminderTap): PendingIntent {
 
 /** Arbitrary and fixed: it only has to keep the two per-bunny request-code spaces apart. */
 private const val TAP_OBSERVATION_SALT = 0x4F62_7376
+
+/** The same, for the per-course space a dose tap lives in. */
+private const val TAP_MEDICATION_SALT = 0x4D65_6473
 
 /**
  * The export prompt's request code — a constant, because there is one export reminder and it always

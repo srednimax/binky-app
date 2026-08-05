@@ -8,6 +8,7 @@ import androidx.room.Relation
 import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -27,6 +28,33 @@ data class CourseWithTimes(
 ) {
     /** Sorted, because the relation's row order is the database's business and not a schedule. */
     val clockTimes: List<LocalTime> get() = times.map { it.time }.sorted()
+}
+
+/**
+ * A course, its times, **and the bunny it belongs to** — what the dose alarm reads (ADR-0025).
+ *
+ * The alarm's question spans every bunny at once, so unlike [CourseWithTimes] this one carries the
+ * two bunny columns the answer depends on: the name, because the notification says whose dose it is,
+ * and `archivedAt`, because an archived bunny's course arms nothing (ADR-0004).
+ *
+ * **Read broadly and filtered in Kotlin**, which is the same choice `careDueForNotifying` made and
+ * for the same reason: "reminders on, not ended, bunny not archived" are the rules ADR-0025 cares
+ * about, and rules living in a `WHERE` clause are rules no JVM case table can assert. The extra rows
+ * are a handful per phone, once per rebuild — see [app.binky.tracker.data.armedDoses] for the
+ * predicate itself.
+ *
+ * Room note: `@Embedded` maps `c.*` onto the course, the two plain properties take the aliased join
+ * columns, and `@Relation` runs the child query for the times. `bunnyArchivedAt` goes through the
+ * same `Instant` converter every other timestamp in the app does.
+ */
+data class ArmedCourse(
+    @Embedded val course: MedicationCourseEntity,
+    val bunnyName: String,
+    val bunnyArchivedAt: Instant?,
+    @Relation(parentColumn = "id", entityColumn = "courseId")
+    val times: List<MedicationTimeEntity>,
+) {
+    val bunnyArchived: Boolean get() = bunnyArchivedAt != null
 }
 
 /**
@@ -71,6 +99,36 @@ interface MedicationDao {
     @Transaction
     @Query("SELECT * FROM medication_courses WHERE bunnyId = :bunnyId")
     suspend fun coursesForBunnyNow(bunnyId: String): List<CourseWithTimes>
+
+    /**
+     * **Every course in the app, whoever it belongs to** — the alarm's read (ADR-0025).
+     *
+     * No `WHERE` at all, which is the point: the exclusions are in [armedDoses] where they can be
+     * read and asserted, not spread between a query and a function that could disagree about them.
+     * A `JOIN` rather than a second read of the bunnies table, so the whole rebuild stays one query
+     * plus the relation's.
+     */
+    @Transaction
+    @Query(
+        """
+        SELECT c.*, b.name AS bunnyName, b.archivedAt AS bunnyArchivedAt
+        FROM medication_courses c
+        JOIN bunnies b ON b.id = c.bunnyId
+        """,
+    )
+    suspend fun armedCoursesNow(): List<ArmedCourse>
+
+    /**
+     * The rows answering **any** bunny's slots between two days — the alarm's other half.
+     *
+     * The same shape as [answersForBunnyNow] without the bunny, because one alarm covers the whole
+     * app and an answered slot must not arm it whoever it belongs to.
+     */
+    @Query("SELECT * FROM doses WHERE scheduledOn BETWEEN :from AND :through")
+    suspend fun answersBetweenNow(
+        from: LocalDate,
+        through: LocalDate,
+    ): List<DoseEntity>
 
     /**
      * One course with its times, watched. Nullable because the row can be **deleted while its own
