@@ -632,6 +632,89 @@ SCENES = [
             ("swipe_end", ""),
         ],
     ),
+    # --- Phase 5: medications, visits, vets and documents (PLAN 5i) ---------------------------
+    # The Care tab gained two whole sections above and below the reminders it used to be, so its
+    # middle is now content no earlier capture ever saw: `care` shows the medications at the top and
+    # `care-bottom` the end of the visits, and this is the reminders that used to be the whole tab.
+    Scene("care-scrolled", "tab", [*SELECT_BUNNY, ("tap", "Care"), ("swipe_up", "")]),
+    # The dose history is the longest list the app builds — one row per dose per day — so its end is
+    # the scroll most likely to leave a row under the navigation bar.
+    Scene("medication-course", "detail", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Open")]),
+    Scene(
+        "medication-course-bottom",
+        "detail",
+        [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Open"), ("swipe_end", "")],
+    ),
+    Scene("course-editor", "form", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a course")]),
+    # The times list grows downwards from a button, so the save action and the last time added are
+    # the two controls competing for the bottom edge.
+    Scene(
+        "course-editor-bottom",
+        "form",
+        [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a course"), ("swipe_end", "")],
+    ),
+    Scene(
+        "course-editor-ime",
+        "ime",
+        [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a course"), ("tap", "What is it?"), ("wait", "1.5")],
+        note="the first field of the phase's longest form; in landscape the IME leaves two rows",
+    ),
+    Scene("visit-editor", "form", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a visit")]),
+    Scene(
+        "visit-editor-bottom",
+        "form",
+        [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a visit"), ("swipe_end", "")],
+    ),
+    Scene("vets", "detail", [("tap", "More"), ("tap", "Vets")]),
+    Scene("vet-editor", "form", [("tap", "More"), ("tap", "Vets"), ("tap", "Add a vet")]),
+    # Documents are a grid of scanned pages with no chrome of their own, which is the photo gallery's
+    # inset problem on content the owner cannot re-take.
+    Scene("documents", "detail", [*SELECT_BUNNY, ("tap", "More"), ("tap", "Documents")]),
+    Scene(
+        "document-viewer",
+        "full-bleed",
+        [*SELECT_BUNNY, ("tap", "More"), ("tap", "Documents"), ("tap", "Vaccination record")],
+        note="a page drawn to every edge, with the page counter over it",
+    ),
+    # A dialog and a menu, which is the overlay pair this phase adds: one anchored centrally, one to
+    # the top bar's action.
+    Scene(
+        "record-dose",
+        "overlay",
+        [
+            *SELECT_BUNNY,
+            ("tap", "Care"),
+            ("tap", "Open"),
+            ("tap", "Record a dose"),
+            ("wait", "1.0"),
+        ],
+    ),
+    Scene(
+        "document-actions",
+        "overlay",
+        [
+            *SELECT_BUNNY,
+            ("tap", "More"),
+            ("tap", "Documents"),
+            ("tap", "Vaccination record"),
+            ("tap", "Document actions"),
+            ("wait", "1.0"),
+        ],
+    ),
+    # The empty states this phase adds, on the same wiped install as the wizard: three sections that
+    # each have to say "nothing here yet" without implying anything is wrong (ADR-0001).
+    Scene(
+        "care-empty",
+        "tab",
+        [
+            ("wipe", ""),
+            ("tap", "Skip for now"),
+            ("tap", "Continue"),
+            ("tap", "Finish setup"),
+            ("tap", "Care"),
+        ],
+        suite="empty",
+    ),
     # Last, because it leaves the persisted selection on "All bunnies" rather than a bunny.
     Scene(
         "home-all-bunnies",
