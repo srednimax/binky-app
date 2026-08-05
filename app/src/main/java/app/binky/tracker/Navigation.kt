@@ -56,6 +56,8 @@ import app.binky.tracker.ui.care.CareReminderScreen
 import app.binky.tracker.ui.care.MedicationCourseEditorScreen
 import app.binky.tracker.ui.care.MedicationCourseScreen
 import app.binky.tracker.ui.care.VisitEditorScreen
+import app.binky.tracker.ui.documents.DocumentScreen
+import app.binky.tracker.ui.documents.DocumentsScreen
 import app.binky.tracker.ui.home.HomeScreen
 import app.binky.tracker.ui.more.MoreScreen
 import app.binky.tracker.ui.observations.ChooseBunnyDialog
@@ -248,6 +250,10 @@ private fun AppShell(
     // is not a gallery, it is several. Kept as its own flag rather than shared with the "+" so the
     // two dialogs cannot answer each other's question.
     var choosingGalleryBunny by rememberSaveable { mutableStateOf(false) }
+
+    // And the same again for documents, kept separate for the reason above: two dialogs sharing one
+    // flag would answer each other's question.
+    var choosingDocumentBunny by rememberSaveable { mutableStateOf(false) }
 
     // The snackbar host belongs to the **same** Scaffold as the FAB, or the two lay out in ignorance
     // of each other and the FAB covers the snackbar's action — which for the healthy day means an
@@ -509,6 +515,20 @@ private fun AppShell(
                                 } else {
                                     null
                                 },
+                            // The same rule, for the same reason: paperwork belongs to a bunny.
+                            onOpenDocuments =
+                                if (state.hasBunnyInScope) {
+                                    {
+                                        val bunnyId = state.selection.bunnyId
+                                        if (bunnyId != null) {
+                                            backStack.add(Documents(bunnyId))
+                                        } else {
+                                            choosingDocumentBunny = true
+                                        }
+                                    }
+                                } else {
+                                    null
+                                },
                         )
                     }
                     entry<Settings> {
@@ -535,6 +555,8 @@ private fun AppShell(
                             // The archived scope is the only read-only one, and a visit is reachable
                             // only through the bunny it belongs to (ADR-0004).
                             readOnly = state.readOnly,
+                            snackbarHostState = snackbarHostState,
+                            onOpenDocument = { documentId -> backStack.add(DocumentDetail(documentId)) },
                             onBack = { backStack.removeLastOrNull() },
                         )
                     }
@@ -575,6 +597,32 @@ private fun AppShell(
                             onBack = { backStack.removeLastOrNull() },
                         )
                     }
+                    entry<Documents> { key ->
+                        DocumentsScreen(
+                            bunnyId = key.bunnyId,
+                            // The archived scope is the only read-only one, and it pins exactly the
+                            // bunny this key carries.
+                            readOnly = state.readOnly,
+                            snackbarHostState = snackbarHostState,
+                            onOpenDocument = { documentId -> backStack.add(DocumentDetail(documentId)) },
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
+                    entry<DocumentDetail> { key ->
+                        DocumentScreen(
+                            documentId = key.documentId,
+                            readOnly = state.readOnly,
+                            snackbarHostState = snackbarHostState,
+                            // A document names the visit it came from, and the visit editor is that
+                            // visit's detail screen. The bunny comes from the document's own row
+                            // rather than from the shell's selection, which under "All bunnies"
+                            // names nobody.
+                            onOpenVisit = { bunnyId, visitId ->
+                                backStack.add(VisitEditor(bunnyId, visitId))
+                            },
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
                     entry<PhotoGallery> { key ->
                         PhotoGalleryScreen(
                             bunnyId = key.bunnyId,
@@ -610,6 +658,18 @@ private fun AppShell(
                 backStack.add(PhotoGallery(bunnyId))
             },
             onDismiss = { choosingGalleryBunny = false },
+        )
+    }
+
+    if (choosingDocumentBunny) {
+        ChooseBunnyDialog(
+            title = stringResource(R.string.document_which_bunny),
+            bunnies = state.activeBunnies,
+            onPick = { bunnyId ->
+                choosingDocumentBunny = false
+                backStack.add(Documents(bunnyId))
+            },
+            onDismiss = { choosingDocumentBunny = false },
         )
     }
 

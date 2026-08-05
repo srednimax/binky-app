@@ -793,6 +793,7 @@
     <string name="more_photos">Photos</string>
     <string name="more_photos_summary">Pictures of one bunny, kept on this phone.</string>
     <string name="more_documents">Documents</string>
+    <string name="more_documents_summary">Scanned paperwork for one bunny, kept on this phone.</string>
     <string name="more_vets">Vets</string>
     <string name="more_vets_summary">Names and numbers, shared by every bunny.</string>
     <string name="more_settings">Settings</string>
@@ -835,6 +836,58 @@
     <string name="photo_caption_edit">Edit</string>
     <string name="photo_delete">Delete photo</string>
     <string name="photo_delete_body">Delete this photo? The picture is removed from this phone for good.</string>
+
+    <!-- Documents: one bunny's scanned paperwork, reached from More (ADR-0017, ADR-0009) -->
+    <string name="document_which_bunny">Whose documents?</string>
+    <string name="documents_title">Documents: %1$s</string>
+    <string name="documents_empty">No documents yet.</string>
+    <string name="documents_empty_help">Scan a vaccination card, a lab result or a discharge note. They stay on this phone.</string>
+    <string name="document_scan">Scan a document</string>
+    <!-- Written into the database when a scan lands, so it is read in the owner's language at that
+         moment and never re-translated afterwards (ADR-0013). -->
+    <string name="document_default_title">Scanned document</string>
+    <plurals name="document_page_count">
+        <item quantity="one">%d page</item>
+        <item quantity="other">%d pages</item>
+    </plurals>
+    <!-- Said once, after the fact, when ADR-0009's fallback engaged. It names what the result lacks
+         rather than what the phone lacks: "Play services is missing" is not something an owner can
+         act on, and a crooked scan is. -->
+    <string name="document_scan_camera_used">Scanned with the camera — no auto-crop or page detection on this phone.</string>
+    <string name="document_scan_failed">That scan could not be saved. Try again.</string>
+    <!-- "Dated" is the date printed on the page; "Scanned" is when it arrived here. Different words
+         on purpose: dating a two-year-old vaccination card by its scan would invent a fact. -->
+    <string name="document_dated_on">Dated %1$s</string>
+    <string name="document_scanned_on">Scanned %1$s</string>
+    <string name="document_no_date">No date on the page</string>
+    <string name="document_from_visit">From the visit on %1$s — %2$s</string>
+    <string name="document_actions">Document actions</string>
+    <string name="document_rename">Rename</string>
+    <string name="document_title_label">Title</string>
+    <string name="document_set_date">Set the date on the page</string>
+    <string name="document_clear_date">Clear the date</string>
+    <string name="document_date_label">Date on the page</string>
+    <string name="document_attach_visit">Attach to a visit</string>
+    <string name="document_attach_none">Not from a visit</string>
+    <string name="document_attach_no_visits">No visits recorded for this bunny yet.</string>
+    <string name="document_add_page">Add a page</string>
+    <string name="document_manage_pages">Reorder or remove pages</string>
+    <string name="document_page_number">Page %1$d</string>
+    <string name="document_page_up">Up</string>
+    <string name="document_page_down">Down</string>
+    <string name="document_page_position">Page %1$d of %2$d</string>
+    <string name="document_page_description">Page %1$d of %2$s</string>
+    <string name="document_no_pages">This document has no pages.</string>
+    <string name="document_no_pages_help">Its title and date are kept. Add a page, or delete the document.</string>
+    <string name="document_delete">Delete document</string>
+    <string name="document_delete_body">Delete “%1$s”? Every page is removed from this phone for good.</string>
+    <!-- The visit editor's documents section: paperwork usually comes *from* a visit (ADR-0017) -->
+    <string name="visit_documents_label">Documents</string>
+    <string name="visit_documents_save_first">Save the visit first, then scan or attach its paperwork.</string>
+    <string name="visit_documents_none">Nothing attached to this visit.</string>
+    <string name="visit_documents_attach_existing">Attach one you already have</string>
+    <string name="visit_documents_none_free">Every document for this bunny already belongs to a visit. Detach it there first.</string>
+    <string name="visit_documents_detach">Detach</string>
 
     <!-- The archived list (ADR-0004): reachable, with unarchive, delete, and a read-only scope -->
     <string name="archived_title">Archived bunnies</string>

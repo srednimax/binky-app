@@ -30,7 +30,7 @@ the *why*, don't restate the line. Prefer explicit and readable over clever.
 | Room via KSP | DAOs return `Flow`; schema evolution per ADR-0007 |
 | Manual DI via `AppContainer`, **not Hilt** | ~15 screens; constructor injection is clearer and easy to migrate later |
 | WorkManager + exact alarms | Two mechanisms on purpose — ADR-0003 |
-| ML Kit Document Scanner, behind an interface | Needs Play services — ADR-0009 |
+| ML Kit Document Scanner, behind an interface | Needs Play services — ADR-0009. It merges `INTERNET` into the manifest (5g); `scripts/aab-permissions.py` is the record |
 | Photo Picker + `TakePicture` intent, **not CameraX** | Far less code; system camera is fine here |
 | Vico charts, Coil 3 images | Compose-native, actively maintained |
 | On-device storage only | No backend, ever. Backup per ADR-0005 |
@@ -81,6 +81,9 @@ app/src/main/java/app/binky/tracker/
   media/       MediaFiles.kt — the single path for persisting images, kind-aware
                (avatar / photo / document, each with its own directory and downsample spec). Named to
                avoid colliding with Android's own android.provider.MediaStore
+  scan/        the document scanner behind ADR-0009's interface: ML Kit's guided one and the
+               plain-camera fallback. **Nothing outside this package names ML Kit** — that is what
+               keeps "drop the dependency" a one-line change in AppContainer
   ui/          Compose screens + ViewModels, one package per tab
   work/        reminder scheduling and notifications
 ```

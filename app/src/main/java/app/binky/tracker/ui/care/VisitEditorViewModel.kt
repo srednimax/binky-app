@@ -1,5 +1,7 @@
 package app.binky.tracker.ui.care
 
+import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -9,11 +11,17 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import app.binky.tracker.BinkyApplication
 import app.binky.tracker.data.AppPreferences
 import app.binky.tracker.data.BunnyRepository
+import app.binky.tracker.data.DocumentRepository
 import app.binky.tracker.data.VetEntity
 import app.binky.tracker.data.VetRepository
 import app.binky.tracker.data.VisitEntity
 import app.binky.tracker.data.VisitRepository
 import app.binky.tracker.data.WeightUnit
+import app.binky.tracker.media.MediaFiles
+import app.binky.tracker.ui.documents.DocumentRow
+import app.binky.tracker.ui.documents.ScanNotice
+import app.binky.tracker.ui.documents.toRow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +29,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+
+/** Short enough for logcat's tag column, specific enough to filter on. */
+private const val VISIT_SCAN_LOG_TAG = "BinkyVisitScan"
 
 /**
  * The visit form, as one immutable data class (house rule).
@@ -45,6 +56,15 @@ data class VisitEditorUiState(
     val grams: String = "",
     val gramsInvalid: Boolean = false,
     val unit: WeightUnit = WeightUnit.KILOGRAMS,
+    /**
+     * The paperwork this visit produced (ADR-0017). Empty for a visit not yet saved — there is no
+     * `visitId` for a document to point at until the row exists.
+     */
+    val documents: List<DocumentRow> = emptyList(),
+    /** This bunny's documents no visit has claimed, loaded when the picker opens. */
+    val attachable: List<DocumentRow> = emptyList(),
+    val scanning: Boolean = false,
+    val scanNotice: ScanNotice? = null,
     val saved: Boolean = false,
 ) {
     val vetName: String? get() = vets.firstOrNull { it.id == vetId }?.name
@@ -68,6 +88,8 @@ class VisitEditorViewModel(
     private val visits: VisitRepository,
     private val vets: VetRepository,
     private val bunnies: BunnyRepository,
+    private val documents: DocumentRepository,
+    private val media: MediaFiles,
     preferences: AppPreferences,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(VisitEditorUiState(isNew = visitId == null))
@@ -99,6 +121,66 @@ class VisitEditorViewModel(
         viewModelScope.launch {
             vets.vets.collect { directory -> _uiState.update { it.copy(vets = directory) } }
         }
+        // So is the attached paperwork, for the same reason: scanning or attaching one has to show
+        // up without leaving the form. Only for a visit that exists — a document points at a
+        // `visitId`, and an unsaved visit has none.
+        if (visitId != null) {
+            viewModelScope.launch {
+                documents.documentsOfVisit(visitId).collect { rows ->
+                    _uiState.update { state -> state.copy(documents = rows.map { it.toRow(media) }) }
+                }
+            }
+        }
+    }
+
+    /** Fills the attach picker. A one-shot read: the list is only looked at while it is open. */
+    fun loadAttachable() {
+        viewModelScope.launch {
+            val rows = documents.unattached(bunnyId).first().map { it.toRow(media) }
+            _uiState.update { it.copy(attachable = rows) }
+        }
+    }
+
+    fun attachDocument(documentId: String) {
+        val visit = visitId ?: return
+        viewModelScope.launch { documents.attachToVisit(documentId, visit) }
+    }
+
+    /** Detaching leaves the document with its bunny — it is the health record (ADR-0017). */
+    fun detachDocument(documentId: String) {
+        viewModelScope.launch { documents.attachToVisit(documentId, null) }
+    }
+
+    /**
+     * Records a scan straight onto this visit, which is the path the plan asked for: paperwork comes
+     * *from* a visit, and making the owner scan it elsewhere and then come back to attach it would
+     * be two screens for one act.
+     */
+    fun scanInto(
+        title: String,
+        pages: List<Uri>,
+        guided: Boolean,
+    ) {
+        val visit = visitId ?: return
+        if (pages.isEmpty()) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(scanning = true, scanNotice = null) }
+            try {
+                documents.add(bunnyId = bunnyId, title = title, pages = pages, visitId = visit)
+                _uiState.update {
+                    it.copy(scanning = false, scanNotice = if (guided) null else ScanNotice.FellBackToCamera)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failed: Exception) {
+                Log.w(VISIT_SCAN_LOG_TAG, "Could not store a scan for visit $visitId", failed)
+                _uiState.update { it.copy(scanning = false, scanNotice = ScanNotice.Failed) }
+            }
+        }
+    }
+
+    fun scanNoticeShown() {
+        _uiState.update { it.copy(scanNotice = null) }
     }
 
     fun onVisitedOnChanged(date: LocalDate) {
@@ -186,6 +268,8 @@ class VisitEditorViewModel(
                         visits = app.container.visitRepository,
                         vets = app.container.vetRepository,
                         bunnies = app.container.bunnyRepository,
+                        documents = app.container.documentRepository,
+                        media = app.container.mediaFiles,
                         preferences = app.container.preferences,
                     )
                 }

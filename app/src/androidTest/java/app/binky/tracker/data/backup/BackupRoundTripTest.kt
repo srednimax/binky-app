@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.binky.tracker.data.BunnyEntity
+import app.binky.tracker.data.DocumentEntity
+import app.binky.tracker.data.DocumentPageEntity
 import app.binky.tracker.data.PhotoEntity
 import app.binky.tracker.data.buildBunnyDatabase
 import app.binky.tracker.media.MediaKind
@@ -113,6 +115,18 @@ class BackupRoundTripTest {
             database.photoDao().insert(
                 PhotoEntity(bunnyId = bunny.id, path = mediaPaths.getValue(MediaKind.Photo)),
             )
+            // Paperwork too, since 5g: `BackupScope.Records` has listed `MediaKind.Document` since
+            // 3d and until now nothing asserted that a *document* survives the trip — only that a
+            // file in `documents/` did. The row and its page are what an owner would miss.
+            val document = DocumentEntity(bunnyId = bunny.id, title = DOCUMENT_TITLE)
+            database.documentDao().insert(document)
+            database.documentPageDao().insert(
+                DocumentPageEntity(
+                    documentId = document.id,
+                    path = mediaPaths.getValue(MediaKind.Document),
+                    position = 0,
+                ),
+            )
         } finally {
             database.close()
         }
@@ -189,6 +203,27 @@ class BackupRoundTripTest {
         }
     }
 
+    private fun documentTitlesIn(databaseName: String): List<String> = columnIn(databaseName, "title", "documents")
+
+    private fun documentPagePathsIn(databaseName: String): List<String> =
+        columnIn(databaseName, "path", "document_pages")
+
+    /** One column of one table, read without a DAO so the assertion cannot be fooled by one. */
+    private fun columnIn(
+        databaseName: String,
+        column: String,
+        table: String,
+    ): List<String> {
+        val database = buildBunnyDatabase(context, databaseName)
+        return try {
+            database.openHelper.readableDatabase.query("SELECT $column FROM $table ORDER BY $column").use { cursor ->
+                buildList { while (cursor.moveToNext()) add(cursor.getString(0)) }
+            }
+        } finally {
+            database.close()
+        }
+    }
+
     private fun photoPathsIn(databaseName: String): List<String> {
         val database = buildBunnyDatabase(context, databaseName)
         return try {
@@ -247,6 +282,25 @@ class BackupRoundTripTest {
             assertMediaMatchesScope(BackupScope.Records, seed)
         }
 
+    /**
+     * **The whole document, not just a file in `documents/`.**
+     *
+     * `BackupScope.Records` has listed `MediaKind.Document` since 3d, so this costs nothing to
+     * assert and was worth asserting rather than assuming: a document is a row, a page row and an
+     * image, and a scope that carried the image while losing the title and the page order would
+     * still have passed every check that existed before 5g.
+     */
+    @Test
+    fun aRecordsRoundTripBringsBackTheDocumentRowsAndTheirPages() =
+        runTest {
+            val (seed, _, liveName) = roundTrip(BackupScope.Records)
+
+            val pagePath = seed.mediaPaths.getValue(MediaKind.Document)
+            assertEquals(listOf(DOCUMENT_TITLE), documentTitlesIn(liveName))
+            assertEquals(listOf(pagePath), documentPagePathsIn(liveName))
+            assertTrue("the page row came back pointing at nothing", File(filesDir, pagePath).isFile)
+        }
+
     @Test
     fun anEverythingRoundTripBringsBackEveryMediaKind() =
         runTest {
@@ -295,4 +349,9 @@ class BackupRoundTripTest {
             assertEquals(listOf(photoPath), photoPathsIn(liveName))
             assertFalse("the file must be the missing half, not the row", File(filesDir, photoPath).exists())
         }
+
+    private companion object {
+        /** Named, so the round-trip asserts the document came back rather than that *a* row did. */
+        const val DOCUMENT_TITLE = "Vaccination card"
+    }
 }

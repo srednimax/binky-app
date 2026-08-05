@@ -29,6 +29,7 @@ fun MoreScreen(
     onOpenSettings: () -> Unit,
     onOpenVets: () -> Unit,
     onOpenPhotos: (() -> Unit)?,
+    onOpenDocuments: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -40,6 +41,14 @@ fun MoreScreen(
             // Inert while no bunny exists to have photos of, which is the same row as before with
             // one fewer reason to tap it.
             onClick = onOpenPhotos,
+        )
+        // Live at 1.2, and it left the "coming soon" block below to get here (PLAN 5g). Bunny-scoped
+        // for the same reason photos are: paperwork belongs to a rabbit, and "All bunnies" is not
+        // one folder but several — so More asks which before pushing the screen.
+        MoreRow(
+            title = stringResource(R.string.more_documents),
+            subtitle = stringResource(R.string.more_documents_summary),
+            onClick = onOpenDocuments,
         )
         // **Never inert**, unlike photos above: the directory is app-wide (ADR-0017), so it is
         // usable with no bunny in scope and reads the same in the archived one.
@@ -60,7 +69,6 @@ fun MoreScreen(
         )
         HorizontalDivider()
         val comingSoon = stringResource(R.string.more_coming_soon)
-        MoreRow(title = stringResource(R.string.more_documents), subtitle = comingSoon)
         MoreRow(title = stringResource(R.string.more_support), subtitle = comingSoon)
     }
 }

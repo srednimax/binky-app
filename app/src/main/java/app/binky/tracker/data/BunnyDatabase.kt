@@ -58,7 +58,7 @@ const val BUNNY_DATABASE_FILE = "bunny.db"
         VisitEntity::class,
         // Created at 5b ahead of the screens that fill them: the entities are here so Room validates
         // schema 6 as one shape, and the DAOs arrive with the checkpoints that read them — the
-        // medication three at 5d, the document two still empty until 5g.
+        // medication three at 5d, the document two at 5g.
         MedicationCourseEntity::class,
         MedicationTimeEntity::class,
         DoseEntity::class,
@@ -91,6 +91,10 @@ abstract class BunnyDatabase : RoomDatabase() {
     abstract fun visitDao(): VisitDao
 
     abstract fun medicationDao(): MedicationDao
+
+    abstract fun documentDao(): DocumentDao
+
+    abstract fun documentPageDao(): DocumentPageDao
 }
 
 /**

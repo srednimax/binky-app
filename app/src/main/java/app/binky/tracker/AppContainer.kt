@@ -10,6 +10,7 @@ import app.binky.tracker.data.BunnyDatabase
 import app.binky.tracker.data.BunnyRepository
 import app.binky.tracker.data.BunnySelection
 import app.binky.tracker.data.CareRepository
+import app.binky.tracker.data.DocumentRepository
 import app.binky.tracker.data.DoseAlarmScheduler
 import app.binky.tracker.data.FluffleRepository
 import app.binky.tracker.data.MedicationRepository
@@ -30,6 +31,9 @@ import app.binky.tracker.data.buildBunnyDatabase
 import app.binky.tracker.data.resolveSelection
 import app.binky.tracker.data.resolveSetupState
 import app.binky.tracker.media.MediaFiles
+import app.binky.tracker.scan.CameraDocumentScanner
+import app.binky.tracker.scan.DocumentScanner
+import app.binky.tracker.scan.MlKitDocumentScanner
 import app.binky.tracker.work.CareNotifier
 import app.binky.tracker.work.ExportNotifier
 import app.binky.tracker.work.WatchNotifier
@@ -185,6 +189,22 @@ class AppContainer(
      * and it reaches the system through a `Context` this container already has.
      */
     val medicationRepository = MedicationRepository(database, doseAlarms)
+
+    /** Scanned paperwork and the page files behind it (ADR-0017, ADR-0020). */
+    val documentRepository = DocumentRepository(database, mediaFiles)
+
+    /**
+     * **The whole of ADR-0009's scanner contingency, in one line.**
+     *
+     * ML Kit's scanner is delivered by Play services and absent without them, so it sits behind
+     * [DocumentScanner] with [CameraDocumentScanner] underneath — and if the dependency ever has to
+     * go, for the merged manifest or the AAB size or the Play-services-absent path, this line
+     * becomes `CameraDocumentScanner(appContext)` and nothing else in the app changes. Documents as
+     * *data* bring none of those costs; only the guided UX does.
+     *
+     * Which path a given scan takes is resolved at use, inside `start` — see [DocumentScanner].
+     */
+    val documentScanner: DocumentScanner = MlKitDocumentScanner(fallback = CameraDocumentScanner(appContext))
 
     /**
      * Posting and cancelling care notifications, which needs a `Context` that a `ViewModel` has no

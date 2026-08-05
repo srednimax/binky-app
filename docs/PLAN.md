@@ -2791,6 +2791,53 @@ copy.
      alarm already correct leaves exactly one**, which is the assertion that the heartbeat is idempotent
      rather than additive.
 7. **5g — Documents: the scanner, the fallback, and the viewer. No schema change.**
+   ✅ *(built. spotless, `assembleDebug` and JVM tests green; **`connectedAndroidTest` green on the
+   Xiaomi, 203 tests**, including thirteen new `DocumentRepositoryTest` cases and a new
+   Records-scope round-trip. **No schema change**, so `6.json` is untouched.*
+
+   ***The merged-manifest inspection produced a real finding, and it is the second half of 4h's.***
+   *The three questions were asked of the release artifact, and two came back clean:*
+   - ***`INTERNET` arrives.** Not from the scanner API but from `com.google.android.datatransport:
+     transport-backend-cct:2.3.3`, a transitive of it — traced in the merger's blame report, not
+     guessed. The claim in `docs/play-app-content.md` was **reworded to the truth rather than
+     deleted**: what it was actually asserting — that this app's own code opens no socket — is still
+     true and is still what Data safety rests on, and it is now stated as a claim about the app's
+     code rather than about the artifact's permission list. The privacy policy moved in the same
+     commit and names the scanner in the owner's words. `INTERNET` moved from the script's
+     `FORBIDDEN` list to `EXPECTED`; **`CAMERA` moved the other way**, so a future dependency that
+     merges one fails rather than shipping quietly.*
+   - ***No `CAMERA`.** The deliberate non-declaration survives: both scan paths run on the system
+     camera intent, which needs none.*
+   - ***No `<uses-feature>` at all** — the half that decides who can install. `scripts/aab-permissions.py`
+     grew the section anyway, because a null result from a tool that cannot see is not the same
+     answer as a null result from one that can. It was proven on both branches before being trusted:
+     a temporary `required="false"` and a temporary defaulted one, each read correctly, each failing
+     the check, then reverted. Reading `android:required` needed the source string in `ATTR_VALUE`
+     with the compiled `Item` as the fallback — the first attempt read the wrong field numbers and
+     reported an explicit `false` as "absent", which is exactly the direction that would have shipped.*
+
+   ***AAB size, measured rather than estimated: 11,404,302 → 11,951,123 bytes, +534 KB (+4.8%)**, by
+   building the bundle with the dependency and again without it.*
+
+   *Four decisions the plan's text did not settle, made here: **the viewer and the detail screen are
+   one screen**, because a document is its pages and a metadata card between the list and the page
+   would put two taps before the only thing anyone opened it for; **a scan is saved under a
+   localised default title and opens straight into its own document** rather than stopping at a
+   naming dialog — the title is then the first thing on screen and one tap from editable, and there
+   is no modal to lose to a low-memory kill while the camera is still unwinding; **deleting a
+   document's last page leaves the document standing**, since the title, the date and the visit are
+   records in their own right and destroying them because a bad scan was removed is a delete nobody
+   asked for; and **the attach picker offers only documents no visit has claimed**, because
+   `visitId` is single-valued and offering a claimed one would silently detach it from the other
+   visit. `capturedAt` is **never** filled from the image's EXIF, which is the one place the photo
+   pipeline's instinct is wrong: that instant is when the scan was taken, and this column is the
+   date printed on the page.*
+
+   ***Still owed, and it needs a real vet printout rather than a fixture:*** *the `MediaKind.Document`
+   3000 px / q92 spec is still marked unverified in its own source comment. The sample fixture
+   exercises the downsample on a 3200 px page and the pinch-zoom viewer is in place to read it back,
+   but the judgement — is the small print legible on the phone, and what does the file weigh — is a
+   scan of a real printout and has not been made.)*
    - The tables **already exist from 5b** and have been empty since; this checkpoint gives them a UI.
      **Documents ship in 1.2** — that was settled when the migration was written, not here.
    - `DocumentEntity` — `id`, `bunnyId` FK `CASCADE` indexed, `visitId` FK `SET NULL` nullable indexed,
