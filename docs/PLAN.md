@@ -2975,6 +2975,48 @@ copy.
      order respected at the boundary; a core already over budget admitting zero documents rather than going
      negative; the marker round-tripping an excluded count and an old marker without one still reading.
 9. **5i — The gate pass, freezing schema 6, and the definitive overnight Doze run.**
+   🔨 *(in progress, 2026-08-05. The **software half is green**: spotless, `assembleDebug` and JVM
+   tests, and `lint` back to **0 errors and 0 warnings** (17 hints), which 3g reached and the job
+   since has been to hold. **201 instrumented tests on the Xiaomi, all green** in 29 s — 5f's 187
+   plus what 5g and 5h added — and CI's matrix is green **by name** at API 26 / 34 / 36 on `main`.
+   **Not closed**: the overnight Doze run is armed for the night of 5→6 August, and everything that
+   would disturb it — the writes against the armed course, denying notifications, the destructive
+   halves of three dialogs, the reboot pair and the timezone change — is deliberately after it.*
+
+   ***Three findings from arming it, none of which a JVM test could have produced.*** *`am instrument`
+   **cancels the app's pending alarms**: the runner force-stops the target package, and a force-stopped
+   app loses every alarm it placed. So the instrumented suite must never be the last thing done before
+   an overnight run — afterwards `dumpsys alarm` shows nothing pending, which is indistinguishable
+   from a broken rebuild. Launching the app put the alarm back at the identical instant, which is
+   ADR-0025's launch occasion proving itself twice by accident. **`dumpsys alarm` is the only place
+   the two mechanisms are visibly different**: with `SCHEDULE_EXACT_ALARM` at `default` the pending
+   dose reads `window=+38m55s`, `flags=0x20` (allow-while-idle compat) and a `maxWhenElapsed` 39
+   minutes past `whenElapsed` — the OS's own statement that this is `setAndAllowWhileIdle`, and the
+   corroboration the "best-effort in words" bullet never had. An exact alarm has `window=0` and the
+   two instants equal, so **that pair of fields is what a run must be read against** before it can
+   claim to have tested the exact path; the 4→5 August run could only say so from the appop
+   afterwards. And the **autostart state, read before anything was touched**: ten apps permitted,
+   `Binky` (the Play build) among them and **`Binky Debug` not** — so it was granted for the build
+   under test, header 10 → 11, deliberately, so a MIUI kill cannot return outcome 3 for a reason that
+   is not `setExactAndAllowWhileIdle`. Battery-optimisation exemption stays absent.*
+
+   ***What the device has already answered.*** *ADR-0021 from both sides: a visit's weighing offers
+   only* Recorded at a vet visit *and* Open the visit *— no Edit, no Delete, unlike every other row —
+   and a manual weighing entered at that same noon offers* Add a second *or* Open the visit*, with no
+   Replace anywhere. Both delete dialogs say what the gate asks: the visit names its weight in grams
+   and offers* Keep the weighing on its own */* Delete the weighing too*, and the vet reads "Every
+   visit that named them stays exactly as it is, without the name." A two-page document reopens after
+   a real process restart with its pages in order. The tab reads* Care & Meds*; the medication screen
+   carries ADR-0026's line; a skipped dose reads* Skipped *with its note rather than as an absence;
+   and no string in either locale says* missed *or* overdue *outside Phase 4's care reminders, where
+   a passed date genuinely is overdue.*
+
+   ***4f's capture script now covers this phase*** *(`scripts/edge-to-edge.py`, 46 → 59 scenes): the
+   course detail and the end of its dose history — the longest list the app builds — the course
+   editor with its end-of-scroll and its IME, the visit editor, the vets list and vet editor, the
+   documents list, the document viewer, the record-dose dialog, the document-actions menu, the Care
+   tab's new middle, and `care-empty` on the wiped install. The matrix itself runs after the overnight
+   run, because its `wipe` steps would take the armed course with them.*
    - The gate below, driven by hand on the Xiaomi. The **overnight Doze run is a calendar item, not a task**:
      armed the evening before, **left unplugged past the fire time** — which is the one thing 4g could not
      claim — with a real medication course. The Phase-4 carry rides its own night rather than this one, so
