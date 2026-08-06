@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/srednimax/binky-app/compare/v1.2.0...v1.3.0) (2026-08-06)
+
+
+### Features
+
+* support mail and Play listing hand-offs ([c74a3d5](https://github.com/srednimax/binky-app/commit/c74a3d57c999bc4a6f0bab51d219ae23f1a38cc7))
+* support screen with bug, feature and rating hand-offs ([1171098](https://github.com/srednimax/binky-app/commit/1171098956a90046ede1edd86b0eb8261d2a8e74))
+
+
+### Bug Fixes
+
+* send the support mail's subject and body in the mailto query ([c2f0815](https://github.com/srednimax/binky-app/commit/c2f081516a61d0cbdf151eb32e52f0f24c3d2f3b))
+
 ## [1.2.0](https://github.com/srednimax/binky-app/compare/v1.1.0...v1.2.0) (2026-08-05)
 
 
