@@ -115,20 +115,29 @@ All three land in **one sitting** once the count clears, in this order:
 
 Design and reasoning in **[`phase-6.md`](phase-6.md)** — its own file, so building it does not cost
 `PLAN.md`'s 3 000 lines of finished history. Touches no schema, no alarm, no permission and no
-dependency, so it **cannot disturb Phase 5's open evidence** — it is the safe thing to build while the
-overnight run and Play's count are outstanding.
+dependency, so **in code** it cannot disturb Phase 5's open evidence — it is the safe thing to write
+while the overnight run and Play's count are outstanding.
 
-Four checkpoints, one commit each: **6a** the pure hand-off + its test, **6b** the screen, the route and
-the strings, **6c** the device pass, **6d** docs + the Console's contact email + the 1.3 cut.
+🔴 **In deployment it can.** `installDebug` replaces the package, which force-stops it, which cancels
+every alarm the app placed — §1's `connectedAndroidTest` trap through a different door, and the result
+is again indistinguishable from a Doze failure. **6a installs nothing** and is the right work for an
+armed night; 6b and 6c wait for the morning read.
 
+Four checkpoints, one commit each: **6a** the inbox, the pure hand-off + its test, **6b** the screen, the
+route and the strings, **6c** the device pass, **6d** docs + the Console's contact email + the 1.3 cut.
+
+- [ ] **First: confirm `binky.support@gmail.com` is live and can send.** Everything below hardcodes it,
+      and Gmail ignores dots, so a near-miss registration is the same mailbox.
 - [ ] `Support` nav key + `SupportScreen` (no `ViewModel` — nothing to hold), reached from More.
 - [ ] Two buttons → `ACTION_SENDTO` `mailto:binky.support@gmail.com`, subject **passed as
       `EXTRA_SUBJECT`** (a `#` in the mailto query string is parsed as the fragment and the subject
       arrives empty).
 - [ ] Subject = **constant tag + localised description**: `#bug — Bug report — Binky 1.2.0 (211)` /
       `#bug — Zgłoszenie błędu — Binky 1.2.0 (211)`. The tag alone is a Kotlin constant (ADR-0013
-      exception, it is a filter token); everything after it is a string resource. One Gmail rule
-      (`subject:#bug`) then covers every locale, now and for any language added later.
+      exception — it is addressed to the maintainer); everything after it is a string resource. The
+      working rule is **`subject:bug`, not `subject:#bug`** — Gmail's index does not recognise hash
+      marks — and the token doing the work is the English *word*, which is exactly what a Polish
+      description does not contain. One rule covers every locale, now and for any language added later.
 - [ ] A **debug build's subject says `-debug`** — `applicationIdSuffix` never reaches `versionName`, so
       without it a report from the developer's own phone is byte-identical to a real one.
 - [ ] Bug mail prefills the diagnostics block (version, build, Android, device, app locale); feature mail
@@ -137,10 +146,20 @@ the strings, **6c** the device pass, **6d** docs + the Console's contact email +
       that is the RFC 3676 signature delimiter and Gmail collapses everything below it.
 - [ ] The block's locale is the **resolved** one (`LocalResources…configuration.locales[0]`), not
       `currentAppLanguage()`, which is `null` for "follow the phone" — i.e. for most senders.
-- [ ] Address rendered as selectable text — the fallback when no mail app exists.
+- [ ] Address rendered as selectable text — the fallback when no mail app exists. **`SENDTO` + `mailto`
+      does not resolve to mail apps only**: PayPal claims the scheme on the test phone, so the chooser
+      is accepted and "no mail app" is produced by disabling **every** resolver `pm query-activities`
+      names, not just Gmail.
 - [ ] Third button: **Rate Binky on Google Play** → `market://details?id=…`, browser URL as fallback.
       **Not** the In-App Review API — Google's own docs say don't put that behind a button (quota can
       silently no-op it) and say to link to the Store instead. Saves a Play Core dependency too.
+      It ships **knowingly ahead of production**: testing-track users get private feedback, not the star
+      widget, so the button is a link to a listing that cannot yet be rated. Written down, not discovered.
+- [ ] The `market://` intent is **pinned with `setPackage("com.android.vending")`**. Xiaomi's GetApps
+      claims the scheme too and sorts first, so unpinned it opens a store without Binky in it, nothing
+      throws, and the `https` fallback is dead code.
+- [ ] Fourth row: **Privacy policy** → the hosted page the listing already points at. One row, reuses the
+      `https` launch, and gives the `<queries>` `https` entry a real user.
 - [ ] The store URL hardcodes `binky.bunny.and.rabbit.tracker` — **never** `packageName`, which in the
       debug build carries `.debug` and opens *item not found* on the one phone that tests it. Unit test
       asserts the URL does not end in `.debug`.
@@ -152,13 +171,25 @@ the strings, **6c** the device pass, **6d** docs + the Console's contact email +
       the last "coming soon" in the app. Give the row a real `more_support_summary`, and reword
       `MoreRow`'s KDoc: its nullable `onClick` **stays** (Photos/Documents use it) but stops meaning
       "coming soon".
-- [ ] 16 new strings in both locales — drafted in `phase-6.md`'s table, reviewed as copy not as a diff.
+- [ ] **`more_needs_bunny` as the inert subtitle** on Photos and Documents while `hasBunnyInScope` is
+      false. Deleting the "coming soon" vocabulary otherwise leaves a dimmed row explaining nothing —
+      ADR-0001's silence, on the screen that used to have a word for it. The failing case is an owner who
+      archived their last bunny, not a fresh install.
+- [ ] 19 new strings in both locales — drafted in `phase-6.md`'s table, reviewed as copy not as a diff.
 - [ ] JVM tests on the pure subject/body builders; both locales; **golden-string** equality on the bug
       body (proves nothing else can be in it); `PolishTranslationTest` green.
 - [ ] One new edge-to-edge scene (59 → 60). 🔴 Inherits §2's tap blocker; the hand-driven checks do not.
 - [ ] Set `binky.support@gmail.com` as Play's **per-app contact email** in Store settings, so the app,
       the listing and the privacy policy name the same inbox. **The one Console item not blocked by §4's
       testing count** — Store settings is editable today.
+- [ ] **Amend and republish [`privacy-policy.md`](privacy-policy.md)** before 1.3 goes up: the support
+      mail into *What you choose to send*, and *Deleting your data* narrowed — "Because we never receive
+      your data, there is nothing for us to delete" **stops being true** the moment someone taps send,
+      because you then hold their address, phone model, Android version and app locale. New date, page
+      republished, because the listing links it.
+- [ ] Record in [`play-app-content.md`](play-app-content.md) **why Data safety stays "collects
+      nothing"** — Play scopes collection to what the *app* transmits, and a user-composed mail from
+      their own client is not the app transmitting. An unwritten judgement gets re-litigated.
 
 **If 1.3 is ready before Play's count clears, do not upload 1.2.0 first.** Same schema 6, same two
 migrations, so §4's field-upgrade proof retargets to **1.0.0 → 1.3** and still crosses both.
@@ -229,6 +260,23 @@ in nine languages and having it read twice by nine native speakers.
       `scripts/edge-to-edge.py` needs a `--locale` flag first.
 - [ ] **Decide the lagging-translation policy** when the test is generalised — strict red build, or a
       dated `translations-pending` allowlist. See phase-8.md's open question.
+
+---
+
+## 8 — Open-source licence attribution 🟠 owed, unscheduled
+
+Raised while grilling Phase 6 and deliberately **not** folded into it. The app ships Room, Compose,
+Coil 3, Vico and ML Kit and carries **no attribution of any kind** — no string, no asset, no screen.
+Apache-2.0 §4 asks for the licence and NOTICE to travel with the binary.
+
+- [ ] **Decide the mechanism**, which is a dependency question wearing a UI costume: Google's
+      `play-services-oss-licenses` plugin (off the shelf, but a **second** Play-services-dependent
+      library in a project that quarantines its first one behind an interface — ADR-0009), or a Gradle
+      task generating an asset the app renders itself (no dependency, more code, ours to keep working).
+      A hand-typed list is neither — it is wrong one dependency bump later and nobody notices.
+- [ ] Then build it where the answer says it belongs. Support is the app's only About-shaped screen.
+
+**Before production launch**, which is when the exposure stops being theoretical — not before 1.3.
 
 ---
 
