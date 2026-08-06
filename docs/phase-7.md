@@ -49,6 +49,23 @@ it, at the cost of one preference.
 
 **Decide this before any mockup exists.** Every other visual choice is downstream of it.
 
+### Decided, 2026-08-06: own a brand — [ADR-0027](adr/0027-binky-owns-its-palette-material-you-is-opt-in.md)
+
+Dynamic colour defaults **off**; Material You stays available as a Settings toggle. The argument that
+settled it was not the one written above, and it is worth recording which one did.
+
+**It is ADR-0012 that forces this, not brand preference.** That ADR's first rule buys the whole redesign:
+*colours come from `MaterialTheme`, never literals — the visual pass then edits one file.* With
+`dynamicColor = true`, on Android 12+ nothing reads that file. The visual pass could pick a palette, wire
+it in, build, install, and see no change at all, with no error to explain why. Turning dynamic colour off
+is what makes ADR-0012's promise true on a device anyone owns.
+
+Two consequences land on this phase directly. **A full scheme is owed, not three roles** — the current
+`lightColorScheme(primary, secondary, tertiary)` leaves `surface`, `background`, `outline` and every
+`on*`/`*Container` at M3's baseline, which is itself purple and which most users will now actually see.
+And the **toggle needs a label and help line as resources in both locales** (ADR-0013), which is the first
+answer to this file's "does any string change?" question: yes, at least two.
+
 ## Why it runs before Phase 8, not after
 
 Phase 8 is 631 translatable resources × 7 new languages ≈ 4 400 strings, each **read by a native speaker
@@ -101,14 +118,32 @@ expensive in Compose and cheap in HTML:
 artefacts fix. Mocking a screen in HTML that will be hand-written in Kotlin anyway is work paid for
 twice — and the phone, not the browser, is where "easier to use" is actually judged.
 
-**The "before" set is an input.** Every screen captured with `adb exec-out screencap -p` before anything
-changes: it is what the design work is a response to, and afterwards it is the only way to answer
-"is this better?" with something other than an opinion.
+**The "before" set is an input.** Every screen captured before anything changes: it is what the design work
+is a response to, and afterwards it is the only way to answer "is this better?" with something other than
+an opinion.
+
+`scripts/screenshots.py` is what takes it, and again at the gate — same scenes, same cells, so the two sets
+are comparable by construction rather than by care. It imports `edge-to-edge.py`'s 61 scenes rather than
+copying them: those tap sequences are the expensive asset in this repo, and two drifting copies would both
+go on producing screenshots, just of the wrong screens.
+
+Its matrix is **theme × locale** where `edge-to-edge.py`'s is **rotation × navigation mode**, and it drops
+the inset arithmetic that is the other script's whole point. Portrait + gesture only, deliberately: the
+gate below re-runs the orientation matrix in full, and shooting one design in four orientations teaches
+nothing about the design. The first set is **light + dark, English**, 61 scenes each.
+
+Output stays **out of the repo** — `docs/edge-to-edge/` holds two PNGs, the pair that illustrated one
+finding, and that is the convention: the full run is evidence to look at, not to commit, and only the shots
+that make a point get checked in.
 
 ## Order of work
 
-1. **Capture the before set** — all 26 routes, both locales, on the Xiaomi.
-2. **Settle dynamic colour.** Nothing else starts first.
+1. **Capture the before set** — `scripts/screenshots.py`, on the Xiaomi. ✅ *2026-08-06.*
+2. **Settle dynamic colour.** Nothing else starts first. ✅ *2026-08-06 — ADR-0027, see above.*
+
+   *(These two are listed in this order and `DOD.md` §6 says the colour decision blocks everything. Both
+   are right: the capture is a photograph of what already ships, so it depends on no decision and is the
+   one task that can run alongside one. Nothing that **changes** a pixel starts before step 2.)*
 3. **Fix the visual language** in Claude Design, plus `Home` and `Weight`.
 4. **Theme commit first** — `Color.kt`, `Type.kt` and `Theme.kt` stop being the scaffold's. One commit,
    and the whole app moves at once; every screen after it is an adjustment rather than a reinvention.

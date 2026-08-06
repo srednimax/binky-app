@@ -79,6 +79,32 @@ All deliberately after it, because each would disturb the armed course.
       touchscreen tap` lands where bare `input tap` is dropped** — A/B'd on one screen at one
       coordinate — and `keyevent` and `swipe` were never affected. `edge-to-edge.py` is fixed and both
       new scenes ran clean in all four configurations, so the matrix is driveable again.
+      ⚠️ **`watch-expiry` needs re-shooting when the matrix is re-run** (found 2026-08-06, building Phase
+      7's capture). The seed leaves exactly **one** expired watch — Nugget's 3-day, started 4 days ago;
+      Bijou's 7-day is still running — and every scene that is not `keeps_watch_prompt` opens by tapping
+      *Close it*, which **deletes the row** (`WatchExpiry.kt`: "close, dismiss and swipe-away are one
+      action"). In `SCENES` order `home` runs ~20 scenes ahead of `watch-expiry`, so by then there is no
+      prompt and the PNG is a plain Home screen under a dialog's name. `screenshots.py` sorts
+      `keeps_watch_prompt` scenes first within each suite; `edge-to-edge.py` still does not, and its
+      existing `watch-expiry` evidence should be assumed wrong rather than re-read.
+      ⚠️ **`medication-course`, `medication-course-bottom` and `record-dose` likewise** (found
+      2026-08-06, same session, and this one is the worse of the two). The Care screen grows a
+      blocked-state banner for **each of two permissions** — notifications off, and exact alarms not
+      permitted — and both buttons are `action_open`, **the same "Open"** the medication-course row
+      uses. `find` is a case-insensitive substring match, so `tap("Open")` hit a banner and launched
+      HyperOS's Settings: both `medication-course` shots were **screenshots of the system Settings
+      app**, and `record-dose` failed with an empty node list because the foreground had left this
+      package. Confirmed twice by `dumpsys window` — `Settings$AppNotificationSettings`, then
+      `Settings$AlarmsAndRemindersAppActivity` once the first was granted.
+      **This applies to the 4f run too** — §1 records it ended `Reason=data_cleared`, so it wiped,
+      so it held neither permission. Assume those three scenes' existing evidence is wrong.
+      **The fix is the needle, not the permissions**: the scenes now open the course by name
+      (`MEDICATION_COURSE = "Metacam"`, the sample data's first). Granting both would also clear it
+      and is the wrong lever — `SCHEDULE_EXACT_ALARM` is denied by default on Android 14+, so that
+      banner is a state real users genuinely see, and §1 wants the permission granted through the
+      app's own deep link because that path is what is under test. `reset_to_seeded()` does grant
+      `POST_NOTIFICATIONS` back, separately, so a seeded install stands in for an app in use; the
+      `empty` suite keeps the denied state, where it is the truth of a first run.
 
 ---
 
@@ -151,13 +177,24 @@ phase ships screen by screen. **Runs after Phase 6** (so Support is designed onc
 The per-screen worklist is **not written yet, on purpose** — it cannot be, before the visual language
 exists. These are the items that come first.
 
-- [ ] **Decide dynamic colour.** `Theme.kt` ships `dynamicColor = true`, so on Android 12+ the palette
-      comes from the user's wallpaper and `LightColorScheme` is only seen on API 26–30. Keep Material You
-      and redesign layout/hierarchy only, or turn it off (Settings toggle, default off) and own a brand.
-      **Recommendation: own a brand** — the theme is still `android create`'s `Purple40`, so there is
-      nothing to preserve. **Nothing else in this phase starts before this is answered.**
-- [ ] **Capture the before set** — all 26 routes, both locales, `adb exec-out screencap -p`. It is the
-      input to the design work and the only honest way to judge the result.
+- [x] **Decide dynamic colour** — **own a brand**, 2026-08-06,
+      [ADR-0027](adr/0027-binky-owns-its-palette-material-you-is-opt-in.md). Default off, Material You kept
+      as a Settings toggle. The deciding argument turned out to be **ADR-0012**, not brand preference: that
+      ADR buys the whole redesign with *"the visual pass then edits one file"*, and `dynamicColor = true`
+      means nothing reads that file on Android 12+. Two things follow into the work below — a **full**
+      scheme is owed rather than three roles (`surface`, `background`, `outline` and every
+      `on*`/`*Container` are still M3's purple baseline), and the toggle needs **two new strings in both
+      locales**, which is the first partial answer to "does any string change?" below: yes.
+- [x] **Capture the before set** — 2026-08-06, **61 scenes × light and dark = 122 PNGs, 23 MB**, in
+      `~/binky-screenshots/phase-7/before/{light,dark}/`. Out of the repo, per `docs/edge-to-edge/`'s
+      precedent of committing only the shots that make a point. Taken by **`scripts/screenshots.py`**,
+      which imports `edge-to-edge.py`'s scene table rather than copying it.
+      **The axes changed from what this line asked for**: light/dark rather than en/pl, portrait +
+      gesture only. Dark is not a variant of light and does not review as one, and the orientation
+      matrix is the *gate* below rather than a design input. **Polish is therefore still owed** — the
+      script takes `--locale`, and Phase 8's copy-length canary wants it before that phase starts.
+      Four defects were found and fixed getting here; two were in `edge-to-edge.py` and are written up
+      in §2, because they mean some existing 4f evidence is wrong rather than merely missing.
 - [ ] **Fix the visual language** — palette, type scale, spacing rhythm, list-row and card treatment,
       empty states — plus `Home` and `Weight` drawn in full. Mocked in Claude Design (HTML, *not* Compose;
       it is a mockup surface, not a codegen path). The other 24 routes go straight to Compose.
