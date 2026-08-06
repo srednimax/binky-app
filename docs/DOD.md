@@ -5,7 +5,9 @@ yet ticked, so a session can pick up the work without loading 3 000 lines. Keep 
 closes, tick it here, write the *result* into `PLAN.md`, and delete the detail from this file.
 
 **Phase 5** (vet, medications, documents, dose reminders — ships as 1.2) — software half **done**,
-evidence half open. Status read 2026-08-05 20:30.
+evidence half open. Status read 2026-08-05 20:30. **Phase 6** (the support contact — ships as 1.3) is
+built, device-tested and documented as of 2026-08-06; only §5's two hand items are left, and 1.3.0 is
+waiting on a release PR.
 
 ---
 
@@ -101,114 +103,41 @@ so every scan already taken is permanent at whatever spec was in force when it w
 Play's 12-testers / 14-day count was still running on 2026-08-05. Nothing here is work we are holding.
 All three land in **one sitting** once the count clears, in this order:
 
-- [ ] Upload 1.2.0 to the **internal** track, then **closed**. If the count has cleared, production
-      becomes available for the first time — whether 1.2 takes it is an ADR-0009 decision made then.
+- [ ] Upload **1.3** to the **internal** track, then **closed** — not 1.2.0, per §5's closing note: same
+      schema, same migrations, and uploading both spends a release cycle to prove nothing extra. If the
+      count has cleared, production becomes available for the first time — whether 1.3 takes it is an
+      ADR-0009 decision made then.
 - [ ] **Screenshots for both listings** (EN + PL), owed for the screens 1.1 and 1.2 both added.
       §2's tap blocker is fixed as of 6c, so this is no longer waiting on tooling — only on Phase 7,
       per §6's closing note.
-- [ ] **The field upgrade proof: 1.0.0 → 1.2**, real bunny history intact. The Xiaomi's Play build is on
+- [ ] **The field upgrade proof: 1.0.0 → 1.3**, real bunny history intact. The Xiaomi's Play build is on
       **1.0.0**, not the 1.0.1 4h assumed, so the chain crosses *both* hand-written migrations. It cannot
       run locally — the installed build is Play-signed and a local APK is refused on signature mismatch —
       so the update must **arrive from a track**, downstream of the upload above.
 
 ---
 
-## 5 — Phase 6: the support contact 🟢 planned, not started
+## 5 — Phase 6: the support contact 🟡 built and documented, two hand items left
 
-Design and reasoning in **[`phase-6.md`](phase-6.md)** — its own file, so building it does not cost
-`PLAN.md`'s 3 000 lines of finished history. Touches no schema, no alarm, no permission and no
-dependency, so **in code** it cannot disturb Phase 5's open evidence — it is the safe thing to write
-while the overnight run and Play's count are outstanding.
+Built, driven on the device and written up — **6a, 6b, 6c and 6d are all done**. The record is
+[`phase-6.md`](phase-6.md), and `PLAN.md`'s status list ticks Phase 6 on the build and the documents.
+`release-please` already has **1.3.0** waiting on PR #93; merging it is the cut.
 
-🔴 **In deployment it can.** `installDebug` replaces the package, which force-stops it, which cancels
-every alarm the app placed — §1's `connectedAndroidTest` trap through a different door, and the result
-is again indistinguishable from a Doze failure. **6a installs nothing** and is the right work for an
-armed night; 6b and 6c wait for the morning read.
+Two boxes outlive the code, and neither is work a build can do:
 
-Four checkpoints, one commit each: **6a** the inbox, the pure hand-off + its test, **6b** the screen, the
-route and the strings, **6c** the device pass, **6d** docs + the Console's contact email + the 1.3 cut.
-**6a, 6b and 6c are done**; only 6d is open, and its items are the last four boxes below.
+- [ ] Set `binky.support@gmail.com` as Play's **per-app contact email** in *Store settings*. **Not blocked
+      by §4's testing count** — Store settings is editable today. It is what makes the app, the listing and
+      the privacy policy's *Contact* section name one inbox; the app hardcodes the address, so anything
+      else in that field points the listing at a mailbox the app does not use.
+- [ ] **Read a support mail that actually arrived**, carried from 6c's gate: send a bug report from the
+      phone and confirm in the inbox that the diagnostics block is **visible**, not collapsed behind
+      Gmail's signature `…`. The block is separated by a blank line and never `-- ` for exactly that
+      reason, and a draft cannot prove it — only a delivered message can. Everything up to the send is
+      verified in both locales.
 
-🔴 **6c found the phase's central decision to be backwards.** `EXTRA_SUBJECT` and `EXTRA_TEXT` are
-**silently ignored by Gmail for `ACTION_SENDTO`** — the draft opened with the recipient filled and the
-subject and body empty, with and without the chooser. The subject and body now travel in the `mailto:`
-query string, percent-encoded by `Uri.encode`, which is also the real answer to the `#`-fragment trap
-the extras were chosen to dodge. Fixed, four new JVM tests guard it, verified on the device in both
-locales. Full write-up in [`phase-6.md`](phase-6.md)'s 6c result.
-
-- [x] **First: confirm `binky.support@gmail.com` is live and can send.** Everything below hardcodes it,
-      and Gmail ignores dots, so a near-miss registration is the same mailbox. **Confirmed 2026-08-06**,
-      before `SupportHandoff.kt` was written; the spelling is pinned by a unit test.
-- [x] `Support` nav key + `SupportScreen` (no `ViewModel` — nothing to hold), reached from More.
-- [x] Two buttons → `ACTION_SENDTO` `mailto:binky.support@gmail.com`, subject and body **in the query
-      string, percent-encoded by `Uri.encode`**. Corrected at 6c: the extras this line used to
-      prescribe are **silently ignored by Gmail**, and encoding is the real answer to the `#` fragment
-      trap — `Uri.encode` writes `%23` so nothing is hand-escaped. Extras still set as belt-and-braces.
-- [x] Subject = **constant tag + localised description**: `#bug — Bug report — Binky 1.2.0 (211)` /
-      `#bug — Zgłoszenie błędu — Binky 1.2.0 (211)`. The tag alone is a Kotlin constant (ADR-0013
-      exception — it is addressed to the maintainer); everything after it is a string resource. The
-      working rule is **`subject:bug`, not `subject:#bug`** — Gmail's index does not recognise hash
-      marks — and the token doing the work is the English *word*, which is exactly what a Polish
-      description does not contain. One rule covers every locale, now and for any language added later.
-- [x] A **debug build's subject says `-debug`** — `applicationIdSuffix` never reaches `versionName`, so
-      without it a report from the developer's own phone is byte-identical to a real one.
-- [x] Bug mail prefills the diagnostics block (version, build, Android, device, app locale); feature mail
-      does not (body is exactly `""`). Screen states what the block contains before it is tapped.
-      The block is **not localised** (same argument as the tag) and is **never separated by `-- `** —
-      that is the RFC 3676 signature delimiter and Gmail collapses everything below it.
-- [x] The block's locale is the **resolved** one (`LocalResources…configuration.locales[0]`), not
-      `currentAppLanguage()`, which is `null` for "follow the phone" — i.e. for most senders.
-- [x] Address rendered as selectable text — the fallback when no mail app exists. **`SENDTO` + `mailto`
-      does not resolve to mail apps only**: PayPal claims the scheme on the test phone, confirmed at 6c,
-      so the chooser is accepted. "No mail app" could **not** be produced by disabling the resolvers as
-      this line planned — HyperOS refuses `pm disable-user` for system packages, and Gmail is one — so
-      it was produced by temporarily building against a scheme nothing claims. Snackbar shown, address
-      still selectable.
-- [x] Third button: **Rate Binky on Google Play** → `market://details?id=…`, browser URL as fallback.
-      **Not** the In-App Review API — Google's own docs say don't put that behind a button (quota can
-      silently no-op it) and say to link to the Store instead. Saves a Play Core dependency too.
-      It ships **knowingly ahead of production**: testing-track users get private feedback, not the star
-      widget, so the button is a link to a listing that cannot yet be rated. Written down, not discovered.
-- [x] The `market://` intent is **pinned with `setPackage("com.android.vending")`**. Xiaomi's GetApps
-      claims the scheme too and sorts first, so unpinned it opens a store without Binky in it, nothing
-      throws, and the `https` fallback is dead code.
-- [x] Fourth row: **Privacy policy** → the hosted page the listing already points at. One row, reuses the
-      `https` launch, and gives the `<queries>` `https` entry a real user.
-- [x] The store URL hardcodes `binky.bunny.and.rabbit.tracker` — **never** `packageName`, which in the
-      debug build carries `.debug` and opens *item not found* on the one phone that tests it. Unit test
-      asserts the URL does not end in `.debug`.
-- [x] **No donation link** — decided against: Play Payments §3 exempts only tax-exempt donations, §4
-      forbids leading users to other payment methods, and StreetComplete was rejected for exactly this.
-- [x] `<queries>` gains `mailto`, `market` **and `https`** entries; no `resolveActivity` pre-check
-      anywhere — the entries exist so one added later cannot silently lie.
-- [x] Delete the divider and `more_coming_soon` from `MoreScreen.kt` and **both** locales — Support was
-      the last "coming soon" in the app. Give the row a real `more_support_summary`, and reword
-      `MoreRow`'s KDoc: its nullable `onClick` **stays** (Photos/Documents use it) but stops meaning
-      "coming soon".
-- [x] **`more_needs_bunny` as the inert subtitle** on Photos and Documents while `hasBunnyInScope` is
-      false. Deleting the "coming soon" vocabulary otherwise leaves a dimmed row explaining nothing —
-      ADR-0001's silence, on the screen that used to have a word for it. The failing case is an owner who
-      archived their last bunny, not a fresh install.
-- [x] 19 new strings in both locales — drafted in `phase-6.md`'s table, reviewed as copy not as a diff.
-- [x] JVM tests on the pure subject/body builders; both locales; **golden-string** equality on the bug
-      body (proves nothing else can be in it); `PolishTranslationTest` green.
-- [x] Two new edge-to-edge scenes, **59 → 61** rather than the 60 predicted: landscape leaves Rate,
-      Privacy policy and the version row below the fold, so the conditional `support-bottom` variant was
-      owed. Both clean in all four configurations, and §2's tap blocker was fixed to run them.
-- [ ] Set `binky.support@gmail.com` as Play's **per-app contact email** in Store settings, so the app,
-      the listing and the privacy policy name the same inbox. **The one Console item not blocked by §4's
-      testing count** — Store settings is editable today.
-- [ ] **Amend and republish [`privacy-policy.md`](privacy-policy.md)** before 1.3 goes up: the support
-      mail into *What you choose to send*, and *Deleting your data* narrowed — "Because we never receive
-      your data, there is nothing for us to delete" **stops being true** the moment someone taps send,
-      because you then hold their address, phone model, Android version and app locale. New date, page
-      republished, because the listing links it.
-- [ ] Record in [`play-app-content.md`](play-app-content.md) **why Data safety stays "collects
-      nothing"** — Play scopes collection to what the *app* transmits, and a user-composed mail from
-      their own client is not the app transmitting. An unwritten judgement gets re-litigated.
-
-**If 1.3 is ready before Play's count clears, do not upload 1.2.0 first.** Same schema 6, same two
-migrations, so §4's field-upgrade proof retargets to **1.0.0 → 1.3** and still crosses both.
+**1.3 supersedes 1.2.0 on the tracks — do not upload both.** Same schema 6, same two hand-written
+migrations, so §4's field-upgrade proof retargets to **1.0.0 → 1.3** and still crosses `MIGRATION_4_5` and
+`MIGRATION_5_6`. Uploading 1.2.0 first buys a second release cycle and proves nothing 1.3 would not.
 
 ---
 

@@ -479,6 +479,43 @@ Two documents change in the same commit, and one of them is published:
 
 Then `release-please` cuts **1.3.0** from the `feat:` commits above.
 
+#### Result, run 2026-08-06 — the documents are paid, two hand items remain
+
+The documentation debt this phase created is settled in one commit, which is what the file's own rule at
+the top of [`play-app-content.md`](play-app-content.md) requires: the privacy policy and the Data safety
+answers move together or Play's cross-check catches the gap.
+
+- **[`privacy-policy.md`](privacy-policy.md) amended and dated 6 August 2026.** *What you choose to send*
+  gains the Support screen as the third thing and the first addressed to the developer — it names the
+  address, lists the block's contents, says **nothing about your rabbits**, and says the app hands over a
+  draft that goes nowhere until the sender taps send. *Deleting your data* narrows from "we never receive
+  your data" to "we never receive your **records**" and gains the erasure line for correspondence, which
+  is the sentence that stopped being true the moment the first button shipped.
+- **[`play-app-content.md`](play-app-content.md) records the judgement rather than the conclusion.** §7
+  gains a `⚠` subsection: Play scopes collection to what the *app* transmits, `ACTION_SENDTO` hands a
+  draft to a client the user chose, and the three properties that keep that reading honest are named as
+  constraints on the code — six facts and no records, the golden-string test that stops a seventh being
+  added, and the screen saying so before the tap. The deletion row in the same section is reworded, and
+  the *Contact email* bullet now carries the address and why it has to be that one.
+- **The Data safety declaration stays "collects nothing"** and the form gains no data type. No Play
+  Billing, no In-App Review, no donation link ships either, so §3 *Ads*, §9 *Financial features* and §4's
+  purchase question are untouched.
+- **`release-please` had already opened the 1.3.0 PR** off 6a–6c's three commits (#93,
+  `chore(main): release 1.3.0`) — the cut is a merge, not a step to perform.
+
+**Still owed, and both need a person rather than a build:**
+
+1. **Play's per-app contact email** set to `binky.support@gmail.com` in *Store settings* — the one Console
+   item in the plan not blocked by the testing count, and the thing that makes the app, the listing and
+   the privacy policy's *Contact* section name one inbox.
+2. **The gate's received-mail read**, carried from 6c: send a bug report to the inbox and confirm the
+   block is *visible* and not collapsed behind Gmail's signature `…`. Everything up to the send is
+   verified; this cannot be read from a draft.
+
+Phase 6 is therefore ticked in [`PLAN.md`](PLAN.md) **on the build and the documents**, with those two
+carried in [`DOD.md`](DOD.md) — the same shape as Phase 4's close, where the Console half and one night's
+evidence outlived the code.
+
 ## The strings, by key
 
 Nineteen new, one deleted, both locales. Polish is drafted here rather than left to the commit, so the
