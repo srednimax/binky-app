@@ -58,3 +58,32 @@ The built-in symptom list (ADR-0010) is seeded as **stable keys rendered via `st
 English strings in the database. A seeded English row would display in English on a Polish device,
 bypassing translation entirely and leaving the symptom picker half-translated. Only owner-added symptoms
 are untranslatable literal text, which is expected.
+
+## Amendment (Phase 6): two hardcoded strings, addressed to the maintainer rather than the sender
+
+This ADR's rule is "nothing was ever hardcoded", and the support mail breaks it **twice, deliberately**.
+Both exceptions are recorded here because this file is what a later reader consults before "fixing" them,
+and both look exactly like the oversight this ADR exists to prevent.
+
+- **The subject's filter tag — `#bug` and `#feature` — is a Kotlin constant**, and only the tag. The mail's
+  subject is that constant followed by a localised description (`#bug — Bug report — …` /
+  `#bug — Zgłoszenie błędu — …`), so the sender still reads their own language. The tag is not addressed to
+  them: it is addressed to the one inbox that receives every report in every language, and it is what a
+  Gmail filter matches. Translating it would need one rule per locale, and the failure when a new language
+  ships without its rule is **invisible** — it looks precisely like nobody reporting anything. There is no
+  technical obstacle to `#błąd`; `EXTRA_SUBJECT` and a percent-encoded `mailto:` query both carry
+  diacritics fine. This is an inbox decision, recorded as one rather than dressed up as an encoding
+  constraint.
+- **The bug report's diagnostics block is not localised.** Every line in it is a number or an identifier —
+  `Binky 1.3.0 (214)`, `Android 15 (API 35)`, the device model, `locale pl` — read by the same person as
+  the tag. Translating `Android 15 (API 35)` would be translating a fact.
+
+Neither is invisible to the sender and neither is silent: the screen states in **both** locales what the
+block contains before the button is tapped, and the block reports the **app's** resolved locale rather than
+the phone's, so a Polish report says so in the plainest way available. `PolishTranslationTest` cannot see
+either string, because neither is a resource — the guard is a JVM test asserting the tag survives a Polish
+description and that the body equals a golden string. See [`phase-6.md`](../phase-6.md).
+
+The rule is otherwise unchanged, and the boundary it draws is worth stating: **text the owner reads is a
+resource; text the maintainer reads may be a constant.** Every one of the Support screen's own nineteen
+strings is a resource in both locales.

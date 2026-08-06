@@ -19,6 +19,14 @@ during an armed night; 6b and 6c both install, and queue behind the morning read
 dependencies), ADR-0013 (localisation, and the one exception below), ADR-0015 ("coming soon" rows),
 ADR-0023 (the debug build's `applicationId` suffix, which is what makes the store link a trap).
 
+**Two of them are amended by this phase**, because a decision this file contradicts has to be corrected
+where the next reader will look for it and not only here. **ADR-0011** planned a Buy Me a Coffee link, a
+30-day ask and a *Support this app* settings row; its own closing line said to re-read Play's policy
+before publishing, that re-read is the donation paragraph below, and the answer is no — so the ADR carries
+a Phase 6 amendment withdrawing all of it. **ADR-0013** says nothing is ever hardcoded, and this phase
+hardcodes two things on purpose (the filter tag, the diagnostics block), so it carries one recording the
+boundary: text the owner reads is a resource, text the maintainer reads may be a constant.
+
 ## What ships
 
 The smallest phase in the plan, and the first one past the original roadmap. More's **Support** row goes
@@ -500,8 +508,28 @@ answers move together or Play's cross-check catches the gap.
 - **The Data safety declaration stays "collects nothing"** and the form gains no data type. No Play
   Billing, no In-App Review, no donation link ships either, so §3 *Ads*, §9 *Financial features* and §4's
   purchase question are untouched.
+- **Two ADRs are amended, which the checkpoint's own plan had not asked for.** A phase that contradicts a
+  recorded decision has to correct it where the next reader looks — `CLAUDE.md` sends them to `docs/adr/`,
+  not here.
+  - **ADR-0011** still prescribed a Buy Me a Coffee link, a 30-day one-time ask, a permanent *Support this
+    app* settings row and a baked-in supporter list. Its own last line said to re-read Play's policy
+    before publishing rather than assume the arrangement survives; this phase is that re-read, and the
+    answer is no. The amendment withdraws all of it, records §3/§4 and StreetComplete, and notes that
+    **nothing was ever built** — no prompt, no row, no link — so it is a plan withdrawn, not code removed.
+    A rating replaces the ask.
+  - **ADR-0013** says nothing is ever hardcoded, and this phase hardcodes the filter tag and the
+    diagnostics block on purpose. The amendment records both and the boundary they draw: **text the owner
+    reads is a resource, text the maintainer reads may be a constant** — with the note that
+    `PolishTranslationTest` cannot see either, so a JVM test guards them instead.
+- **[`store-listing.md`](store-listing.md) names the address too.** Its *Contact email* row said only "the
+  per-app support address", which is the same field this phase pins — three documents were supposed to
+  agree and one of them still described the value rather than stating it.
 - **`release-please` had already opened the 1.3.0 PR** off 6a–6c's three commits (#93,
   `chore(main): release 1.3.0`) — the cut is a merge, not a step to perform.
+- **Gate re-checked at 6d, not inherited:** `lint` is **0 errors, 0 warnings** (17 hints, all dependency
+  upgrade notices) on the tree that includes 6c's `mailto:` fix; 19 support strings in each locale;
+  `more_coming_soon` gone from both and surviving only inside the comment that explains what replaced it;
+  61 scenes in `SCENES`; the three `<queries>` entries present; 14 tests in `SupportHandoffTest`.
 
 **Still owed, and both need a person rather than a build:**
 
