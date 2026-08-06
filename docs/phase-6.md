@@ -401,6 +401,67 @@ scripts/edge-to-edge.py --scene support
 that script is tap-driven. The hand-driven gate checks above are unaffected — a finger works — so 6c
 splits cleanly into the part that can be done now and the one scene that waits with the other 59.
 
+#### Result, run 2026-08-06 — one defect found and fixed, and the tap blocker solved
+
+**The checkpoint earned its place.** It found a defect that every JVM test passed and every screen hid,
+and it retired `DOD.md` §2's blocker on the way.
+
+- 🔴 **`EXTRA_SUBJECT` and `EXTRA_TEXT` are silently ignored by Gmail for `ACTION_SENDTO`** — the
+  central decision of this phase, and it was backwards. The first bug draft opened with the recipient
+  filled and **the subject and body empty**. Same result with the chooser and with the intent pinned
+  straight at `com.google.android.gm`, so it is Gmail and not the resolver. Nothing on the screen says
+  so: the button works, the mail app opens, and only the arriving mail is wrong.
+
+  Fixed by moving both into the `mailto:` query string, percent-encoded with `Uri.encode` — which is
+  the answer to the `#`-fragment trap the extras were chosen to dodge, because the platform does the
+  escaping instead of a hand-typed `%23`. Verified on the device: subject
+  `#bug — Bug report — Binky 1.2.0-debug (218)`, and in Polish
+  `#bug — Zgłoszenie błędu — Binky 1.2.0-debug (218)` — hash, em-dashes and diacritics all intact,
+  the body's six lines with their newlines preserved. The extras are still set, now as belt-and-braces
+  for clients that read them instead. Four new JVM tests guard the assembly, including that no bare
+  `#` survives into the URI.
+- 🟢 **`input touchscreen tap` lands where bare `input tap` is dropped**, which retires §2's blocker.
+  Proved by A/B on one screen at one coordinate: bare `tap` never moved the selection, `touchscreen tap`
+  moved it every time. `input keyevent` and `input swipe` were never affected — it is the source
+  inference `input` makes when none is named that HyperOS stopped honouring. One-line fix in
+  `edge-to-edge.py`; the existing three-try retry stays, because taps still land intermittently.
+- 🟠 **`pm disable-user` is refused for system packages on HyperOS** — `SecurityException: Cannot
+  disable system packages` for both `com.android.vending` and `com.google.android.gm`, so the two
+  disable-and-look steps this section prescribes cannot be run as written. PayPal disables fine.
+  Substituted by temporarily repointing a constant and rebuilding — the pin at an absent package, and
+  the `mailto:` scheme at one nothing claims — which exercises the same `catch` from the same call
+  site. Both reverted immediately.
+- **The Play fallback's catch fires, and "falls through to *the browser*" is unprovable on this phone.**
+  With the pin unreachable, `openUrl(playWebUrl())` runs — and Play claims that `https` URL as an app
+  link, so it opens Play again rather than Chrome. The chain is proven in two halves instead: the catch
+  is reached (nothing else could have opened the listing), and `openUrl` reaches a browser, which the
+  **Privacy policy** row shows directly — Chrome, on the hosted page.
+- **Resolvers were as this file predicted.** `mailto:` → Gmail *and* PayPal; `market://` → Play *and*
+  Xiaomi GetApps; `https` → Chrome. Rate opened `com.android.vending`, never GetApps, from the build
+  whose own id ends `.debug` — so both the `setPackage` pin and the hardcoded `PLAY_PACKAGE` are
+  carrying real weight, not insurance.
+- **The Rate button's ahead-of-production caveat is confirmed in the field**, not just reasoned:
+  the listing opens on *Binky: Bunny & Rabbit Tracker (Early Access)* and says **"Only the developer
+  can see this feedback"** — exactly the private-feedback path this file predicted testers would get.
+- **The app's locale, not the phone's.** With the app switched to Polish on an `en-US` phone the block
+  read `locale pl`; in English it read `locale en-US`. The resolved-configuration read is doing what
+  `currentAppLanguage()` could not.
+- **The feature body is exactly empty** in the draft, and the no-mail-app path shows
+  *Brak aplikacji pocztowej na tym telefonie. Adres powyżej można skopiować.* with the address still
+  rendered above it.
+- **More has no "coming soon" left**, no divider under Settings (row spacing is a uniform 198 px), and
+  Photos and Documents both read *Najpierw dodaj królika.* — checked the way this file asks, with both
+  seeded bunnies **archived** rather than on a fresh install, then restored.
+- **The scene count is 61, not the 60 predicted.** Landscape ends the screen on the address, leaving
+  Rate, Privacy policy and the version row below the fold — so the conditional `support-bottom` variant
+  was owed after all, decided by looking. Both scenes clean in all four configurations.
+- **The test device is a `Xiaomi 24115RA8EG` on Android 16 (API 36)**, not the `2312DRA50G` / Android 15
+  (API 35) this file's examples assume. The examples are illustrative and were left alone.
+
+**Still owed, and it needs a person:** the gate's *"the block is visible in the received mail, not
+collapsed behind Gmail's `…`"*. That one cannot be read from a draft — it needs a mail actually sent to
+`binky.support@gmail.com` and then read in the inbox. Everything up to the send is verified.
+
 ### 6d — the docs, the Console and the release
 
 Results into this file, §5 of `DOD.md` emptied, **Phase 6** ticked in `PLAN.md`'s status list, and

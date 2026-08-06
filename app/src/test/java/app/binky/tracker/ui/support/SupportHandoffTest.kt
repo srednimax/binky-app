@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.net.URLEncoder
 
 /**
  * The support hand-off's pure halves.
@@ -125,6 +126,58 @@ class SupportHandoffTest {
         assertFalse(playMarketUri().endsWith(".debug"))
         assertFalse(playWebUrl().endsWith(".debug"))
         assertTrue(playWebUrl().startsWith("https://"))
+    }
+
+    /**
+     * A faithful stand-in for `Uri.encode`, which is framework and throws in a JVM test.
+     *
+     * `URLEncoder` is HTML-form encoding, which differs from RFC 3986 in exactly one place that
+     * matters here: it writes a space as `+`. Mail clients that take that literally put a `+` in the
+     * subject, so it is corrected to `%20` — which is what `Uri.encode` emits.
+     */
+    private fun encode(value: String): String = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
+
+    @Test
+    fun `the subject and body travel in the query string, where Gmail reads them`() {
+        // The regression guard for 6c's finding: Gmail **silently ignores** EXTRA_SUBJECT and
+        // EXTRA_TEXT for ACTION_SENDTO, so an implementation that relies on the extras opens a draft
+        // with the recipient filled and both other fields empty. Nothing on the screen says so.
+        val uri = supportMailtoUri("Subject here", "Body here", ::encode)
+        assertEquals("mailto:binky.support@gmail.com?subject=Subject%20here&body=Body%20here", uri)
+    }
+
+    @Test
+    fun `the tag's hash is escaped rather than parsed as a fragment`() {
+        // `#` is the URI fragment delimiter: unescaped, `?subject=#bug` makes `#bug` the fragment and
+        // the subject arrives empty — the same broken draft as the extras bug, by a different route.
+        val subject = supportSubject(SupportRequest.BUG, bugEn, release)
+        val uri = supportMailtoUri(subject, "", ::encode)
+        assertTrue(uri.contains("subject=%23bug"))
+        assertFalse("a bare # would start a fragment and truncate the subject", uri.contains("#"))
+    }
+
+    @Test
+    fun `a body's newlines and a Polish subject survive encoding`() {
+        // The diagnostics block is six lines, and a line break is not a query-string character. A
+        // Polish subject additionally carries diacritics and two em-dashes.
+        val uri =
+            supportMailtoUri(
+                supportSubject(SupportRequest.BUG, bugPl, debug),
+                supportBody(SupportRequest.BUG, promptEn, release),
+                ::encode,
+            )
+        assertTrue("newlines must be escaped, not dropped", uri.contains("%0A"))
+        assertTrue("ł must be UTF-8 percent-escaped", uri.contains("%C5%82"))
+        // One `&` and one `?` only — anything else means a value leaked out of its parameter.
+        assertEquals(1, uri.count { it == '?' })
+        assertEquals(1, uri.count { it == '&' })
+    }
+
+    @Test
+    fun `a feature request still produces a well-formed uri with an empty body`() {
+        val uri = supportMailtoUri(supportSubject(SupportRequest.FEATURE, "Feature request", release), "", ::encode)
+        assertTrue(uri.endsWith("&body="))
+        assertTrue(uri.startsWith("mailto:binky.support@gmail.com?subject=%23feature"))
     }
 
     @Test

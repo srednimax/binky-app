@@ -307,13 +307,19 @@ def tap(needle: str, *, optional: bool = False) -> None:
         raise StepFailed(f"no node matching {needle!r}; on screen: {visible}")
     x = (node.bounds.left + node.bounds.right) // 2
     y = (node.bounds.top + node.bounds.bottom) // 2
-    # **`input tap` exits 0 even when the event is dropped**, which is a property of this phone and
-    # not of the tap. So the exit status proves nothing and the screen is asked instead: tap, look,
-    # and tap again if nothing moved. Without this the first tap after a cold start goes missing
-    # often enough to skip whole scenes, and a skipped scene in a matrix reads like a clean one.
+    # **`input touchscreen tap`, never bare `input tap`** — the source has to be named. On this phone
+    # `input tap` began exiting 0 while delivering nothing at all: not flaky, dropped every time, on a
+    # screen provably on and focused, while `input keyevent` and `input swipe` kept working. Proved by
+    # A/B on one screen at one coordinate — bare `tap` never moved the selection, `touchscreen tap`
+    # moved it every time. `input` picks a default source when none is given, and that inference is
+    # what HyperOS stopped honouring; naming the source sidesteps the guess (6c, 2026-08-06).
+    #
+    # The retry below stays regardless: exit status still proves nothing, so the screen is asked
+    # instead — tap, look, tap again if nothing moved. Without it the first tap after a cold start
+    # goes missing often enough to skip whole scenes, and a skipped scene reads like a clean one.
     before = screen_signature(nodes)
     for _ in range(3):
-        shell(f"input tap {x} {y}")
+        shell(f"input touchscreen tap {x} {y}")
         settle(1.2)
         if screen_signature(dump_ui()) != before:
             return
@@ -533,6 +539,9 @@ SCENES = [
     ),
     Scene("archived", "detail", [("tap", "More"), ("tap", "Archived")]),
     Scene("care-reminder", "detail", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Every")]),
+    # Reached without SELECT_BUNNY on purpose: Support is the one More row that stays live with no
+    # bunny in scope, and the scene is worth more exercising that path than the ordinary one.
+    Scene("support", "detail", [("tap", "More"), ("tap", "Support")]),
     # --- full-bleed content, which has no inner padding of its own to hide behind -------------
     Scene("photos", "full-bleed", [*SELECT_BUNNY, ("tap", "More"), ("tap", "Photos")]),
     # --- forms: a TopAppBar with a save action, fields down to the bottom edge -----------------
@@ -569,6 +578,10 @@ SCENES = [
     # A list running under the navigation bar mid-scroll is edge-to-edge working. A list whose last
     # row is still under it with nowhere left to scroll is the defect. Only these tell them apart.
     Scene("settings-bottom", "detail", [("tap", "More"), ("tap", "Settings"), ("swipe_end", "")]),
+    # Owed because landscape puts the last three rows below the fold — checked by looking, not
+    # assumed: at 1220px tall the screen ends on the address, leaving Rate, Privacy policy and the
+    # version row unrendered, and the version row is the one that sits nearest the navigation bar.
+    Scene("support-bottom", "detail", [("tap", "More"), ("tap", "Support"), ("swipe_end", "")]),
     Scene(
         "backup-bottom",
         "detail",
