@@ -40,12 +40,19 @@ Polish second-person forms are gendered, so the copy avoids them — `co został
 | Feature graphic (1024×500) | [`art/play-feature-graphic.png`](../art/play-feature-graphic.png) |
 | Phone screenshots (1526×2713) | [`1-home`](../art/play-screenshot-1-home.png), [`2-weight`](../art/play-screenshot-2-weight.png), [`3-observations`](../art/play-screenshot-3-observations.png), [`4-backup`](../art/play-screenshot-4-backup.png) — real, from the Play build at 3h |
 | App category | Lifestyle |
-| Contact email | the per-app support address, set in Store settings — not the account-level developer email |
+| Contact email | `binky.support@gmail.com` — the per-app support address, set in Store settings, not the account-level developer email |
 
 **Lifestyle, not Health & Fitness**, even though the app tracks health data. Health & Fitness is
 oriented at *human* health, where Play applies closer scrutiny to anything that reads as a medical
 claim — and this app deliberately makes none (ADR-0001). Pet-care apps conventionally sit in
 Lifestyle, so it is also where owners browsing for one will look.
+
+**The contact email is `binky.support@gmail.com` and cannot be anything else from 1.3.** Phase 6's
+Support screen hardcodes that address in `SupportHandoff.kt` — it is what both mail buttons open and what
+the screen renders as selectable text — and the privacy policy's *Contact* section defers to "the developer
+email address listed on the app's Google Play listing". So this field is the hinge the other two hang on:
+set it to anything else and the listing points a reader at a mailbox the app itself never uses. See
+[`play-app-content.md`](play-app-content.md) and [`phase-6.md`](phase-6.md).
 
 The privacy policy is served by GitHub Pages from `main` / `docs`, which is why `docs/_config.yml`
 exists at all: Play requires a *hosted* URL and the app has no server by design. It rebuilds on every
