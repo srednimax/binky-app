@@ -234,8 +234,45 @@ That single answer collapses most of the form. What may still be asked:
 | Question | Answer |
 | --- | --- |
 | Is all user data encrypted in transit? | **N/A** — no data is ever in transit. If the form forces a choice, the honest reading is Yes-by-vacuity; prefer N/A where offered. |
-| Do you provide a way for users to request their data be deleted? | Records are deletable individually in the app, and uninstalling removes everything. Because nothing is ever received, there is no deletion request to send anyone. |
+| Do you provide a way for users to request their data be deleted? | Records are deletable individually in the app, and uninstalling removes everything. No *record* is ever received, so there is no deletion request to send for one. **Reworded at 1.3**: a user who writes to the support inbox has sent us their address and their message, and the privacy policy now offers erasure of that correspondence at the same address. |
 | Does your app use an advertising ID? | **No** — see the re-check trigger below. |
+
+#### ⚠ 1.3 ships a support inbox, and the answer stays **No** — the judgement, written down
+
+Phase 6 puts a **Support** screen in the app with two buttons that open a mail addressed to
+`binky.support@gmail.com`, the bug one carrying a small diagnostics block. That is the app growing an
+outgoing channel to the developer for the first time, so it is exactly the kind of change that should be
+re-examined against this section rather than inherited — and it is recorded here as a judgement, because
+an unwritten one gets re-litigated at the next audit.
+
+**Play scopes collection to what the *app* transmits off the device.** Binky's Support screen builds a
+draft and hands it to the user's own mail client with `ACTION_SENDTO`. The app opens no socket, sends
+nothing, and is not running when the message goes; the user reads the draft, may edit or delete it, and
+taps send in an app of their own choosing. A user-composed mail from their own client is **not the app
+transmitting** — the same reading this file already applies to the backup export at §4, which hands a file
+to the share sheet at the moment the owner asks.
+
+Three properties keep that reading honest, and each is a real constraint on the code rather than a
+description of intent:
+
+- **The diagnostics block is six facts and no records** — `versionName`, `versionCode`, the Android
+  release and API level, the device model, and the app's resolved locale. No rabbit name, weight,
+  observation, dose, document, photo or path; no account, no advertising ID, no installation ID, no
+  device identifier. A JVM test asserts the bug body **equals** a golden string built from those fields,
+  so nothing else can be added to it without a test failing.
+- **The screen states what the block contains before the button is tapped** — ADR-0001's rule against
+  silence, pointed at outgoing data.
+- **The privacy policy says the same thing** in *What you choose to send*, and its *Deleting your data*
+  section was narrowed in the same commit: correspondence is the one thing a user can ask us to erase.
+  Play cross-checks the two, which is this file's rule at the top.
+
+So the headline answer is unchanged and the Data safety form gains **no** data type. The address is also
+Play's per-app contact email in *Store settings*, so the app, the listing and the privacy policy resolve
+to one inbox rather than three claims.
+
+**No** In-App Review, Play Billing or donation link ships with it either (Play Payments §3/§4), so §3
+*Ads*, §9 *Financial features* and §4's "purchase digital goods" answer are all untouched — see
+[`phase-6.md`](phase-6.md) for why the donation link was declined rather than forgotten.
 
 #### The advertising-ID answer has an expiry date
 
@@ -338,7 +375,10 @@ Answer to the question actually asked rather than to this heading.
 
 ## Not App content, but asked in the same sitting
 
-- **Contact email** — the per-app support address, set in *Store settings*, not the account-level
-  developer email.
+- **Contact email** — `binky.support@gmail.com`, the per-app support address, set in *Store settings*,
+  not the account-level developer email. From 1.3 the app hardcodes that address in `SupportHandoff.kt`
+  and the privacy policy's *Contact* section defers to "the developer email address listed on the app's
+  Google Play listing" — so this field is what makes the three agree, and setting anything else there
+  points the listing at an inbox the app does not use.
 - **App category** — Lifestyle.
 - **Store listing copy, graphics and screenshots** — [`store-listing.md`](store-listing.md).

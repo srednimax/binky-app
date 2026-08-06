@@ -5,7 +5,7 @@ title: Privacy Policy — Binky
 
 # Privacy Policy — Binky
 
-_Last updated: 5 August 2026_
+_Last updated: 6 August 2026_
 
 Binky is an Android app for keeping track of a pet rabbit's health. This policy describes what the
 app does with the information you put into it. It is short because the app does very little.
@@ -47,6 +47,15 @@ The app can export a backup file and share it through your device's share sheet,
 documents and photos you take. Where any of that goes is entirely your choice, at the moment you make it.
 Nothing is sent automatically.
 
+The **Support** screen is the third of these, and the only one addressed to us. Tapping *Report a bug* or
+*Request a feature* opens a new message **in your own mail app**, addressed to
+`binky.support@gmail.com` — an ordinary mailbox that a person reads. A bug report also has a few technical
+facts written into the message before you see it: the app's version and build number, your Android version,
+your phone's model, and the language the app is set to. **Nothing about your rabbits** — no name, weight,
+observation, dose, document or photo. The app itself sends nothing: what it hands your mail app is a draft,
+which you can read, edit or delete, and it goes nowhere until you tap send. The screen says all of this
+before the button is tapped.
+
 ## Permissions
 
 The app asks for one thing: permission to show notifications, so reminders can reach you. You can say no
@@ -63,8 +72,14 @@ The app is not directed at children and collects no data from anyone.
 ## Deleting your data
 
 Uninstalling the app removes all of its data from your device. You can also clear it from your device's
-app settings, or delete individual records inside the app at any time. Because we never receive your data,
-there is nothing for us to delete on your behalf and no request you need to send us.
+app settings, or delete individual records inside the app at any time. Because we never receive your
+records, there is nothing of your rabbits' history for us to delete on your behalf and no request you need
+to send us.
+
+The one exception is a message **you** chose to send us. If you have written to
+`binky.support@gmail.com`, we hold that message — your email address and whatever the message contained,
+including the technical facts described above — in an ordinary mailbox. Write to the same address and we
+will delete the correspondence.
 
 ## Health information
 
