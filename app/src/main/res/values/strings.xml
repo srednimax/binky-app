@@ -812,7 +812,37 @@
     <string name="more_settings">Settings</string>
     <string name="more_settings_summary">Weight units, language, backup and restore.</string>
     <string name="more_support">Support</string>
-    <string name="more_coming_soon">Coming soon</string>
+    <string name="more_support_summary">Report a bug, suggest a feature, rate the app.</string>
+    <!-- The subtitle a row wears while it is inert, in place of its summary. Photos and Documents
+         are bunny-scoped, so with every bunny archived there is nothing for them to open — and a
+         dimmed row that still describes what it would do explains nothing (ADR-0001). This replaced
+         `more_coming_soon`, which went with the block it belonged to when Support went live -->
+    <string name="more_needs_bunny">Add a bunny first.</string>
+
+    <!-- Support: the two mail hand-offs, the Play listing, the privacy policy and this build's
+         version. The app's only About-shaped screen. The `#bug` / `#feature` tag that opens each
+         subject is deliberately NOT here — it is a Kotlin constant addressed to the maintainer, not
+         to the sender (ADR-0013 exception, see SupportHandoff.kt), and so is the diagnostics block:
+         every line in it is a number or an identifier -->
+    <string name="support_title">Support</string>
+    <string name="support_intro">Binky is made by one person. A bug report or an idea reaches them directly.</string>
+    <string name="support_bug_button">Report a bug</string>
+    <string name="support_bug_subject">Bug report</string>
+    <string name="support_bug_prompt">(describe what happened here)</string>
+    <string name="support_diagnostics_title">What a bug report carries</string>
+    <string name="support_diagnostics_explain">The app version, your Android version, the phone model and the app\'s language are added to the message. Nothing about your bunnies, and nothing is sent until you tap send in your mail app.</string>
+    <string name="support_feature_button">Request a feature</string>
+    <string name="support_feature_subject">Feature request</string>
+    <string name="support_email_label">Or write to:</string>
+    <!-- Names the address's position on screen rather than repeating the address, so the snackbar
+         and the text above it cannot disagree after an edit to one of them -->
+    <string name="support_no_mail_app">No mail app on this phone. The address above can be copied.</string>
+    <string name="support_rate_button">Rate Binky on Google Play</string>
+    <string name="support_rate_help">Binky is free and ad-free. A rating is the only thing it asks for.</string>
+    <string name="support_no_store_app">Google Play could not be opened on this phone.</string>
+    <string name="support_privacy_button">Privacy policy</string>
+    <string name="support_no_browser">No browser on this phone to open the page.</string>
+    <string name="support_version_label">Version</string>
 
     <!-- The photo gallery: one bunny's pictures, reached from More -->
     <string name="photo_which_bunny">Whose photos?</string>

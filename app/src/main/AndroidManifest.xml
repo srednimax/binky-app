@@ -43,6 +43,27 @@
     -->
     <queries>
         <package android:name="com.miui.securitycenter" />
+
+        <!--
+            Support's three hand-offs (Phase 6). None of the three launches needs these: package
+            visibility on API 30+ has never blocked `startActivity`, and each launch is a try/catch
+            around `ActivityNotFoundException`. What visibility *does* block is `resolveActivity`,
+            which returns null on a phone that has the app — so an "is there a mail app?" pre-check
+            would answer no everywhere. Nothing in the app performs one today; these entries exist so
+            that one added later cannot silently lie.
+        -->
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="market" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
     </queries>
 
     <!--
