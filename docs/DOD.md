@@ -118,7 +118,10 @@ Design and reasoning in **[`phase-6.md`](phase-6.md)** — its own file, so buil
 dependency, so it **cannot disturb Phase 5's open evidence** — it is the safe thing to build while the
 overnight run and Play's count are outstanding.
 
-- [ ] `Support` nav key + `SupportScreen`, reached from More.
+Four checkpoints, one commit each: **6a** the pure hand-off + its test, **6b** the screen, the route and
+the strings, **6c** the device pass, **6d** docs + the Console's contact email + the 1.3 cut.
+
+- [ ] `Support` nav key + `SupportScreen` (no `ViewModel` — nothing to hold), reached from More.
 - [ ] Two buttons → `ACTION_SENDTO` `mailto:binky.support@gmail.com`, subject **passed as
       `EXTRA_SUBJECT`** (a `#` in the mailto query string is parsed as the fragment and the subject
       arrives empty).
@@ -126,8 +129,14 @@ overnight run and Play's count are outstanding.
       `#bug — Zgłoszenie błędu — Binky 1.2.0 (211)`. The tag alone is a Kotlin constant (ADR-0013
       exception, it is a filter token); everything after it is a string resource. One Gmail rule
       (`subject:#bug`) then covers every locale, now and for any language added later.
+- [ ] A **debug build's subject says `-debug`** — `applicationIdSuffix` never reaches `versionName`, so
+      without it a report from the developer's own phone is byte-identical to a real one.
 - [ ] Bug mail prefills the diagnostics block (version, build, Android, device, app locale); feature mail
-      does not. Screen states what the block contains before it is tapped.
+      does not (body is exactly `""`). Screen states what the block contains before it is tapped.
+      The block is **not localised** (same argument as the tag) and is **never separated by `-- `** —
+      that is the RFC 3676 signature delimiter and Gmail collapses everything below it.
+- [ ] The block's locale is the **resolved** one (`LocalResources…configuration.locales[0]`), not
+      `currentAppLanguage()`, which is `null` for "follow the phone" — i.e. for most senders.
 - [ ] Address rendered as selectable text — the fallback when no mail app exists.
 - [ ] Third button: **Rate Binky on Google Play** → `market://details?id=…`, browser URL as fallback.
       **Not** the In-App Review API — Google's own docs say don't put that behind a button (quota can
@@ -137,12 +146,22 @@ overnight run and Play's count are outstanding.
       asserts the URL does not end in `.debug`.
 - [ ] **No donation link** — decided against: Play Payments §3 exempts only tax-exempt donations, §4
       forbids leading users to other payment methods, and StreetComplete was rejected for exactly this.
-- [ ] `<queries>` gains `mailto` and `market` entries; no `resolveActivity` pre-check anywhere.
+- [ ] `<queries>` gains `mailto`, `market` **and `https`** entries; no `resolveActivity` pre-check
+      anywhere — the entries exist so one added later cannot silently lie.
 - [ ] Delete the divider and `more_coming_soon` from `MoreScreen.kt` and **both** locales — Support was
-      the last "coming soon" in the app.
-- [ ] JVM tests on the pure subject/body builders; both locales; `PolishTranslationTest` green.
+      the last "coming soon" in the app. Give the row a real `more_support_summary`, and reword
+      `MoreRow`'s KDoc: its nullable `onClick` **stays** (Photos/Documents use it) but stops meaning
+      "coming soon".
+- [ ] 16 new strings in both locales — drafted in `phase-6.md`'s table, reviewed as copy not as a diff.
+- [ ] JVM tests on the pure subject/body builders; both locales; **golden-string** equality on the bug
+      body (proves nothing else can be in it); `PolishTranslationTest` green.
+- [ ] One new edge-to-edge scene (59 → 60). 🔴 Inherits §2's tap blocker; the hand-driven checks do not.
 - [ ] Set `binky.support@gmail.com` as Play's **per-app contact email** in Store settings, so the app,
-      the listing and the privacy policy name the same inbox.
+      the listing and the privacy policy name the same inbox. **The one Console item not blocked by §4's
+      testing count** — Store settings is editable today.
+
+**If 1.3 is ready before Play's count clears, do not upload 1.2.0 first.** Same schema 6, same two
+migrations, so §4's field-upgrade proof retargets to **1.0.0 → 1.3** and still crosses both.
 
 ---
 
