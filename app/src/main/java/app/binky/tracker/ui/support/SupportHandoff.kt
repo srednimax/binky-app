@@ -3,6 +3,7 @@ package app.binky.tracker.ui.support
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.core.net.toUri
 
 /*
@@ -96,8 +97,8 @@ private fun SupportDiagnostics.versionLabel(): String =
  * The split is the point: constant tag, localised description. A Polish sender sees
  * `#bug — Zgłoszenie błędu — Binky 1.3.0 (214)` and one filter rule still catches it.
  *
- * The subject travels in `EXTRA_SUBJECT` and never in the `mailto:` query string — see
- * [sendSupportMail], where that is a trap rather than a preference.
+ * The subject travels in the `mailto:` query string, percent-encoded — see [supportMailtoUri], where
+ * both that and the `#` it has to survive are explained.
  */
 fun supportSubject(
     request: SupportRequest,
@@ -169,6 +170,34 @@ fun playMarketUri(): String = "market://details?id=$PLAY_PACKAGE"
 fun playWebUrl(): String = "https://play.google.com/store/apps/details?id=$PLAY_PACKAGE"
 
 /**
+ * `mailto:binky.support@gmail.com?subject=…&body=…`, with both values percent-encoded by [encode].
+ *
+ * **The subject and body have to travel in the query string, and this was the reverse of the original
+ * design.** That version put them in `EXTRA_SUBJECT` / `EXTRA_TEXT` to sidestep the `#` fragment trap
+ * described below — and **Gmail silently ignores both extras for `ACTION_SENDTO`**. Proved on the
+ * device at 6c: the draft opened with the recipient filled and the subject and body **empty**, the
+ * same result whether the chooser was involved or the intent was pinned straight at
+ * `com.google.android.gm`. It is the worst shape of failure available here, because the screen looks
+ * like it worked and only the arriving mail is wrong.
+ *
+ * The trap that argument was avoiding is real: `#` is the URI *fragment* delimiter, so a hand-written
+ * `mailto:…?subject=#bug` parses `#bug` as the fragment and the subject arrives empty anyway. The
+ * answer is not to hand-write `%23bug` — that is exactly the escaping a later edit unescapes without
+ * knowing why — but to let the platform escape it. [encode] is `Uri.encode`, whose default safe set
+ * leaves only the unreserved characters alone: `#` becomes `%23`, the em-dashes and Polish diacritics
+ * become UTF-8 escapes, the body's newlines become `%0A`, and spaces become `%20` rather than `+`.
+ *
+ * [encode] is a parameter so this stays a pure function: `Uri` is framework and throws in a JVM test,
+ * and the part worth testing is the **assembly** — that the two values land in the right query
+ * parameters, and that `#` does not survive into the URI unescaped.
+ */
+fun supportMailtoUri(
+    subject: String,
+    body: String,
+    encode: (String) -> String,
+): String = "mailto:$SUPPORT_EMAIL?subject=${encode(subject)}&body=${encode(body)}"
+
+/**
  * Opens a mail app with the recipient, subject and body filled. False if nothing can open it.
  *
  * **`ACTION_SENDTO` with a `mailto:` Uri, never `ACTION_SEND`.** `ACTION_SEND` with `text/plain` opens
@@ -178,11 +207,10 @@ fun playWebUrl(): String = "https://play.google.com/store/apps/details?id=$PLAY_
  * always* dialog settles that, which is better than forcing `createChooser` and overriding a default
  * the owner set deliberately.
  *
- * **The subject goes in `EXTRA_SUBJECT` and not in the Uri, and that is a trap rather than a
- * preference.** `#` is the URI *fragment* delimiter: `mailto:…?subject=#bug` parses `#bug` as the
- * fragment and the subject arrives **empty**. It would have to be written `%23bug` — exactly the kind
- * of escaping a later edit unescapes without knowing why. Recipient in the Uri, text in extras, and
- * the encoding question stops existing.
+ * **The extras are still set, and they are belt-and-braces rather than the mechanism.** The query
+ * string is what Gmail reads (see [supportMailtoUri]); some other clients read the extras instead, and
+ * a client that reads both gets the same two strings from either. Setting both costs two lines and
+ * removes a class of "works on my mail app" from the report path.
  *
  * **No `resolveActivity` pre-check anywhere**, here or in the two below: package visibility on API 30+
  * makes it return null on a phone that has a mail app, so the pre-check would answer *no* everywhere.
@@ -194,7 +222,7 @@ fun Context.sendSupportMail(
 ): Boolean {
     val intent =
         Intent(Intent.ACTION_SENDTO)
-            .setData("mailto:$SUPPORT_EMAIL".toUri())
+            .setData(supportMailtoUri(subject, body) { Uri.encode(it) }.toUri())
             .putExtra(Intent.EXTRA_SUBJECT, subject)
             .putExtra(Intent.EXTRA_TEXT, body)
             // Launched from a screen, but the receiver is another app's task.

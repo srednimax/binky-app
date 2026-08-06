@@ -71,11 +71,12 @@ All deliberately after it, because each would disturb the armed course.
 - [ ] **Reboot twice — autostart granted and autostart denied.** Whatever the denied run says is what
       ADR-0025's self-heal consequence gets reworded to.
 - [ ] Timezone change: today's answered doses stay answered, no alarm re-armed for a dose already given.
-- [ ] Edge-to-edge matrix re-run (`scripts/edge-to-edge.py`, 59 scenes).
-      🔴 **Second blocker:** the Xiaomi is dropping synthetic taps again — `input tap` exits 0 and
-      delivers nothing on a screen provably on and focused, while `input keyevent` still works. Test the
-      distinction with `KEYCODE_HOME` before planning any tap-driven run. Likely *Debugowanie USB
-      (ustawienia zabezpieczeń)* was reset; it needs a Mi account.
+- [ ] Edge-to-edge matrix re-run (`scripts/edge-to-edge.py`, **61 scenes** — Support added two).
+      ✅ **The tap blocker is gone** (6c, 2026-08-06). It was never a permission: `input` picks a
+      default source when none is named, and HyperOS stopped honouring that inference. **`input
+      touchscreen tap` lands where bare `input tap` is dropped** — A/B'd on one screen at one
+      coordinate — and `keyevent` and `swipe` were never affected. `edge-to-edge.py` is fixed and both
+      new scenes ran clean in all four configurations, so the matrix is driveable again.
 
 ---
 
@@ -102,8 +103,9 @@ All three land in **one sitting** once the count clears, in this order:
 
 - [ ] Upload 1.2.0 to the **internal** track, then **closed**. If the count has cleared, production
       becomes available for the first time — whether 1.2 takes it is an ADR-0009 decision made then.
-- [ ] **Screenshots for both listings** (EN + PL), owed for the screens 1.1 and 1.2 both added. Needs
-      §2's tap blocker fixed.
+- [ ] **Screenshots for both listings** (EN + PL), owed for the screens 1.1 and 1.2 both added.
+      §2's tap blocker is fixed as of 6c, so this is no longer waiting on tooling — only on Phase 7,
+      per §6's closing note.
 - [ ] **The field upgrade proof: 1.0.0 → 1.2**, real bunny history intact. The Xiaomi's Play build is on
       **1.0.0**, not the 1.0.1 4h assumed, so the chain crosses *both* hand-written migrations. It cannot
       run locally — the installed build is Play-signed and a local APK is refused on signature mismatch —
@@ -125,61 +127,74 @@ armed night; 6b and 6c wait for the morning read.
 
 Four checkpoints, one commit each: **6a** the inbox, the pure hand-off + its test, **6b** the screen, the
 route and the strings, **6c** the device pass, **6d** docs + the Console's contact email + the 1.3 cut.
+**6a, 6b and 6c are done**; only 6d is open, and its items are the last four boxes below.
+
+🔴 **6c found the phase's central decision to be backwards.** `EXTRA_SUBJECT` and `EXTRA_TEXT` are
+**silently ignored by Gmail for `ACTION_SENDTO`** — the draft opened with the recipient filled and the
+subject and body empty, with and without the chooser. The subject and body now travel in the `mailto:`
+query string, percent-encoded by `Uri.encode`, which is also the real answer to the `#`-fragment trap
+the extras were chosen to dodge. Fixed, four new JVM tests guard it, verified on the device in both
+locales. Full write-up in [`phase-6.md`](phase-6.md)'s 6c result.
 
 - [x] **First: confirm `binky.support@gmail.com` is live and can send.** Everything below hardcodes it,
       and Gmail ignores dots, so a near-miss registration is the same mailbox. **Confirmed 2026-08-06**,
       before `SupportHandoff.kt` was written; the spelling is pinned by a unit test.
-- [ ] `Support` nav key + `SupportScreen` (no `ViewModel` — nothing to hold), reached from More.
-- [ ] Two buttons → `ACTION_SENDTO` `mailto:binky.support@gmail.com`, subject **passed as
-      `EXTRA_SUBJECT`** (a `#` in the mailto query string is parsed as the fragment and the subject
-      arrives empty).
-- [ ] Subject = **constant tag + localised description**: `#bug — Bug report — Binky 1.2.0 (211)` /
+- [x] `Support` nav key + `SupportScreen` (no `ViewModel` — nothing to hold), reached from More.
+- [x] Two buttons → `ACTION_SENDTO` `mailto:binky.support@gmail.com`, subject and body **in the query
+      string, percent-encoded by `Uri.encode`**. Corrected at 6c: the extras this line used to
+      prescribe are **silently ignored by Gmail**, and encoding is the real answer to the `#` fragment
+      trap — `Uri.encode` writes `%23` so nothing is hand-escaped. Extras still set as belt-and-braces.
+- [x] Subject = **constant tag + localised description**: `#bug — Bug report — Binky 1.2.0 (211)` /
       `#bug — Zgłoszenie błędu — Binky 1.2.0 (211)`. The tag alone is a Kotlin constant (ADR-0013
       exception — it is addressed to the maintainer); everything after it is a string resource. The
       working rule is **`subject:bug`, not `subject:#bug`** — Gmail's index does not recognise hash
       marks — and the token doing the work is the English *word*, which is exactly what a Polish
       description does not contain. One rule covers every locale, now and for any language added later.
-- [ ] A **debug build's subject says `-debug`** — `applicationIdSuffix` never reaches `versionName`, so
+- [x] A **debug build's subject says `-debug`** — `applicationIdSuffix` never reaches `versionName`, so
       without it a report from the developer's own phone is byte-identical to a real one.
-- [ ] Bug mail prefills the diagnostics block (version, build, Android, device, app locale); feature mail
+- [x] Bug mail prefills the diagnostics block (version, build, Android, device, app locale); feature mail
       does not (body is exactly `""`). Screen states what the block contains before it is tapped.
       The block is **not localised** (same argument as the tag) and is **never separated by `-- `** —
       that is the RFC 3676 signature delimiter and Gmail collapses everything below it.
-- [ ] The block's locale is the **resolved** one (`LocalResources…configuration.locales[0]`), not
+- [x] The block's locale is the **resolved** one (`LocalResources…configuration.locales[0]`), not
       `currentAppLanguage()`, which is `null` for "follow the phone" — i.e. for most senders.
-- [ ] Address rendered as selectable text — the fallback when no mail app exists. **`SENDTO` + `mailto`
-      does not resolve to mail apps only**: PayPal claims the scheme on the test phone, so the chooser
-      is accepted and "no mail app" is produced by disabling **every** resolver `pm query-activities`
-      names, not just Gmail.
-- [ ] Third button: **Rate Binky on Google Play** → `market://details?id=…`, browser URL as fallback.
+- [x] Address rendered as selectable text — the fallback when no mail app exists. **`SENDTO` + `mailto`
+      does not resolve to mail apps only**: PayPal claims the scheme on the test phone, confirmed at 6c,
+      so the chooser is accepted. "No mail app" could **not** be produced by disabling the resolvers as
+      this line planned — HyperOS refuses `pm disable-user` for system packages, and Gmail is one — so
+      it was produced by temporarily building against a scheme nothing claims. Snackbar shown, address
+      still selectable.
+- [x] Third button: **Rate Binky on Google Play** → `market://details?id=…`, browser URL as fallback.
       **Not** the In-App Review API — Google's own docs say don't put that behind a button (quota can
       silently no-op it) and say to link to the Store instead. Saves a Play Core dependency too.
       It ships **knowingly ahead of production**: testing-track users get private feedback, not the star
       widget, so the button is a link to a listing that cannot yet be rated. Written down, not discovered.
-- [ ] The `market://` intent is **pinned with `setPackage("com.android.vending")`**. Xiaomi's GetApps
+- [x] The `market://` intent is **pinned with `setPackage("com.android.vending")`**. Xiaomi's GetApps
       claims the scheme too and sorts first, so unpinned it opens a store without Binky in it, nothing
       throws, and the `https` fallback is dead code.
-- [ ] Fourth row: **Privacy policy** → the hosted page the listing already points at. One row, reuses the
+- [x] Fourth row: **Privacy policy** → the hosted page the listing already points at. One row, reuses the
       `https` launch, and gives the `<queries>` `https` entry a real user.
-- [ ] The store URL hardcodes `binky.bunny.and.rabbit.tracker` — **never** `packageName`, which in the
+- [x] The store URL hardcodes `binky.bunny.and.rabbit.tracker` — **never** `packageName`, which in the
       debug build carries `.debug` and opens *item not found* on the one phone that tests it. Unit test
       asserts the URL does not end in `.debug`.
-- [ ] **No donation link** — decided against: Play Payments §3 exempts only tax-exempt donations, §4
+- [x] **No donation link** — decided against: Play Payments §3 exempts only tax-exempt donations, §4
       forbids leading users to other payment methods, and StreetComplete was rejected for exactly this.
-- [ ] `<queries>` gains `mailto`, `market` **and `https`** entries; no `resolveActivity` pre-check
+- [x] `<queries>` gains `mailto`, `market` **and `https`** entries; no `resolveActivity` pre-check
       anywhere — the entries exist so one added later cannot silently lie.
-- [ ] Delete the divider and `more_coming_soon` from `MoreScreen.kt` and **both** locales — Support was
+- [x] Delete the divider and `more_coming_soon` from `MoreScreen.kt` and **both** locales — Support was
       the last "coming soon" in the app. Give the row a real `more_support_summary`, and reword
       `MoreRow`'s KDoc: its nullable `onClick` **stays** (Photos/Documents use it) but stops meaning
       "coming soon".
-- [ ] **`more_needs_bunny` as the inert subtitle** on Photos and Documents while `hasBunnyInScope` is
+- [x] **`more_needs_bunny` as the inert subtitle** on Photos and Documents while `hasBunnyInScope` is
       false. Deleting the "coming soon" vocabulary otherwise leaves a dimmed row explaining nothing —
       ADR-0001's silence, on the screen that used to have a word for it. The failing case is an owner who
       archived their last bunny, not a fresh install.
-- [ ] 19 new strings in both locales — drafted in `phase-6.md`'s table, reviewed as copy not as a diff.
-- [ ] JVM tests on the pure subject/body builders; both locales; **golden-string** equality on the bug
+- [x] 19 new strings in both locales — drafted in `phase-6.md`'s table, reviewed as copy not as a diff.
+- [x] JVM tests on the pure subject/body builders; both locales; **golden-string** equality on the bug
       body (proves nothing else can be in it); `PolishTranslationTest` green.
-- [ ] One new edge-to-edge scene (59 → 60). 🔴 Inherits §2's tap blocker; the hand-driven checks do not.
+- [x] Two new edge-to-edge scenes, **59 → 61** rather than the 60 predicted: landscape leaves Rate,
+      Privacy policy and the version row below the fold, so the conditional `support-bottom` variant was
+      owed. Both clean in all four configurations, and §2's tap blocker was fixed to run them.
 - [ ] Set `binky.support@gmail.com` as Play's **per-app contact email** in Store settings, so the app,
       the listing and the privacy policy name the same inbox. **The one Console item not blocked by §4's
       testing count** — Store settings is editable today.
