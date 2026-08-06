@@ -71,6 +71,7 @@ import app.binky.tracker.ui.setup.SetupRemindersStep
 import app.binky.tracker.ui.shell.AppShellViewModel
 import app.binky.tracker.ui.shell.BunnySwitcher
 import app.binky.tracker.ui.shell.ShellUiState
+import app.binky.tracker.ui.support.SupportScreen
 import app.binky.tracker.ui.vet.VetEditorScreen
 import app.binky.tracker.ui.vet.VetsScreen
 import app.binky.tracker.ui.watch.WatchExpiryHost
@@ -500,6 +501,8 @@ private fun AppShell(
                             onOpenArchived = { backStack.add(ArchivedBunnies) },
                             onOpenSettings = { backStack.add(Settings) },
                             onOpenVets = { backStack.add(Vets) },
+                            // Never inert and never bunny-scoped: a bug report is about the app.
+                            onOpenSupport = { backStack.add(Support) },
                             // Null while there is no bunny to have photos of — the row is then one
                             // of ADR-0015's inert entries rather than a way into an empty screen.
                             onOpenPhotos =
@@ -538,6 +541,7 @@ private fun AppShell(
                         )
                     }
                     entry<Backup> { BackupScreen(onBack = { backStack.removeLastOrNull() }) }
+                    entry<Support> { SupportScreen(onBack = { backStack.removeLastOrNull() }) }
                     entry<WeightEntry> { key ->
                         WeightEntryScreen(
                             bunnyId = key.bunnyId,

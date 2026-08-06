@@ -792,7 +792,27 @@
     <string name="more_settings">Ustawienia</string>
     <string name="more_settings_summary">Jednostki wagi, język, kopia zapasowa i przywracanie.</string>
     <string name="more_support">Wsparcie</string>
-    <string name="more_coming_soon">Wkrótce</string>
+    <string name="more_support_summary">Zgłoś błąd, zaproponuj funkcję, oceń aplikację.</string>
+    <string name="more_needs_bunny">Najpierw dodaj królika.</string>
+
+    <!-- Support -->
+    <string name="support_title">Wsparcie</string>
+    <string name="support_intro">Binky robi jedna osoba. Zgłoszenie błędu albo pomysł trafia prosto do niej.</string>
+    <string name="support_bug_button">Zgłoś błąd</string>
+    <string name="support_bug_subject">Zgłoszenie błędu</string>
+    <string name="support_bug_prompt">(opisz tutaj, co się stało)</string>
+    <string name="support_diagnostics_title">Co trafia do zgłoszenia błędu</string>
+    <string name="support_diagnostics_explain">Do wiadomości dopisujemy wersję aplikacji, wersję Androida, model telefonu i język aplikacji. Nic o Twoich królikach — i nic nie wychodzi, dopóki nie wyślesz wiadomości w swojej poczcie.</string>
+    <string name="support_feature_button">Zaproponuj funkcję</string>
+    <string name="support_feature_subject">Propozycja funkcji</string>
+    <string name="support_email_label">Albo napisz na:</string>
+    <string name="support_no_mail_app">Brak aplikacji pocztowej na tym telefonie. Adres powyżej można skopiować.</string>
+    <string name="support_rate_button">Oceń Binky w Google Play</string>
+    <string name="support_rate_help">Binky jest darmowe i bez reklam. Ocena to jedyna rzecz, o którą prosi.</string>
+    <string name="support_no_store_app">Nie udało się otworzyć Google Play na tym telefonie.</string>
+    <string name="support_privacy_button">Polityka prywatności</string>
+    <string name="support_no_browser">Brak przeglądarki na tym telefonie, aby otworzyć stronę.</string>
+    <string name="support_version_label">Wersja</string>
 
     <!-- The photo gallery: one bunny's pictures, reached from More -->
     <string name="photo_which_bunny">Czyje zdjęcia?</string>

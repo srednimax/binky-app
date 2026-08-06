@@ -58,6 +58,10 @@ data class BunnyEditor(
  * This **closes a Phase-1 omission rather than adding scope**: this file promises every route exists
  * from Phase 1 and this one did not. The global "+" stays observation-only and is never the way in
  * (ADR-0015).
+ *
+ * That promise has now been corrected **twice** — see [Support], added in Phase 6 — which is written
+ * down here rather than left for a third entry to quietly discover. The rule the file still keeps is
+ * the useful half: a route is decided before its screen exists, not invented alongside it.
  */
 @Serializable
 data class WeightEntry(
@@ -124,6 +128,15 @@ data class MedicationCourseEditor(
 
 /** Settings, reached from More — the same shape as [ArchivedBunnies]: a detail route off a tab. */
 @Serializable data object Settings : NavKey
+
+/**
+ * Support, reached from More — the same shape as [Settings], and the app's only About-shaped screen:
+ * the two mail hand-offs, the Play listing, the privacy policy, and the running build's version.
+ *
+ * The **second** route this file gained after Phase 1, after [WeightEntry] — see its note. Promoting
+ * it empties ADR-0015's "coming soon" block, which Support was the last occupant of.
+ */
+@Serializable data object Support : NavKey
 
 /**
  * Backup and restore, reached from Settings (ADR-0005).
