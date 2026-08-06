@@ -126,8 +126,9 @@ armed night; 6b and 6c wait for the morning read.
 Four checkpoints, one commit each: **6a** the inbox, the pure hand-off + its test, **6b** the screen, the
 route and the strings, **6c** the device pass, **6d** docs + the Console's contact email + the 1.3 cut.
 
-- [ ] **First: confirm `binky.support@gmail.com` is live and can send.** Everything below hardcodes it,
-      and Gmail ignores dots, so a near-miss registration is the same mailbox.
+- [x] **First: confirm `binky.support@gmail.com` is live and can send.** Everything below hardcodes it,
+      and Gmail ignores dots, so a near-miss registration is the same mailbox. **Confirmed 2026-08-06**,
+      before `SupportHandoff.kt` was written; the spelling is pinned by a unit test.
 - [ ] `Support` nav key + `SupportScreen` (no `ViewModel` — nothing to hold), reached from More.
 - [ ] Two buttons → `ACTION_SENDTO` `mailto:binky.support@gmail.com`, subject **passed as
       `EXTRA_SUBJECT`** (a `#` in the mailto query string is parsed as the fragment and the subject
