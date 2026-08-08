@@ -207,7 +207,20 @@ exists. These are the items that come first.
 - [ ] **The Material You toggle** — the half of ADR-0027 that did not ship with the theme commit. Until it
       exists, dynamic colour is not "off by default", it is unavailable. A key in `AppPreferences.kt`, a
       Settings row, and two strings in **both** locales (ADR-0013).
-- [ ] Then screen by screen, tab by tab, starting with the two that were mocked.
+- [ ] **The rewrite sweep — every route to the new language.** The per-route table with its mockup ids is
+      in [`phase-7.md`](phase-7.md) *("The rewrite checkpoint")*; one commit per route, each building and
+      installing. Start with `Home` and `Weight`, then **`2c` Record an observation before the other
+      editors** — its label says the form rules get fixed there and every editor inherits them, so doing it
+      late means doing the editors twice. Eight routes have no drawing at all (Settings, Support, Documents,
+      Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in) and get the language applied by hand.
+- [ ] **Decide the four pieces of new functionality the designs introduce** — they are decisions, not tasks,
+      because this phase is *same functionality, new looks*, and a screen redrawn from a mockup absorbs them
+      silently otherwise. The last-five line on Record a weighing (likely adopt), a stale-backup marker
+      (needs a staleness rule and copy that implies no fault), field-absent states in the bunny editor, and
+      the claim that *"not checked"* is a real stored value. The **calendar route is deferred** — a new nav
+      key is out of scope by definition. Listed with reasoning in `phase-7.md`.
+      ⚠️ **The inventory is provisional**: it was built from the mockups that survived the 256 KiB
+      truncation, so whatever the `Weight` screens add is missing from it. Re-derive with the full file.
 - [ ] **Rules the new look inherits** — weight changes always in grams; the chart plots real timestamps,
       not index; missing media is a placeholder, never a crash; image writes go through the media helper
       (ADR-0020); no empty state infers a problem from silence (ADR-0001); no *missed*/*overdue* outside
@@ -216,9 +229,10 @@ exists. These are the items that come first.
       visual overhaul is exactly what that matrix exists to catch.
 - [ ] Re-capture and compare, same routes, same locales. `lint` still 0 errors, 0 warnings.
 - [ ] **Answer whether any string changed** — a clean "no" would let Phase 8 start in parallel.
-- [ ] **Decide 1.4 vs 2.0 at the release**, not now: nothing breaks in the data, the schema or the backup
-      format, so 1.4 is the honest reading — but a single `feat!:` is what `release-please` reads as 2.0,
-      and an overhaul is the one moment a major bump tells a user something true.
+- [x] **1.4, not 2.0** — decided 2026-08-08. Nothing breaks in the data, the schema or the backup format,
+      so a major bump would claim something untrue. **This is now a commit rule: no `feat!:` anywhere in
+      the phase**, because a single one makes `release-please` cut 2.0 regardless of what the docs say.
+      A screen replaced wholesale is still `feat:`.
 
 **§4's Play screenshots wait for this phase**, or they are taken twice and the first set is stale before
 the testing count clears.
