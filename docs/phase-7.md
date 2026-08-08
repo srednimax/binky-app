@@ -225,8 +225,8 @@ lives* for how to open one without loading the whole file.
 | `Home` under All bunnies | `4a` / `4b` | The flag stays inside the bunny it belongs to |
 | `Home`, no bunnies | `4c` / `4c2` | |
 | Bunny switcher | `4d` | Four items; *Archived* deliberately absent |
-| `Weight` + chart | **drawn, not yet retrieved** | Hero. `github.md` says light + dark exist; the truncated read never reached them |
-| Record a weighing | `6e` / `6f` | Grams only. Carries the one addition below |
+| `Weight` + chart | `1d` / `1e` | Hero. Trend flag, the 30 days / 90 days / 1 year / All selector, the chart, *Record a weighing*, the weighings list |
+| Record a weighing | `6e` / `6f` | A **route, not a sheet** — corrected against the capture. Grams only. Carries the one addition below |
 | Trend flag card | — | ✅ done: apricot, both screens |
 | `Observations` | `2a` / `2b` | |
 | Record an observation | `2c` / `2d` | Fixes the form rules for *every* editor |
@@ -265,9 +265,17 @@ are listed because a screen redrawn from a mockup will otherwise absorb them sil
   The second is a data-meaning claim, not a layout one — verify it matches what the observation entity
   actually stores before the UI asserts it.
 
+**Two Weight surfaces are deliberately not drawn**, and both need the language applied by hand:
+
+- **The chart's empty state.** `1a` specifies it — centred, pinned to 220dp so switching range never makes
+  the list below jump, naming the date of the most recent weighing rather than claiming nothing exists —
+  but only as a spec swatch, never on a real frame.
+- **The watch-expiry sheet.**
+
 **This inventory is provisional.** It was built from the mockups that survived the 256 KiB truncation plus
-`github.md`'s summary, so anything the `Weight` screens introduce is missing from it. Re-derive it once the
-full design file is in hand.
+`github.md`'s summary. The casualties of that cut are **`1d` and `1e`** — turn 1 sits last in the byte
+stream because the document runs newest-turn-first — so whatever the two `Weight` frames introduce beyond
+the summary above is not in this list. Re-derive it once those two are readable.
 
 ## Gate
 
