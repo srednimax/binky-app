@@ -220,7 +220,8 @@ exists. These are the items that come first.
       the claim that *"not checked"* is a real stored value. The **calendar route is deferred** — a new nav
       key is out of scope by definition. Listed with reasoning in `phase-7.md`.
       ⚠️ **The inventory is provisional**: it was built from the mockups that survived the 256 KiB
-      truncation, so whatever the `Weight` screens add is missing from it. Re-derive with the full file.
+      truncation. The casualties are **`1d` and `1e`, the two `Weight` frames** — turn 1 is last in the byte
+      stream — so whatever they add beyond the known summary is missing here. Re-derive once they read.
 - [ ] **Rules the new look inherits** — weight changes always in grams; the chart plots real timestamps,
       not index; missing media is a placeholder, never a crash; image writes go through the media helper
       (ADR-0020); no empty state infers a problem from silence (ADR-0001); no *missed*/*overdue* outside
