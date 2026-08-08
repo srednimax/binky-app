@@ -209,6 +209,66 @@ Structure, for reading it a piece at a time instead of whole: `<section class="d
 5. **Screen by screen, tab by tab**, starting with the two that were mocked.
 6. **Re-capture and compare**, same routes, same locales.
 
+## The rewrite checkpoint — every route to the new language
+
+Step 5 of the order of work, expanded. The theme commit moved the whole app at once; each item below is an
+*adjustment* against a drawing, not a reinvention, and each is its own commit that builds and installs.
+
+**Commit rule for the whole sweep: `feat:` and `fix:` only, never `feat!:`** — see the 1.4 decision below.
+
+Mockup ids are the `dv-opt` ids in the design project (`1b`, `4c2`, …); see *Where the design actually
+lives* for how to open one without loading the whole file.
+
+| Route | Mockups | Notes |
+| --- | --- | --- |
+| `Home` (bunny selected) | `1b` / `1c` | Hero. Dark is not a tint — the flag card climbs to `surfaceContainerHigh` |
+| `Home` under All bunnies | `4a` / `4b` | The flag stays inside the bunny it belongs to |
+| `Home`, no bunnies | `4c` / `4c2` | |
+| Bunny switcher | `4d` | Four items; *Archived* deliberately absent |
+| `Weight` + chart | **drawn, not yet retrieved** | Hero. `github.md` says light + dark exist; the truncated read never reached them |
+| Record a weighing | `6e` / `6f` | Grams only. Carries the one addition below |
+| Trend flag card | — | ✅ done: apricot, both screens |
+| `Observations` | `2a` / `2b` | |
+| Record an observation | `2c` / `2d` | Fixes the form rules for *every* editor |
+| `CareAndMeds` | `3a` / `3b` | Today's doses, then the courses that generate them |
+| `CareAndMeds`, no bunnies | `3c` / `3d` | |
+| New course | `3e` | Same six fields, same words |
+| Record a dose | `3f` / `3g` | |
+| Vets + vet editor | `5a` / `5b` | |
+| Bunny editor | `4e` | |
+| Archived bunnies | `4f` / `4g` / `4h` | Populated and empty |
+| `More` | `6a` / `6b` | Same six destinations, same copy |
+| Backup & restore | `6c` / `6d` | |
+| Settings, Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in | **none** | `github.md`'s *Not yet drawn* list — apply the language by hand |
+
+**`2c` is worth doing early even though it is not a hero screen.** Its own label says the form rules get
+fixed there, and every other editor inherits them — doing it after the editors means doing the editors twice.
+
+### New functionality the designs introduce
+
+This phase's scope is *same functionality, new looks*, so **each of these is a decision, not a task.** They
+are listed because a screen redrawn from a mockup will otherwise absorb them silently.
+
+- **A calendar route** (`7a` / `7b`). The doc concedes it: *"this is a new route, which your original brief
+  ruled out"*. **Defer** — a new nav key is out of scope by definition, and it wants its own phase.
+- **The last-five line on Record a weighing** (`6e`: *"the one addition is the last-five line"*) — the five
+  previous weights shown while entering a new one. Small, genuinely useful at a scale, and reads only data
+  the route already has. **Likely adopt**; it is the one addition worth arguing for.
+- **A stale-backup marker** (`6c`: *"the status line gets the apricot marker"*, and `github.md`: *"the same
+  marker badges a stale backup"*). Needs a staleness rule that does not exist yet. ADR-0001 is safe here —
+  it is a fact about the *backup*, not about a rabbit — but the threshold is a real decision and the copy
+  must not imply fault. **Decide before drawing it.**
+- **Field-absent states in the bunny editor** (`4e`: *"birthday — not known"*, *"breed — not set"*). Two
+  different phrasings for two different meanings; check whether the app currently distinguishes them at all
+  before inventing the distinction.
+- **Chips wrap rather than scroll sideways** (`2c`), and *"not checked" is a real value selected by default*.
+  The second is a data-meaning claim, not a layout one — verify it matches what the observation entity
+  actually stores before the UI asserts it.
+
+**This inventory is provisional.** It was built from the mockups that survived the 256 KiB truncation plus
+`github.md`'s summary, so anything the `Weight` screens introduce is missing from it. Re-derive it once the
+full design file is in hand.
+
 ## Gate
 
 - **All 26 routes visited on the device**, in both locales, against the before set.
@@ -223,10 +283,16 @@ Structure, for reading it a piece at a time instead of whole: `<section class="d
 
 ## Open questions
 
-- **1.4 or 2.0?** `release-please` derives the version from commit subjects, so a single `feat!:` would
-  make this 2.0. Nothing about the data, the schema or the backup format breaks — only the appearance —
-  so 1.4 is the honest reading. But a full visual overhaul is the one moment where a major bump says
-  something true to a user looking at a changelog. Decide at the release, not now.
+- ~~**1.4 or 2.0?**~~ **Decided 2026-08-08: this ships as 1.4.** Nothing about the data, the schema or the
+  backup format breaks — only the appearance — and a major bump should mean something a user has to act on.
+  A restored backup, an existing install and every migration behave identically before and after, so 2.0
+  would be telling them something untrue in order to sound impressive.
+
+  **The consequence is a commit rule, and it is easy to break by accident.** `release-please` derives the
+  version from commit subjects, so **one `feat!:` anywhere in this phase cuts 2.0** — no matter what this
+  file says. A redesign is exactly the work where a `!` feels earned in the moment, on the commit that
+  replaces a screen wholesale. It is not earned: nothing downstream of that commit has to change. Use
+  `feat:` and `fix:`, and keep the breaking-change marker for something that actually breaks.
 - **Does any string change?** Assume yes (see Phase 8's ordering). Worth answering properly once the
   hero screens exist, because a "no" would let Phase 8 start in parallel.
 - **How is "more user friendly" judged?** Today the answer is one person's eye. That is acceptable for a
