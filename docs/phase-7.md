@@ -136,6 +136,48 @@ Output stays **out of the repo** — `docs/edge-to-edge/` holds two PNGs, the pa
 finding, and that is the convention: the full run is evidence to look at, not to commit, and only the shots
 that make a point get checked in.
 
+### Where the design actually lives — read this before starting a sub-phase
+
+Project **“Binky mobile app design”**, `748bb56e-50eb-4b44-9a9e-7b6af513d47e`:
+<https://claude.ai/design/p/748bb56e-50eb-4b44-9a9e-7b6af513d47e>
+
+A session reads it with the **`DesignSync` tool**, passing `projectId` explicitly. **`list_projects`
+returns an empty list** — it filters to *design-system* projects and this is an ordinary one. That is not
+evidence the project is missing; pass the id and `get_project`/`list_files`/`get_file` all work.
+
+| File | What it is |
+| --- | --- |
+| `github.md` | **Read this first.** A screen map: every mockup against the repo files it lands in, plus a *Not yet drawn* list. Small, and it saves opening the big file to find out what exists. |
+| `Binky Design Language.dc.html` | All the mockups. See the truncation trap below. |
+| `support.js` | The generated `dc-runtime` canvas renderer. **No design content — never read it.** |
+| `uploads/before/{light,dark}/` | The before set, re-uploaded into the project. |
+
+**The trap: `get_file` caps at 256 KiB and truncates with no error.** `Binky Design Language.dc.html` is
+over the cap, so it comes back cut mid-attribute and looks complete. **Check for a closing `</x-dc>`; if it
+is absent, the file is partial.** The document is ordered **newest turn first** (`t7` → `t1`), so the cut
+eats the *oldest* turn — which is turn 1, the design language and the two hero screens, i.e. exactly the
+part a visual pass needs. Export the file to disk from the browser, or split it in the project, rather than
+reasoning about what is in it. *(A read on 2026-08-08 lost the tail of `1c` onward and wrongly concluded
+`Weight` had never been drawn; `github.md` says it was.)*
+
+Structure, for reading it a piece at a time instead of whole: `<section class="dv-turn" id="tN">` per turn,
+`<div class="dv-opt" id="NX">` per mockup (`1a`, `1b`, `4c2`, …). Split on the opt divs and open one.
+
+### Two things in the project that the brief did not ask for
+
+- **The calendar (`7a`/`7b`) is out of scope.** The doc itself calls it “the one thing in this pass that is
+  not in the app today”. This phase adds no route and no nav key — park it for a later phase.
+- **The colours in the mockups are hand-picked, and the doc says they are not.** Section 1 claims all the
+  roles are “generated from these by Material's tonal palette builder. Nothing below is hand-picked.” They
+  are not on a tonal grid: the stated `P40` is tone 42.2 at chroma 42 against a seed of chroma 32, and the
+  neutral family runs hue 94.6°/89.5°/88.9° and then 48.2° for `onSurface`. A generated palette holds hue
+  constant per family and lands on exact tones.
+  **So take the four seeds and generate — do not transcribe mockup hexes.** `scripts/gen_scheme.py` is that
+  generator (with `scripts/hct.py`, a CAM16/HCT port); it emits `theme/Color.kt` whole, and it is verified
+  against Material's published baseline scheme. Most roles land within dE 1.3 of the mockups; `primary`,
+  `outlineVariant` and `onPrimaryContainer` differ visibly, and that is the accepted cost of a scheme whose
+  contrast holds in both themes. Edit the seeds in that script and re-run; never hand-edit `Color.kt`.
+
 ## Order of work
 
 1. **Capture the before set** — `scripts/screenshots.py`, on the Xiaomi. ✅ *2026-08-06.*
@@ -144,9 +186,26 @@ that make a point get checked in.
    *(These two are listed in this order and `DOD.md` §6 says the colour decision blocks everything. Both
    are right: the capture is a photograph of what already ships, so it depends on no decision and is the
    one task that can run alongside one. Nothing that **changes** a pixel starts before step 2.)*
-3. **Fix the visual language** in Claude Design, plus `Home` and `Weight`.
+3. **Fix the visual language** in Claude Design, plus `Home` and `Weight`. ✅ *2026-08-08 — see the project
+   above; it went well past the two hero screens, so most routes now have a drawing to work against.*
 4. **Theme commit first** — `Color.kt`, `Type.kt` and `Theme.kt` stop being the scaffold's. One commit,
    and the whole app moves at once; every screen after it is an adjustment rather than a reinvention.
+   ✅ *2026-08-08.* `Color.kt` generated from the seeds, both schemes in full, 22 contrast checks passing
+   in light and dark. `Type.kt` carries the scale; **Nunito is a new bundled asset** (`res/font/`, OFL in
+   `docs/licenses/`) — not a Gradle dependency, so ADR-0009's quarantine is untouched. `Spacing.kt` adds
+   the six steps. `dynamicColor` now defaults **off**, which is the half of ADR-0027 that ships;
+   **the Settings toggle is still owed** — a key in `AppPreferences.kt`, a Settings row, and two strings
+   in both locales.
+
+   Two traps found doing it, both silent:
+   - **`FontVariation.Settings` is ignored for resource fonts.** Nunito ships only as a variable font whose
+     default instance is ExtraLight 200, so the app rendered *thinner* than before with no error anywhere.
+     Pin the `wght` axis in an XML font resource instead — `res/font/nunito_bold.xml` is the pattern.
+   - **Dynamic colour was hiding wrong role choices.** The trend flag card was `errorContainer`; with the
+     brand on it became an alarm-red panel, against ADR-0026 and against the design's own apricot marker.
+     Now `tertiaryContainer`, and **no screen references `errorContainer` at all** — the right end state for
+     an app with no emergencies. Expect more of these as screens land: roles picked when nobody could see
+     the result.
 5. **Screen by screen, tab by tab**, starting with the two that were mocked.
 6. **Re-capture and compare**, same routes, same locales.
 

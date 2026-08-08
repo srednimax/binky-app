@@ -195,11 +195,18 @@ exists. These are the items that come first.
       script takes `--locale`, and Phase 8's copy-length canary wants it before that phase starts.
       Four defects were found and fixed getting here; two were in `edge-to-edge.py` and are written up
       in §2, because they mean some existing 4f evidence is wrong rather than merely missing.
-- [ ] **Fix the visual language** — palette, type scale, spacing rhythm, list-row and card treatment,
-      empty states — plus `Home` and `Weight` drawn in full. Mocked in Claude Design (HTML, *not* Compose;
-      it is a mockup surface, not a codegen path). The other 24 routes go straight to Compose.
-- [ ] **Theme commit first**: `Color.kt`, `Type.kt`, `Theme.kt` stop being the scaffold's. One commit
-      moves the whole app; every screen after it is an adjustment, not a reinvention.
+- [x] **Fix the visual language** — 2026-08-08, in Claude Design. It went past `Home` and `Weight`: most
+      routes now have a drawing. **`phase-7.md` says where the project is and how to read it** — including
+      that `get_file` truncates it at 256 KiB without saying so, and that its hexes are hand-picked
+      despite claiming to be generated. Take the four seeds, not the hexes.
+      Still undrawn: Settings, Support, Documents, Photos, Setup, Watch expiry, Schema mismatch,
+      Reminders opt-in. The calendar in `7a`/`7b` is a new route and **out of scope** for this phase.
+- [x] **Theme commit first** — 2026-08-08. `Color.kt` generated from the seeds (both schemes in full, 22
+      contrast checks green), `Type.kt`, `Spacing.kt`, `dynamicColor` off. Nunito is a new bundled asset,
+      not a dependency. Two silent traps written up in `phase-7.md`'s order-of-work step 4.
+- [ ] **The Material You toggle** — the half of ADR-0027 that did not ship with the theme commit. Until it
+      exists, dynamic colour is not "off by default", it is unavailable. A key in `AppPreferences.kt`, a
+      Settings row, and two strings in **both** locales (ADR-0013).
 - [ ] Then screen by screen, tab by tab, starting with the two that were mocked.
 - [ ] **Rules the new look inherits** — weight changes always in grams; the chart plots real timestamps,
       not index; missing media is a placeholder, never a crash; image writes go through the media helper
