@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nunito ships upstream only as a variable font whose default instance is
+  ExtraLight (200). Pinning the `wght` axis here, in the font resource, is the
+  documented way to instance it: the Compose-side FontVariation.Settings API is
+  ignored by the resource-font loader, which renders a silent ExtraLight rather
+  than an error. Requires API 26 — our minSdk exactly.
+-->
+<font-family xmlns:android="http://schemas.android.com/apk/res/android">
+    <font
+        android:font="@font/nunito_variable"
+        android:fontStyle="normal"
+        android:fontVariationSettings="'wght' 700"
+        android:fontWeight="700" />
+</font-family>
