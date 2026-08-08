@@ -10,6 +10,10 @@ and a retrofit that large does not get done:
 
 1. **Colours and text styles come from `MaterialTheme`, never literals.** The visual pass then edits one
    file, and dark mode comes free. Hardcoded colours across forty screens cannot be reliably found later.
+   *(Amended by ADR-0027: this held for the screens but not for the theme. `dynamicColor = true` meant that
+   on Android 12+ the one file was never read, so the promise was true only on API 26–30. Phase 7 turns
+   dynamic colour off by default and makes it an opt-in, which is what makes this rule true on a shipping
+   device.)*
 2. **Screens are stateless** — composables take state and callbacks, ViewModels hold state. Restyling then
    touches only presentation, and `@Preview` works, which is the only sane way to iterate on visuals.
 3. **User-facing text lives in `strings.xml`**, never inline. This also gates translation.

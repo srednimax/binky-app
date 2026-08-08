@@ -389,6 +389,45 @@ def wipe() -> None:
     wait_for_app()
 
 
+def reset_to_seeded() -> None:
+    """Wipe, skip the wizard, and seed the debug sample data — a known state, not just a clean one.
+
+    The inverse of [wipe], and the step this file has been missing: the `empty` suite ends with the
+    install wiped, so a matrix run leaves the phone with no sample data and no media directories at
+    all. That is exactly what DOD §1 recorded after the 5 Aug run, where the wipe took the armed
+    medication course with it and nothing put it back.
+
+    It matters more than tidiness for repeat runs. `seedWatches` back-dates `startedAt`, so a fresh
+    seed restores the *unanswered* watch-expiry prompt — and answering that prompt is permanent, so
+    without this a second capture cell would find it already gone and quietly shoot the wrong screen.
+    """
+    wipe()
+    for label in ("Skip for now", "Continue", "Finish setup"):
+        tap(label)
+    tap("More")
+    tap("Settings")
+    # `tap` scrolls when it cannot find its target, which is what reaches this one: the sample-data
+    # block is the debug-only tail of a scrolling Settings column.
+    tap("Add the sample data")
+    tap("OK")
+    settle(1.0)
+
+    # Last, because `pm grant` can kill the process and everything above is a tap sequence that
+    # would die with it. Every caller relaunches before its next screenshot, so the app picks the
+    # permission up cleanly.
+    #
+    # `pm clear` revokes POST_NOTIFICATIONS, and a denied notification permission is *visible*: the
+    # Care screen grows a "notifications are off" banner whose button is labelled `action_open` —
+    # the same "Open" the medication-course row uses. `tap("Open")` then matches the banner first
+    # and launches HyperOS's notification settings, so `medication-course` screenshotted the system
+    # Settings app and `record-dose` failed with an empty node list, the foreground no longer being
+    # this package. Granting it back is also the honest state: a seeded install stands in for an app
+    # in use, not for one whose permission was just refused. The `empty` suite is the deliberate
+    # exception and keeps the denied state, because there it is the truth of a first run.
+    shell(f"pm grant {PACKAGE} android.permission.POST_NOTIFICATIONS")
+    settle(0.5)
+
+
 DATABASE = f"/data/data/{PACKAGE}/databases/bunny.db"
 
 
@@ -475,6 +514,20 @@ SELECT_BUNNY = [("tap", "Choose which bunny"), ("tap", "Bijou")]
 # puts a year of weighings below that button, so in a 1220px-tall viewport finding it means paging
 # through the list, while Care's *Record a weight* sits on a screen with five rows on it.
 OPEN_WEIGHT_FORM = [("tap", "Care"), ("tap", "Record a weight")]
+
+# The medication course is opened **by name**, never by its `Open` button, and that is a fix rather
+# than a style choice. `find` is a case-insensitive substring match, and the Care screen grows a
+# blocked-state banner for each of two permissions — notifications off, and exact alarms not
+# permitted — whose buttons are both `action_open`, the same word. Tapping "Open" matched a banner
+# and launched HyperOS's Settings, so `medication-course` screenshotted the system Settings app and
+# `record-dose` failed with an empty node list because the foreground had left this package.
+#
+# Granting both permissions would also clear it, and is the wrong lever: `SCHEDULE_EXACT_ALARM` is
+# denied by default on Android 14+, so the banner is a state real users genuinely see, and DOD §1
+# wants that permission granted through the app's own deep link because that path is under test.
+# A needle that names the thing it means is robust to all of it. "Metacam" is the sample data's
+# first course (`SampleData.kt`), alongside "Panacur" and "Recovery food".
+MEDICATION_COURSE = "Metacam"
 
 # The order matters only in that each scene starts from a relaunch, so they are independent.
 SCENES = [
@@ -652,11 +705,11 @@ SCENES = [
     Scene("care-scrolled", "tab", [*SELECT_BUNNY, ("tap", "Care"), ("swipe_up", "")]),
     # The dose history is the longest list the app builds — one row per dose per day — so its end is
     # the scroll most likely to leave a row under the navigation bar.
-    Scene("medication-course", "detail", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Open")]),
+    Scene("medication-course", "detail", [*SELECT_BUNNY, ("tap", "Care"), ("tap", MEDICATION_COURSE)]),
     Scene(
         "medication-course-bottom",
         "detail",
-        [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Open"), ("swipe_end", "")],
+        [*SELECT_BUNNY, ("tap", "Care"), ("tap", MEDICATION_COURSE), ("swipe_end", "")],
     ),
     Scene("course-editor", "form", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a course")]),
     # The times list grows downwards from a button, so the save action and the last time added are
@@ -697,7 +750,7 @@ SCENES = [
         [
             *SELECT_BUNNY,
             ("tap", "Care"),
-            ("tap", "Open"),
+            ("tap", MEDICATION_COURSE),
             ("tap", "Record a dose"),
             ("wait", "1.0"),
         ],
@@ -794,7 +847,14 @@ def check(nodes: list[Node], insets: dict[str, Rect]) -> list[dict]:
     return findings
 
 
-def run_scene(scene: Scene, config: Config, out_dir: Path) -> dict:
+def reach_scene(scene: Scene) -> str | None:
+    """Walk to one scene from a cold start. Returns the failure message, or None if it was reached.
+
+    Split out of [run_scene] so `screenshots.py` can reuse the walk without the inset checking that
+    follows it. The tap sequences in [SCENES] are this file's expensive asset — a second copy of
+    them in another script is a copy that drifts, and the drift is silent because both scripts would
+    still produce a screenshot of *something*.
+    """
     relaunch()
     try:
         if not scene.keeps_watch_prompt:
@@ -805,7 +865,14 @@ def run_scene(scene: Scene, config: Config, out_dir: Path) -> dict:
         for kind, arg in scene.steps:
             STEP_RUNNERS[kind](arg)
     except StepFailed as error:
-        return {"scene": scene.name, "family": scene.family, "error": str(error)}
+        return str(error)
+    return None
+
+
+def run_scene(scene: Scene, config: Config, out_dir: Path) -> dict:
+    error = reach_scene(scene)
+    if error is not None:
+        return {"scene": scene.name, "family": scene.family, "error": error}
 
     settle(0.8)
     shot = out_dir / f"{scene.name}.png"

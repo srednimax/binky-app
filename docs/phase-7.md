@@ -49,6 +49,23 @@ it, at the cost of one preference.
 
 **Decide this before any mockup exists.** Every other visual choice is downstream of it.
 
+### Decided, 2026-08-06: own a brand — [ADR-0027](adr/0027-binky-owns-its-palette-material-you-is-opt-in.md)
+
+Dynamic colour defaults **off**; Material You stays available as a Settings toggle. The argument that
+settled it was not the one written above, and it is worth recording which one did.
+
+**It is ADR-0012 that forces this, not brand preference.** That ADR's first rule buys the whole redesign:
+*colours come from `MaterialTheme`, never literals — the visual pass then edits one file.* With
+`dynamicColor = true`, on Android 12+ nothing reads that file. The visual pass could pick a palette, wire
+it in, build, install, and see no change at all, with no error to explain why. Turning dynamic colour off
+is what makes ADR-0012's promise true on a device anyone owns.
+
+Two consequences land on this phase directly. **A full scheme is owed, not three roles** — the current
+`lightColorScheme(primary, secondary, tertiary)` leaves `surface`, `background`, `outline` and every
+`on*`/`*Container` at M3's baseline, which is itself purple and which most users will now actually see.
+And the **toggle needs a label and help line as resources in both locales** (ADR-0013), which is the first
+answer to this file's "does any string change?" question: yes, at least two.
+
 ## Why it runs before Phase 8, not after
 
 Phase 8 is 631 translatable resources × 7 new languages ≈ 4 400 strings, each **read by a native speaker
@@ -101,19 +118,156 @@ expensive in Compose and cheap in HTML:
 artefacts fix. Mocking a screen in HTML that will be hand-written in Kotlin anyway is work paid for
 twice — and the phone, not the browser, is where "easier to use" is actually judged.
 
-**The "before" set is an input.** Every screen captured with `adb exec-out screencap -p` before anything
-changes: it is what the design work is a response to, and afterwards it is the only way to answer
-"is this better?" with something other than an opinion.
+**The "before" set is an input.** Every screen captured before anything changes: it is what the design work
+is a response to, and afterwards it is the only way to answer "is this better?" with something other than
+an opinion.
+
+`scripts/screenshots.py` is what takes it, and again at the gate — same scenes, same cells, so the two sets
+are comparable by construction rather than by care. It imports `edge-to-edge.py`'s 61 scenes rather than
+copying them: those tap sequences are the expensive asset in this repo, and two drifting copies would both
+go on producing screenshots, just of the wrong screens.
+
+Its matrix is **theme × locale** where `edge-to-edge.py`'s is **rotation × navigation mode**, and it drops
+the inset arithmetic that is the other script's whole point. Portrait + gesture only, deliberately: the
+gate below re-runs the orientation matrix in full, and shooting one design in four orientations teaches
+nothing about the design. The first set is **light + dark, English**, 61 scenes each.
+
+Output stays **out of the repo** — `docs/edge-to-edge/` holds two PNGs, the pair that illustrated one
+finding, and that is the convention: the full run is evidence to look at, not to commit, and only the shots
+that make a point get checked in.
+
+### Where the design actually lives — read this before starting a sub-phase
+
+Project **“Binky mobile app design”**, `748bb56e-50eb-4b44-9a9e-7b6af513d47e`:
+<https://claude.ai/design/p/748bb56e-50eb-4b44-9a9e-7b6af513d47e>
+
+A session reads it with the **`DesignSync` tool**, passing `projectId` explicitly. **`list_projects`
+returns an empty list** — it filters to *design-system* projects and this is an ordinary one. That is not
+evidence the project is missing; pass the id and `get_project`/`list_files`/`get_file` all work.
+
+| File | What it is |
+| --- | --- |
+| `github.md` | **Read this first.** A screen map: every mockup against the repo files it lands in, plus a *Not yet drawn* list. Small, and it saves opening the big file to find out what exists. |
+| `Binky Design Language.dc.html` | All the mockups. See the truncation trap below. |
+| `support.js` | The generated `dc-runtime` canvas renderer. **No design content — never read it.** |
+| `uploads/before/{light,dark}/` | The before set, re-uploaded into the project. |
+
+**The trap: `get_file` caps at 256 KiB and truncates with no error.** `Binky Design Language.dc.html` is
+over the cap, so it comes back cut mid-attribute and looks complete. **Check for a closing `</x-dc>`; if it
+is absent, the file is partial.** The document is ordered **newest turn first** (`t7` → `t1`), so the cut
+eats the *oldest* turn — which is turn 1, the design language and the two hero screens, i.e. exactly the
+part a visual pass needs. Export the file to disk from the browser, or split it in the project, rather than
+reasoning about what is in it. *(A read on 2026-08-08 lost the tail of `1c` onward and wrongly concluded
+`Weight` had never been drawn; `github.md` says it was.)*
+
+Structure, for reading it a piece at a time instead of whole: `<section class="dv-turn" id="tN">` per turn,
+`<div class="dv-opt" id="NX">` per mockup (`1a`, `1b`, `4c2`, …). Split on the opt divs and open one.
+
+### Two things in the project that the brief did not ask for
+
+- **The calendar (`7a`/`7b`) is out of scope.** The doc itself calls it “the one thing in this pass that is
+  not in the app today”. This phase adds no route and no nav key — park it for a later phase.
+- **The colours in the mockups are hand-picked, and the doc says they are not.** Section 1 claims all the
+  roles are “generated from these by Material's tonal palette builder. Nothing below is hand-picked.” They
+  are not on a tonal grid: the stated `P40` is tone 42.2 at chroma 42 against a seed of chroma 32, and the
+  neutral family runs hue 94.6°/89.5°/88.9° and then 48.2° for `onSurface`. A generated palette holds hue
+  constant per family and lands on exact tones.
+  **So take the four seeds and generate — do not transcribe mockup hexes.** `scripts/gen_scheme.py` is that
+  generator (with `scripts/hct.py`, a CAM16/HCT port); it emits `theme/Color.kt` whole, and it is verified
+  against Material's published baseline scheme. Most roles land within dE 1.3 of the mockups; `primary`,
+  `outlineVariant` and `onPrimaryContainer` differ visibly, and that is the accepted cost of a scheme whose
+  contrast holds in both themes. Edit the seeds in that script and re-run; never hand-edit `Color.kt`.
 
 ## Order of work
 
-1. **Capture the before set** — all 26 routes, both locales, on the Xiaomi.
-2. **Settle dynamic colour.** Nothing else starts first.
-3. **Fix the visual language** in Claude Design, plus `Home` and `Weight`.
+1. **Capture the before set** — `scripts/screenshots.py`, on the Xiaomi. ✅ *2026-08-06.*
+2. **Settle dynamic colour.** Nothing else starts first. ✅ *2026-08-06 — ADR-0027, see above.*
+
+   *(These two are listed in this order and `DOD.md` §6 says the colour decision blocks everything. Both
+   are right: the capture is a photograph of what already ships, so it depends on no decision and is the
+   one task that can run alongside one. Nothing that **changes** a pixel starts before step 2.)*
+3. **Fix the visual language** in Claude Design, plus `Home` and `Weight`. ✅ *2026-08-08 — see the project
+   above; it went well past the two hero screens, so most routes now have a drawing to work against.*
 4. **Theme commit first** — `Color.kt`, `Type.kt` and `Theme.kt` stop being the scaffold's. One commit,
    and the whole app moves at once; every screen after it is an adjustment rather than a reinvention.
+   ✅ *2026-08-08.* `Color.kt` generated from the seeds, both schemes in full, 22 contrast checks passing
+   in light and dark. `Type.kt` carries the scale; **Nunito is a new bundled asset** (`res/font/`, OFL in
+   `docs/licenses/`) — not a Gradle dependency, so ADR-0009's quarantine is untouched. `Spacing.kt` adds
+   the six steps. `dynamicColor` now defaults **off**, which is the half of ADR-0027 that ships;
+   **the Settings toggle is still owed** — a key in `AppPreferences.kt`, a Settings row, and two strings
+   in both locales.
+
+   Two traps found doing it, both silent:
+   - **`FontVariation.Settings` is ignored for resource fonts.** Nunito ships only as a variable font whose
+     default instance is ExtraLight 200, so the app rendered *thinner* than before with no error anywhere.
+     Pin the `wght` axis in an XML font resource instead — `res/font/nunito_bold.xml` is the pattern.
+   - **Dynamic colour was hiding wrong role choices.** The trend flag card was `errorContainer`; with the
+     brand on it became an alarm-red panel, against ADR-0026 and against the design's own apricot marker.
+     Now `tertiaryContainer`, and **no screen references `errorContainer` at all** — the right end state for
+     an app with no emergencies. Expect more of these as screens land: roles picked when nobody could see
+     the result.
 5. **Screen by screen, tab by tab**, starting with the two that were mocked.
 6. **Re-capture and compare**, same routes, same locales.
+
+## The rewrite checkpoint — every route to the new language
+
+Step 5 of the order of work, expanded. The theme commit moved the whole app at once; each item below is an
+*adjustment* against a drawing, not a reinvention, and each is its own commit that builds and installs.
+
+**Commit rule for the whole sweep: `feat:` and `fix:` only, never `feat!:`** — see the 1.4 decision below.
+
+Mockup ids are the `dv-opt` ids in the design project (`1b`, `4c2`, …); see *Where the design actually
+lives* for how to open one without loading the whole file.
+
+| Route | Mockups | Notes |
+| --- | --- | --- |
+| `Home` (bunny selected) | `1b` / `1c` | Hero. Dark is not a tint — the flag card climbs to `surfaceContainerHigh` |
+| `Home` under All bunnies | `4a` / `4b` | The flag stays inside the bunny it belongs to |
+| `Home`, no bunnies | `4c` / `4c2` | |
+| Bunny switcher | `4d` | Four items; *Archived* deliberately absent |
+| `Weight` + chart | **drawn, not yet retrieved** | Hero. `github.md` says light + dark exist; the truncated read never reached them |
+| Record a weighing | `6e` / `6f` | Grams only. Carries the one addition below |
+| Trend flag card | — | ✅ done: apricot, both screens |
+| `Observations` | `2a` / `2b` | |
+| Record an observation | `2c` / `2d` | Fixes the form rules for *every* editor |
+| `CareAndMeds` | `3a` / `3b` | Today's doses, then the courses that generate them |
+| `CareAndMeds`, no bunnies | `3c` / `3d` | |
+| New course | `3e` | Same six fields, same words |
+| Record a dose | `3f` / `3g` | |
+| Vets + vet editor | `5a` / `5b` | |
+| Bunny editor | `4e` | |
+| Archived bunnies | `4f` / `4g` / `4h` | Populated and empty |
+| `More` | `6a` / `6b` | Same six destinations, same copy |
+| Backup & restore | `6c` / `6d` | |
+| Settings, Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in | **none** | `github.md`'s *Not yet drawn* list — apply the language by hand |
+
+**`2c` is worth doing early even though it is not a hero screen.** Its own label says the form rules get
+fixed there, and every other editor inherits them — doing it after the editors means doing the editors twice.
+
+### New functionality the designs introduce
+
+This phase's scope is *same functionality, new looks*, so **each of these is a decision, not a task.** They
+are listed because a screen redrawn from a mockup will otherwise absorb them silently.
+
+- **A calendar route** (`7a` / `7b`). The doc concedes it: *"this is a new route, which your original brief
+  ruled out"*. **Defer** — a new nav key is out of scope by definition, and it wants its own phase.
+- **The last-five line on Record a weighing** (`6e`: *"the one addition is the last-five line"*) — the five
+  previous weights shown while entering a new one. Small, genuinely useful at a scale, and reads only data
+  the route already has. **Likely adopt**; it is the one addition worth arguing for.
+- **A stale-backup marker** (`6c`: *"the status line gets the apricot marker"*, and `github.md`: *"the same
+  marker badges a stale backup"*). Needs a staleness rule that does not exist yet. ADR-0001 is safe here —
+  it is a fact about the *backup*, not about a rabbit — but the threshold is a real decision and the copy
+  must not imply fault. **Decide before drawing it.**
+- **Field-absent states in the bunny editor** (`4e`: *"birthday — not known"*, *"breed — not set"*). Two
+  different phrasings for two different meanings; check whether the app currently distinguishes them at all
+  before inventing the distinction.
+- **Chips wrap rather than scroll sideways** (`2c`), and *"not checked" is a real value selected by default*.
+  The second is a data-meaning claim, not a layout one — verify it matches what the observation entity
+  actually stores before the UI asserts it.
+
+**This inventory is provisional.** It was built from the mockups that survived the 256 KiB truncation plus
+`github.md`'s summary, so anything the `Weight` screens introduce is missing from it. Re-derive it once the
+full design file is in hand.
 
 ## Gate
 
@@ -129,10 +283,16 @@ changes: it is what the design work is a response to, and afterwards it is the o
 
 ## Open questions
 
-- **1.4 or 2.0?** `release-please` derives the version from commit subjects, so a single `feat!:` would
-  make this 2.0. Nothing about the data, the schema or the backup format breaks — only the appearance —
-  so 1.4 is the honest reading. But a full visual overhaul is the one moment where a major bump says
-  something true to a user looking at a changelog. Decide at the release, not now.
+- ~~**1.4 or 2.0?**~~ **Decided 2026-08-08: this ships as 1.4.** Nothing about the data, the schema or the
+  backup format breaks — only the appearance — and a major bump should mean something a user has to act on.
+  A restored backup, an existing install and every migration behave identically before and after, so 2.0
+  would be telling them something untrue in order to sound impressive.
+
+  **The consequence is a commit rule, and it is easy to break by accident.** `release-please` derives the
+  version from commit subjects, so **one `feat!:` anywhere in this phase cuts 2.0** — no matter what this
+  file says. A redesign is exactly the work where a `!` feels earned in the moment, on the commit that
+  replaces a screen wholesale. It is not earned: nothing downstream of that commit has to change. Use
+  `feat:` and `fix:`, and keep the breaking-change marker for something that actually breaks.
 - **Does any string change?** Assume yes (see Phase 8's ordering). Worth answering properly once the
   hero screens exist, because a "no" would let Phase 8 start in parallel.
 - **How is "more user friendly" judged?** Today the answer is one person's eye. That is acceptable for a

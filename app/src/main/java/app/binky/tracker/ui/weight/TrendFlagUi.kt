@@ -162,11 +162,16 @@ fun TrendFlagBanner(
         modifier = modifier.fillMaxWidth(),
         colors =
             CardDefaults.cardColors(
+                // Tertiary (apricot), never error. A weight drop is caution, not an
+                // emergency: it is an observation about the numbers that the owner
+                // decides the meaning of, and nothing here can be acted on from a phone.
+                // Red would code it as a failure, which ADR-0026 and ADR-0001 both forbid.
+                //
                 // An acknowledged episode is still real, so it is still reported — quietly, as
                 // standing information rather than as a fresh signal.
                 containerColor =
                     if (acknowledgedAt == null) {
-                        MaterialTheme.colorScheme.errorContainer
+                        MaterialTheme.colorScheme.tertiaryContainer
                     } else {
                         MaterialTheme.colorScheme.surfaceVariant
                     },
