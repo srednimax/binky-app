@@ -280,11 +280,22 @@ exists. These are the items that come first.
       identical 64dp merged nodes, which is Care & Meds' exact tie-breaking hazard). They survive
       because `6a` changes **no string**. *A content needle survives a redraw that is structural
       only.*
-      **What is left is the eight with no drawing at all** — Settings, Support, Documents, Photos,
-      Setup, Watch expiry, Schema mismatch, Reminders opt-in — which get the language applied by
-      hand, plus the two undrawn Weight surfaces (the chart's empty state and the watch-expiry
-      sheet). Setup has already taken one line of it: `BackupScopePicker` draws rows rather than its
-      own card now, so its two callers each supply one.
+      ✅ **`Settings` is done** — 2026-08-09, the **first route with no drawing at all**, seen on the
+      device in light and dark including its picker. Five settings separated by five full-width
+      rules become the header rhythm and two cards. It states the rule the other seven undrawn
+      routes follow: **a control that cannot name itself gets a section header, a row that names
+      itself does not** — *"Show weights in"* is a sentence two chips finish, where *Language*,
+      *Colours from your wallpaper* and *Backup & restore* each say what they are inside the row.
+      **No string added and none changed; one moved** — `settings_language_help` ("Changing this
+      restarts the app") went from under the row into the picker, because it is a warning about the
+      act of choosing. The device pass earned its keep again and this time on **type, not padding**:
+      `SwitchRow` was at M3's `bodyLarge` and `ListRow` at `titleMedium`, invisible until Settings
+      became the first card to hold both. Fixed in `Forms.kt`, so every switch in the app moved with
+      it. No scene needle broke — `backup`, `settings-scrolled` and `reminders-sheet` all still land.
+      **What is left is the seven with no drawing** — Support, Documents, Photos, Setup, Watch
+      expiry, Schema mismatch, Reminders opt-in — plus the two undrawn Weight surfaces (the chart's
+      empty state and the watch-expiry sheet). Setup has already taken one line of it:
+      `BackupScopePicker` draws rows rather than its own card now, so its two callers each supply one.
       **`ui/common/Surfaces.kt` is the shared idiom** every remaining route draws from — section header,
       grouped card, fact row, inset divider, the two card radii, `FabClearance`, and now
       `GroupedCardItem` for a grouped card whose rows are separate lazy items (any list that can run to
