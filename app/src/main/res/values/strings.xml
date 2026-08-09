@@ -76,6 +76,13 @@
     <!-- Weight -->
     <string name="weight_pick_a_bunny">Weight is recorded per bunny. Choose a bunny from the switcher to see its history.</string>
     <string name="weight_add">Record a weighing</string>
+    <!-- The route's two section headers, and the count that sits beside the second one. -->
+    <string name="weight_chart_section">Weight over time</string>
+    <string name="weight_history_section">History</string>
+    <plurals name="weight_history_count">
+        <item quantity="one">%d weighing</item>
+        <item quantity="other">%d weighings</item>
+    </plurals>
     <string name="weight_history_empty">No weighings recorded yet. Three are needed before a trend can be judged at all.</string>
     <string name="weight_delete_title">Delete this weighing?</string>
     <string name="weight_delete_body">%1$s on %2$s is removed from the history, and the trend is worked out again without it.</string>
@@ -128,7 +135,9 @@
     <!-- The same collision against a weighing the vet recorded (ADR-0017, ADR-0021). "Replace it" is
          absent from this one on purpose, so the copy has to offer two ways out rather than three. -->
     <string name="weight_collision_visit_body">The weighing already at that time was recorded at a vet visit. Binky will not overwrite it — add a second reading, or correct the number on the visit itself.</string>
-    <string name="weight_from_visit">Recorded at a vet visit</string>
+    <!-- A visit-recorded row says so **inside its timestamp line** rather than taking a line of
+         its own: it is a fact about where the number came from, not a second fact. -->
+    <string name="weight_row_from_visit">%1$s · from a visit</string>
     <string name="weight_open_visit">Open the visit</string>
     <string name="weight_visit_owned">This weighing was recorded at a vet visit, so it is changed there. The visit\'s date is what decides when it was taken.</string>
 
@@ -139,6 +148,9 @@
     <string name="weight_change_down">−%1$s g</string>
     <string name="weight_change_up">+%1$s g</string>
     <string name="weight_change_none">no change</string>
+    <!-- The oldest weighing has nothing to have changed from, and says so rather than leaving a
+         hole in the column where every other row carries a number. -->
+    <string name="weight_change_first">first</string>
 
     <!-- The trend flag (ADR-0001). Framed "worth a closer look" and never as a diagnosis; the
          numbers are grams and dated; there is no notification, ever. -->

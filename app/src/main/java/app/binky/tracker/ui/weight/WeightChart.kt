@@ -1,15 +1,21 @@
 package app.binky.tracker.ui.weight
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -17,18 +23,26 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.binky.tracker.R
 import app.binky.tracker.data.WeightUnit
+import app.binky.tracker.theme.Spacing
+import app.binky.tracker.ui.common.GroupedCard
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
+import com.patrykandpatrick.vico.compose.cartesian.layer.point
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
+import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
+import com.patrykandpatrick.vico.compose.common.fill
 import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
@@ -36,6 +50,8 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianLayerRangeProvider
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 import java.time.Duration
 import java.time.Instant
 import kotlin.math.ceil
@@ -53,6 +69,10 @@ private const val X_DOMAIN_PADDING_STEPS = 0.35
 
 private const val MILLIS_PER_DAY = 86_400_000.0
 
+/** The marker on each plotted weighing: a 9dp ring drawn with a 2.5dp stroke, as the design has it. */
+private val POINT_SIZE = 9.dp
+private val POINT_STROKE = 2.5.dp
+
 /**
  * The weight chart: a range selector over either a line or one of ADR-0022's three empty states.
  *
@@ -67,64 +87,118 @@ fun WeightChart(
     onRangeChange: (WeightChartRange) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+    Column(modifier = modifier.fillMaxWidth()) {
         RangeSelector(range = range, onRangeChange = onRangeChange)
+        Spacer(Modifier.height(Spacing.snug))
 
-        when (content) {
-            // Nothing has ever been recorded — the one case where there is no data to point at.
-            WeightChartContent.NoWeighings ->
-                ChartPlaceholder(stringResource(R.string.weight_chart_no_weighings))
+        // The plot and all three empty states share one card, so switching range never changes what
+        // the screen is made of — only what is inside the frame.
+        GroupedCard(
+            contentPadding =
+                PaddingValues(
+                    start = Spacing.snug,
+                    end = Spacing.snug,
+                    top = Spacing.base,
+                    bottom = Spacing.tight,
+                ),
+        ) {
+            when (content) {
+                // Nothing has ever been recorded — the one case where there is no data to point at.
+                WeightChartContent.NoWeighings ->
+                    ChartPlaceholder(stringResource(R.string.weight_chart_no_weighings))
 
-            is WeightChartContent.SinglePoint ->
-                if (content.moreOutsideRange) {
+                is WeightChartContent.SinglePoint ->
+                    if (content.moreOutsideRange) {
+                        ChartPlaceholder(
+                            text =
+                                stringResource(
+                                    R.string.weight_chart_single_in_range,
+                                    stringResource(range.windowRes()),
+                                ),
+                            onShowAll = { onRangeChange(WeightChartRange.ALL) },
+                        )
+                    } else {
+                        ChartPlaceholder(stringResource(R.string.weight_chart_single_point))
+                    }
+
+                // Names the date rather than claiming nothing was recorded — saying "no weight
+                // recorded yet" here would be the app disowning data it is holding (ADR-0001,
+                // ADR-0022).
+                is WeightChartContent.NoneInRange ->
                     ChartPlaceholder(
                         text =
                             stringResource(
-                                R.string.weight_chart_single_in_range,
+                                R.string.weight_chart_none_in_range,
                                 stringResource(range.windowRes()),
+                                instantDateLabel(content.lastWeighingAt),
                             ),
                         onShowAll = { onRangeChange(WeightChartRange.ALL) },
                     )
-                } else {
-                    ChartPlaceholder(stringResource(R.string.weight_chart_single_point))
-                }
 
-            // Names the date rather than claiming nothing was recorded — saying "no weight recorded
-            // yet" here would be the app disowning data it is holding (ADR-0001, ADR-0022).
-            is WeightChartContent.NoneInRange ->
-                ChartPlaceholder(
-                    text =
-                        stringResource(
-                            R.string.weight_chart_none_in_range,
-                            stringResource(range.windowRes()),
-                            instantDateLabel(content.lastWeighingAt),
-                        ),
-                    onShowAll = { onRangeChange(WeightChartRange.ALL) },
-                )
-
-            is WeightChartContent.Line -> WeightLineChart(points = content.points, unit = unit)
+                is WeightChartContent.Line -> WeightLineChart(points = content.points, unit = unit)
+            }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** The pill the selector sits in, and the pill each segment is. */
+private val SelectorRadius = 22.dp
+private val SegmentRadius = 18.dp
+private val SegmentHeight = 36.dp
+
+/**
+ * The four windows, as one filled pill rather than Material's outlined segmented buttons.
+ *
+ * The drawing puts a quiet tray under four segments and fills only the chosen one, which is the
+ * treatment the rest of the app uses for a selected thing — outlines would put four hard borders
+ * directly above a card that has none.
+ *
+ * `selectableGroup` is what makes a screen reader announce these as one set of four rather than as
+ * four independent toggles; `Surface(selected = …)` gives each segment the matching role.
+ */
 @Composable
 private fun RangeSelector(
     range: WeightChartRange,
     onRangeChange: (WeightChartRange) -> Unit,
 ) {
-    val options = WeightChartRange.entries
-    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-        options.forEachIndexed { index, option ->
-            SegmentedButton(
-                selected = option == range,
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(SelectorRadius))
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .selectableGroup()
+                .padding(Spacing.hair),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.hair),
+    ) {
+        WeightChartRange.entries.forEach { option ->
+            val selected = option == range
+            Surface(
+                selected = selected,
                 onClick = { onRangeChange(option) },
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                modifier = Modifier.weight(1f).height(SegmentHeight),
+                shape = RoundedCornerShape(SegmentRadius),
+                color =
+                    if (selected) {
+                        MaterialTheme.colorScheme.secondaryContainer
+                    } else {
+                        // Transparent, not the tray's own colour: a segment painted the same colour
+                        // as its parent still hides the rounding where the two overlap.
+                        Color.Transparent
+                    },
+                contentColor =
+                    if (selected) {
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
             ) {
-                Text(stringResource(option.labelRes()))
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = stringResource(option.labelRes()),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
             }
         }
     }
@@ -188,10 +262,31 @@ private fun WeightLineChart(
     val band = remember(points) { visibleBandGrams(points) }
 
     ProvideVicoTheme(rememberM3VicoTheme()) {
+        // A ring, not a dot, and the hole is filled with the **card** behind the plot rather than
+        // the screen behind the card — fill it with the background and every marker reads as a hole
+        // punched through the card, which is exactly what dark makes obvious.
+        val point =
+            LineCartesianLayer.point(
+                rememberShapeComponent(
+                    fill = fill(MaterialTheme.colorScheme.surfaceContainer),
+                    shape = CorneredShape.Pill,
+                    strokeFill = fill(MaterialTheme.colorScheme.primary),
+                    strokeThickness = POINT_STROKE,
+                ),
+                POINT_SIZE,
+            )
         CartesianChartHost(
             chart =
                 rememberCartesianChart(
                     rememberLineCartesianLayer(
+                        // Only the points are stated; fill and stroke stay the Vico theme's, which
+                        // is `MaterialTheme` seen through `rememberM3VicoTheme` (ADR-0012).
+                        lineProvider =
+                            LineCartesianLayer.LineProvider.series(
+                                LineCartesianLayer.rememberLine(
+                                    pointProvider = LineCartesianLayer.PointProvider.single(point),
+                                ),
+                            ),
                         rangeProvider =
                             remember(band, xStep, xs) {
                                 CartesianLayerRangeProvider.fixed(

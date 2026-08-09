@@ -1,24 +1,30 @@
 package app.binky.tracker.ui.weight
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -28,7 +34,11 @@ import app.binky.tracker.data.BunnySelection
 import app.binky.tracker.data.WatchDuration
 import app.binky.tracker.data.WatchState
 import app.binky.tracker.data.WeightUnit
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
+import app.binky.tracker.ui.common.FabClearance
+import app.binky.tracker.ui.common.GroupedCardItem
+import app.binky.tracker.ui.common.SectionHeader
 import app.binky.tracker.ui.watch.StartWatchAction
 
 /**
@@ -67,34 +77,11 @@ fun WeightScreen(
                     val bunnyId = state.bunnyId
                     if (bunnyId != null && row.visitId != null) onOpenVisit(bunnyId, row.visitId)
                 },
-                onDelete = viewModel::requestDelete,
                 onAcknowledge = viewModel::acknowledge,
                 onStartWatch = viewModel::startWatch,
                 onRangeChange = viewModel::setChartRange,
                 modifier = modifier,
             )
-    }
-
-    state.pendingDelete?.let { row ->
-        DeleteWeighingDialog(
-            row = row,
-            unit = state.unit,
-            onConfirm = viewModel::confirmDelete,
-            onDismiss = viewModel::cancelDelete,
-        )
-    }
-
-    // The flag straight after a delete — correcting history can deepen a drop as readily as a new
-    // weighing can (ADR-0001). Inserts and edits raise it from the entry screen, before it closes.
-    state.writeFlag?.let { drop ->
-        TrendFlagDialog(
-            bunnyName = state.bunnyName,
-            drop = drop,
-            unit = state.unit,
-            onAcknowledge = viewModel::acknowledge,
-            onDismiss = viewModel::dismissWriteFlag,
-            secondaryAction = watchAction(state, viewModel::startWatch),
-        )
     }
 }
 
@@ -103,7 +90,6 @@ fun WeightScreen(
  *
  * Nothing while a watch is already running — a button offering to start one on top of a running one
  * says nothing true — and nothing in the read-only scope, which writes nothing at all (ADR-0004).
- * Shared by the banner and the dialog, so the two cannot disagree about whether it is on offer.
  */
 private fun watchAction(
     state: WeightUiState,
@@ -127,38 +113,60 @@ private fun Message(
     )
 }
 
+/** The one filled button on the screen, and the route's whole point. */
+private val RecordButtonHeight = 52.dp
+private val RecordButtonRadius = 26.dp
+
 @Composable
 private fun History(
     state: WeightUiState,
     onAdd: () -> Unit,
     onEdit: (WeightRow) -> Unit,
     onOpenVisit: (WeightRow) -> Unit,
-    onDelete: (WeightRow) -> Unit,
     onAcknowledge: () -> Unit,
     onStartWatch: (WatchDuration) -> Unit,
     onRangeChange: (WeightChartRange) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val rows = state.rows
+    // The spacing *below* the flag has to be decided out here: the banner draws nothing at all for
+    // most bunnies, and a `Spacer` emitted next to it would be a hole that only appears when there
+    // is no flag. Same rule as Home's.
+    val hasFlag = state.flag.showsBanner()
+
     LazyColumn(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier.fillMaxSize(),
+        // No `verticalArrangement`: the history rows draw one grouped card between them, and an
+        // even gap between every item would slice it into strips.
+        contentPadding =
+            PaddingValues(
+                start = Spacing.base,
+                end = Spacing.base,
+                top = Spacing.tight,
+                bottom = FabClearance,
+            ),
     ) {
-        item {
-            TrendFlagBanner(
-                bunnyName = state.bunnyName,
-                flag = state.flag,
-                unit = state.unit,
-                onAcknowledge = onAcknowledge,
-                // Absent while a watch is already running. **Home is where a running watch is
-                // shown and closed** (ADR-0001) — one place for that, so the owner learns where it
-                // lives rather than finding it wherever they happen to be.
-                secondaryAction = watchAction(state, onStartWatch),
-            )
+        if (hasFlag) {
+            item {
+                TrendFlagBanner(
+                    bunnyName = state.bunnyName,
+                    flag = state.flag,
+                    unit = state.unit,
+                    onAcknowledge = onAcknowledge,
+                    // Absent while a watch is already running. **Home is where a running watch is
+                    // shown and closed** (ADR-0001) — one place for that, so the owner learns where
+                    // it lives rather than finding it wherever they happen to be.
+                    secondaryAction = watchAction(state, onStartWatch),
+                )
+                Spacer(Modifier.height(Spacing.section))
+            }
         }
 
         // The chart renders in the archived scope too — reading a history back is exactly what an
         // archived bunny's screen is for, and a chart has nothing to gate: it is already read-only.
         item {
+            SectionHeader(stringResource(R.string.weight_chart_section))
+            Spacer(Modifier.height(Spacing.tight))
             WeightChart(
                 content = state.chart,
                 range = state.chartRange,
@@ -171,11 +179,35 @@ private fun History(
         // that refuse when tapped (ADR-0004).
         if (!state.readOnly) {
             item {
-                Button(onClick = onAdd) { Text(stringResource(R.string.weight_add)) }
+                Spacer(Modifier.height(Spacing.section))
+                // Full width here, unlike Home's hug-width one: this is the action the tab exists
+                // for, and it sits between two sections rather than under a sentence.
+                Button(
+                    onClick = onAdd,
+                    modifier = Modifier.fillMaxWidth().height(RecordButtonHeight),
+                    shape = RoundedCornerShape(RecordButtonRadius),
+                ) {
+                    Text(stringResource(R.string.weight_add))
+                }
             }
         }
 
-        if (state.rows.isEmpty()) {
+        item {
+            Spacer(Modifier.height(Spacing.section))
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                SectionHeader(stringResource(R.string.weight_history_section), modifier = Modifier.weight(1f))
+                if (rows.isNotEmpty()) {
+                    Text(
+                        text = pluralStringResource(R.plurals.weight_history_count, rows.size, rows.size),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(Modifier.height(Spacing.tight))
+        }
+
+        if (rows.isEmpty()) {
             item {
                 Text(
                     text = stringResource(R.string.weight_history_empty),
@@ -185,15 +217,18 @@ private fun History(
             }
         }
 
-        items(state.rows, key = { it.id }) { row ->
-            WeighingRow(
-                row = row,
-                unit = state.unit,
-                readOnly = state.readOnly,
-                onEdit = { onEdit(row) },
-                onOpenVisit = { onOpenVisit(row) },
-                onDelete = { onDelete(row) },
-            )
+        // Kotlin note: `itemsIndexed` is `items` with the position handed in, which is what
+        // `GroupedCardItem` needs to know whether it is drawing the top or the bottom of the card.
+        itemsIndexed(rows, key = { _, row -> row.id }) { index, row ->
+            val onOpen: (() -> Unit)? =
+                when {
+                    state.readOnly -> null
+                    row.visitId != null -> ({ onOpenVisit(row) })
+                    else -> ({ onEdit(row) })
+                }
+            GroupedCardItem(index = index, count = rows.size) {
+                WeighingRow(row = row, unit = state.unit, onOpen = onOpen)
+            }
         }
     }
 }
@@ -201,86 +236,75 @@ private fun History(
 /**
  * One weighing, and **where it came from** (ADR-0017).
  *
- * A visit-recorded row says so and offers the visit; it offers neither *Edit* nor *Delete*, and
- * that is the same rule as the entry form's read-only state rather than a second one. The visit owns
- * that number — its date re-derives the timestamp and clearing its field deletes the row — so a
- * second way to change it would be a second path to the fact ADR-0017 keeps in one place. The chart
- * above plots it identically either way: a weight is a weight (ADR-0022).
+ * The whole row is the affordance now, and where it leads depends on who owns the number: a typed
+ * weighing opens the editor, a visit-recorded one opens the visit. That is ADR-0017's rule drawn
+ * rather than written — the visit owns its number, its date re-derives the timestamp, and clearing
+ * its field deletes the row, so a second way to change it here would be a second path to a fact the
+ * ADR keeps in one place. The chart above plots it identically either way: a weight is a weight
+ * (ADR-0022).
+ *
+ * **Deleting moved to the editor** with this redraw. The design's row carries a value, a timestamp,
+ * a change and a chevron and nothing else, and the two buttons it used to end with were the loudest
+ * thing in a list meant to be read down.
+ *
+ * The change stays **neutral in colour** whichever way it points: the flag above is what raises
+ * alarm, and colouring every −80 g in the history would leave nothing to escalate with.
  */
 @Composable
 private fun WeighingRow(
     row: WeightRow,
     unit: WeightUnit,
-    readOnly: Boolean,
-    onEdit: () -> Unit,
-    onOpenVisit: () -> Unit,
-    onDelete: () -> Unit,
+    onOpen: (() -> Unit)?,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = weightLabel(row.grams, unit),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                // The change is in grams whatever the display unit says, because "−0.04 kg" hides
-                // the signal that "−40 g" makes obvious (house rule).
-                row.changeGrams?.let { change ->
-                    Text(text = weightChangeLabel(change), style = MaterialTheme.typography.bodyMedium)
-                }
-            }
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .then(if (onOpen == null) Modifier else Modifier.clickable(onClick = onOpen))
+                .heightIn(min = 64.dp)
+                .padding(horizontal = Spacing.base, vertical = Spacing.tight),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.snug),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(Spacing.hair),
+        ) {
+            Text(text = weightLabel(row.grams, unit), style = MaterialTheme.typography.titleMedium)
             Text(
-                text = dateTimeLabel(row.recordedAt),
+                // A visit says so **inside its timestamp line** rather than taking a third line of
+                // its own — it is a fact about where the number came from, not a second fact.
+                text =
+                    if (row.visitId == null) {
+                        dateTimeLabel(row.recordedAt)
+                    } else {
+                        stringResource(R.string.weight_row_from_visit, dateTimeLabel(row.recordedAt))
+                    },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (row.visitId != null) {
-                Text(
-                    text = stringResource(R.string.weight_from_visit),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (!readOnly) {
-                HorizontalDivider()
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (row.visitId == null) {
-                        TextButton(onClick = onEdit) { Text(stringResource(R.string.action_edit)) }
-                        TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
-                    } else {
-                        TextButton(onClick = onOpenVisit) { Text(stringResource(R.string.weight_open_visit)) }
-                    }
-                }
-            }
+        }
+        // The change is in grams whatever the display unit says, because "−0.04 kg" hides the signal
+        // that "−40 g" makes obvious (house rule). The oldest row says "first" rather than leaving a
+        // hole where every other row has a number.
+        Text(
+            text = row.changeGrams?.let { weightChangeLabel(it) } ?: stringResource(R.string.weight_change_first),
+            style = MaterialTheme.typography.bodyMedium,
+            color =
+                if (row.changeGrams == null) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+        )
+        if (onOpen != null) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                // Decorative: the row itself is the target, and its own text is what a screen
+                // reader announces.
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
-}
-
-/**
- * **One** confirmation. ADR-0004's two-stage ceremony exists for destroying a bunny's whole history;
- * a single weighing is a correction, and the dialog names the reading so the owner can see which.
- */
-@Composable
-private fun DeleteWeighingDialog(
-    row: WeightRow,
-    unit: WeightUnit,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.weight_delete_title)) },
-        text = {
-            Text(
-                stringResource(
-                    R.string.weight_delete_body,
-                    weightLabel(row.grams, unit),
-                    dateTimeLabel(row.recordedAt),
-                ),
-            )
-        },
-        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.action_delete)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
 }

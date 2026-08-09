@@ -90,6 +90,14 @@
     <!-- Weight -->
     <string name="weight_pick_a_bunny">Waga zapisywana jest osobno dla każdego królika. Wybierz królika z listy u góry, żeby zobaczyć jego historię.</string>
     <string name="weight_add">Zapisz ważenie</string>
+    <string name="weight_chart_section">Waga w czasie</string>
+    <string name="weight_history_section">Historia</string>
+    <plurals name="weight_history_count">
+        <item quantity="one">%d ważenie</item>
+        <item quantity="few">%d ważenia</item>
+        <item quantity="many">%d ważeń</item>
+        <item quantity="other">%d ważenia</item>
+    </plurals>
     <string name="weight_history_empty">Nie zapisano jeszcze żadnego ważenia. Zanim w ogóle da się ocenić trend, potrzebne są trzy.</string>
     <string name="weight_delete_title">Usunąć to ważenie?</string>
     <string name="weight_delete_body">%1$s z %2$s zniknie z historii, a trend zostanie policzony na nowo, bez niego.</string>
@@ -137,7 +145,7 @@
     <string name="weight_collision_replace">Zastąp je</string>
     <string name="weight_collision_add_second">Dodaj drugie</string>
     <string name="weight_collision_visit_body">Ważenie zapisane o tej porze pochodzi z wizyty u weterynarza. Binky go nie nadpisze — dodaj drugie ważenie albo popraw liczbę przy samej wizycie.</string>
-    <string name="weight_from_visit">Zapisane podczas wizyty u weterynarza</string>
+    <string name="weight_row_from_visit">%1$s · z wizyty</string>
     <string name="weight_open_visit">Otwórz wizytę</string>
     <string name="weight_visit_owned">To ważenie zostało zapisane podczas wizyty u weterynarza, więc zmienia się je tam. O jego godzinie decyduje data wizyty.</string>
 
@@ -148,6 +156,7 @@
     <string name="weight_change_down">−%1$s g</string>
     <string name="weight_change_up">+%1$s g</string>
     <string name="weight_change_none">bez zmian</string>
+    <string name="weight_change_first">pierwsze</string>
 
     <!-- The trend flag (ADR-0001). "spostrzeżenie", never "objaw" or "rozpoznanie": Polish makes
          the medical register easy to fall into, and this text is not allowed to be a diagnosis.

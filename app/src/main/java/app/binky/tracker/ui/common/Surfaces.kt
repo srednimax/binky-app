@@ -105,6 +105,48 @@ fun GroupedCard(
 }
 
 /**
+ * One row of a [GroupedCard] whose rows are **separate lazy items**.
+ *
+ * A weight history runs to hundreds of rows, and a `GroupedCard` wrapping them all is a single
+ * `LazyColumn` item — so every row composes whether or not it is on screen, which is the one thing
+ * `LazyColumn` exists to avoid. This draws the same card the other way round: each row carries the
+ * card's surface itself, and only the two rows at the ends round their outer corners, so a list that
+ * scrolls still reads as one grouped card.
+ *
+ * [index] and [count] are the row's place in the **whole** list, not in the visible window — a
+ * lazy layout never composes the rows either side, so a row cannot work out its own ends.
+ */
+@Composable
+fun GroupedCardItem(
+    index: Int,
+    count: Int,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val top = if (index == 0) CardRadius else 0.dp
+    val bottom = if (index == count - 1) CardRadius else 0.dp
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Column {
+            // Above every row but the first, which is [RowDivider]'s rule stated per row instead of
+            // per card: the card's own edge already separates the two at the ends.
+            if (index > 0) RowDivider()
+            Column(
+                modifier =
+                    Modifier.padding(
+                        top = if (index == 0) Spacing.hair else 0.dp,
+                        bottom = if (index == count - 1) Spacing.hair else 0.dp,
+                    ),
+                content = content,
+            )
+        }
+    }
+}
+
+/**
  * A label and its value, on one row of a [GroupedCard].
  *
  * 48dp minimum so a row stays a comfortable target and a card of them keeps an even rhythm, and the

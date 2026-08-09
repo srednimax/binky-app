@@ -60,6 +60,14 @@ data class WeightEntryUiState(
     val visitId: String? = null,
     /** Set after the write when the flag is visible and unacknowledged: the dialog host. */
     val flagDrop: TrendDrop? = null,
+    /** True while the delete confirmation is up. **One** confirmation, not ADR-0004's two. */
+    val confirmingDelete: Boolean = false,
+    /**
+     * The weighing **as it stands on disk**, for the confirmation to name — deliberately not what
+     * is currently in the fields, which may be a half-typed number the owner never saved.
+     */
+    val storedGrams: Int? = null,
+    val storedRecordedAt: Instant? = null,
     /** Flipped once the write has landed *and* been reported, which is the screen's cue to leave. */
     val saved: Boolean = false,
 ) {
@@ -125,6 +133,8 @@ class WeightEntryViewModel(
                     date = recordedAt?.toLocalDate() ?: state.date,
                     time = recordedAt?.toLocalTime()?.truncatedTo(ChronoUnit.MINUTES) ?: state.time,
                     visitId = weight?.visitId,
+                    storedGrams = weight?.grams,
+                    storedRecordedAt = weight?.recordedAt,
                 )
             }
         }
@@ -191,6 +201,35 @@ class WeightEntryViewModel(
 
     fun cancelCollision() {
         _uiState.update { it.copy(collision = emptyList()) }
+    }
+
+    fun requestDelete() {
+        _uiState.update { it.copy(confirmingDelete = true) }
+    }
+
+    fun cancelDelete() {
+        _uiState.update { it.copy(confirmingDelete = false) }
+    }
+
+    /**
+     * Delete this weighing — **one** confirmation, not two. ADR-0004's two-stage ceremony is
+     * calibrated to destroying a bunny's whole history; a single weighing is a correction.
+     *
+     * It moved here from the history list with Phase 7's redraw, which is also what puts the flag
+     * a delete can raise on the right screen: it ends in [raiseFlagOrLeave], exactly as a save
+     * does, so a delete that *deepens* a drop reports it before the route closes (ADR-0001).
+     *
+     * A visit-recorded weighing is not deletable here (ADR-0017) — the visit owns it, and clearing
+     * its field is what removes the row. The screen offers no button; this is the belt to that.
+     */
+    fun confirmDelete() {
+        val id = weightId ?: return
+        if (_uiState.value.visitId != null) return
+        _uiState.update { it.copy(confirmingDelete = false) }
+        viewModelScope.launch {
+            weights.delete(id)
+            raiseFlagOrLeave()
+        }
     }
 
     fun acknowledge() {
