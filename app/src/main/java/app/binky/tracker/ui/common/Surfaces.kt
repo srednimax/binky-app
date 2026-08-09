@@ -88,6 +88,7 @@ fun GroupedCard(
     modifier: Modifier = Modifier,
     nested: Boolean = false,
     contentPadding: PaddingValues = PaddingValues(vertical = Spacing.hair),
+    verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
@@ -100,7 +101,11 @@ fun GroupedCard(
                 MaterialTheme.colorScheme.surfaceContainer
             },
     ) {
-        Column(modifier = Modifier.padding(contentPadding), content = content)
+        Column(
+            modifier = Modifier.padding(contentPadding),
+            verticalArrangement = verticalArrangement,
+            content = content,
+        )
     }
 }
 

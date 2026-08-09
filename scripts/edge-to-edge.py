@@ -622,7 +622,10 @@ SCENES = [
             *SELECT_BUNNY,
             ("tap", "Record an observation"),
             ("swipe_up", ""),
-            ("tap", "Anything else"),
+            # The field's *placeholder*, not "Anything else". Phase 7 moved that label out of the
+            # box and above it, so tapping it now lands on a plain Text with nothing to focus and
+            # the keyboard never comes up — a scene that still passes and shoots the wrong frame.
+            ("tap", "What you noticed"),
             ("wait", "1.5"),
         ],
         note="the free-text note, which is the field nearest the bottom of that form",

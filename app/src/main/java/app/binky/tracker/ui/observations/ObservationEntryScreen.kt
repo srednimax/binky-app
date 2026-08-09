@@ -1,27 +1,26 @@
 package app.binky.tracker.ui.observations
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -48,7 +47,15 @@ import app.binky.tracker.data.DroppingsSize
 import app.binky.tracker.data.Mood
 import app.binky.tracker.data.ParticipantExclusion
 import app.binky.tracker.data.WaterIntake
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
+import app.binky.tracker.ui.common.ChipRow
+import app.binky.tracker.ui.common.ErrorText
+import app.binky.tracker.ui.common.FieldLabel
+import app.binky.tracker.ui.common.FormChip
+import app.binky.tracker.ui.common.FormSection
+import app.binky.tracker.ui.common.HelpText
+import app.binky.tracker.ui.common.NoteField
 import app.binky.tracker.ui.common.PickerOption
 import app.binky.tracker.ui.common.RecordedAtField
 import app.binky.tracker.ui.common.SearchablePickerDialog
@@ -107,8 +114,19 @@ fun ObservationEntryScreen(
         if (state.loading) return@Column
 
         Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        start = Spacing.base,
+                        end = Spacing.base,
+                        top = Spacing.tight,
+                        bottom = Spacing.section,
+                    ),
+            // A section is a card now, and the gap between cards is what separates them — the
+            // hairline rules this screen used to draw across the background are gone with them.
+            verticalArrangement = Arrangement.spacedBy(Spacing.section),
         ) {
             if (state.offersParticipants) {
                 ParticipantsField(
@@ -128,10 +146,7 @@ fun ObservationEntryScreen(
                 onTimeChanged = viewModel::onTimeChanged,
             )
 
-            HorizontalDivider()
             TraySection(state = state, viewModel = viewModel)
-
-            HorizontalDivider()
             IndividualSection(state = state, viewModel = viewModel)
         }
     }
@@ -149,45 +164,52 @@ private fun ParticipantsField(
     state: ObservationEntryUiState,
     onToggle: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = stringResource(R.string.observation_participants_label),
-            style = MaterialTheme.typography.titleSmall,
-        )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    // Everything under the chips is a footnote on them, so the card is spaced tight throughout
+    // rather than at the between-questions step the other two use.
+    FormSection(
+        title = stringResource(R.string.observation_participants_label),
+        spacing = Spacing.tight,
+    ) {
+        ChipRow {
             state.candidates.forEach { candidate ->
-                FilterChip(
-                    selected = candidate.bunnyId in state.selectedParticipants,
+                val selected = candidate.bunnyId in state.selectedParticipants
+                FormChip(
+                    selected = selected,
                     onClick = { onToggle(candidate.bunnyId) },
-                    label = { Text(candidate.name) },
+                    label = candidate.name,
+                    // A name is not self-evidently a state the way "Few" or "Normal" is, so the
+                    // tick says which way this one is set without the owner comparing two fills.
+                    leadingIcon =
+                        if (!selected) {
+                            null
+                        } else {
+                            {
+                                Icon(
+                                    imageVector = Icons.Filled.Check,
+                                    // Decorative: the chip's own selected state is what a screen
+                                    // reader announces.
+                                    contentDescription = null,
+                                    modifier = Modifier.size(FilterChipDefaults.IconSize),
+                                )
+                            }
+                        },
                 )
             }
         }
-        Text(
-            text = stringResource(R.string.observation_participants_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        HelpText(stringResource(R.string.observation_participants_help))
         state.excluded.forEach { excluded ->
-            Text(
-                text =
-                    stringResource(
-                        when (excluded.reason) {
-                            ParticipantExclusion.ARCHIVED -> R.string.observation_excluded_archived
-                            ParticipantExclusion.UNDER_WATCH -> R.string.observation_excluded_watch
-                        },
-                        excluded.name,
-                    ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            HelpText(
+                stringResource(
+                    when (excluded.reason) {
+                        ParticipantExclusion.ARCHIVED -> R.string.observation_excluded_archived
+                        ParticipantExclusion.UNDER_WATCH -> R.string.observation_excluded_watch
+                    },
+                    excluded.name,
+                ),
             )
         }
         if (state.noParticipants) {
-            Text(
-                text = stringResource(R.string.observation_participants_required),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-            )
+            ErrorText(stringResource(R.string.observation_participants_required))
         }
     }
 }
@@ -201,14 +223,9 @@ private fun TraySection(
     state: ObservationEntryUiState,
     viewModel: ObservationEntryViewModel,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(text = stringResource(R.string.observation_tray_heading), style = MaterialTheme.typography.titleMedium)
+    FormSection(title = stringResource(R.string.observation_tray_heading)) {
         if (state.selectedParticipants.size > 1) {
-            Text(
-                text = stringResource(R.string.observation_tray_shared_help),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            HelpText(stringResource(R.string.observation_tray_shared_help))
         }
         NullableChoiceField(
             label = stringResource(R.string.observation_droppings_amount_label),
@@ -250,18 +267,16 @@ private fun IndividualSection(
     state: ObservationEntryUiState,
     viewModel: ObservationEntryViewModel,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            // Named when it could be ambiguous, so an owner editing a shared observation can see
-            // whose mood they are about to change.
-            text =
-                if (state.selectedParticipants.size > 1) {
-                    stringResource(R.string.observation_individual_heading_named, state.subjectName)
-                } else {
-                    stringResource(R.string.observation_individual_heading)
-                },
-            style = MaterialTheme.typography.titleMedium,
-        )
+    FormSection(
+        // Named when it could be ambiguous, so an owner editing a shared observation can see whose
+        // mood they are about to change.
+        title =
+            if (state.selectedParticipants.size > 1) {
+                stringResource(R.string.observation_individual_heading_named, state.subjectName)
+            } else {
+                stringResource(R.string.observation_individual_heading)
+            },
+    ) {
         NullableChoiceField(
             label = stringResource(R.string.observation_appetite_label),
             options = Appetite.entries,
@@ -293,12 +308,14 @@ private fun IndividualSection(
 
         SymptomsField(state = state, viewModel = viewModel)
 
-        OutlinedTextField(
-            value = state.individual.note.orEmpty(),
-            onValueChange = viewModel::onNoteChanged,
-            label = { Text(stringResource(R.string.observation_note_label)) },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+            FieldLabel(stringResource(R.string.observation_note_label))
+            NoteField(
+                value = state.individual.note.orEmpty(),
+                onValueChange = viewModel::onNoteChanged,
+                placeholder = stringResource(R.string.observation_note_placeholder),
+            )
+        }
     }
 }
 
@@ -318,8 +335,8 @@ private fun SymptomsField(
             .map { PickerOption(id = it.id, label = symptomLabel(it)) }
             .sortedBy { it.label.lowercase() }
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text = stringResource(R.string.observation_symptoms_label), style = MaterialTheme.typography.titleSmall)
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+        FieldLabel(stringResource(R.string.observation_symptoms_label))
 
         val ticked = options.filter { it.id in state.individual.symptomIds }
         if (ticked.isEmpty()) {
@@ -329,17 +346,25 @@ private fun SymptomsField(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChipRow {
                 ticked.forEach { option ->
-                    FilterChip(
+                    FormChip(
                         selected = true,
                         onClick = { viewModel.toggleSymptom(option.id) },
-                        label = { Text(option.label) },
+                        label = option.label,
                     )
                 }
             }
         }
-        TextButton(onClick = { picking = true }) { Text(stringResource(R.string.observation_symptoms_pick)) }
+        // A text button carries 12dp of horizontal padding of its own, which would push this one
+        // label out of the column every other row in the card lines up on. Dropping it keeps the
+        // alignment; the 48dp touch target is the button's minimum size and survives.
+        TextButton(
+            onClick = { picking = true },
+            contentPadding = PaddingValues(horizontal = 0.dp, vertical = Spacing.tight),
+        ) {
+            Text(stringResource(R.string.observation_symptoms_pick))
+        }
 
         // Ticking a symptom already means the owner looked, so the claim cannot be withdrawn while
         // any is ticked.
@@ -360,7 +385,7 @@ private fun SymptomsField(
                         enabled = canToggleChecked,
                         role = Role.Checkbox,
                         onValueChange = viewModel::onSymptomsCheckedChanged,
-                    ).padding(vertical = 4.dp),
+                    ).padding(vertical = Spacing.hair),
         ) {
             Checkbox(
                 checked = state.individual.symptomsChecked,
@@ -369,14 +394,10 @@ private fun SymptomsField(
             )
             Text(
                 text = stringResource(R.string.observation_symptoms_checked),
-                modifier = Modifier.padding(start = 8.dp),
+                modifier = Modifier.padding(start = Spacing.tight),
             )
         }
-        Text(
-            text = stringResource(R.string.observation_symptoms_checked_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        HelpText(stringResource(R.string.observation_symptoms_checked_help))
     }
 
     if (picking) {
@@ -400,6 +421,10 @@ private fun SymptomsField(
  * rather than the absence of a selection, because that is what the column stores: `null` *is* "not
  * checked" (ADR-0001), and a row of chips with nothing lit reads as a field the owner forgot rather
  * than one they deliberately left alone.
+ *
+ * The options **wrap** rather than scrolling sideways. The before set cut "More than usual" and
+ * "Strung together" off the right edge of the screen, which made the two answers that most deserve
+ * recording the two hardest to find.
  */
 @Composable
 private fun <T> NullableChoiceField(
@@ -409,22 +434,19 @@ private fun <T> NullableChoiceField(
     optionLabel: @Composable (T) -> String,
     onSelect: (T?) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        ) {
-            FilterChip(
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+        FieldLabel(label)
+        ChipRow {
+            FormChip(
                 selected = selected == null,
                 onClick = { onSelect(null) },
-                label = { Text(notCheckedLabel()) },
+                label = notCheckedLabel(),
             )
             options.forEach { option ->
-                FilterChip(
+                FormChip(
                     selected = option == selected,
                     onClick = { onSelect(option) },
-                    label = { Text(optionLabel(option)) },
+                    label = optionLabel(option),
                 )
             }
         }
