@@ -533,9 +533,11 @@
     <!-- The timeline -->
     <string name="observations_empty">Nie zapisano jeszcze żadnej obserwacji. Wszystko, co zwróci uwagę — kuweta, nastrój, objaw — należy tutaj.</string>
     <!-- A colon rather than "z", which would want the instrumental of a name the app cannot decline. -->
-    <string name="observation_observed_together">Wspólna obserwacja, obejmuje też: %1$s</string>
+    <string name="observation_with">Razem: %1$s</string>
     <!-- The lone survivor: names nobody, deliberately (ADR-0008). -->
     <string name="observation_observed_together_alone">Wspólna obserwacja</string>
+    <string name="observation_tray_section">Kuweta</string>
+    <string name="observation_tray_section_shared">Wspólne — kuweta</string>
     <string name="observation_no_symptoms_seen">Objawy sprawdzone, żadnego nie widać</string>
     <string name="observation_delete_title">Usunąć tę obserwację?</string>
     <string name="observation_delete_body">Obserwacja zapisana %1$s zostanie usunięta.</string>

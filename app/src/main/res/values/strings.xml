@@ -532,11 +532,18 @@
 
     <!-- The timeline -->
     <string name="observations_empty">No observations recorded yet. Anything you notice — the tray, the mood, a symptom — belongs here.</string>
-    <string name="observation_observed_together">Observed together with %1$s</string>
+    <!-- Who an entry covers, as a chip in the card's header rather than a sentence under it, so the
+         scope of everything below is legible before any of it is read. -->
+    <string name="observation_with">With %1$s</string>
     <!-- The lone survivor: the bunny it was shared with has been deleted, or is archived and out of
          this scope. It still reads as shared, and deliberately names nobody — ADR-0008 wants no
          tombstone of the bunny who is gone. -->
     <string name="observation_observed_together_alone">Observed together</string>
+    <!-- The tray facts get their own subheading inside the card, so they read as facts about the
+         litter tray and not as claims about one rabbit. Two of them, because "shared" is itself a
+         claim: a solo observation's tray is nobody else's. -->
+    <string name="observation_tray_section">The litter tray</string>
+    <string name="observation_tray_section_shared">Shared — the litter tray</string>
     <string name="observation_no_symptoms_seen">Looked for symptoms, saw none</string>
     <string name="observation_delete_title">Delete this observation?</string>
     <string name="observation_delete_body">The observation recorded on %1$s is removed.</string>

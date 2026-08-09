@@ -38,6 +38,8 @@ import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.common.FabClearance
 import app.binky.tracker.ui.common.GroupedCardItem
+import app.binky.tracker.ui.common.RecordButtonHeight
+import app.binky.tracker.ui.common.RecordButtonRadius
 import app.binky.tracker.ui.common.SectionHeader
 import app.binky.tracker.ui.watch.StartWatchAction
 
@@ -112,10 +114,6 @@ private fun Message(
         modifier = modifier.fillMaxSize().padding(16.dp),
     )
 }
-
-/** The one filled button on the screen, and the route's whole point. */
-private val RecordButtonHeight = 52.dp
-private val RecordButtonRadius = 26.dp
 
 @Composable
 private fun History(

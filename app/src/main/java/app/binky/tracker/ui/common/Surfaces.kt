@@ -1,6 +1,7 @@
 package app.binky.tracker.ui.common
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -33,6 +34,26 @@ import app.binky.tracker.theme.Spacing
 
 /** The card radius the language uses on every surface that sits directly on the background. */
 val CardRadius = 20.dp
+
+/**
+ * The full-width primary action — *Record a weighing*, *Log a healthy day*.
+ *
+ * Taller than M3's 40dp default and fully rounded, which the drawings are consistent about: this is
+ * the one action its tab exists for, and it sits alone between two sections rather than in a row of
+ * peers where a default-sized button would be right.
+ */
+val RecordButtonHeight = 52.dp
+
+/** [RecordButtonHeight]'s radius — half of it, so the ends are true semicircles. */
+val RecordButtonRadius = 26.dp
+
+/** A [DenseFactRow]'s minimum height, against [FactRow]'s 48dp. */
+private val DenseRowHeight = 28.dp
+
+/** A [TagChip]'s height, and the smaller one a card's header row takes. */
+private val TagChipHeight = 32.dp
+
+private val DenseTagChipHeight = 26.dp
 
 /**
  * How much room a scrolling screen has to leave at its bottom so its last row clears the FAB.
@@ -186,6 +207,83 @@ fun FactRow(
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.End,
         )
+    }
+}
+
+/**
+ * A label and its value inside a block of rows that all describe **one** thing.
+ *
+ * [FactRow]'s dense twin, and the difference between them is about meaning rather than size. A
+ * divider separates rows that are independent of each other, and the four droppings facts of a
+ * single observation are not independent — they are one answer in four parts. So these run 28dp
+ * tall, carry no divider, and the caller stacks them at [Spacing.hair] as one block the eye reads
+ * straight down, where a column of [FactRow]s reads as a list of separate things.
+ *
+ * No horizontal padding of its own, unlike [FactRow]: a block like this sits inside a card that has
+ * already inset its contents, where [FactRow] draws edge to edge in a card that has not.
+ */
+@Composable
+fun DenseFactRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().heightIn(min = DenseRowHeight),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.End,
+        )
+    }
+}
+
+/**
+ * A read-only chip: something the owner **recorded**, stated as a tag rather than a sentence.
+ *
+ * Hay — `secondaryContainer` — and never apricot. Apricot is what the *app* raises, and a symptom or
+ * a housemate's name is something the owner put there themselves; colouring the two alike would make
+ * the app look like it had an opinion about a tick the owner entered.
+ *
+ * Not one of M3's `Chip`s, which are all controls: they carry a click, a ripple and a selected state
+ * this has none of. [dense] is the smaller one that rides in a card's header row beside a title.
+ */
+@Composable
+fun TagChip(
+    text: String,
+    modifier: Modifier = Modifier,
+    dense: Boolean = false,
+) {
+    Surface(
+        modifier = modifier,
+        // A percentage rather than a dp, so the two sizes stay true pill ends without a second
+        // constant that has to be kept at half the height.
+        shape = RoundedCornerShape(percent = 50),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .heightIn(min = if (dense) DenseTagChipHeight else TagChipHeight)
+                    .padding(horizontal = if (dense) Spacing.tight else Spacing.snug),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = text,
+                style = if (dense) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+        }
     }
 }
 
