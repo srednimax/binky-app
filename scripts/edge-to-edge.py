@@ -512,8 +512,15 @@ SELECT_BUNNY = [("tap", "Choose which bunny"), ("tap", "Bijou")]
 # The weight form, reached through the weigh-in care reminder rather than the Weight tab's own
 # button. Same screen either way, and this route is the one that survives landscape: the Weight tab
 # puts a year of weighings below that button, so in a 1220px-tall viewport finding it means paging
-# through the list, while Care's *Record a weight* sits on a screen with five rows on it.
-OPEN_WEIGHT_FORM = [("tap", "Care"), ("tap", "Record a weight")]
+# through the list, while Care's rows sit on a screen with five of them on it.
+#
+# **Via the reminder's own screen since Phase 7's `3a`, and that is a fix rather than an extra tap.**
+# The Care list used to carry *Record a weight* on every weigh-in row; the redrawn 64dp row carries
+# it only while the reminder is actually *due*, because a row that is telling you a date in November
+# carries a chevron instead. Whether the seeded weigh-in is due on the day the matrix runs depends on
+# the latest seeded weighing — so the old needle was a coin flip, and the button on the reminder's
+# own screen is always there. Same lesson as MEDICATION_COURSE below: name the thing you mean.
+OPEN_WEIGHT_FORM = [("tap", "Care"), ("tap", "Weigh-in"), ("tap", "Record a weight")]
 
 # The medication course is opened **by name**, never by its `Open` button, and that is a fix rather
 # than a style choice. `find` is a case-insensitive substring match, and the Care screen grows a
@@ -591,7 +598,12 @@ SCENES = [
         [("tap", "More"), ("tap", "Settings"), ("tap", "Backup"), ("swipe_up", "")],
     ),
     Scene("archived", "detail", [("tap", "More"), ("tap", "Archived")]),
-    Scene("care-reminder", "detail", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Every")]),
+    # By name since Phase 7's `3a`, not by "Every". `find` returns the *smallest* matching node, and
+    # a course row and a reminder row are now both exactly 64dp of full-width merged semantics — an
+    # exact tie, broken by list order, which puts the course first. "Every" also appears in a course's
+    # own schedule line ("…every day"). "Nail trim" is Bijou's first seeded reminder and names only
+    # itself.
+    Scene("care-reminder", "detail", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Nail trim")]),
     # Reached without SELECT_BUNNY on purpose: Support is the one More row that stays live with no
     # bunny in scope, and the scene is worth more exercising that path than the ordinary one.
     Scene("support", "detail", [("tap", "More"), ("tap", "Support")]),

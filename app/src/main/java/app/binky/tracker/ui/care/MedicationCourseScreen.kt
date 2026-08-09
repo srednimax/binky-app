@@ -126,7 +126,7 @@ fun MedicationCourseScreen(
                 }
 
                 // Offered only while there is something to close. Ending keeps every dose, which is
-                // what separates it from the delete on the list behind this screen.
+                // what separates it from deleting the course below it.
                 if (state.open) {
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -139,6 +139,19 @@ fun MedicationCourseScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
+                    }
+                }
+
+                // **Deleting the course lives here from Phase 7.** The list behind this screen draws
+                // 64dp rows with a chevron and nowhere to put a button (`3a`), which is the finding
+                // `Weight` made at `1d`. Quieter than everything above it: it is the one action on
+                // this screen that destroys a health record, and it is not what the owner came for.
+                item {
+                    TextButton(onClick = viewModel::requestDelete) {
+                        Text(
+                            text = stringResource(R.string.action_delete),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
@@ -190,6 +203,20 @@ fun MedicationCourseScreen(
             initialNote = dose.note.orEmpty(),
             onConfirm = { status, at, note -> viewModel.updateDose(status, at, note) },
             onDismiss = viewModel::cancelDoseEdit,
+        )
+    }
+
+    if (state.confirmingDelete && course != null) {
+        DeleteCourseDialog(
+            courseName = course.name,
+            // The screen is already holding every dose recorded against this course, so the number
+            // the dialog names is the list on screen rather than a second `COUNT(*)` that could
+            // disagree with it.
+            doseCount = state.doses.size,
+            open = state.open,
+            onConfirm = viewModel::confirmDelete,
+            onEndInstead = viewModel::endCourse,
+            onDismiss = viewModel::cancelDelete,
         )
     }
 

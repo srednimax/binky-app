@@ -39,7 +39,6 @@
     <string name="action_delete">Delete</string>
     <string name="action_ok">OK</string>
     <string name="action_done">Done</string>
-    <string name="action_open">Open</string>
     <string name="action_undo">Undo</string>
     <string name="action_change">Change</string>
     <string name="add_a_bunny_first">Add a bunny first.</string>
@@ -259,8 +258,10 @@
     <string name="doses_state_blocked">Notifications are off, so dose reminders will only appear inside the app.</string>
     <string name="doses_state_best_effort_exact">Dose reminders are on, but Android is not letting Binky set them to the minute — expect one within a few minutes of the time, not at it.</string>
     <string name="doses_state_best_effort_battery">Dose reminders are on and set to the minute. This phone may still delay them while Binky is in the background.</string>
-    <string name="doses_state_armed">Dose reminders are on, set to the minute, and this phone is set up to let them through.</string>
     <string name="doses_exact_alarm_action">Open alarm settings</string>
+    <string name="reminders_caveat_notifications_title">Notifications are off</string>
+    <string name="reminders_caveat_exact_title">Reminders may arrive late</string>
+    <string name="reminders_caveat_battery_title">This phone may hold reminders back</string>
 
     <!-- Debug builds only, and never shown in a release build. -->
     <string name="settings_sample_data">Sample data</string>
@@ -574,7 +575,6 @@
     <string name="care_pick_a_bunny">Care is per bunny. Which one?</string>
     <string name="care_choose_bunny">Choose a bunny</string>
     <string name="care_add">Add a reminder</string>
-    <string name="care_reminder_of">%1$s, %2$s</string>
 
     <string name="care_type_nail_trim">Nail trim</string>
     <string name="care_type_vaccination">Vaccination</string>
@@ -668,12 +668,12 @@
 
     <!-- Vet visits on the Care tab (ADR-0017). A health record, never an expense: nothing here asks
          what it cost, and the weight is the vet's own reading of the one number this app is about. -->
-    <string name="care_reminders_heading">Care reminders</string>
+    <string name="care_reminders_heading">Routine care</string>
     <string name="visits_heading">Vet visits</string>
     <string name="visits_empty">No visits recorded yet. A visit is a health record: the day, what it was for, and the weight if the vet took one.</string>
     <string name="visit_add">Add a visit</string>
-    <string name="visit_row_with_vet">%1$s · %2$s</string>
     <string name="visit_row_weighed">Weighed %1$s</string>
+    <string name="row_pair">%1$s · %2$s</string>
 
     <string name="visit_editor_add_title">New visit</string>
     <string name="visit_editor_edit_title">Edit visit</string>
@@ -726,14 +726,14 @@
          suggest — an unanswered slot is unanswered, which is a fact about the record and not about
          the rabbit (ADR-0001). There is no word for "missed" below because there is no status for
          it in the database either. -->
-    <string name="med_heading">Medications</string>
+    <string name="med_heading">Courses</string>
     <string name="med_today_heading">Today</string>
+    <string name="med_dose_due">Due %1$s</string>
     <string name="med_add_course">Add a course</string>
     <string name="med_empty">No medication recorded. A course is what the vet prescribed — what it is, how much, and the times of day if there are any.</string>
     <!-- The one permanent line the phase owes the owner, who cannot read an ADR. -->
     <string name="med_disclaimer">What your vet prescribed, as you recorded it. Binky never checks doses or interactions.</string>
 
-    <string name="med_dose_row">%1$s at %2$s</string>
     <string name="med_dose_answered">%1$s at %2$s</string>
     <string name="dose_status_given">Given</string>
     <string name="dose_status_skipped">Skipped</string>

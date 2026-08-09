@@ -1,22 +1,22 @@
 package app.binky.tracker.ui.care
 
-import androidx.compose.foundation.clickable
+import android.content.res.Resources
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,12 +24,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
@@ -37,16 +34,18 @@ import app.binky.tracker.data.BunnySelection
 import app.binky.tracker.data.DoseStatus
 import app.binky.tracker.data.ScheduledDose
 import app.binky.tracker.data.interval
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.bunny.dateLabel
+import app.binky.tracker.ui.common.Chevron
+import app.binky.tracker.ui.common.GroupedCard
+import app.binky.tracker.ui.common.GroupedCardItem
+import app.binky.tracker.ui.common.ListRow
+import app.binky.tracker.ui.common.SectionHeader
 import app.binky.tracker.ui.observations.ChooseBunnyDialog
-import app.binky.tracker.ui.reminders.RemindersOptIn
+import app.binky.tracker.ui.reminders.ReminderCaveats
 import app.binky.tracker.ui.shell.ShellUiState
 import app.binky.tracker.ui.weight.gramsLabel
-import app.binky.tracker.work.ReminderChannel
-import app.binky.tracker.work.ReminderDelivery
-import app.binky.tracker.work.openBatteryOptimisationSettings
-import app.binky.tracker.work.reminderDelivery
 
 /**
  * Care & Meds — one bunny's medication courses, recurring care due first (ADR-0018), **and its vet
@@ -60,18 +59,25 @@ import app.binky.tracker.work.reminderDelivery
  * **Medications go first** (PLAN 5e). A dose has a clock time today; a nail trim has a week. See
  * `MedicationsSection.kt` for why the order is fixed rather than conditional on having any.
  *
- * **The tab is live from 1.1**, which is the one-value flip 3f left in place: this screen stopped
- * being a stub the moment there was something real behind it, and `StubScreen` lost its last caller
- * on the same commit. The nav key kept its name, because a back stack saved by 1.0 has to stay
- * resolvable (ADR-0015).
- *
  * It is **per bunny, like weight and photos**: under "All bunnies" the tab asks which one and then
  * selects them app-wide, because [app.binky.tracker.CareAndMeds] takes no arguments and selecting is
  * the only thing that can decide whose reminders these are.
  *
- * The delivery line at the top is 4a's three honest states, not decoration. A reminder whose
- * notification will never arrive is still worth having — the list carries overdue state on its own —
- * but the screen must not let it read as an armed alarm (ADR-0003).
+ * ## Phase 7, against `3a` / `3b`
+ *
+ * Four sections of 64dp rows in grouped cards, and the whole route reads down in one pass where it
+ * used to be a column of cards each ending in two text buttons. Three things changed structurally:
+ *
+ * - **The delivery caveat moved to the bottom** and became [ReminderCaveats]. It is a footnote about
+ *   Android, not the first thing an owner needs at eight in the morning.
+ * - **Destructive actions left the rows.** A 64dp row has nowhere to put a *Delete*, which is the
+ *   same finding `Weight` made at `1d`. Deleting a course, a reminder or a visit now lives on that
+ *   thing's own screen, one tap behind the chevron — see `MedicationCourseScreen`,
+ *   `CareReminderScreen` and `VisitEditorScreen`. Nothing is unreachable and nothing is one tap
+ *   closer to being destroyed by accident.
+ * - **A row that is *asking* carries the answer; a row that is *telling* carries a chevron.** Today's
+ *   doses offer *Given* / *Skipped* inline; a reminder actually due offers *Done*. Everything else
+ *   opens.
  */
 @Composable
 fun CareAndMedsScreen(
@@ -93,12 +99,13 @@ fun CareAndMedsScreen(
     when (careState.selection) {
         // Momentary, before the first database and preferences emissions arrive.
         BunnySelection.Loading -> Unit
-        BunnySelection.Empty -> Message(stringResource(R.string.add_a_bunny_first), modifier)
+        BunnySelection.Empty -> RouteMessage(stringResource(R.string.add_a_bunny_first), modifier)
         BunnySelection.All ->
-            PickABunny(
-                onPick = { choosingBunny = true },
-                modifier = modifier,
-            )
+            RouteMessage(stringResource(R.string.care_pick_a_bunny), modifier) {
+                Button(onClick = { choosingBunny = true }) {
+                    Text(stringResource(R.string.care_choose_bunny))
+                }
+            }
         else ->
             CareList(
                 state = careState,
@@ -111,13 +118,10 @@ fun CareAndMedsScreen(
                         viewModel.startCompleting(row)
                     }
                 },
-                onDelete = viewModel::requestDelete,
                 onAddVisit = { careState.bunnyId?.let(onAddVisit) },
                 onOpenVisit = { row -> careState.bunnyId?.let { onOpenVisit(it, row.id) } },
-                onDeleteVisit = viewModel::requestVisitDelete,
                 onAddCourse = { careState.bunnyId?.let(onAddCourse) },
-                onOpenCourse = { row -> onOpenCourse(row.id) },
-                onDeleteCourse = viewModel::requestCourseDelete,
+                onOpenCourse = onOpenCourse,
                 onAnswer = viewModel::answer,
                 modifier = modifier,
             )
@@ -142,56 +146,37 @@ fun CareAndMedsScreen(
             onDismiss = viewModel::cancelCompleting,
         )
     }
-
-    careState.pendingDelete?.let { row ->
-        DeleteReminderDialog(
-            reminderLabel = careReminderLabel(row.scheduled.reminder),
-            onConfirm = viewModel::confirmDelete,
-            onDismiss = viewModel::cancelDelete,
-        )
-    }
-
-    careState.pendingVisitDelete?.let { row ->
-        DeleteVisitDialog(
-            row = row,
-            onConfirm = viewModel::confirmVisitDelete,
-            onDismiss = viewModel::cancelVisitDelete,
-        )
-    }
-
-    careState.pendingCourseDelete?.let { pending ->
-        DeleteCourseDialog(
-            pending = pending,
-            onConfirm = viewModel::confirmCourseDelete,
-            onEndInstead = viewModel::endCourse,
-            onDismiss = viewModel::cancelCourseDelete,
-        )
-    }
 }
 
+/**
+ * A route with nothing on it: one sentence, in a card the size of a row.
+ *
+ * `3c`'s only change to the empty state, and it is deliberately that small — *"Add a bunny first"* is
+ * already the right sentence, because the record is empty precisely because there is nobody to keep
+ * records about. What the card buys is that an empty route is the same **class of object** as a full
+ * one rather than loose text under the bar. No heading and no illustration: emptiness should not be
+ * the most prominent thing on a screen.
+ *
+ * [action] is for the *All bunnies* case, which is a question rather than an emptiness — there is
+ * data, it just belongs to somebody the scope has not named yet.
+ */
 @Composable
-private fun Message(
+private fun RouteMessage(
     text: String,
     modifier: Modifier = Modifier,
+    action: (@Composable () -> Unit)? = null,
 ) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = modifier.fillMaxSize().padding(16.dp),
-    )
-}
-
-@Composable
-private fun PickABunny(
-    onPick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(text = stringResource(R.string.care_pick_a_bunny), style = MaterialTheme.typography.bodyMedium)
-        Button(onClick = onPick) { Text(stringResource(R.string.care_choose_bunny)) }
+    Column(modifier = modifier.fillMaxSize().padding(horizontal = Spacing.base, vertical = Spacing.tight)) {
+        GroupedCard(contentPadding = PaddingValues(Spacing.base)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.snug)) {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                action?.invoke()
+            }
+        }
     }
 }
 
@@ -201,216 +186,173 @@ private fun CareList(
     onAdd: () -> Unit,
     onOpen: (CareRow) -> Unit,
     onComplete: (CareRow) -> Unit,
-    onDelete: (CareRow) -> Unit,
     onAddVisit: () -> Unit,
     onOpenVisit: (VisitRow) -> Unit,
-    onDeleteVisit: (VisitRow) -> Unit,
     onAddCourse: () -> Unit,
-    onOpenCourse: (CourseRow) -> Unit,
-    onDeleteCourse: (CourseRow) -> Unit,
+    onOpenCourse: (String) -> Unit,
     onAnswer: (ScheduledDose, DoseStatus) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier.fillMaxSize(),
+        // No `verticalArrangement`: the gaps are not even. A header sits Spacing.section from the
+        // section above it and Spacing.tight from its own card, and one arrangement value cannot say
+        // both. No FabClearance either — the global "+" is observation-only (ADR-0015), so this
+        // route has no button floating over its last row.
+        contentPadding =
+            PaddingValues(
+                start = Spacing.base,
+                end = Spacing.base,
+                top = Spacing.tight,
+                bottom = Spacing.section,
+            ),
     ) {
         medicationsSection(
             state = state,
             onAddCourse = onAddCourse,
             onOpenCourse = onOpenCourse,
-            onDeleteCourse = onDeleteCourse,
             onAnswer = onAnswer,
         )
 
-        // Headed from 1.2, and not before: one list needs no header, and two unlabelled ones read
-        // as a single list whose rows have stopped making sense.
-        item { SectionHeader(stringResource(R.string.care_reminders_heading)) }
+        careSection(state = state, onAdd = onAdd, onOpen = onOpen, onComplete = onComplete)
 
-        // Under its own heading from 1.2, where it used to head the whole tab: there are two
-        // notification channels behind this screen now, and a line about the care one floating
-        // above everything would read as a claim about doses too.
-        //
-        // Not in the archived scope: an archived bunny is never swept, so a line about how reliably
-        // its notifications arrive would be describing something that will not happen either way.
+        visitsSection(state = state, onAdd = onAddVisit, onOpen = onOpenVisit)
+
+        // **Last, and only where something is actually swept.** An archived bunny is never swept, so
+        // a line about how reliably its notifications arrive would describe something that will not
+        // happen either way (ADR-0004).
         if (!state.readOnly) {
-            item { DeliveryLine() }
+            item(key = "caveats") { ReminderCaveats(doses = state.anyDoseReminders) }
         }
+    }
+}
 
-        // No add / complete / edit affordances at all in the archived scope, rather than
-        // affordances that refuse when tapped (ADR-0004).
-        if (!state.readOnly) {
-            item {
-                Button(onClick = onAdd) { Text(stringResource(R.string.care_add)) }
-            }
-        }
+/** The recurring care half: what comes round again, and what is due now. */
+private fun LazyListScope.careSection(
+    state: CareUiState,
+    onAdd: () -> Unit,
+    onOpen: (CareRow) -> Unit,
+    onComplete: (CareRow) -> Unit,
+) {
+    sectionHeading("care-heading", R.string.care_reminders_heading)
 
-        if (state.rows.isEmpty()) {
-            item {
-                Text(
-                    text = stringResource(R.string.care_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+    if (state.rows.isEmpty()) {
+        item(key = "care-empty") { EmptySection(stringResource(R.string.care_empty)) }
+    }
 
-        items(state.rows, key = { it.id }) { row ->
+    itemsIndexed(state.rows, key = { _, row -> "care-${row.id}" }) { index, row ->
+        GroupedCardItem(index = index, count = state.rows.size) {
             ReminderRow(
                 row = row,
                 readOnly = state.readOnly,
                 onOpen = { onOpen(row) },
                 onComplete = { onComplete(row) },
-                onDelete = { onDelete(row) },
-            )
-        }
-
-        item { SectionHeader(stringResource(R.string.visits_heading)) }
-
-        if (!state.readOnly) {
-            item {
-                Button(onClick = onAddVisit) { Text(stringResource(R.string.visit_add)) }
-            }
-        }
-
-        if (state.visits.isEmpty()) {
-            item {
-                Text(
-                    text = stringResource(R.string.visits_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        // Prefixed, because a visit and a reminder can be two different rows sharing one UUID space
-        // and `LazyColumn` keys have to be unique across the *whole* list rather than per section.
-        items(state.visits, key = { "visit-${it.id}" }) { row ->
-            VisitCard(
-                row = row,
-                readOnly = state.readOnly,
-                onOpen = { onOpenVisit(row) },
-                onDelete = { onDeleteVisit(row) },
             )
         }
     }
+
+    // No add / complete affordances at all in the archived scope, rather than affordances that
+    // refuse when tapped (ADR-0004).
+    if (!state.readOnly) {
+        // A **text** button, where *Add a course* above it is filled: `3a` is explicit that routine
+        // care is the quieter of the two, and a screen with three equally loud add buttons has no
+        // primary action at all.
+        item(key = "care-add") { QuietAction(R.string.care_add, onAdd) }
+    }
 }
 
-/** Shared with `MedicationsSection.kt`, so the tab's three headings cannot drift apart in style. */
-@Composable
-internal fun SectionHeader(text: String) {
-    Text(text = text, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-}
-
-/**
- * One visit: the day, what it was for, who was seen, and the weighing taken at it.
- *
- * The weighing is shown because it is the visit's own record of it (ADR-0017) — **the same row** the
- * Weight screen draws, read back through the join rather than copied here.
- */
-@Composable
-private fun VisitCard(
-    row: VisitRow,
-    readOnly: Boolean,
-    onOpen: () -> Unit,
-    onDelete: () -> Unit,
+/** The vet visits half (ADR-0017) — not drawn in `3a`, so the language is applied by hand. */
+private fun LazyListScope.visitsSection(
+    state: CareUiState,
+    onAdd: () -> Unit,
+    onOpen: (VisitRow) -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(text = row.reason, style = MaterialTheme.typography.titleMedium)
-            Text(
-                text =
-                    row.vetName?.let { stringResource(R.string.visit_row_with_vet, dateLabel(row.visitedOn), it) }
-                        ?: dateLabel(row.visitedOn),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            row.weightGrams?.let { grams ->
-                Text(
-                    text = stringResource(R.string.visit_row_weighed, gramsLabel(grams)),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            if (!readOnly) {
-                HorizontalDivider()
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onOpen) { Text(stringResource(R.string.action_edit)) }
-                    TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
-                }
-            }
+    sectionHeading("visits-heading", R.string.visits_heading)
+
+    if (state.visits.isEmpty()) {
+        item(key = "visits-empty") { EmptySection(stringResource(R.string.visits_empty)) }
+    }
+
+    // Prefixed, because a visit and a reminder can be two different rows sharing one UUID space and
+    // `LazyColumn` keys have to be unique across the *whole* list rather than per section.
+    itemsIndexed(state.visits, key = { _, row -> "visit-${row.id}" }) { index, row ->
+        GroupedCardItem(index = index, count = state.visits.size) {
+            VisitRow(row = row, readOnly = state.readOnly, onOpen = { onOpen(row) })
         }
+    }
+
+    if (!state.readOnly) {
+        item(key = "visits-add") { QuietAction(R.string.visit_add, onAdd) }
     }
 }
 
 /**
- * Deleting a visit **states the choice about its weighing** rather than guessing (PLAN 5c).
+ * A section's name, with the rhythm around it.
  *
- * One confirmation, not ADR-0004's two-stage ceremony — that is calibrated to a bunny's whole
- * history. But the weighing is a second record with a life of its own: keeping it leaves a
- * standalone number in the chart, and removing it takes the vet's reading out of the series. The
- * default is **keep**, because it is the recoverable one.
- *
- * With no weighing at the visit there is nothing to choose, and the dialog says so in one line.
+ * [Spacing.section] above and [Spacing.tight] below, which is the 1:3 ratio that makes a header read
+ * as attached downward and detached upward. Written once because this route has four of them and
+ * `Spacing.kt` calls the same value above and below the most-broken thing in the before set.
+ */
+internal fun LazyListScope.sectionHeading(
+    key: String,
+    @StringRes text: Int,
+    first: Boolean = false,
+) {
+    item(key = key) {
+        // Nothing above the very first header: a section gap against the top of the screen is a
+        // hole, not a rhythm.
+        if (!first) Spacer(Modifier.height(Spacing.section))
+        SectionHeader(stringResource(text))
+        Spacer(Modifier.height(Spacing.tight))
+    }
+}
+
+/**
+ * What a section says when it holds nothing — **about the record, never about the bunny**
+ * (ADR-0001).
  */
 @Composable
-private fun DeleteVisitDialog(
-    row: VisitRow,
-    onConfirm: (Boolean) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var keepWeighing by remember(row.id) { mutableStateOf(true) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.visit_delete_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.visit_delete_body, dateLabel(row.visitedOn)))
-                row.weightGrams?.let { grams ->
-                    Text(stringResource(R.string.visit_delete_weighing, gramsLabel(grams)))
-                    WeighingChoice(
-                        label = stringResource(R.string.visit_delete_keep_weighing),
-                        selected = keepWeighing,
-                        onSelect = { keepWeighing = true },
-                    )
-                    WeighingChoice(
-                        label = stringResource(R.string.visit_delete_remove_weighing),
-                        selected = !keepWeighing,
-                        onSelect = { keepWeighing = false },
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(row.weightGrams == null || keepWeighing) }) {
-                Text(stringResource(R.string.action_delete))
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+internal fun EmptySection(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = Spacing.hair),
     )
 }
 
+/**
+ * The quieter of the two add buttons.
+ *
+ * Pulled back to the text edge, as on every other row of text buttons in the redesign: a text button
+ * carries its own padding, so one laid out flush looks indented against the card above it.
+ */
 @Composable
-private fun WeighingChoice(
-    label: String,
-    selected: Boolean,
-    onSelect: () -> Unit,
+internal fun QuietAction(
+    @StringRes label: Int,
+    onClick: () -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onSelect),
-    ) {
-        RadioButton(selected = selected, onClick = null)
-        Text(text = label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 8.dp))
+    Row(modifier = Modifier.fillMaxWidth().offset(x = -Spacing.snug).padding(top = Spacing.hair)) {
+        TextButton(onClick = onClick) { Text(stringResource(label)) }
     }
 }
 
 /**
- * One reminder: what it is, when it is next due **in words**, and how often it comes round.
+ * One reminder: what it is, how often it comes round, and when it is next due **in words**.
  *
- * The whole card opens the reminder, where its history and the calendar hand-off live. *Done* stays
- * on the row, because completing is the thing an owner came here to do and a screen away is a screen
- * too far.
+ * The row opens the reminder, where its history and the calendar hand-off live — and, since Phase 7,
+ * where deleting it lives too.
+ *
+ * ***Done* stays on the row, but only while something is actually due.** That is `3a`'s own rule
+ * about today's doses applied one section down: a row asking a question carries its answer, and a
+ * row merely reporting a date in November does not. Marking a not-yet-due job done early is still
+ * possible — it is on the reminder's own screen, which is where an owner doing something unusual is
+ * already heading.
+ *
+ * **Overdue is stated, not coloured.** The words say "2 weeks overdue"; painting them red as well
+ * would be the app escalating a fact it has already reported, which is the wallpaper ADR-0001
+ * rejects — and this screen carries the state indefinitely, so red would become the normal colour of
+ * a row nobody has got round to.
  */
 @Composable
 private fun ReminderRow(
@@ -418,124 +360,82 @@ private fun ReminderRow(
     readOnly: Boolean,
     onOpen: () -> Unit,
     onComplete: () -> Unit,
-    onDelete: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Icon(
-                    imageVector = careTypeIcon(row.scheduled.reminder.type),
-                    // The label beside it carries the name; describing the icon too would only make
-                    // a screen reader say it twice.
-                    contentDescription = null,
-                )
-                Text(
-                    text = careReminderLabel(row.scheduled.reminder),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(start = 12.dp).weight(1f),
-                )
-            }
-            Text(
-                text =
-                    stringResource(
-                        R.string.care_reminder_of,
-                        careDueLabel(row.due),
-                        careIntervalLabel(row.scheduled.reminder.interval),
-                    ),
-                style = MaterialTheme.typography.bodyMedium,
-                // Overdue is stated, not shouted: the same voice as "due tomorrow", because a
-                // notification that escalates daily is the wallpaper ADR-0001 rejects and the
-                // screen is what carries this state indefinitely.
-                color =
-                    if (row.due is CareDue.Overdue || row.due is CareDue.Yesterday) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-            )
-            if (!readOnly) {
-                HorizontalDivider()
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onComplete) {
-                        Text(
-                            stringResource(
-                                if (row.completedByWeighing) R.string.care_weigh_in_action else R.string.action_done,
-                            ),
-                        )
-                    }
-                    TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
+    val resources = LocalResources.current
+    val due = row.due is CareDue.Today || row.due is CareDue.Yesterday || row.due is CareDue.Overdue
+
+    ListRow(
+        title = careReminderLabel(row.scheduled.reminder),
+        subtitle =
+            joinFacts(
+                resources,
+                careIntervalLabel(row.scheduled.reminder.interval),
+                careDueLabel(row.due),
+            ),
+        onClick = onOpen,
+        trailing = {
+            if (due && !readOnly) {
+                TextButton(onClick = onComplete) {
+                    Text(
+                        stringResource(
+                            if (row.completedByWeighing) R.string.care_weigh_in_action else R.string.action_done,
+                        ),
+                    )
                 }
+            } else {
+                Chevron()
             }
-        }
-    }
-}
-
-/**
- * What will actually happen when something comes due — blocked, best-effort or armed (ADR-0003).
- *
- * Every fact behind it belongs to Android and the owner can change any of them by walking into
- * system settings and back, so it is re-read on each resume rather than remembered. The **armed**
- * case renders nothing: a line confirming that a working app works is the kind of reassurance an
- * owner learns to stop reading, and then does not read the one that matters.
- */
-@Composable
-private fun DeliveryLine() {
-    val context = LocalContext.current
-    var delivery by remember { mutableStateOf<ReminderDelivery?>(null) }
-    LifecycleResumeEffect(Unit) {
-        delivery = context.reminderDelivery(ReminderChannel.Care)
-        onPauseOrDispose {}
-    }
-
-    when (delivery) {
-        null, ReminderDelivery.Armed -> Unit
-        // **The point-of-use ask** (ADR-0006), and the one composable the setup wizard also hosts —
-        // never a second opt-in written here. Android permits two `POST_NOTIFICATIONS` denials
-        // before it stops asking for good, and two separately-written asks are two places to spend
-        // them from. It explains before it requests, and it knows the difference between a refusal
-        // and Android refusing to ask again; a bare "open settings" here would send an owner who
-        // has never been asked the long way round.
-        ReminderDelivery.Blocked -> RemindersOptIn()
-        ReminderDelivery.BestEffort ->
-            DeliveryState(
-                text = stringResource(R.string.reminders_state_best_effort),
-                actionLabel = stringResource(R.string.reminders_battery_action),
-                onAction = { context.openBatteryOptimisationSettings() },
-            )
-    }
-}
-
-@Composable
-private fun DeliveryState(
-    text: String,
-    actionLabel: String,
-    onAction: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        OutlinedButton(onClick = onAction) { Text(actionLabel) }
-    }
-}
-
-/**
- * **One** confirmation, not two. ADR-0004's two-stage ceremony is calibrated to a bunny's whole
- * history; a reminder is a schedule, and the dialog names it so the owner can see which one.
- */
-@Composable
-private fun DeleteReminderDialog(
-    reminderLabel: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.care_delete_title)) },
-        text = { Text(stringResource(R.string.care_delete_body, reminderLabel)) },
-        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.action_delete)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        },
     )
 }
+
+/**
+ * One visit: what it was for, and the day, the vet and the weighing on one line beneath.
+ *
+ * The weighing is shown because it is the visit's own record of it (ADR-0017) — **the same row** the
+ * Weight screen draws, read back through the join rather than copied here. It joins the fact line
+ * rather than taking a third: at 64dp a row has two lines, and where the number came from is a fact
+ * about the visit, not a second thing to read.
+ */
+@Composable
+private fun VisitRow(
+    row: VisitRow,
+    readOnly: Boolean,
+    onOpen: () -> Unit,
+) {
+    val resources = LocalResources.current
+    ListRow(
+        title = row.reason,
+        subtitle =
+            joinFacts(
+                resources,
+                dateLabel(row.visitedOn),
+                // Null both when the visit named no vet and when the vet it named has since been
+                // deleted. The two are indistinguishable on screen and deliberately so: a clinic
+                // closing does not make last year's visit a different record.
+                row.vetName,
+                row.weightGrams?.let { stringResource(R.string.visit_row_weighed, gramsLabel(it)) },
+            ),
+        // Read-only rows still open: an archived bunny's visits are readable and nothing more
+        // (ADR-0004), and the screen behind the chevron enforces that itself.
+        onClick = onOpen,
+        trailing = { Chevron() },
+    )
+}
+
+/**
+ * Joins the facts a row has into its one subtitle line, dropping the ones it has not got.
+ *
+ * Takes [Resources] rather than being `@Composable`, for [app.binky.tracker.ui.bunny.joinNames]'
+ * reason turned inside out: `reduce` needs a plain lambda, and a `@Composable` cannot be called from
+ * one. Returns null rather than an empty string, because [ListRow] draws no second line at all for a
+ * row that has nothing to say — an empty line would leave the title floating in a 64dp box.
+ */
+@Composable
+private fun joinFacts(
+    resources: Resources,
+    vararg parts: String?,
+): String? =
+    parts
+        .filterNot { it.isNullOrBlank() }
+        .reduceOrNull { joined, next -> resources.getString(R.string.row_pair, joined, next) }

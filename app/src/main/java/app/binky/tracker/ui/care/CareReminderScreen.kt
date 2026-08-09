@@ -144,6 +144,16 @@ fun CareReminderScreen(
                         OutlinedButton(onClick = { onEdit(reminder.bunnyId, reminder.id) }) {
                             Text(stringResource(R.string.action_edit))
                         }
+                        // **Deleting the reminder lives here from Phase 7.** The list behind this
+                        // screen draws 64dp rows with a chevron and nowhere to put a button (`3a`),
+                        // which is the finding `Weight` made at `1d`. Deliberately the quietest of
+                        // the three: only one of them destroys anything.
+                        TextButton(onClick = viewModel::requestDelete) {
+                            Text(
+                                text = stringResource(R.string.action_delete),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
 
@@ -223,6 +233,24 @@ fun CareReminderScreen(
                 completing = false
             },
             onDismiss = { completing = false },
+        )
+    }
+
+    if (state.confirmingDelete) {
+        // **One** confirmation, not two. ADR-0004's ceremony is calibrated to a bunny's whole
+        // history; a reminder is a schedule, and the dialog names it so the owner can see which.
+        AlertDialog(
+            onDismissRequest = viewModel::cancelDelete,
+            title = { Text(stringResource(R.string.care_delete_title)) },
+            text = { Text(stringResource(R.string.care_delete_body, label)) },
+            confirmButton = {
+                TextButton(onClick = viewModel::confirmDelete) {
+                    Text(stringResource(R.string.action_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::cancelDelete) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 

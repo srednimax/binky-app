@@ -59,7 +59,6 @@
     <string name="action_delete">Usuń</string>
     <string name="action_ok">OK</string>
     <string name="action_done">Gotowe</string>
-    <string name="action_open">Otwórz</string>
     <string name="action_undo">Cofnij</string>
     <string name="action_change">Zmień</string>
     <string name="add_a_bunny_first">Najpierw dodaj królika.</string>
@@ -265,8 +264,10 @@
     <string name="doses_state_blocked">Powiadomienia są wyłączone, więc przypomnienia o dawkach pojawią się tylko w aplikacji.</string>
     <string name="doses_state_best_effort_exact">Przypomnienia o dawkach są włączone, ale Android nie pozwala Binky\'emu ustawiać ich co do minuty — przyjdą w ciągu kilku minut od danej godziny, nie punktualnie.</string>
     <string name="doses_state_best_effort_battery">Przypomnienia o dawkach są włączone i ustawione co do minuty. Ten telefon może je mimo to opóźnić, kiedy Binky działa w tle.</string>
-    <string name="doses_state_armed">Przypomnienia o dawkach są włączone, ustawione co do minuty, a ten telefon jest ustawiony tak, żeby je przepuszczać.</string>
     <string name="doses_exact_alarm_action">Otwórz ustawienia alarmów</string>
+    <string name="reminders_caveat_notifications_title">Powiadomienia są wyłączone</string>
+    <string name="reminders_caveat_exact_title">Przypomnienia mogą przychodzić z opóźnieniem</string>
+    <string name="reminders_caveat_battery_title">Ten telefon może wstrzymywać przypomnienia</string>
 
     <!-- Debug builds only, and never shown in a release build. -->
     <string name="settings_sample_data">Dane przykładowe</string>
@@ -565,7 +566,6 @@
     <string name="care_pick_a_bunny">Opieka dotyczy jednego królika. Którego?</string>
     <string name="care_choose_bunny">Wybierz królika</string>
     <string name="care_add">Dodaj przypomnienie</string>
-    <string name="care_reminder_of">%1$s, %2$s</string>
 
     <string name="care_type_nail_trim">Obcinanie pazurków</string>
     <string name="care_type_vaccination">Szczepienie</string>
@@ -655,12 +655,12 @@
 
     <!-- Wizyty u weterynarza (ADR-0017). Zapis zdrowia, nigdy wydatków: nic tu nie pyta o koszt.
          Nazwiska weterynarzy nie są odmieniane (zasada 2 na górze pliku) — stąd dwukropki i cudzysłowy. -->
-    <string name="care_reminders_heading">Przypomnienia o opiece</string>
+    <string name="care_reminders_heading">Stała opieka</string>
     <string name="visits_heading">Wizyty u weterynarza</string>
     <string name="visits_empty">Nie zapisano jeszcze żadnej wizyty. Wizyta to zapis zdrowia: dzień, powód i waga, jeśli weterynarz zważył królika.</string>
     <string name="visit_add">Dodaj wizytę</string>
-    <string name="visit_row_with_vet">%1$s · %2$s</string>
     <string name="visit_row_weighed">Zważono: %1$s</string>
+    <string name="row_pair">%1$s · %2$s</string>
 
     <string name="visit_editor_add_title">Nowa wizyta</string>
     <string name="visit_editor_edit_title">Edytuj wizytę</string>
@@ -702,13 +702,13 @@
 
     <!-- Obserwacja (ADR-0001). Pytanie jest o to, czy ktoś zajrzał — nigdy o to, co królikowi jest.
          Formy bezosobowe i bezokoliczniki, imię zawsze po dwukropku (zasady 1 i 2 na górze pliku). -->
-    <string name="med_heading">Leki</string>
+    <string name="med_heading">Kuracje</string>
     <string name="med_today_heading">Dzisiaj</string>
+    <string name="med_dose_due">Na %1$s</string>
     <string name="med_add_course">Dodaj kurację</string>
     <string name="med_empty">Nie ma tu jeszcze żadnych leków. Kuracja to, co przepisał weterynarz — co to jest, ile i o jakich porach, jeśli są.</string>
     <string name="med_disclaimer">To, co przepisał weterynarz, tak jak zostało zapisane. Binky nigdy nie sprawdza dawek ani interakcji.</string>
 
-    <string name="med_dose_row">%1$s o %2$s</string>
     <string name="med_dose_answered">%1$s o %2$s</string>
     <string name="dose_status_given">Podana</string>
     <string name="dose_status_skipped">Pominięta</string>
