@@ -1,18 +1,22 @@
 package app.binky.tracker.ui.weight
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -20,8 +24,10 @@ import app.binky.tracker.R
 import app.binky.tracker.data.TrendDrop
 import app.binky.tracker.data.TrendFlag
 import app.binky.tracker.data.WeightUnit
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.bunny.Age
 import app.binky.tracker.ui.bunny.ageOn
+import app.binky.tracker.ui.common.GroupedCard
 import java.time.Duration
 import java.time.Instant
 
@@ -132,11 +138,31 @@ private fun gapLabel(
     }
 
 /**
+ * Whether [TrendFlagBanner] will draw anything at all.
+ *
+ * Exported because a host has to know *before* laying out: Home puts 32dp between the hero and the
+ * flag, and a spacer emitted for a banner that renders nothing is a hole in the screen that only
+ * appears for bunnies with no flag — which is most of them. One rule, read here and applied inside
+ * the banner, so the two cannot drift apart.
+ */
+fun TrendFlag?.showsBanner(): Boolean = this is TrendFlag.WorthACloserLook || this is TrendFlag.Acknowledged
+
+/**
  * The flag as a banner, above the history on the Weight screen and inside Home's vitals card.
  *
  * Renders for both live variants and nothing for the rest: [TrendFlag.Steady] and
  * [TrendFlag.NotEnoughHistory] are **not** rendered as reassurance, because absence of a flag is
  * never evidence of health (ADR-0001).
+ *
+ * **A quiet card with an apricot marker, not an apricot card.** The fill used to be
+ * `tertiaryContainer` — itself a correction of an `errorContainer` that read as an alarm — and the
+ * design takes the step the first fix stopped short of: this is the same surface as every other
+ * card, and the caution arrives as a 10dp dot beside the title. A whole panel of colour states
+ * urgency the sentence underneath it explicitly disclaims, which is what ADR-0026 and ADR-0001 both
+ * rule out. The apricot that remains on screen is the active watch directly beneath, where a filled
+ * row is telling the owner something *is running* rather than something is wrong.
+ *
+ * [nested] is for Home's all-bunnies list, where this sits inside a bunny's own card.
  *
  * [secondaryAction] is the slot Phase 4 fills with *Start a watch* (ADR-0001) — built now so that
  * arrives as a caller passing a button, not as a rewrite of the composable every host renders.
@@ -148,6 +174,7 @@ fun TrendFlagBanner(
     unit: WeightUnit,
     onAcknowledge: () -> Unit,
     modifier: Modifier = Modifier,
+    nested: Boolean = false,
     secondaryAction: (@Composable () -> Unit)? = null,
 ) {
     val drop =
@@ -158,32 +185,40 @@ fun TrendFlagBanner(
         }
     val acknowledgedAt = (flag as? TrendFlag.Acknowledged)?.acknowledgedAt
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors =
-            CardDefaults.cardColors(
-                // Tertiary (apricot), never error. A weight drop is caution, not an
-                // emergency: it is an observation about the numbers that the owner
-                // decides the meaning of, and nothing here can be acted on from a phone.
-                // Red would code it as a failure, which ADR-0026 and ADR-0001 both forbid.
-                //
-                // An acknowledged episode is still real, so it is still reported — quietly, as
-                // standing information rather than as a fresh signal.
-                containerColor =
-                    if (acknowledgedAt == null) {
-                        MaterialTheme.colorScheme.tertiaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    },
-            ),
+    GroupedCard(
+        modifier = modifier,
+        nested = nested,
+        contentPadding = PaddingValues(Spacing.base),
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = stringResource(R.string.trend_flag_title),
-                style = MaterialTheme.typography.titleMedium,
-            )
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.snug)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // The marker, and the only saturated thing on the card. Absent once the episode has
+                // been acknowledged: the drop is still real and still reported, but it has stopped
+                // being something the owner has not yet seen, which is all this dot ever said.
+                if (acknowledgedAt == null) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.tertiary),
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.trend_flag_title),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
             TrendFlagBody(bunnyName, drop, unit, acknowledgedAt)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Pulled back to the card's text edge: a text button carries its own padding, so a row
+            // of them laid out flush looks indented against everything above it.
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
+                modifier = Modifier.offset(x = -Spacing.snug),
+            ) {
                 if (acknowledgedAt == null) {
                     TextButton(onClick = onAcknowledge) {
                         Text(stringResource(R.string.trend_flag_acknowledge))
