@@ -550,6 +550,26 @@ about *when the rules do not apply*:
   therefore fixes the weights instead: *Unarchive* is `Open`'s peer because it asks nothing and only
   restores, and *Delete* drops to `onSurfaceVariant`.
 
+⚠️ **Two defects came off the device that the code could not show, and both were compounding
+padding.** The reminder card put a section gap *on top of* `SwitchRow`'s own 12dp inside a 64dp
+floor, and the paragraph, the switch and the state line read as three unrelated things; and the
+screen ends in a **footnote rather than a card**, so `Spacing.tight` at the bottom of the scroll put
+the last sentence under the gesture bar. Both are now written out explicitly. **A component that
+carries its own insets and a container that adds spacing are two mechanisms that compound**, and the
+sum is only visible on a phone.
+
+⚠️ **The scope picker's divider was asymmetric around the selected band** — drawn below the fill and
+not above it, because the first rule only skipped it *on* a selected row. The fill's own edge is the
+seam; a rule along one side of it reads as a rendering fault. Skipped on both sides now.
+
+❓ **`4f` says *"Lived with Marzipan"* and the app says *"Lives with Nugget"*, and the drawing is
+arguably right.** `housematesLabel` is shared with Home and the bunny editor, where the present tense
+is correct, so adopting the past tense here means a **second string in both locales**. It is a copy
+decision rather than a layout one — an archived bunny may have been rehomed or died, and a present
+tense about a bunny who is neither living there nor listed anywhere else is at best stale. **Left
+unchanged, and listed here rather than taken**, because this phase does not rewrite copy on its own
+authority.
+
 **`ListRow` gained `enabled`, and it is deliberately not the same as having no `onClick`.** A row that
 is *asking* a question is also unclickable and must not dim — that is the row grammar `3a` fixed. This
 is the third case, which only `More` has: a row that would open something if it could, where the title

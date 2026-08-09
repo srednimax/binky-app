@@ -59,10 +59,11 @@ fun BackupScopePicker(
     Column(modifier = modifier.selectableGroup()) {
         BackupScope.entries.forEachIndexed { index, option ->
             val selected = option == scope
-            // Between rows only — the card's own edge separates the two at the ends. Skipped above a
-            // selected row as well: a divider running into a filled band is a line drawn across a
-            // seam that the fill has already made visible.
-            if (index > 0 && !selected) RowDivider()
+            // Between rows only — the card's own edge separates the two at the ends — and never
+            // against a filled band, on **either** of its sides. The fill's own edge is already the
+            // seam, and a divider along one side of it and not the other reads as a rendering fault
+            // rather than as a choice (which is exactly how the first device pass looked).
+            if (index > 0 && !selected && BackupScope.entries[index - 1] != scope) RowDivider()
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Spacing.snug),

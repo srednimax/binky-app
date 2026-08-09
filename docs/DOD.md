@@ -262,6 +262,18 @@ exists. These are the items that come first.
       the section the owner *cannot control*, and Archived bunnies is the one list that stays
       separate cards **and** keeps its buttons, because *Open* leads to a read-only bunny and there
       is nowhere for *Delete* to move to.
+      ✅ **All three seen on the device, light and dark** (2026-08-09), including `4f`'s **populated**
+      card, which the seed cannot reach — nothing is archived in the sample data, so the `archived`
+      scene only ever shoots `4g`. Driven by hand: archive from Home, then More → Archived.
+      Two defects came off the phone and neither was visible in the code, both **compounding
+      padding**: `SwitchRow` carries its own insets *and* got a section gap, and a screen that ends
+      in a footnote rather than a card needs `Spacing.section` at the bottom of the scroll or the
+      last line sits under the gesture bar. The scope picker's divider was also asymmetric around the
+      selected band. All fixed and re-shot.
+      ❓ **One copy question is left open on purpose**: `4f` writes *"Lived with Marzipan"* where the
+      app says *"Lives with Nugget"*. The drawing is arguably right — an archived bunny may have been
+      rehomed or died — but `housematesLabel` is shared with Home and the bunny editor, so it means a
+      second string in both locales. Not taken; recorded in `phase-7.md`.
       ℹ️ **No scene needle broke on any of the three** — the first batch that can say that — even
       though every needle into them reaches into content (`settings`, `backup`, `archived`, `vets`,
       `photos`, `documents`, `support` all tap a More row by title, and those six rows are now
