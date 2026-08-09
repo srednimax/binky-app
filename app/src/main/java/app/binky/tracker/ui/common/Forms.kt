@@ -6,18 +6,35 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import app.binky.tracker.R
 import app.binky.tracker.theme.Spacing
 
 // Phase 7's *form* idiom, the counterpart to Surfaces.kt's row-and-card one.
@@ -47,8 +64,14 @@ import app.binky.tracker.theme.Spacing
  */
 private val ChipHeight = 36.dp
 
-/** The free-text box: its own radius, one step tighter than a card's, so it reads as a control. */
-private val NoteFieldRadius = 14.dp
+/** A text box's radius, one step tighter than a card's, so it reads as a control inside one. */
+private val FieldRadius = 14.dp
+
+/** A row carrying a control the owner reads a value off — a date beside its *Change*, a switch. */
+private val ControlRowHeight = 56.dp
+
+/** [SwitchRow]'s: taller, because it carries a title and a line of help rather than one value. */
+private val SwitchRowHeight = 64.dp
 
 /**
  * A titled card holding one group of fields — the shape every editor is now built from.
@@ -187,8 +210,168 @@ fun NoteField(
         value = value,
         onValueChange = onValueChange,
         placeholder = { Text(placeholder) },
-        shape = RoundedCornerShape(NoteFieldRadius),
+        shape = RoundedCornerShape(FieldRadius),
         minLines = 3,
         modifier = modifier.fillMaxWidth(),
+    )
+}
+
+/**
+ * One line of text — a name, an amount — in the same box [NoteField] uses, one line tall.
+ *
+ * No floating label here either, for [NoteField]'s reason: the [FieldLabel] above it is the label,
+ * and one that flies away on focus takes the question with it exactly when the owner starts
+ * answering. The error *text* is [ErrorText]'s job below the field; [isError] only colours the box,
+ * so the two cannot say different things.
+ */
+@Composable
+fun SingleLineField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    placeholder: String? = null,
+    isError: Boolean = false,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = placeholder?.let { { Text(it) } },
+        shape = RoundedCornerShape(FieldRadius),
+        isError = isError,
+        singleLine = true,
+        modifier = modifier.fillMaxWidth(),
+    )
+}
+
+/**
+ * A recorded value with the button that changes it — a start date, the time of a weighing.
+ *
+ * [description] is what a screen reader hears instead of the button's own label. Compose reads a
+ * merged node's `contentDescription` in preference to the text inside it, which is what lets three
+ * buttons on one card all read *Change* on screen and still announce which one they are.
+ *
+ * [label] names the value when a card holds more than one of them — *Starts* and *Ends* are two
+ * dates and the second is only meaningful against the first. [RecordedAtField] leaves it out: its
+ * two rows are a date and a time, which say what they are by their own shape.
+ *
+ * [enabled] false renders the same row with **no way to change it** — the button is absent rather
+ * than present-and-refusing (ADR-0004's shape).
+ */
+@Composable
+fun ChangeableValueRow(
+    value: String,
+    description: String,
+    onChange: () -> Unit,
+    modifier: Modifier = Modifier,
+    label: String? = null,
+    enabled: Boolean = true,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(min = ControlRowHeight)
+                // The button carries its own padding, so it stops short of the card's edge on its
+                // own; a read-only row has nothing there and takes the full inset instead.
+                .padding(start = Spacing.base, end = if (enabled) Spacing.tight else Spacing.base),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (label != null) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(text = value, style = MaterialTheme.typography.bodyLarge)
+        }
+        if (enabled) {
+            TextButton(
+                onClick = onChange,
+                modifier = Modifier.semantics { contentDescription = description },
+            ) {
+                Text(stringResource(R.string.action_change))
+            }
+        }
+    }
+}
+
+/**
+ * A switch with its name and, usually, the line of help that says what turning it off means.
+ *
+ * The **whole row** is the target, not the switch: `toggleable` merges the title, the help and the
+ * state into one semantics node, so a screen reader announces the setting once instead of reading a
+ * paragraph and then finding an unlabelled switch after it. That is also why the [Switch] itself
+ * takes `onCheckedChange = null` — two handlers would be two tap targets stacked on one row.
+ */
+@Composable
+fun SwitchRow(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    helpText: String? = null,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .toggleable(value = checked, onValueChange = onCheckedChange, role = Role.Switch)
+                .heightIn(min = SwitchRowHeight)
+                .padding(horizontal = Spacing.base, vertical = Spacing.snug),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.base),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(Spacing.hair),
+        ) {
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            if (helpText != null) HelpText(helpText)
+        }
+        Switch(checked = checked, onCheckedChange = null)
+    }
+}
+
+/**
+ * A value the owner **added** and can take away again — one time of day on a course's schedule.
+ *
+ * The third chip in the language, and the three divide by what they are for: [FormChip] is an
+ * answer you *choose*, [app.binky.tracker.ui.common.TagChip] is a fact you *read*, and this is an
+ * entry you *remove*. Hay-filled like the tag rather than outlined like an unchosen option, because
+ * a time on this list is something the owner put there — apricot and the outline both belong
+ * elsewhere.
+ *
+ * The whole chip removes, not just the ✕: the mark says what tapping does, and a 12dp target inside
+ * a 36dp one is a miss waiting to happen.
+ */
+@Composable
+fun RemovableChip(
+    label: String,
+    removeDescription: String,
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    InputChip(
+        selected = false,
+        onClick = onRemove,
+        label = { Text(label) },
+        trailingIcon = {
+            Icon(imageVector = Icons.Filled.Close, contentDescription = removeDescription)
+        },
+        colors =
+            InputChipDefaults.inputChipColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                trailingIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
+        // The fill is what says "recorded"; an outline round it would say "not chosen" as well.
+        border = null,
+        modifier = modifier.height(ChipHeight),
     )
 }

@@ -189,6 +189,7 @@ fun MedicationCourseScreen(
     if (state.recording) {
         RecordDoseDialog(
             courseName = course?.name.orEmpty(),
+            doseAmount = course?.doseAmount.orEmpty(),
             onConfirm = { status, at, note -> viewModel.recordAdHoc(status, at, note) },
             onDismiss = viewModel::cancelRecording,
         )
@@ -197,7 +198,9 @@ fun MedicationCourseScreen(
     state.editingDose?.let { dose ->
         RecordDoseDialog(
             courseName = course?.name.orEmpty(),
+            doseAmount = course?.doseAmount.orEmpty(),
             title = stringResource(R.string.med_record_edit_title),
+            slotTime = dose.scheduledTime,
             initialStatus = dose.status,
             initialAt = dose.recordedAt,
             initialNote = dose.note.orEmpty(),

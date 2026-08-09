@@ -2,15 +2,7 @@ package app.binky.tracker.ui.care
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -23,10 +15,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import app.binky.tracker.R
 import app.binky.tracker.data.DoseStatus
+import app.binky.tracker.theme.Spacing
+import app.binky.tracker.ui.common.BinkyDialog
+import app.binky.tracker.ui.common.ChipRow
+import app.binky.tracker.ui.common.FieldLabel
+import app.binky.tracker.ui.common.FormChip
+import app.binky.tracker.ui.common.NoteField
 import app.binky.tracker.ui.common.RecordedAtField
+import app.binky.tracker.ui.weight.timeLabel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -48,15 +46,23 @@ import java.time.ZoneId
  *
  * The two statuses are offered as equals. *Skipped* is a recorded decision, not a failure to record
  * *Given* (ADR-0026).
+ *
+ * `3f` gave it the subject line under the title, for the reason the drawing states: with two doses a
+ * day, the course's name alone does not say which dose you are answering for. It is the name and the
+ * amount in [courseTitle]'s form, and [slotTime] where there is one — which there is on the *edit*
+ * path and never on the ad-hoc one, since a dose recorded by hand is by definition not answering a
+ * slot (ADR-0002).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecordDoseDialog(
     courseName: String,
+    doseAmount: String,
     onConfirm: (DoseStatus, Instant, String?) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     title: String = stringResource(R.string.med_record_title),
+    slotTime: LocalTime? = null,
     initialStatus: DoseStatus = DoseStatus.GIVEN,
     initialAt: Instant = Instant.now(),
     initialNote: String = "",
@@ -80,53 +86,23 @@ fun RecordDoseDialog(
     val now = remember { Instant.now() }
     val inFuture = recordedAt.isAfter(now)
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
+    val course = courseTitle(courseName, doseAmount)
+    val subject =
+        if (slotTime == null) {
+            course
+        } else {
+            stringResource(
+                R.string.row_pair,
+                course,
+                stringResource(R.string.med_record_for_slot, timeLabel(slotTime)),
+            )
+        }
+
+    BinkyDialog(
+        title = title,
+        subject = subject,
+        onDismiss = onDismiss,
         modifier = modifier,
-        title = { Text(title) },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-            ) {
-                Text(text = courseName, style = MaterialTheme.typography.titleSmall)
-
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = stringResource(R.string.med_record_status),
-                        style = MaterialTheme.typography.titleSmall,
-                    )
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        DoseStatus.entries.forEach { entry ->
-                            FilterChip(
-                                selected = entry.name == status,
-                                onClick = { status = entry.name },
-                                label = { Text(doseStatusLabel(entry)) },
-                            )
-                        }
-                    }
-                }
-
-                RecordedAtField(
-                    label = stringResource(R.string.med_record_when),
-                    helpText = stringResource(R.string.med_record_when_help),
-                    futureRejectedText = stringResource(R.string.med_record_future),
-                    date = date,
-                    time = time,
-                    inFuture = inFuture,
-                    onDateChanged = { epochDay = it.toEpochDay() },
-                    onTimeChanged = { secondOfDay = it.toSecondOfDay() },
-                )
-
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = { Text(stringResource(R.string.med_record_note)) },
-                    singleLine = false,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        },
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(DoseStatus.valueOf(status), recordedAt, note.ifBlank { null }) },
@@ -136,5 +112,37 @@ fun RecordDoseDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
-    )
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+            FieldLabel(stringResource(R.string.med_record_status))
+            ChipRow {
+                DoseStatus.entries.forEach { entry ->
+                    FormChip(
+                        selected = entry.name == status,
+                        onClick = { status = entry.name },
+                        label = doseStatusLabel(entry),
+                    )
+                }
+            }
+        }
+
+        RecordedAtField(
+            label = stringResource(R.string.med_record_when),
+            helpText = stringResource(R.string.med_record_when_help),
+            futureRejectedText = stringResource(R.string.med_record_future),
+            date = date,
+            time = time,
+            inFuture = inFuture,
+            onDateChanged = { epochDay = it.toEpochDay() },
+            onTimeChanged = { secondOfDay = it.toSecondOfDay() },
+        )
+
+        // No label above it: the placeholder is the label, and one more heading in a dialog this
+        // size would out-number the fields.
+        NoteField(
+            value = note,
+            onValueChange = { note = it },
+            placeholder = stringResource(R.string.med_record_note),
+        )
+    }
 }

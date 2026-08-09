@@ -294,9 +294,13 @@ private fun CourseRow(
  * cost a third line on every row for a fact that is two words long. The amount is free text the
  * owner typed exactly as the vet said it, so it is appended rather than formatted (ADR-0026 — Binky
  * never reads it).
+ *
+ * Shared with [RecordDoseDialog], whose subject line `3f` wanted saying the same thing: the row you
+ * tapped and the dialog it opened naming the course two different ways is a small lie about being
+ * the same object.
  */
 @Composable
-private fun courseTitle(
+internal fun courseTitle(
     name: String,
     doseAmount: String,
 ): String = if (doseAmount.isBlank()) name else stringResource(R.string.row_pair, name, doseAmount)

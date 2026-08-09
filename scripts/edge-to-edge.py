@@ -727,8 +727,8 @@ SCENES = [
         [*SELECT_BUNNY, ("tap", "Care"), ("tap", MEDICATION_COURSE), ("swipe_end", "")],
     ),
     Scene("course-editor", "form", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a course")]),
-    # The times list grows downwards from a button, so the save action and the last time added are
-    # the two controls competing for the bottom edge.
+    # Phase 7's `3e` moved Save into the app bar, so the bottom edge is now the notes card rather
+    # than a button — a text box competing with the navigation bar, which is the worse of the two.
     Scene(
         "course-editor-bottom",
         "form",
@@ -737,7 +737,10 @@ SCENES = [
     Scene(
         "course-editor-ime",
         "ime",
-        [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a course"), ("tap", "What is it?"), ("wait", "1.5")],
+        # Taps the *placeholder*, not "What is it?" — `3e` made that a label above the box rather
+        # than the box's own floating label, so the old needle would land on a plain `Text`, focus
+        # nothing, and shoot a form with no keyboard. Same trap as `observation-entry-ime`.
+        [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a course"), ("tap", "Metacam"), ("wait", "1.5")],
         note="the first field of the phase's longest form; in landscape the IME leaves two rows",
     ),
     Scene("visit-editor", "form", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a visit")]),
