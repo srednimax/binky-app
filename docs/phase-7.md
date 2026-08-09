@@ -260,9 +260,9 @@ lives* for how to open one without loading the whole file.
 | `CareAndMeds`, no bunnies | `3c` / `3d` | ✅ 2026-08-09. One sentence in a card the size of a row, and nothing else |
 | Vets + vet editor | `5a` / `5b` | ✅ 2026-08-09. One grouped card where two vets used to fill two thirds of the screen, and the fifth delete to leave a list row. The editor has no drawing and changes no string |
 | Bunny editor | `4e` | ✅ 2026-08-09. Same eight fields, same order, same words. Settles one of the four open decisions: the field-absent states already ship |
-| Archived bunnies | `4f` / `4g` / `4h` | Populated and empty |
-| `More` | `6a` / `6b` | Same six destinations, same copy |
-| Backup & restore | `6c` / `6d` | |
+| Archived bunnies | `4f` / `4g` / `4h` | ✅ 2026-08-09. The one list that keeps its buttons — *Open* leads to a read-only bunny, so there is nowhere for *Delete* to move to. `4f`'s change is the weights |
+| `More` | `6a` / `6b` | ✅ 2026-08-09. Same six destinations, same copy. Six headings with paragraphs become six 64dp rows in one card |
+| Backup & restore | `6c` / `6d` | ✅ 2026-08-09. Six section rules become the header rhythm, and the automatic-backup status takes the apricot dot — which settles the stale-backup marker |
 | Settings, Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in | **none** | `github.md`'s *Not yet drawn* list — apply the language by hand |
 
 **`ui/common/Surfaces.kt` is where the idiom lives, and every remaining row above depends on it.**
@@ -529,6 +529,45 @@ their `contentDescription`s, because a screen reader has no value in view to dis
 its own label says the form rules get fixed there, and every other editor inherits them, so doing it
 after the editors would have meant doing the editors twice.
 
+**`6a` / `6c` / `4f` are the last three drawn routes, and they cost the idiom one parameter between
+them** — which is the second sign it has settled, after `5a`/`4e`. What they did add is three rules
+about *when the rules do not apply*:
+
+- **`More` has no high surface at all**, and `6b` says so out loud: *"a navigation route has nothing to
+  raise"*. The one-raised-card budget is a ceiling, not a quota — a screen may spend none of it.
+- **`Backup` spends it on the section the owner cannot control**, which is `6d`'s reading and the
+  clearest statement yet of what the level *means*: automatic backup is a mechanism Binky can neither
+  switch on nor check, and everything below it is work the owner can actually do. The **selected scope
+  row** and the **photo warning** take that same `surfaceContainerHigh` as a *fill inside* a card. That
+  is not a second claim to be the exception — the budget is about cards standing on the background —
+  and `6d` calls it "one mechanism, reused" rather than a tint of `primary`, which is what stops the
+  chosen scope needing colour recognition to be legible. (It carries `titleMedium` as well as the fill,
+  so the two say the same thing.)
+- **`Archived bunnies` is the one list that stays separate cards**, and `4f` states the exception
+  itself: *"a block with three actions of its own is not a row"*. It is also the one list that keeps
+  its buttons rather than following `1d` — *Open* leads to a **read-only** bunny (ADR-0004), so the
+  destination offers no actions by definition and there is nowhere for *Delete* to move to. `4f`
+  therefore fixes the weights instead: *Unarchive* is `Open`'s peer because it asks nothing and only
+  restores, and *Delete* drops to `onSurfaceVariant`.
+
+**`ListRow` gained `enabled`, and it is deliberately not the same as having no `onClick`.** A row that
+is *asking* a question is also unclickable and must not dim — that is the row grammar `3a` fixed. This
+is the third case, which only `More` has: a row that would open something if it could, where the title
+drops to `onSurfaceVariant` and the subtitle says why. The chevron goes with the tap, so an inert row
+carries none rather than promising a screen that is not coming.
+
+**`BackupScopePicker` draws rows now, not a card**, because on `6c` those three rows share their card
+with the photo warning and the *Export* button. The setup wizard, which shares the picker (ADR-0006),
+supplies its own — one line, and the only change this batch made outside its three routes.
+
+ℹ️ **No scene needle broke on any of the three**, and the reason refines the rule rather than
+contradicting it. Every needle into these routes reaches into **content**: `settings`, `backup`,
+`archived`, `vets`, `photos`, `documents` and `support` all tap a `More` row *by its title*, and
+`more`'s own six rows are now identical 64dp merged nodes — precisely the tie-breaking hazard Care &
+Meds hit. They survive because `6a` changes **no string**, and because no two subtitles contain
+another row's title. **A content needle survives a redraw that is structural only**; what breaks one
+is a redraw that moves or rewords the text it names.
+
 ### New functionality the designs introduce
 
 This phase's scope is *same functionality, new looks*, so **each of these is a decision, not a task.** They
@@ -542,10 +581,16 @@ are listed because a screen redrawn from a mockup will otherwise absorb them sil
   poisons the very series ADR-0001's flag then reports on. It reads only weighings the route already loads
   and excludes the row being edited. **Printed oldest first**, ending on the most recent reading — the
   drawing's order, and the one that reads, since the eye finishes on the number the new one will follow.
-- **A stale-backup marker** (`6c`: *"the status line gets the apricot marker"*, and `github.md`: *"the same
-  marker badges a stale backup"*). Needs a staleness rule that does not exist yet. ADR-0001 is safe here —
-  it is a fact about the *backup*, not about a rabbit — but the threshold is a real decision and the copy
-  must not imply fault. **Decide before drawing it.**
+- ~~**A stale-backup marker**~~ (`6c`: *"the status line gets the apricot marker"*, and `github.md`: *"the
+  same marker badges a stale backup"*). **Settled 2026-08-09 building `6c`, and like `4e` it turned out not
+  to be new functionality.** The staleness rule this line said "does not exist yet" **does** exist:
+  `AutoBackupStatus.Recorded.stale` is a fortnight, `backup_auto_stale` is its own shipped sentence, and
+  `stale` is already what decides whether *Open Android backup settings* appears at all. So the marker adds
+  no rule, no threshold and no copy — it marks the two states the screen was already going to act on
+  (`NeverRecorded`, and `Recorded` past a fortnight), which is exactly the `actionable` flag that was
+  already there. A **fresh** recorded backup gets no dot: nothing is being raised, and a permanent marker
+  beside a working net is the reassurance an owner learns to skip, which is `ReminderCaveats`' argument
+  about the armed state made a second time.
 - ~~**Field-absent states in the bunny editor**~~ (`4e`: *"birthday — not known"*, *"breed — not set"*).
   **Settled 2026-08-09 building `4e`, and it was never new functionality.** The check this line asked for
   came back the good way: `bunny_birthdate_none` = *Not known* and `bunny_breed_none` = *Not set* have
