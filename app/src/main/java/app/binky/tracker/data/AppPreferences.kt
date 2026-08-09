@@ -43,6 +43,10 @@ enum class WeightUnit { KILOGRAMS, GRAMS }
  * rather than in the database for the same reason as everything else in this class, and because a
  * backup reminder hangs off the app and not off any bunny.
  *
+ * **1.4 adds one more** (ADR-0027): whether Material You has been switched back on. It is the only
+ * key here read before the app is allowed to touch the database, because the theme wraps ADR-0007's
+ * blocking screen as well as the app.
+ *
  * These **travel in every export scope, from Essential upward** (ADR-0005). They are a few hundred
  * bytes, and a restored phone that has forgotten its display unit, its selected bunny and its chosen
  * backup scope does not read as missing data — it reads as bugs.
@@ -254,6 +258,27 @@ class AppPreferences(
         dataStore.edit { preferences -> preferences[EXPORT_REMINDER_NOTIFIED_FOR] = dueOn.toString() }
     }
 
+    /**
+     * Whether the owner has switched **Material You** back on (ADR-0027).
+     *
+     * Off by default, and that default is the decision rather than a fallback: Binky owns its
+     * palette, and with wallpaper colours on nothing above Android 11 reads `theme/Color.kt` at all.
+     * Absent reads as off, so an install that has never opened Settings gets the brand — as does a
+     * phone below Android 12, where there is no wallpaper palette to take and the Settings row is
+     * not even shown.
+     *
+     * Read **in front of** ADR-0007's gate — see `BinkyApplication.preferences` — because the theme
+     * wraps the schema-mismatch screen too.
+     */
+    val materialYou: Flow<Boolean> =
+        dataStore.data
+            .catch { cause -> if (cause is IOException) emit(emptyPreferences()) else throw cause }
+            .map { preferences -> preferences[MATERIAL_YOU] == true }
+
+    suspend fun setMaterialYou(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[MATERIAL_YOU] = enabled }
+    }
+
     suspend fun setSelection(selection: StoredSelection) {
         dataStore.edit { preferences ->
             when (selection) {
@@ -288,6 +313,7 @@ class AppPreferences(
         val EXPORT_REMINDER_SINCE = stringPreferencesKey("export_reminder_since")
         val EXPORT_LAST_ON = stringPreferencesKey("export_last_on")
         val EXPORT_REMINDER_NOTIFIED_FOR = stringPreferencesKey("export_reminder_notified_for")
+        val MATERIAL_YOU = booleanPreferencesKey("material_you")
 
         /** `HH:mm`, so a stored time is readable in a `.preferences_pb` dump and in a backup. */
         val REMINDER_TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")

@@ -66,7 +66,17 @@ class MainActivity : AppCompatActivity() {
             window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
         }
         setContent {
-            BinkyTheme {
+            // Read from the application, never from `app.container` — that property is the `lazy`
+            // that *is* ADR-0007's wipe guard, and the theme below wraps the schema-mismatch screen
+            // as well as the app, so forcing it here would open the gate from inside the thing
+            // standing in front of it.
+            //
+            // Kotlin note: a plain `Flow` has no current value the way a `StateFlow` does, so
+            // collecting one as state needs an initial. `false` is also the stored default, which is
+            // what keeps the first frame from being the wrong palette and then repainting.
+            val materialYou by app.preferences.materialYou.collectAsStateWithLifecycle(initialValue = false)
+
+            BinkyTheme(dynamicColor = materialYou) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,

@@ -50,7 +50,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import java.io.File
 
-private val Context.preferencesStore: DataStore<Preferences> by preferencesDataStore(name = "bunny_preferences")
+/**
+ * `internal` rather than private: [BinkyApplication] holds the one [AppPreferences] over this store
+ * and hands it to the container, because the theme has to read a preference before the container is
+ * allowed to exist (ADR-0027, and ADR-0007's gate).
+ */
+internal val Context.preferencesStore: DataStore<Preferences> by preferencesDataStore(name = "bunny_preferences")
 
 /**
  * Manual dependency injection — deliberately not Hilt. At roughly fifteen screens, constructing
@@ -63,6 +68,11 @@ class AppContainer(
     context: Context,
     scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     databaseName: String = BUNNY_DATABASE_FILE,
+    /**
+     * Supplied by [BinkyApplication], which has to hold one of these *before* the gate opens. The
+     * default is for tests, which construct a container directly and never see the gate.
+     */
+    val preferences: AppPreferences = AppPreferences(context.applicationContext.preferencesStore),
 ) {
     private val appContext = context.applicationContext
 
@@ -93,8 +103,6 @@ class AppContainer(
     suspend fun openDatabase() {
         withContext(Dispatchers.IO) { database.openHelper.writableDatabase }
     }
-
-    val preferences = AppPreferences(appContext.preferencesStore)
 
     /**
      * Where ADR-0007's pre-wipe copies land. Settings lists them, shares them off the phone and

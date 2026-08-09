@@ -3,6 +3,7 @@ package app.binky.tracker
 import android.app.Application
 import android.util.Log
 import androidx.work.Configuration
+import app.binky.tracker.data.AppPreferences
 import app.binky.tracker.data.BUNNY_DATABASE_FILE
 import app.binky.tracker.data.BUNNY_SCHEMA_VERSION
 import app.binky.tracker.data.PRESERVED_DIRECTORY
@@ -63,7 +64,19 @@ data class SchemaMismatch(
 class BinkyApplication :
     Application(),
     Configuration.Provider {
-    val container: AppContainer by lazy { AppContainer(this) }
+    /**
+     * The one [AppPreferences] for the process, held **in front of the gate** and handed to the
+     * container rather than created by it.
+     *
+     * The theme has to know whether Material You is on (ADR-0027) before a single frame is drawn —
+     * and the first frame may be the schema-mismatch screen, which exists precisely because
+     * [container] must not be touched yet. Reading `container.preferences` there would force the
+     * `lazy` below, which *is* ADR-0007's guard. Preferences are a small key-value file and no Room
+     * object at all, so reading one in front of the guard destroys nothing and proves nothing wrong.
+     */
+    val preferences: AppPreferences by lazy { AppPreferences(preferencesStore) }
+
+    val container: AppContainer by lazy { AppContainer(this, preferences = preferences) }
 
     /**
      * WorkManager's configuration, supplied **on demand**: the manifest removes its `androidx.startup`
