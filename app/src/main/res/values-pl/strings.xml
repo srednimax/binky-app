@@ -61,6 +61,7 @@
     <string name="action_done">Gotowe</string>
     <string name="action_undo">Cofnij</string>
     <string name="action_change">Zmień</string>
+    <string name="action_clear">Wyczyść</string>
     <string name="add_a_bunny_first">Najpierw dodaj królika.</string>
 
     <!-- The shared "when did this happen" field -->
@@ -934,6 +935,7 @@
     <!-- Bunny profile -->
     <string name="bunny_editor_add_title">Dodaj królika</string>
     <string name="bunny_editor_edit_title">Edytuj królika</string>
+    <string name="bunny_editor_section_details">Szczegóły</string>
     <string name="bunny_name_label">Imię</string>
     <string name="bunny_name_required">Królik potrzebuje imienia.</string>
     <string name="bunny_avatar_take">Zrób zdjęcie</string>

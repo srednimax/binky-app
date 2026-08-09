@@ -4,27 +4,26 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,9 +47,22 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
 import app.binky.tracker.data.NeuterStatus
 import app.binky.tracker.data.Sex
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
+import app.binky.tracker.ui.common.ChangeableValueRow
+import app.binky.tracker.ui.common.ChipRow
+import app.binky.tracker.ui.common.ErrorText
+import app.binky.tracker.ui.common.FieldLabel
+import app.binky.tracker.ui.common.FormChip
+import app.binky.tracker.ui.common.FormSection
+import app.binky.tracker.ui.common.GroupedCard
+import app.binky.tracker.ui.common.HelpText
 import app.binky.tracker.ui.common.PickerOption
+import app.binky.tracker.ui.common.RowDivider
 import app.binky.tracker.ui.common.SearchablePickerDialog
+import app.binky.tracker.ui.common.SectionHeader
+import app.binky.tracker.ui.common.SingleLineField
+import app.binky.tracker.ui.common.SwitchRow
 import app.binky.tracker.ui.common.newCameraTarget
 import java.time.Instant
 import java.time.LocalDate
@@ -62,6 +74,32 @@ import java.time.ZoneOffset
  *
  * Unlike the top-level destinations this is a **detail** screen: pushed onto the back stack with its
  * own app bar, so the shell's switcher and bottom bar step aside while it is open.
+ *
+ * ## Phase 7, against `4e`
+ *
+ * **Same eight fields, same order, same words** — including the *"Bonded bunnies share a litter
+ * tray"* line, which the drawing singles out as worth keeping verbatim because it is the sentence
+ * that makes the whole shared-observation model make sense (ADR-0008).
+ *
+ * Two structural changes, both the drawing's:
+ *
+ * - **Birthday and Breed became one grouped card of value rows.** Each was a bold heading, a
+ *   paragraph-height value and a right-aligned link spread over 130dp; naming the field *inside* the
+ *   row — *"Birthday · Not known"* — lets the heading go. That is [ChangeableValueRow], which the
+ *   course editor already uses for its two dates.
+ * - **Colour and markings gained a label above the field** rather than using placeholder text as its
+ *   only label, which vanishes the moment you type. `Forms.kt`'s rule, stated by the drawing about
+ *   the one field that still broke it.
+ *
+ * **The field-absent states are not new functionality.** `4e` writes *not known* for a birthday and
+ * *not set* for a breed, and the phase's inventory flagged the pair as a distinction that might have
+ * to be invented — it does not: `bunny_birthdate_none` and `bunny_breed_none` have shipped with
+ * exactly those two words since ADR-0016. A birthday is a fact about the rabbit that nobody may
+ * know; a breed is a field on a form that nobody has filled in.
+ *
+ * **The housemate chips wrap instead of scrolling sideways**, which is the before set's own bug:
+ * with three bunnies the third ran off the right edge, and a bond you cannot see is a bond you do
+ * not record.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,8 +171,13 @@ fun BunnyEditorScreen(
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(
+                        start = Spacing.base,
+                        end = Spacing.base,
+                        top = Spacing.tight,
+                        bottom = Spacing.section,
+                    ),
+            verticalArrangement = Arrangement.spacedBy(Spacing.section),
         ) {
             AvatarField(
                 state = state,
@@ -149,22 +192,44 @@ fun BunnyEditorScreen(
                 onRemovePhoto = viewModel::onAvatarRemoved,
             )
 
-            OutlinedTextField(
-                value = state.name,
-                onValueChange = viewModel::onNameChanged,
-                label = { Text(stringResource(R.string.bunny_name_label)) },
-                isError = state.nameMissing,
-                supportingText = { if (state.nameMissing) Text(stringResource(R.string.bunny_name_required)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            DetailsSection(state = state, viewModel = viewModel)
 
-            BirthDateField(
-                birthDate = state.birthDate,
-                approximate = state.birthDateApproximate,
-                onBirthDateChanged = viewModel::onBirthDateChanged,
-                onApproximateChanged = viewModel::onBirthDateApproximateChanged,
+            HousemateSection(
+                candidates = state.candidates,
+                selectedId = state.housemateId,
+                onSelect = viewModel::onHousemateChanged,
             )
+        }
+    }
+}
+
+/**
+ * **Details** — one header over two cards, which is `4e`'s arrangement and not an accident of
+ * layout: the four typed fields and the two picked ones are the same section, and the second card is
+ * what says the pair below it work differently from the boxes above.
+ */
+@Composable
+private fun DetailsSection(
+    state: BunnyEditorUiState,
+    viewModel: BunnyEditorViewModel,
+) {
+    Column {
+        SectionHeader(stringResource(R.string.bunny_editor_section_details))
+        Spacer(Modifier.height(Spacing.tight))
+
+        GroupedCard(
+            contentPadding = PaddingValues(Spacing.base),
+            verticalArrangement = Arrangement.spacedBy(Spacing.base),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+                FieldLabel(stringResource(R.string.bunny_name_label))
+                SingleLineField(
+                    value = state.name,
+                    onValueChange = viewModel::onNameChanged,
+                    isError = state.nameMissing,
+                )
+                if (state.nameMissing) ErrorText(stringResource(R.string.bunny_name_required))
+            }
 
             // Sex and neuter status are here because this is a health tracker: an unspayed female
             // carries a high lifetime risk of uterine cancer, which is context a vet wants
@@ -184,25 +249,29 @@ fun BunnyEditorScreen(
                 onSelect = viewModel::onNeuteredChanged,
             )
 
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+                FieldLabel(stringResource(R.string.bunny_colour_label))
+                // Colour is the obvious second user of the breed picker and is deliberately **not**
+                // wired to it: it is free description ("grey with a white blaze"), not a vocabulary.
+                SingleLineField(value = state.colour, onValueChange = viewModel::onColourChanged)
+            }
+        }
+
+        Spacer(Modifier.height(Spacing.base))
+
+        // The rows carry their own insets, so the dividers between them reach the card's edge.
+        GroupedCard(contentPadding = PaddingValues(vertical = Spacing.hair)) {
+            BirthDateField(
+                birthDate = state.birthDate,
+                approximate = state.birthDateApproximate,
+                onBirthDateChanged = viewModel::onBirthDateChanged,
+                onApproximateChanged = viewModel::onBirthDateApproximateChanged,
+            )
+            RowDivider()
             BreedField(
                 breed = state.breed,
                 suggestions = state.breedSuggestions,
                 onBreedChanged = viewModel::onBreedChanged,
-            )
-            // Colour is the obvious second user of the picker and is deliberately **not** wired to
-            // it here: it is free description ("grey with a white blaze"), not a vocabulary.
-            OutlinedTextField(
-                value = state.colour,
-                onValueChange = viewModel::onColourChanged,
-                label = { Text(stringResource(R.string.bunny_colour_label)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            HousemateField(
-                candidates = state.candidates,
-                selectedId = state.housemateId,
-                onSelect = viewModel::onHousemateChanged,
             )
         }
     }
@@ -216,11 +285,11 @@ private fun AvatarField(
     onRemovePhoto: () -> Unit,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.base),
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        BunnyAvatar(avatar = state.avatar, name = state.name, size = 96.dp)
+        BunnyAvatar(avatar = state.avatar, name = state.name, size = AvatarSize)
         Column {
             TextButton(onClick = onTakePhoto) { Text(stringResource(R.string.bunny_avatar_take)) }
             TextButton(onClick = onChoosePhoto) { Text(stringResource(R.string.bunny_avatar_choose)) }
@@ -238,9 +307,16 @@ private fun AvatarField(
     }
 }
 
+private val AvatarSize = 96.dp
+
 /**
  * Birthday, with the **approximate** flag ADR-0016 requires: rescues routinely arrive with a
  * guessed age, and a false-precision date would misrepresent what the owner actually knows.
+ *
+ * The flag sits **inside the same card**, between the birthday it qualifies and the breed it does
+ * not, which is the shape the course editor's *Ongoing* already takes between two dates: the divider
+ * grammar and the help line are what attach it upward. It is absent until there is a date to be
+ * approximate about.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -252,32 +328,26 @@ private fun BirthDateField(
 ) {
     var picking by rememberSaveable { mutableStateOf(false) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text = stringResource(R.string.bunny_birthdate_label), style = MaterialTheme.typography.titleSmall)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = birthDate?.let { dateLabel(it) } ?: stringResource(R.string.bunny_birthdate_none),
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = { picking = true }) { Text(stringResource(R.string.bunny_birthdate_set)) }
-            if (birthDate != null) {
-                TextButton(onClick = { onBirthDateChanged(null) }) {
-                    Text(stringResource(R.string.bunny_birthdate_clear))
-                }
-            }
-        }
-        if (birthDate != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = approximate, onCheckedChange = onApproximateChanged)
-                Text(text = stringResource(R.string.bunny_birthdate_approximate))
-            }
-            Text(
-                text = stringResource(R.string.bunny_birthdate_approximate_help),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+    ChangeableValueRow(
+        label = stringResource(R.string.bunny_birthdate_label),
+        value = birthDate?.let { dateLabel(it) } ?: stringResource(R.string.bunny_birthdate_none),
+        description = stringResource(R.string.bunny_birthdate_set),
+        // "Change" is the wrong verb for a date nobody has given yet, which is why `4e` writes the
+        // action out in full beside *Not known*.
+        actionLabel = if (birthDate == null) stringResource(R.string.bunny_birthdate_set) else null,
+        onChange = { picking = true },
+        onClear = if (birthDate == null) null else ({ onBirthDateChanged(null) }),
+        clearDescription = stringResource(R.string.bunny_birthdate_clear),
+    )
+
+    if (birthDate != null) {
+        RowDivider()
+        SwitchRow(
+            title = stringResource(R.string.bunny_birthdate_approximate),
+            helpText = stringResource(R.string.bunny_birthdate_approximate_help),
+            checked = approximate,
+            onCheckedChange = onApproximateChanged,
+        )
     }
 
     if (picking) {
@@ -349,20 +419,15 @@ private fun BreedField(
             ).map { PickerOption(id = it, label = it) }
         }
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text = stringResource(R.string.bunny_breed_label), style = MaterialTheme.typography.titleSmall)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = breed.ifBlank { stringResource(R.string.bunny_breed_none) },
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = { picking = true }) { Text(stringResource(R.string.bunny_breed_choose)) }
-            if (breed.isNotBlank()) {
-                TextButton(onClick = { onBreedChanged("") }) { Text(stringResource(R.string.bunny_breed_clear)) }
-            }
-        }
-    }
+    ChangeableValueRow(
+        label = stringResource(R.string.bunny_breed_label),
+        value = breed.ifBlank { stringResource(R.string.bunny_breed_none) },
+        description = stringResource(R.string.bunny_breed_choose),
+        actionLabel = if (breed.isBlank()) stringResource(R.string.bunny_breed_choose) else null,
+        onChange = { picking = true },
+        onClear = if (breed.isBlank()) null else ({ onBreedChanged("") }),
+        clearDescription = stringResource(R.string.bunny_breed_clear),
+    )
 
     if (picking) {
         SearchablePickerDialog(
@@ -381,58 +446,48 @@ private fun BreedField(
 /**
  * "Lives with" (ADR-0008). Picking **any** member of an existing group joins that group rather than
  * forming a rival pair, so one choice is enough however many bunnies already live together.
+ *
+ * The chips **wrap** now rather than scrolling sideways — `Forms.kt`'s rule, and the before set is
+ * why it exists: a fourth housemate sat off the right edge of a horizontal scroller with nothing to
+ * say it was there.
  */
 @Composable
-private fun HousemateField(
+private fun HousemateSection(
     candidates: List<HousemateOption>,
     selectedId: String?,
     onSelect: (String?) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text = stringResource(R.string.bunny_lives_with_label), style = MaterialTheme.typography.titleSmall)
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-        ) {
+    FormSection(
+        title = stringResource(R.string.bunny_lives_with_label),
+        spacing = Spacing.snug,
+    ) {
+        ChipRow {
             // Shown even with nobody to pick yet, and inert while that is true: living alone is a
             // real answer about this bunny, so the field should say it. An empty field reads as
             // something that failed to load.
-            FilterChip(
+            FormChip(
                 selected = selectedId == null,
                 enabled = candidates.isNotEmpty(),
                 onClick = { onSelect(null) },
-                label = { Text(stringResource(R.string.bunny_lives_with_alone)) },
+                label = stringResource(R.string.bunny_lives_with_alone),
             )
             candidates.forEach { candidate ->
-                FilterChip(
+                FormChip(
                     selected = candidate.id == selectedId,
                     onClick = { onSelect(candidate.id) },
-                    label = {
-                        Text(
-                            if (candidate.archived) {
-                                stringResource(R.string.bunny_archived_name, candidate.name)
-                            } else {
-                                candidate.name
-                            },
-                        )
-                    },
+                    label =
+                        if (candidate.archived) {
+                            stringResource(R.string.bunny_archived_name, candidate.name)
+                        } else {
+                            candidate.name
+                        },
                 )
             }
         }
-        if (candidates.isEmpty()) {
-            Text(
-                text = stringResource(R.string.bunny_lives_with_nobody_yet),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        if (candidates.isEmpty()) HelpText(stringResource(R.string.bunny_lives_with_nobody_yet))
         // Shown in both cases on purpose. This is the one line that says *why* the app cares who
         // lives with whom, and an owner with a single bunny is exactly who has not learned it yet.
-        Text(
-            text = stringResource(R.string.bunny_lives_with_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        HelpText(stringResource(R.string.bunny_lives_with_help))
     }
 }
 
@@ -450,14 +505,14 @@ private fun <T : Enum<T>> ChoiceField(
     optionLabel: @Composable (T) -> String,
     onSelect: (T) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text = label, style = MaterialTheme.typography.titleSmall)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+        FieldLabel(label)
+        ChipRow {
             options.forEach { option ->
-                FilterChip(
+                FormChip(
                     selected = option == selected,
                     onClick = { onSelect(option) },
-                    label = { Text(optionLabel(option)) },
+                    label = optionLabel(option),
                 )
             }
         }
