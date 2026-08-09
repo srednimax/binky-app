@@ -251,13 +251,14 @@ lives* for how to open one without loading the whole file.
 | Bunny switcher | `4d` | ✅ 2026-08-09. Four items; *Archived* deliberately absent |
 | `Weight` + chart | `1d` / `1e` | ✅ 2026-08-09. Hero. The row lost its buttons, so **deleting moved to the editor**; the chart's points became rings filled with the card |
 | Record a weighing | `6e` / `6f` | A **route, not a sheet** — corrected against the capture. Grams only. Carries the one addition below |
+| New course | `3e` | ✅ 2026-08-09. Same six fields, same words — and *Save* moved to the app bar, which is the drawing's own recommendation against its own frame |
+| Record a dose | `3f` / `3g` | ✅ 2026-08-09. Stays a dialog, and fixes the rules for **every** dialog — they live in `ui/common/Dialogs.kt` |
 | Trend flag card | `1b` and every card that nests it | ✅ 2026-08-09, and it moved twice. `errorContainer` → `tertiaryContainer` → **a quiet `surfaceContainer` card with a 10dp apricot dot**. The drawings are explicit: *"the flag card is the same surface as every other card — apricot arrives as a 10dp dot"*. A whole panel of colour asserts an urgency the sentence inside it disclaims. Apricot as a *fill* survives in one place only, the active watch row |
 | `Observations` | `2a` / `2b` | ✅ 2026-08-09. Four decisions, all of which generalise — the scope chip, the dense fact block, the tray's own subheading, and hay for what the owner recorded |
 | Record an observation | `2c` / `2d` | ✅ 2026-08-09. Fixes the form rules for *every* editor — they live in `ui/common/Forms.kt` |
 | `CareAndMeds` | `3a` / `3b` | ✅ 2026-08-09. Today's doses, then the courses that generate them. The largest redraw so far: four sections of 64dp rows, three deletes moved, and the delivery caveat rewritten |
 | `CareAndMeds`, no bunnies | `3c` / `3d` | ✅ 2026-08-09. One sentence in a card the size of a row, and nothing else |
 | New course | `3e` | Same six fields, same words |
-| Record a dose | `3f` / `3g` | |
 | Vets + vet editor | `5a` / `5b` | |
 | Bunny editor | `4e` | |
 | Archived bunnies | `4f` / `4g` / `4h` | Populated and empty |
@@ -303,6 +304,15 @@ Worth knowing before reading a mockup as gospel, and consistent with the palette
 - `3a` omits the **vet visits** section entirely, and `github.md` maps `5a`/`5b` to the *vet
   directory* rather than to visits. Visits are per bunny (ADR-0017) and cannot leave this tab, so
   the section is built by hand in the same idiom, below routine care and above the caveat.
+- `3e` puts each field's **question underneath its own box** as help text, leaving only the example
+  inside it. Built the other way round, with `FieldLabel` above: a question below its own answer
+  reads as a footnote about what you just typed, and Forms.kt's *"help belongs to the control above
+  it"* was written for footnotes. The amount keeps its real footnote underneath, which is what the
+  rule is for, and both examples stay in the boxes as drawn.
+- `3e` **omits the reminder switch**, and it should not have: it draws a course with two times set,
+  which is exactly the state in which the switch shows (ADR-0003 hides it only when there are no
+  times). Built inside the *Times of day* card below a divider — *"remind me at these times"* is a
+  sentence about the times in that card and about nothing else on the screen.
 - `3a` shows a **hay tick** on an answered dose and never draws a *skipped* one. A tick beside
   "Skipped" would read as "yes, given", so skipped takes a neutral bar in the same hay circle —
   drawn as a `Box` rather than an icon, because Compose's **core** icon set has no minus and
@@ -400,6 +410,56 @@ and `NoteField` — the four rules the drawing writes out, written once:
 Chips are **36dp**, which is M3's 32dp default overridden deliberately — a wrapping grid of chips is the
 primary control on these screens, not a filter bar above a list. Compose still expands the touch target
 to 48dp underneath.
+
+**`3e` added four more to `Forms.kt`, and between them they finish the editor kit:**
+
+- **`SingleLineField`** — [`NoteField`] one line tall, same 14dp box, same no-floating-label rule.
+  The bunny editor and the vet editor are made of these.
+- **`ChangeableValueRow`** — *moved out of* `RecordedAtField`, where it had been private, and given an
+  optional **label**. Two dates in one card need naming (*Starts*, *Ends*); a date and a time do not,
+  which is why `RecordedAtField` still passes none. Its screen-reader trick is the load-bearing part:
+  three buttons on one card all read *Change* and still announce which is which.
+- **`SwitchRow`** — a setting, its help line and the switch, with the **whole row** toggleable and the
+  `Switch` itself taking `onCheckedChange = null`. One semantics node, so a reader announces the
+  setting once instead of a paragraph followed by an unlabelled control.
+- **`RemovableChip`** — the third chip, and the three now divide cleanly by what they are *for*:
+  [`FormChip`] is an answer you choose, [`TagChip`] a fact you read, this one an entry you remove.
+  Hay-filled like the tag rather than outlined like an unchosen option, because a time on this list is
+  something the owner put there. The whole chip removes, not just the ✕ — a 12dp target inside a 36dp
+  one is a miss waiting to happen.
+
+**Save moved into the app bar, and that was a decision rather than a redraw.** `3e` draws the filled
+button at the foot of the scroll and then argues against it in its own notes — *"the rule worth
+adopting is the observation form's, since the bottom button drifts off-screen on a long form.
+Changing it is a decision for you, not something to slip in."* Taken, deliberately: back arrow plus a
+*Save* text button in the bar, matching `2c`. **Every editor left in the sweep now has one chrome to
+copy** — `6e`, `4e`, `5b` and the archive screens included.
+
+**`ui/common/Dialogs.kt` is the third file of the idiom, and `3f`'s notes are explicit that it is
+decided once for all of them:** 28dp radius, 24dp padding, the title at `headlineSmall` with the
+subject beneath it, actions bottom-right with the confirming one last. Almost all of that is M3's own
+`AlertDialog` default, which is why `BinkyDialog` is a thin wrapper and not a re-implementation.
+
+**The one thing M3 does not give is the level, and it goes in opposite directions in the two themes.**
+Light steps *down* to `surfaceContainerLow` — the scrim already separates the dialog, so it need not
+shout as well — and dark steps *up* to `surfaceContainerHigh`, because it has to lift off 50% black
+and lighter is the only direction available. One constant cannot say that, which is why there are two.
+
+**That forced `LocalCardSurface`, and it is the first `CompositionLocal` in the app.** A
+[`GroupedCard`] inside a dialog must sit one step *above* the dialog, or in dark it renders darker
+than the thing holding it — `3g` calls the pair "the only two-level nesting in the app". Which level
+that is cannot be known by the card, and the alternative was a colour parameter threaded through
+`GroupedCard`, `FormSection` **and** `RecordedAtField`, only the innermost of which uses it. The
+pickers are deliberately left alone: `DatePickerDialog` and the time picker are M3 components with
+their own container contract, and re-colouring the frame round a picker that still paints itself
+would only make the two disagree.
+
+**The subject line is real data or it is absent.** `3f` adds *"Metacam · 0.3 ml · for the 8:00 PM
+dose"* because with two doses a day the course name alone does not say which one you are answering
+for. The name and the amount reuse `MedicationsSection`'s `courseTitle`, so the row you tapped and
+the dialog it opened cannot name the course two different ways. The **slot** clause only appears
+where a slot exists — on the *edit* path, from `dose.scheduledTime` — and never on the ad-hoc one,
+where by definition no slot is being answered (ADR-0002).
 
 **`RecordedAtField` moved with it**, so the weight form inherits the treatment before `6e` redraws the
 rest of it: a titled card of two rows with an inset divider, and buttons reading just **Change** — the

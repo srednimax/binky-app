@@ -104,6 +104,13 @@ All deliberately after it, because each would disturb the armed course.
       landed on a plain `Text` with nothing to focus and shot a form with no keyboard. It taps the
       placeholder now. **Expect one of these per redrawn route** — a scene needle is a claim about what
       the UI says, and this phase rewrites exactly that.
+      ℹ️ **`course-editor-ime` broke on `3e`** (2026-08-09) — the same trap as `observation-entry-ime`,
+      one route later, which is now two of two for IME scenes. It tapped *"What is it?"*, a floating
+      label that is a plain `Text` **above** the box since the redraw; the tap would have focused
+      nothing and shot a form with no keyboard. It taps the placeholder (*"Metacam"*) now. **An IME
+      scene's needle is a claim that some text belongs to a focusable control**, and the form idiom
+      moves exactly that text. `course-editor-bottom` did not break but its note did: Save is in the
+      app bar now, so the bottom edge is the notes box rather than a button.
       ℹ️ **`2a`/`2b` Observations broke none** (2026-08-09), which is worth recording as the exception
       rather than as proof the rule was wrong: it *deleted* a string (`observation_observed_together`)
       and added three, and both its scenes came through clean because neither needle ever named
@@ -223,11 +230,14 @@ exists. These are the items that come first.
 - [ ] **The rewrite sweep — every route to the new language.** The per-route table with its mockup ids is
       in [`phase-7.md`](phase-7.md) *("The rewrite checkpoint")*; one commit per route, each building and
       installing. **`Home` (all three states), the bunny switcher, `Weight`, `Record an observation`,
-      `Observations` and `Care & Meds` (both states) are done** — 2026-08-09; Home's no-bunnies
-      state is code-only so far, because emptying the phone to look at it would take §1's seed with it.
-      ⚠️ **Care & Meds is likewise not yet seen on the device** — it is the largest redraw so far and it
-      moved three delete paths; it wants a device pass before the next route starts.
-      Next is **`3e` New course** and `3f`/`3g` Record a dose. Eight routes have no drawing at all (Settings,
+      `Observations`, `Care & Meds` (both states), `New course` and `Record a dose` are done** —
+      2026-08-09; Home's no-bunnies state is code-only so far, because emptying the phone to look at it
+      would take §1's seed with it.
+      ✅ **Care & Meds has now been seen on the device** (2026-08-09), which was the pass it owed for
+      moving three delete paths: today's doses, the courses, the inline *Given*/*Skipped* and the
+      *Done* on a due reminder all render as drawn, in both themes.
+      Next is **`5a`/`5b` Vets + vet editor**, then `4e` Bunny editor and `6e`/`6f` Record a weighing
+      (which carries the last-five line decision). Eight routes have no drawing at all (Settings,
       Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in) and get the
       language applied by hand.
       **`ui/common/Surfaces.kt` is the shared idiom** every remaining route draws from — section header,
@@ -240,6 +250,17 @@ exists. These are the items that come first.
       control above it, free text is an outlined box with a placeholder. Every editor left in the sweep
       draws from it rather than re-deriving it. `RecordedAtField` moved with it, so `6e` inherits the
       treatment already.
+      ✅ **`3e` finished the editor kit**: `SingleLineField`, `SwitchRow`, `RemovableChip`, and
+      `ChangeableValueRow` lifted out of `RecordedAtField` with an optional label. **Save moved into
+      the app bar** — `3e` draws a bottom filled button and then recommends against it in its own
+      notes, and the change was taken deliberately rather than slipped in, so **every editor left in
+      the sweep has one chrome to copy**.
+      ✅ **`ui/common/Dialogs.kt` is the third file of the idiom**, decided on `3f`/`3g` for *all*
+      dialogs. Most of the rules are M3's `AlertDialog` defaults; the one that is not is the level,
+      and it runs in **opposite directions** — light steps *down* to `surfaceContainerLow`, dark steps
+      *up* to `surfaceContainerHigh` to lift off the scrim. That forced the app's first
+      `CompositionLocal`, `LocalCardSurface`: a card inside a dialog has to sit one step above it or
+      it renders darker than the dialog holding it. The M3 pickers are left alone on purpose.
       ⚠️ **`Weight` moved deleting a weighing onto the editor** — the drawn history row carries a value,
       a timestamp, a change and a chevron and has nowhere to put a button. Nothing was lost: the delete
       ends in the same flag re-check a save does. Every remaining list-plus-editor pair should follow it.
