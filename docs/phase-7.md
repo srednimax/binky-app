@@ -253,7 +253,7 @@ lives* for how to open one without loading the whole file.
 | Record a weighing | `6e` / `6f` | A **route, not a sheet** — corrected against the capture. Grams only. Carries the one addition below |
 | Trend flag card | `1b` and every card that nests it | ✅ 2026-08-09, and it moved twice. `errorContainer` → `tertiaryContainer` → **a quiet `surfaceContainer` card with a 10dp apricot dot**. The drawings are explicit: *"the flag card is the same surface as every other card — apricot arrives as a 10dp dot"*. A whole panel of colour asserts an urgency the sentence inside it disclaims. Apricot as a *fill* survives in one place only, the active watch row |
 | `Observations` | `2a` / `2b` | |
-| Record an observation | `2c` / `2d` | Fixes the form rules for *every* editor |
+| Record an observation | `2c` / `2d` | ✅ 2026-08-09. Fixes the form rules for *every* editor — they live in `ui/common/Forms.kt` |
 | `CareAndMeds` | `3a` / `3b` | Today's doses, then the courses that generate them |
 | `CareAndMeds`, no bunnies | `3c` / `3d` | |
 | New course | `3e` | Same six fields, same words |
@@ -289,8 +289,30 @@ Worth knowing before reading a mockup as gospel, and consistent with the palette
   (`7/13/26`) instead: the selector offers *All*, a history can span years, and a month and day with
   no year would be ambiguous in exactly the range the drawing never had to show.
 
-**`2c` is worth doing early even though it is not a hero screen.** Its own label says the form rules get
-fixed there, and every other editor inherits them — doing it after the editors means doing the editors twice.
+**`ui/common/Forms.kt` is the same bet for editors, and it came out of `2c`.** `FormSection` (a
+[`SectionHeader`] over a [`GroupedCard`]), `FieldLabel`, `HelpText`, `ErrorText`, `ChipRow`, `FormChip`
+and `NoteField` — the four rules the drawing writes out, written once:
+
+- **chips wrap, they never scroll sideways.** The before set cut *More than usual* and *Strung together*
+  off the right edge, so the two answers most worth recording were the two hardest to find;
+- **a section is a card**, replacing the hairline rules the old forms drew on the background;
+- **help text belongs to the control above it** at `Spacing.tight`, not to the field below;
+- **free text is an outlined box with a placeholder**, no floating label. `minLines = 3` rather than the
+  drawing's literal 88dp: a fixed height centres the caret in an empty box, where three lines of room
+  start the text at the top and grow.
+
+Chips are **36dp**, which is M3's 32dp default overridden deliberately — a wrapping grid of chips is the
+primary control on these screens, not a filter bar above a list. Compose still expands the touch target
+to 48dp underneath.
+
+**`RecordedAtField` moved with it**, so the weight form inherits the treatment before `6e` redraws the
+rest of it: a titled card of two rows with an inset divider, and buttons reading just **Change** — the
+value each sits beside already says which. The old *"Change the date"* / *"Change the time"* survive as
+their `contentDescription`s, because a screen reader has no value in view to disambiguate them.
+
+**`2c` was worth doing early even though it is not a hero screen** — done 2026-08-09, and this is why:
+its own label says the form rules get fixed there, and every other editor inherits them, so doing it
+after the editors would have meant doing the editors twice.
 
 ### New functionality the designs introduce
 
