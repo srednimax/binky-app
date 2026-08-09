@@ -263,7 +263,8 @@ lives* for how to open one without loading the whole file.
 | Archived bunnies | `4f` / `4g` / `4h` | ✅ 2026-08-09. The one list that keeps its buttons — *Open* leads to a read-only bunny, so there is nowhere for *Delete* to move to. `4f`'s change is the weights |
 | `More` | `6a` / `6b` | ✅ 2026-08-09. Same six destinations, same copy. Six headings with paragraphs become six 64dp rows in one card |
 | Backup & restore | `6c` / `6d` | ✅ 2026-08-09. Six section rules become the header rhythm, and the automatic-backup status takes the apricot dot — which settles the stale-backup marker |
-| Settings, Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in | **none** | `github.md`'s *Not yet drawn* list — apply the language by hand |
+| `Settings` | **none** | ✅ 2026-08-09. The first undrawn route, and it sets the rule the other seven follow: **a control that cannot name itself gets a header; a row that names itself does not.** No string added, one relocated |
+| Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in | **none** | `github.md`'s *Not yet drawn* list — apply the language by hand |
 
 **`ui/common/Surfaces.kt` is where the idiom lives, and every remaining row above depends on it.**
 The mockups draw the same four things screen after screen — `SectionHeader`, `GroupedCard`, `FactRow`,
@@ -278,6 +279,13 @@ a whole history is a *single* `LazyColumn` item, so every row composes whether o
 which is the one thing `LazyColumn` exists to avoid, and Bijou's seeded history is already 39 rows. It
 draws the same card the other way round: each row carries the surface itself and only the two at the
 ends round their outer corners. Observations, Photos, Documents and the dose history all want it.
+
+**`SwitchRow` titles at `titleMedium`, and Settings is why.** The row was written on `6c`, where it is
+the only row in its card, so nothing ever stood next to it; Settings puts a switch row between two
+`ListRow`s and M3's `bodyLarge` list headline against `ListRow`'s `titleMedium` reads as a rendering
+fault rather than a distinction. Same size, one step of weight — and the whole point of the undrawn
+half of the sweep is that it keeps finding these, because **a component only proves its type scale
+against its siblings**, which the drawn routes never arranged.
 
 **Three places where the drawings and the shipped app disagree, all resolved against the drawing.**
 Worth knowing before reading a mockup as gospel, and consistent with the palette lesson above:

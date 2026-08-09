@@ -375,7 +375,11 @@ fun SwitchRow(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(Spacing.hair),
         ) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            // `titleMedium`, matching [ListRow]'s title rather than M3's `bodyLarge` list headline.
+            // Settings is the first card to hold a switch row and a list row as siblings, and the
+            // two weights next to each other read as a rendering fault rather than a distinction:
+            // both rows are a name, a line of help and a control. Same size, one step of weight.
+            Text(text = title, style = MaterialTheme.typography.titleMedium)
             if (helpText != null) HelpText(helpText)
         }
         Switch(checked = checked, onCheckedChange = null)
