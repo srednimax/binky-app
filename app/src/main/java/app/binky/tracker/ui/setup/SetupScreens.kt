@@ -2,6 +2,7 @@ package app.binky.tracker.ui.setup
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -25,6 +26,7 @@ import app.binky.tracker.R
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.backup.BackupScopePicker
 import app.binky.tracker.ui.backup.PhotosNotProtectedNote
+import app.binky.tracker.ui.common.GroupedCard
 import app.binky.tracker.ui.common.openSystemBackupSettings
 import app.binky.tracker.ui.reminders.RemindersOptIn
 import app.binky.tracker.ui.shell.BunnySummary
@@ -153,7 +155,12 @@ fun SetupBackupStep(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        BackupScopePicker(scope = state.scope, onSelect = viewModel::setScope)
+        // The picker draws rows, not a card — Backup shares its card with the photo warning and the
+        // export button, so the caller supplies one. Zero content padding because a selected row is
+        // a full-bleed fill that the card's own corners clip at the ends.
+        GroupedCard(contentPadding = PaddingValues(0.dp)) {
+            BackupScopePicker(scope = state.scope, onSelect = viewModel::setScope)
+        }
         PhotosNotProtectedNote()
 
         Text(
