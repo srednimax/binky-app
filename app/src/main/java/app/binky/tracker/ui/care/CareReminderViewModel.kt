@@ -18,6 +18,7 @@ import app.binky.tracker.data.lastCompletedOn
 import app.binky.tracker.data.scheduleFor
 import app.binky.tracker.work.CareNotifier
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -63,6 +64,8 @@ data class CareReminderUiState(
     val pendingEventDelete: CareEventRow? = null,
     /** Set while one completion's date and note are being corrected. Never a weight-derived row. */
     val editingEvent: CareEventRow? = null,
+    /** Set while the confirmation for deleting the **reminder itself** is up. */
+    val confirmingDelete: Boolean = false,
     /**
      * Flipped when the reminder is no longer there — deleted from the list behind this screen, or
      * with its bunny. The screen's cue to leave rather than render an empty shell.
@@ -92,6 +95,22 @@ class CareReminderViewModel(
     private val editingEvent = MutableStateFlow<String?>(null)
 
     /**
+     * Deleting the **reminder itself**, which arrived here in Phase 7. `3a` drew the list behind
+     * this screen as 64dp rows with a chevron and nowhere for a button, so the list navigates and
+     * this screen destroys — the same split `Weight` made at `1d`.
+     */
+    private val confirmingDelete = MutableStateFlow(false)
+
+    /**
+     * The three dialog flags as one flow, so the state combine below stays inside `combine`'s
+     * five-argument overload — it already spends four on real data.
+     */
+    private val dialogs: Flow<Dialogs> =
+        combine(pendingEventDelete, editingEvent, confirmingDelete) { deleting, editing, deletingReminder ->
+            Dialogs(deleting, editing, deletingReminder)
+        }
+
+    /**
      * Kotlin note: `flatMapLatest` re-subscribes when the reminder itself changes, which is what
      * lets a weigh-in start watching the weight series only once it is known to be one — the bunny
      * id is on the reminder, and there is nothing to read before it arrives.
@@ -114,9 +133,8 @@ class CareReminderViewModel(
                             flowOf(emptyList())
                         },
                         preferences.weightUnit,
-                        pendingEventDelete,
-                        editingEvent,
-                    ) { events, series, unit, deleting, editing ->
+                        dialogs,
+                    ) { events, series, unit, open ->
                         val zone = ZoneId.systemDefault()
                         val weighings = series.map { it.recordedAt.atZone(zone).toLocalDate() to it.grams }
                         val rows = historyRows(events = events, weighings = weighings)
@@ -137,8 +155,9 @@ class CareReminderViewModel(
                             due = careDue(scheduled.dueOn, LocalDate.now()),
                             events = rows,
                             unit = unit,
-                            pendingEventDelete = rows.firstOrNull { it.id == deleting },
-                            editingEvent = rows.firstOrNull { it.id == editing },
+                            pendingEventDelete = rows.firstOrNull { it.id == open.event },
+                            editingEvent = rows.firstOrNull { it.id == open.editing },
+                            confirmingDelete = open.reminder,
                         )
                     }
                 }
@@ -212,6 +231,37 @@ class CareReminderViewModel(
     fun markCalendarHandedOff() {
         viewModelScope.launch { care.markCalendarHandedOff(reminderId) }
     }
+
+    fun requestDelete() {
+        confirmingDelete.value = true
+    }
+
+    fun cancelDelete() {
+        confirmingDelete.value = false
+    }
+
+    /**
+     * Deletes the reminder and every completion recorded against it, by cascade.
+     *
+     * **One** confirmation, not ADR-0004's two-stage ceremony — that is calibrated to destroying a
+     * bunny's whole history; a reminder is a schedule. Nothing navigates here: `care.reminder(id)`
+     * emits null once the row is gone, which sets `gone`, and the screen leaves on that.
+     */
+    fun confirmDelete() {
+        viewModelScope.launch {
+            care.delete(reminderId)
+            confirmingDelete.value = false
+            // The row is gone, so anything it posted is now a notification about nothing.
+            notifier.cancel(reminderId)
+        }
+    }
+
+    /** The three dialog flags, grouped so the state combine stays inside its five-argument overload. */
+    private data class Dialogs(
+        val event: String?,
+        val editing: String?,
+        val reminder: Boolean,
+    )
 
     companion object {
         /** A factory *function*, because the navigation key carries an argument. */

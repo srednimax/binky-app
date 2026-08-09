@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -55,6 +56,7 @@ import app.binky.tracker.ui.documents.DocumentRow
 import app.binky.tracker.ui.documents.ScanNoticeHost
 import app.binky.tracker.ui.documents.rememberDocumentScan
 import app.binky.tracker.ui.documents.rememberDocumentScanner
+import app.binky.tracker.ui.weight.gramsLabel
 import app.binky.tracker.ui.weight.weightLabel
 import java.time.Instant
 import java.time.LocalDate
@@ -109,6 +111,7 @@ fun VisitEditorScreen(
     )
 
     LaunchedEffect(state.saved) { if (state.saved) onBack() }
+    LaunchedEffect(state.deleted) { if (state.deleted) onBack() }
 
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
@@ -198,7 +201,29 @@ fun VisitEditorScreen(
                 onOpen = onOpenDocument,
                 onDetach = viewModel::detachDocument,
             )
+
+            // **Deleting the visit lives here from Phase 7.** The Care & Meds list draws 64dp rows
+            // with a chevron and nowhere to put a button (`3a`), which is the finding `Weight` made
+            // at `1d`. Only on a visit that exists: there is nothing to delete before the first
+            // save, and a button that refuses when tapped is what ADR-0004 rules out.
+            if (!readOnly && !state.isNew) {
+                TextButton(onClick = viewModel::requestDelete) {
+                    Text(
+                        text = stringResource(R.string.action_delete),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
+    }
+
+    if (state.confirmingDelete) {
+        DeleteVisitDialog(
+            visitedOn = state.visitedOn,
+            weightGrams = state.storedGrams,
+            onConfirm = viewModel::confirmDelete,
+            onDismiss = viewModel::cancelDelete,
+        )
     }
 
     if (pickingDate) {
@@ -515,5 +540,71 @@ private fun VisitDatePicker(
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     ) {
         DatePicker(state = pickerState)
+    }
+}
+
+/**
+ * Deleting a visit **states the choice about its weighing** rather than guessing (PLAN 5c).
+ *
+ * One confirmation, not ADR-0004's two-stage ceremony — that is calibrated to a bunny's whole
+ * history. But the weighing is a second record with a life of its own: keeping it leaves a
+ * standalone number in the chart, and removing it takes the vet's reading out of the series. The
+ * default is **keep**, because it is the recoverable one.
+ *
+ * With no weighing at the visit there is nothing to choose, and the dialog says so in one line.
+ *
+ * Hosted here from Phase 7; it used to be raised by the row on the Care & Meds list.
+ */
+@Composable
+private fun DeleteVisitDialog(
+    visitedOn: LocalDate,
+    weightGrams: Int?,
+    onConfirm: (Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var keepWeighing by remember(visitedOn) { mutableStateOf(true) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.visit_delete_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.visit_delete_body, dateLabel(visitedOn)))
+                weightGrams?.let { grams ->
+                    Text(stringResource(R.string.visit_delete_weighing, gramsLabel(grams)))
+                    WeighingChoice(
+                        label = stringResource(R.string.visit_delete_keep_weighing),
+                        selected = keepWeighing,
+                        onSelect = { keepWeighing = true },
+                    )
+                    WeighingChoice(
+                        label = stringResource(R.string.visit_delete_remove_weighing),
+                        selected = !keepWeighing,
+                        onSelect = { keepWeighing = false },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(weightGrams == null || keepWeighing) }) {
+                Text(stringResource(R.string.action_delete))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+    )
+}
+
+@Composable
+private fun WeighingChoice(
+    label: String,
+    selected: Boolean,
+    onSelect: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onSelect),
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 8.dp))
     }
 }

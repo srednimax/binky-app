@@ -1,22 +1,32 @@
 package app.binky.tracker.ui.common
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.binky.tracker.theme.Spacing
@@ -96,9 +106,14 @@ fun SectionHeader(
 /**
  * The grouped card: one raised surface holding rows that belong together.
  *
- * [nested] steps the surface up one level rather than tinting it, which is what keeps a card inside
- * a card legible in **dark** — where a nested card cannot be distinguished by shadow and a tint
- * would just be a lighter grey with no meaning. Light and dark are the same rule, not two.
+ * [raised] steps the surface up one level rather than tinting it, and it says two things at once
+ * that turn out to be the same thing. A card *inside* a card needs it to stay legible in **dark**,
+ * where a nested card cannot be distinguished by shadow and a tint would just be a lighter grey with
+ * no meaning; and the one card on a screen that is **not like the others** — Home's trend flag, Care
+ * & Meds' delivery caveat — needs it for the same reason. Light and dark are one rule, not two.
+ *
+ * Spend it **once per screen**. Two raised cards on one route is two claims to be the exception, and
+ * the level stops meaning anything.
  *
  * Kotlin note: `content: @Composable ColumnScope.() -> Unit` is a lambda *with a receiver* — inside
  * it, `this` is the `Column`, so callers can use `Modifier.weight` and friends without naming it.
@@ -107,16 +122,16 @@ fun SectionHeader(
 @Composable
 fun GroupedCard(
     modifier: Modifier = Modifier,
-    nested: Boolean = false,
+    raised: Boolean = false,
     contentPadding: PaddingValues = PaddingValues(vertical = Spacing.hair),
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(if (nested) NestedCardRadius else CardRadius),
+        shape = RoundedCornerShape(if (raised) NestedCardRadius else CardRadius),
         color =
-            if (nested) {
+            if (raised) {
                 MaterialTheme.colorScheme.surfaceContainerHigh
             } else {
                 MaterialTheme.colorScheme.surfaceContainer
@@ -170,6 +185,76 @@ fun GroupedCardItem(
             )
         }
     }
+}
+
+/**
+ * A **navigable** row of a [GroupedCard]: what the thing is, one line about it, and whatever the row
+ * offers on its trailing edge.
+ *
+ * [FactRow]'s opposite number. A fact row is a label and a value the owner reads; this one is an
+ * object they act on — a course, a reminder, a visit, a dose. 64dp so two lines of type sit
+ * comfortably, which is what let the drawings put the name and the amount on one line ("Metacam ·
+ * 0.3 ml") and bring the row down from a card.
+ *
+ * **The trailing slot is the whole grammar of these lists.** A row that is only *telling* you
+ * something carries a [Chevron] into its own screen; a row that is *asking* you something carries
+ * the answer instead, inline. Care & Meds draws both within one screen — a scheduled course chevrons
+ * away, a dose due at eight o'clock offers *Given* and *Skipped* where the chevron would be.
+ */
+@Composable
+fun ListRow(
+    title: String,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    onClick: (() -> Unit)? = null,
+    trailing: (@Composable RowScope.() -> Unit)? = null,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                // `then` rather than a nullable modifier: an unclickable row must not get a ripple
+                // or a semantics node at all, which is ADR-0004's rule for the archived scope.
+                .then(if (onClick == null) Modifier else Modifier.clickable(onClick = onClick))
+                .heightIn(min = ListRowHeight)
+                .padding(horizontal = Spacing.base, vertical = Spacing.tight),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(Spacing.hair),
+        ) {
+            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        trailing?.invoke(this)
+    }
+}
+
+/** A [ListRow]'s minimum height. Two lines of type and a target, and the drawings are firm on it. */
+private val ListRowHeight = 64.dp
+
+/**
+ * The trailing mark of a [ListRow] that opens something.
+ *
+ * Decorative on purpose: the row itself is the target and its own text is what a screen reader
+ * announces, so describing the arrow too would only make it say the row twice.
+ */
+@Composable
+fun Chevron(modifier: Modifier = Modifier) {
+    Icon(
+        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier,
+    )
 }
 
 /**
@@ -283,6 +368,65 @@ fun TagChip(
                 style = if (dense) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
+        }
+    }
+}
+
+/**
+ * The 10dp apricot marker: **the app itself is raising this**, and nothing else in the language says
+ * that.
+ *
+ * A dot rather than a fill, which is the correction the redesign made twice — `errorContainer`, then
+ * `tertiaryContainer`, then this. A whole panel of colour asserts an urgency the sentence inside it
+ * usually disclaims; a dot marks the card without arguing with its own copy. It stays away from
+ * anything the *owner* recorded, which is [TagChip]'s hay (ADR-0001, ADR-0026).
+ */
+@Composable
+fun CautionDot(modifier: Modifier = Modifier) {
+    Box(
+        modifier =
+            modifier
+                .size(CautionDotSize)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.tertiary),
+    )
+}
+
+private val CautionDotSize = 10.dp
+
+/**
+ * A quiet card that says something is not going to work as well as it should — and offers the fix.
+ *
+ * [CautionDot], a title, one honest paragraph, and at most one action. Used for the states that
+ * belong to **Android rather than to a rabbit**: notifications switched off, exact alarms not
+ * permitted, a battery policy that will hold a reminder back (ADR-0003).
+ *
+ * It is [GroupedCard]'s `raised` level, which is the one-per-screen budget — so a route that draws
+ * one of these draws nothing else at that level.
+ *
+ * The action is a text button pulled back to the card's text edge: a text button carries its own
+ * padding, so one laid out flush looks indented against the paragraph above it.
+ */
+@Composable
+fun CaveatCard(
+    title: String,
+    body: String,
+    modifier: Modifier = Modifier,
+    action: (@Composable () -> Unit)? = null,
+) {
+    GroupedCard(modifier = modifier, raised = true, contentPadding = PaddingValues(Spacing.base)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.snug)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CautionDot()
+                Text(text = title, style = MaterialTheme.typography.titleMedium)
+            }
+            Text(text = body, style = MaterialTheme.typography.bodyMedium)
+            if (action != null) {
+                Row(modifier = Modifier.offset(x = -Spacing.snug)) { action() }
+            }
         }
     }
 }

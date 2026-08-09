@@ -1,14 +1,10 @@
 package app.binky.tracker.ui.weight
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,7 +12,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -27,6 +22,7 @@ import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.bunny.Age
 import app.binky.tracker.ui.bunny.ageOn
+import app.binky.tracker.ui.common.CautionDot
 import app.binky.tracker.ui.common.GroupedCard
 import java.time.Duration
 import java.time.Instant
@@ -187,7 +183,7 @@ fun TrendFlagBanner(
 
     GroupedCard(
         modifier = modifier,
-        nested = nested,
+        raised = nested,
         contentPadding = PaddingValues(Spacing.base),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.snug)) {
@@ -198,15 +194,7 @@ fun TrendFlagBanner(
                 // The marker, and the only saturated thing on the card. Absent once the episode has
                 // been acknowledged: the drop is still real and still reported, but it has stopped
                 // being something the owner has not yet seen, which is all this dot ever said.
-                if (acknowledgedAt == null) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.tertiary),
-                    )
-                }
+                if (acknowledgedAt == null) CautionDot()
                 Text(
                     text = stringResource(R.string.trend_flag_title),
                     style = MaterialTheme.typography.titleMedium,

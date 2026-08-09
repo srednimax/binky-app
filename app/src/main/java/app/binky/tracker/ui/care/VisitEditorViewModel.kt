@@ -66,6 +66,15 @@ data class VisitEditorUiState(
     val scanning: Boolean = false,
     val scanNotice: ScanNotice? = null,
     val saved: Boolean = false,
+    /**
+     * The weighing **as stored**, not as typed. What the delete confirmation has to name: a number
+     * half-edited in the field is not what deleting the visit would take with it.
+     */
+    val storedGrams: Int? = null,
+    /** Set while the delete confirmation is up, which is where the weighing's fate is chosen. */
+    val confirmingDelete: Boolean = false,
+    /** Flipped once the visit is gone. The screen's cue to leave, as [saved] is after a save. */
+    val deleted: Boolean = false,
 ) {
     val vetName: String? get() = vets.firstOrNull { it.id == vetId }?.name
 
@@ -113,6 +122,7 @@ class VisitEditorViewModel(
                     notes = details?.visit?.notes.orEmpty(),
                     vetId = details?.visit?.vetId,
                     grams = details?.weightGrams?.toString() ?: "",
+                    storedGrams = details?.weightGrams,
                 )
             }
         }
@@ -250,6 +260,33 @@ class VisitEditorViewModel(
                 visits.update(row, grams = state.parsedGrams)
             }
             _uiState.update { it.copy(saved = true) }
+        }
+    }
+
+    fun requestDelete() {
+        _uiState.update { it.copy(confirmingDelete = true) }
+    }
+
+    fun cancelDelete() {
+        _uiState.update { it.copy(confirmingDelete = false) }
+    }
+
+    /**
+     * Deletes the visit, having **stated** what happens to the weighing recorded at it (PLAN 5c).
+     *
+     * Moved here from the Care & Meds list in Phase 7, where `3a`'s 64dp rows left nowhere to put a
+     * button — the same split `Weight` made at `1d`: the list navigates, the editor destroys.
+     *
+     * [keepWeighing] is the owner's answer rather than a default this class picks: keeping it leaves
+     * a standalone weighing in the chart, removing it takes the vet's number out of the series, and
+     * guessing either way would be the app deciding what a health record is worth. The `SET NULL`
+     * foreign key is what makes *keep* correct without a second write (ADR-0017).
+     */
+    fun confirmDelete(keepWeighing: Boolean) {
+        val id = visitId ?: return
+        viewModelScope.launch {
+            visits.delete(id, keepWeighing = keepWeighing)
+            _uiState.update { it.copy(confirmingDelete = false, deleted = true) }
         }
     }
 

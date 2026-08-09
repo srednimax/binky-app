@@ -88,19 +88,6 @@ data class CourseRow(
     val schedules: Boolean get() = times.isNotEmpty() && course.remindersEnabled && next !is DoseNext.Ended
 }
 
-/**
- * A course the owner has asked to delete, **and the size of what that would take**.
- *
- * The count is carried rather than looked up while the dialog draws, because it is one `COUNT(*)`
- * and a composable is the wrong place to suspend. It is read once, at the tap — a dose recorded in
- * the second between the tap and the confirmation would make it stale by one, which is a price
- * worth paying to keep the number out of the render path.
- */
-data class PendingCourseDelete(
-    val row: CourseRow,
-    val doseCount: Int,
-)
-
 data class CareUiState(
     val selection: BunnySelection = BunnySelection.Loading,
     val rows: List<CareRow> = emptyList(),
@@ -110,14 +97,8 @@ data class CareUiState(
     val courses: List<CourseRow> = emptyList(),
     /** Every slot derived for **today**, answered or not — the question the tab opens on. */
     val todaysDoses: List<ScheduledDose> = emptyList(),
-    /** Set while the one delete confirmation is up (ADR-0004 reserves its ceremony for a bunny). */
-    val pendingDelete: CareRow? = null,
     /** Set while the completion sheet is up. Never a weigh-in — see [CareRow.completedByWeighing]. */
     val completing: CareRow? = null,
-    /** Set while the visit's delete dialog is up, which is where its weighing's fate is chosen. */
-    val pendingVisitDelete: VisitRow? = null,
-    /** Set while a course's delete dialog is up, carrying the number of doses it would destroy. */
-    val pendingCourseDelete: PendingCourseDelete? = null,
 ) {
     val bunnyId: String? get() = selection.bunnyId
 
@@ -154,27 +135,15 @@ class CareViewModel(
     private val visits = container.visitRepository
     private val medications = container.medicationRepository
 
-    private val pendingDelete = MutableStateFlow<String?>(null)
-    private val completing = MutableStateFlow<String?>(null)
-    private val pendingVisitDelete = MutableStateFlow<String?>(null)
-    private val pendingCourseDelete = MutableStateFlow<CourseDeleteRequest?>(null)
-
     /**
-     * The four dialog flags as one flow.
+     * The one dialog this screen still raises.
      *
-     * Purely so the combine below stays within `combine`'s five-argument overload — grouping them
-     * costs one private type and keeps the alternative, an array-typed vararg combine with
-     * positional casts, out of the file.
+     * **Phase 7 took the other three away** — deleting a course, a reminder or a visit moved onto
+     * that thing's own screen when `3a` gave the list 64dp rows with nowhere to put a button. What
+     * is left is completing a reminder, which is not destructive and is the thing an owner opens
+     * this tab to do.
      */
-    private val dialogs: Flow<Dialogs> =
-        combine(
-            pendingDelete,
-            completing,
-            pendingVisitDelete,
-            pendingCourseDelete,
-        ) { deleting, completingId, deletingVisit, deletingCourse ->
-            Dialogs(deleting, completingId, deletingVisit, deletingCourse)
-        }
+    private val completing = MutableStateFlow<String?>(null)
 
     /**
      * Kotlin note: `flatMapLatest` swaps to a new inner Flow whenever the selection changes and
@@ -197,8 +166,8 @@ class CareViewModel(
                         care.schedule(bunnyId),
                         visits.visits(bunnyId),
                         medications(bunnyId),
-                        dialogs,
-                    ) { schedule, visitList, meds, open ->
+                        completing,
+                    ) { schedule, visitList, meds, completingId ->
                         val today = LocalDate.now()
                         val rows = schedule.map { CareRow(scheduled = it, due = careDue(it.dueOn, today)) }
                         val visitRows =
@@ -217,15 +186,7 @@ class CareViewModel(
                             visits = visitRows,
                             courses = meds.courses,
                             todaysDoses = meds.today,
-                            pendingDelete = rows.firstOrNull { it.id == open.reminder },
-                            completing = rows.firstOrNull { it.id == open.completing },
-                            pendingVisitDelete = visitRows.firstOrNull { it.id == open.visit },
-                            pendingCourseDelete =
-                                open.course?.let { request ->
-                                    meds.courses
-                                        .firstOrNull { it.id == request.courseId }
-                                        ?.let { PendingCourseDelete(it, request.doseCount) }
-                                },
+                            completing = rows.firstOrNull { it.id == completingId },
                         )
                     }
                 }
@@ -273,28 +234,6 @@ class CareViewModel(
         }
     }
 
-    fun requestDelete(row: CareRow) {
-        pendingDelete.value = row.id
-    }
-
-    fun cancelDelete() {
-        pendingDelete.value = null
-    }
-
-    /**
-     * **One** confirmation. ADR-0004's two-stage ceremony is calibrated to destroying a bunny's whole
-     * history; a reminder is a schedule, and its completions go with it by cascade.
-     */
-    fun confirmDelete() {
-        val id = pendingDelete.value ?: return
-        viewModelScope.launch {
-            care.delete(id)
-            pendingDelete.value = null
-            // The row is gone, so anything it posted is now a notification about nothing.
-            container.careNotifier.cancel(id)
-        }
-    }
-
     fun startCompleting(row: CareRow) {
         completing.value = row.id
     }
@@ -322,30 +261,6 @@ class CareViewModel(
         }
     }
 
-    fun requestVisitDelete(row: VisitRow) {
-        pendingVisitDelete.value = row.id
-    }
-
-    fun cancelVisitDelete() {
-        pendingVisitDelete.value = null
-    }
-
-    /**
-     * Deletes a visit, having **stated** what happens to the weighing recorded at it (PLAN 5c).
-     *
-     * [keepWeighing] is the owner's answer rather than a default this class picks: keeping it leaves
-     * a standalone weighing in the chart, removing it takes the vet's number out of the series, and
-     * guessing either way would be the app deciding what a health record is worth. The `SET NULL`
-     * foreign key is what makes *keep* correct without a second write (ADR-0017).
-     */
-    fun confirmVisitDelete(keepWeighing: Boolean) {
-        val id = pendingVisitDelete.value ?: return
-        viewModelScope.launch {
-            visits.delete(id, keepWeighing = keepWeighing)
-            pendingVisitDelete.value = null
-        }
-    }
-
     /**
      * Answers one derived slot — **given or skipped, one tap either way** (PLAN 5e).
      *
@@ -359,63 +274,6 @@ class CareViewModel(
     ) {
         viewModelScope.launch { medications.answer(dose.due, status) }
     }
-
-    /**
-     * Asks to delete a course, **counting what that would destroy first**.
-     *
-     * The count is read here rather than in the dialog because it suspends. Until it arrives there
-     * is no dialog, which is the right order: a confirmation that appears and then changes the
-     * number under the owner is worse than one that appears a frame later.
-     */
-    fun requestCourseDelete(row: CourseRow) {
-        viewModelScope.launch {
-            pendingCourseDelete.value =
-                CourseDeleteRequest(courseId = row.id, doseCount = medications.doseCount(row.id))
-        }
-    }
-
-    fun cancelCourseDelete() {
-        pendingCourseDelete.value = null
-    }
-
-    /** Destroys the course, its schedule and every dose recorded against it, by cascade. */
-    fun confirmCourseDelete() {
-        val id = pendingCourseDelete.value?.courseId ?: return
-        viewModelScope.launch {
-            medications.delete(id)
-            pendingCourseDelete.value = null
-        }
-    }
-
-    /**
-     * The offer the delete dialog makes instead: **end the course and keep every dose**.
-     *
-     * Ending is setting `endOn` to today (ADR-0002), so the future slots simply stop being derived
-     * and the history is untouched. It is the answer to what an owner usually means by "we have
-     * finished with this one", and it exists in the dialog because that is where they are standing
-     * when they mean it.
-     */
-    fun endCourse() {
-        val id = pendingCourseDelete.value?.courseId ?: return
-        viewModelScope.launch {
-            medications.endCourse(id)
-            pendingCourseDelete.value = null
-        }
-    }
-
-    /** The four dialog ids, grouped so the state combine stays inside its five-argument overload. */
-    private data class Dialogs(
-        val reminder: String?,
-        val completing: String?,
-        val visit: String?,
-        val course: CourseDeleteRequest?,
-    )
-
-    /** A pending course delete before its row has been resolved from the current list. */
-    private data class CourseDeleteRequest(
-        val courseId: String,
-        val doseCount: Int,
-    )
 
     /** The medication half of the tab, assembled off the main combine. */
     private data class Medications(

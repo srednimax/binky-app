@@ -38,6 +38,8 @@ data class MedicationCourseUiState(
     /** Set while one recorded dose is being corrected. */
     val editingDose: DoseEntity? = null,
     val pendingDoseDelete: DoseEntity? = null,
+    /** Set while the confirmation for deleting the **whole course** is up. */
+    val confirmingDelete: Boolean = false,
     /**
      * Flipped when the course is no longer there — deleted from the list behind this screen, or with
      * its bunny. The screen's cue to leave rather than render an empty shell.
@@ -70,10 +72,22 @@ class MedicationCourseViewModel(
     private val editingDose = MutableStateFlow<String?>(null)
     private val pendingDoseDelete = MutableStateFlow<String?>(null)
 
+    /**
+     * Deleting the **course**, which arrived here in Phase 7 when `3a` gave the list behind this
+     * screen 64dp rows with nowhere to put a button. It is the same decision `Weight` made at `1d`:
+     * the list navigates, the thing's own screen destroys.
+     */
+    private val confirmingDelete = MutableStateFlow(false)
+
     /** Grouped so the state combine below stays inside `combine`'s five-argument overload. */
     private val dialogs: Flow<Dialogs> =
-        combine(recording, editingDose, pendingDoseDelete) { open, editing, deleting ->
-            Dialogs(open, editing, deleting)
+        combine(
+            recording,
+            editingDose,
+            pendingDoseDelete,
+            confirmingDelete,
+        ) { open, editing, deleting, deletingCourse ->
+            Dialogs(open, editing, deleting, deletingCourse)
         }
 
     /**
@@ -117,6 +131,7 @@ class MedicationCourseViewModel(
                             recording = open.recording,
                             editingDose = doses.firstOrNull { it.id == open.editing },
                             pendingDoseDelete = doses.firstOrNull { it.id == open.deleting },
+                            confirmingDelete = open.deletingCourse,
                         )
                     }
                 }
@@ -206,12 +221,37 @@ class MedicationCourseViewModel(
      */
     fun endCourse() {
         viewModelScope.launch { medications.endCourse(courseId) }
+        // Closing from inside the delete confirmation is the whole point of offering it there.
+        confirmingDelete.value = false
+    }
+
+    fun requestDelete() {
+        confirmingDelete.value = true
+    }
+
+    fun cancelDelete() {
+        confirmingDelete.value = false
+    }
+
+    /**
+     * Destroys the course, its schedule and every dose recorded against it, by cascade.
+     *
+     * Nothing navigates here. `medications.course(courseId)` emits null the moment the row is gone,
+     * which sets `gone`, and the screen leaves on that — one exit path whether the course was
+     * deleted here, deleted with its bunny, or wiped by a restore.
+     */
+    fun confirmDelete() {
+        viewModelScope.launch {
+            medications.delete(courseId)
+            confirmingDelete.value = false
+        }
     }
 
     private data class Dialogs(
         val recording: Boolean,
         val editing: String?,
         val deleting: String?,
+        val deletingCourse: Boolean,
     )
 
     companion object {
