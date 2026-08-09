@@ -263,8 +263,11 @@ lives* for how to open one without loading the whole file.
 | Archived bunnies | `4f` / `4g` / `4h` | ✅ 2026-08-09. The one list that keeps its buttons — *Open* leads to a read-only bunny, so there is nowhere for *Delete* to move to. `4f`'s change is the weights |
 | `More` | `6a` / `6b` | ✅ 2026-08-09. Same six destinations, same copy. Six headings with paragraphs become six 64dp rows in one card |
 | Backup & restore | `6c` / `6d` | ✅ 2026-08-09. Six section rules become the header rhythm, and the automatic-backup status takes the apricot dot — which settles the stale-backup marker |
-| `Settings` | **none** | ✅ 2026-08-09. The first undrawn route, and it sets the rule the other seven follow: **a control that cannot name itself gets a header; a row that names itself does not.** No string added, one relocated |
-| Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in | **none** | `github.md`'s *Not yet drawn* list — apply the language by hand |
+| `Settings` | `9a` / `9b` | ✅ 2026-08-09. Built by hand while still undrawn, then checked against `9a` when it arrived — **the structure held**. The drawing corrected two things: the current language moves into the row's *trailing* slot, and the two debug blocks group under one *Debug builds only* header. `9a` predates the Material You row and does not show it; kept |
+| `Support` | `9c` / `9d` | ✅ 2026-08-09. **One filled button per screen, and it is the one that matters most** — now app-wide. First card to hold a chevron row and a fact row side by side, which cost the idiom `SingleLineRowHeight` |
+| Chart empty states | `8a` / `8b` | **Not built yet.** Four states, not one — one of the two Weight surfaces that had no drawing |
+| Watch expiry prompt | `8c` / `8d` / `8e` | **Not built yet.** `8d` is the case with no live flag, *"where silence must not read as good news"* — ADR-0001 drawn |
+| Documents, Photos, Setup, Schema mismatch, Reminders opt-in | **none** | `github.md`'s *Not yet drawn* list — apply the language by hand |
 
 **`ui/common/Surfaces.kt` is where the idiom lives, and every remaining row above depends on it.**
 The mockups draw the same four things screen after screen — `SectionHeader`, `GroupedCard`, `FactRow`,
@@ -279,6 +282,19 @@ a whole history is a *single* `LazyColumn` item, so every row composes whether o
 which is the one thing `LazyColumn` exists to avoid, and Bijou's seeded history is already 39 rows. It
 draws the same card the other way round: each row carries the surface itself and only the two at the
 ends round their outer corners. Observations, Photos, Documents and the dose history all want it.
+
+**Build an undrawn route anyway — the structure held when the drawing arrived.** `Settings` was built
+against `Surfaces.kt` and `Forms.kt` alone, and `9a` landed a few hours later agreeing with all of it:
+the two cards, the rows, the chip pair, the header rhythm. What it corrected was *content placement*,
+not shape — where the current language sits, and that one header can serve two blocks. **The idiom is
+now strong enough to predict a drawing**, which is the strongest evidence the sweep has produced that
+`Surfaces.kt` was worth writing before the routes rather than after them.
+
+**`SingleLineRowHeight` (56dp), added by `9c`.** A `ListRow` with no subtitle is not a 64dp row with a
+line missing, and a `FactRow` next to one is not a 48dp row in a column of facts. Support's last card
+is the first to hold both — *Privacy policy* opens something so it chevrons, *Version* does not so it
+carries a value — and two different floors in one card read as a rendering fault. `ListRow` derives it
+from `subtitle == null`; `FactRow` cannot know, so the caller passes `Modifier.heightIn(min = …)`.
 
 **`SwitchRow` titles at `titleMedium`, and Settings is why.** The row was written on `6c`, where it is
 the only row in its card, so nothing ever stood next to it; Settings puts a switch row between two
