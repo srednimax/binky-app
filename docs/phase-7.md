@@ -250,7 +250,7 @@ lives* for how to open one without loading the whole file.
 | `Home`, no bunnies | `4c` / `4c2` | ✅ 2026-08-09 — **code only, not yet seen on the device**: the phone holds the sample fluffle, and emptying it to look at one screen would take the Doze run's seed with it (`DOD.md` §1) |
 | Bunny switcher | `4d` | ✅ 2026-08-09. Four items; *Archived* deliberately absent |
 | `Weight` + chart | `1d` / `1e` | ✅ 2026-08-09. Hero. The row lost its buttons, so **deleting moved to the editor**; the chart's points became rings filled with the card |
-| Record a weighing | `6e` / `6f` | A **route, not a sheet** — corrected against the capture. Grams only. Carries the one addition below |
+| Record a weighing | `6e` / `6f` | ✅ 2026-08-09. The only oversized input in the app, and the **last-five line is adopted**. Building it found a shipped bug on the screen in front of it |
 | New course | `3e` | ✅ 2026-08-09. Same six fields, same words — and *Save* moved to the app bar, which is the drawing's own recommendation against its own frame |
 | Record a dose | `3f` / `3g` | ✅ 2026-08-09. Stays a dialog, and fixes the rules for **every** dialog — they live in `ui/common/Dialogs.kt` |
 | Trend flag card | `1b` and every card that nests it | ✅ 2026-08-09, and it moved twice. `errorContainer` → `tertiaryContainer` → **a quiet `surfaceContainer` card with a 10dp apricot dot**. The drawings are explicit: *"the flag card is the same surface as every other card — apricot arrives as a 10dp dot"*. A whole panel of colour asserts an urgency the sentence inside it disclaims. Apricot as a *fill* survives in one place only, the active watch row |
@@ -501,6 +501,25 @@ capture show only the empty half of a card whose whole point is the pair of stat
 each by hand is what proved the row does not crowd at *label · value · Change · Clear*, and that the
 approximate switch lands between Birthday and Breed with a divider each side rather than after both.
 
+⚠️ **`6e` found a shipped bug on the screen in front of it, and the way it was found is the point.**
+Opening a **weigh-in** reminder raised *Correct this completion* with *Delete this completion?*
+stacked on top, immediately and every time, and cancelling brought them back — the screen was
+unusable. `CareEventRow.id` is null on every weight-derived row (a weighing is not a completion and
+has no event to name), and the state resolved its dialog flags with
+`rows.firstOrNull { it.id == open.event }`, so the ordinary **no-dialog** state matched the first
+row whose id was also null. One reminder type, because only a weigh-in's history holds those rows.
+
+Two lessons, both cheap and both general:
+
+- **A scene that reaches a route *through* another one is testing both.** This was reachable by any
+  owner tapping their weigh-in reminder, and it survived a phase of device passes because
+  `care-reminder` opens a reminder that is *not* a weigh-in — so the one screen with null-id rows
+  was never the one under the camera. Route coverage is not type coverage.
+- **A deterministic scene failure is evidence, not noise.** It failed in all four cells, which was
+  read first as a driver flake and rewarded a driver "fix" that changed nothing. Reproducing it with
+  a single raw tap, and then with the row scrolled to a different position, is what ruled the driver
+  out in two runs. *Rule out the harness by making the harness irrelevant, not by adjusting it.*
+
 **`RecordedAtField` moved with it**, so the weight form inherits the treatment before `6e` redraws the
 rest of it: a titled card of two rows with an inset divider, and buttons reading just **Change** — the
 value each sits beside already says which. The old *"Change the date"* / *"Change the time"* survive as
@@ -517,9 +536,12 @@ are listed because a screen redrawn from a mockup will otherwise absorb them sil
 
 - **A calendar route** (`7a` / `7b`). The doc concedes it: *"this is a new route, which your original brief
   ruled out"*. **Defer** — a new nav key is out of scope by definition, and it wants its own phase.
-- **The last-five line on Record a weighing** (`6e`: *"the one addition is the last-five line"*) — the five
-  previous weights shown while entering a new one. Small, genuinely useful at a scale, and reads only data
-  the route already has. **Likely adopt**; it is the one addition worth arguing for.
+- ~~**The last-five line on Record a weighing**~~ (`6e`). **Adopted 2026-08-09**, and it is the only one of
+  the four that was. It is a *guard* rather than a feature, which is what earns it a place in a phase scoped
+  to appearance: `2310` and `23100` look equally plausible in an empty box, and a digit too many silently
+  poisons the very series ADR-0001's flag then reports on. It reads only weighings the route already loads
+  and excludes the row being edited. **Printed oldest first**, ending on the most recent reading — the
+  drawing's order, and the one that reads, since the eye finishes on the number the new one will follow.
 - **A stale-backup marker** (`6c`: *"the status line gets the apricot marker"*, and `github.md`: *"the same
   marker badges a stale backup"*). Needs a staleness rule that does not exist yet. ADR-0001 is safe here —
   it is a fact about the *backup*, not about a rabbit — but the threshold is a real decision and the copy
