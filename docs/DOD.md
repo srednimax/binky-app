@@ -248,9 +248,15 @@ exists. These are the items that come first.
       the device in light and dark. Vets became one grouped card and gave up its row-level *Delete*,
       which is the fifth and last list-plus-editor pair to follow `1d`; its editor changes **no
       string at all**. The bunny editor kept all eight fields, in order, in the app's own words.
-      Next is **`6e`/`6f` Record a weighing**, which carries the last-five line decision. Eight
-      routes have no drawing at all (Settings, Support, Documents, Photos, Setup, Watch expiry,
-      Schema mismatch, Reminders opt-in) and get the language applied by hand.
+      ✅ **`6e`/`6f` Record a weighing is done too** — 2026-08-09, and the **last-five line is
+      adopted**, so three of the four open decisions are now closed. Building it surfaced a shipped
+      bug on the screen in front of it: a weigh-in reminder opened both completion dialogs by
+      itself and could not be used. Fixed, and worth reading the phase file on *why* a phase of
+      device passes missed it.
+      **Every drawn route is now redrawn.** What is left is the eight with no drawing at all —
+      Settings, Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in —
+      which get the language applied by hand, plus the two undrawn Weight surfaces (the chart's
+      empty state and the watch-expiry sheet).
       **`ui/common/Surfaces.kt` is the shared idiom** every remaining route draws from — section header,
       grouped card, fact row, inset divider, the two card radii, `FabClearance`, and now
       `GroupedCardItem` for a grouped card whose rows are separate lazy items (any list that can run to
@@ -304,8 +310,12 @@ exists. These are the items that come first.
       ✅ **One of the four is now closed, and it was never new functionality.** `4e`'s *field-absent
       states* asked whether the app distinguishes "not known" from "not set"; it has since ADR-0016,
       in those exact words — a birthday is a fact nobody may know, a breed is a field nobody filled
-      in. **Three left**: the last-five line (`6e`, likely adopt), the stale-backup marker (`6c`,
-      needs a staleness rule first) and the *"not checked" is a stored value* claim.
+      in.
+      ✅ **The last-five line is adopted** (2026-08-09, with `6e`) — the only one of the four taken,
+      and what earns it a place in an appearance phase is that it is a *guard* rather than a
+      feature: a digit too many in an empty box poisons the series ADR-0001's flag reports on.
+      **Two left**: the stale-backup marker (`6c`, needs a staleness rule first) and the
+      *"not checked" is a stored value* claim.
 - [ ] **Rules the new look inherits** — weight changes always in grams; the chart plots real timestamps,
       not index; missing media is a placeholder, never a crash; image writes go through the media helper
       (ADR-0020); no empty state infers a problem from silence (ADR-0001); no *missed*/*overdue* outside
