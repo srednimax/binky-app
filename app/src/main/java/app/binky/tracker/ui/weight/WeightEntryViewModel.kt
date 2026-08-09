@@ -68,6 +68,19 @@ data class WeightEntryUiState(
      */
     val storedGrams: Int? = null,
     val storedRecordedAt: Instant? = null,
+    /**
+     * The most recent weighings before this one, newest first — `6e`'s *last five* line.
+     *
+     * **The one addition Phase 7 adopted**, and it is a guard rather than a feature: `2310` and
+     * `23100` look equally plausible in an empty box, and a digit too many is what silently poisons
+     * the very series ADR-0001's flag then reports on. Five real numbers beside the box make the
+     * scale of the answer obvious before it is saved.
+     *
+     * Derived from records the route already loads — no new data, no schema, no query. The row being
+     * edited is excluded: comparing a number against itself says nothing, and it is in the box
+     * already.
+     */
+    val recentGrams: List<Int> = emptyList(),
     /** Flipped once the write has landed *and* been reported, which is the screen's cue to leave. */
     val saved: Boolean = false,
 ) {
@@ -120,8 +133,10 @@ class WeightEntryViewModel(
     init {
         viewModelScope.launch {
             // Read once rather than collecting: a form fed by a Flow would overwrite the owner's
-            // half-typed number every time the row it is editing emitted again.
-            val weight = weightId?.let { id -> weights.series(bunnyId).first().firstOrNull { it.id == id } }
+            // half-typed number every time the row it is editing emitted again. The series is
+            // newest-first, which is the order `6e` prints the last five in.
+            val series = weights.series(bunnyId).first()
+            val weight = weightId?.let { id -> series.firstOrNull { it.id == id } }
             existing = weight
             val recordedAt = weight?.recordedAt?.atZone(ZoneId.systemDefault())
             _uiState.update { state ->
@@ -135,6 +150,16 @@ class WeightEntryViewModel(
                     visitId = weight?.visitId,
                     storedGrams = weight?.grams,
                     storedRecordedAt = weight?.recordedAt,
+                    // Reversed after taking: the *five most recent* readings, printed oldest
+                    // first, so the line ends on the latest one. That is the order `6e` prints
+                    // them in, and it is the readable one — the eye finishes on the number the
+                    // one being typed will follow.
+                    recentGrams =
+                        series
+                            .filter { it.id != weightId }
+                            .take(RECENT_COUNT)
+                            .map { it.grams }
+                            .reversed(),
                 )
             }
         }
@@ -296,6 +321,9 @@ class WeightEntryViewModel(
     }
 
     companion object {
+        /** How many readings `6e`'s line shows. Five is the drawing's, and it fits on one line. */
+        private const val RECENT_COUNT = 5
+
         /** A factory *function*, because the navigation key carries arguments (as in the bunny editor). */
         fun factory(
             bunnyId: String,

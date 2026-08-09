@@ -127,8 +127,8 @@
     <!-- Adding or editing a weighing. Entry is always in grams (house rule). -->
     <string name="weight_entry_add_title">Zapisz ważenie</string>
     <string name="weight_entry_edit_title">Edytuj ważenie</string>
-    <string name="weight_grams_label">Waga w gramach</string>
-    <string name="weight_grams_help">Pełne gramy, tak jak pokazuje waga.</string>
+    <string name="weight_grams_help">Waga w gramach. Pełne gramy, tak jak pokazuje waga.</string>
+    <string name="weight_recent">Ostatnie ważenia: %1$s.</string>
     <string name="weight_grams_required">Wpisz wagę w gramach.</string>
     <string name="weight_grams_as_kilograms">To %1$s.</string>
     <string name="weight_recorded_at_label">Kiedy królik był na wadze</string>

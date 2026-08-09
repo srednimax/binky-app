@@ -115,8 +115,8 @@
          to, because that is what a scale reads out (house rule). -->
     <string name="weight_entry_add_title">Record a weighing</string>
     <string name="weight_entry_edit_title">Edit a weighing</string>
-    <string name="weight_grams_label">Weight in grams</string>
-    <string name="weight_grams_help">Whole grams, as the scale reads it.</string>
+    <string name="weight_grams_help">Weight in grams. Whole grams, as the scale reads it.</string>
+    <string name="weight_recent">Recent weighings: %1$s.</string>
     <string name="weight_grams_required">Enter the weight in grams.</string>
     <string name="weight_grams_as_kilograms">That is %1$s.</string>
     <string name="weight_recorded_at_label">When the bunny was on the scale</string>

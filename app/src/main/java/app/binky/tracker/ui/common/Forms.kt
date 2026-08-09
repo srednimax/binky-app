@@ -65,8 +65,14 @@ import app.binky.tracker.theme.Spacing
  */
 private val ChipHeight = 36.dp
 
-/** A text box's radius, one step tighter than a card's, so it reads as a control inside one. */
-private val FieldRadius = 14.dp
+/**
+ * A text box's radius, one step tighter than a card's, so it reads as a control inside one.
+ *
+ * Public for the one box this file does not draw: `6e`'s grams field is 72dp tall at `headlineMedium`
+ * — deliberately the only oversized input in the app — and it still has to be the same *shape* as
+ * every other box, or it reads as a different kind of control rather than a bigger one.
+ */
+val FieldRadius = 14.dp
 
 /** A row carrying a control the owner reads a value off — a date beside its *Change*, a switch. */
 private val ControlRowHeight = 56.dp
