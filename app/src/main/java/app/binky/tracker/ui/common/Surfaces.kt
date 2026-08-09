@@ -261,8 +261,13 @@ fun ListRow(
     }
 }
 
-/** A [ListRow]'s minimum height. Two lines of type and a target, and the drawings are firm on it. */
-private val ListRowHeight = 64.dp
+/**
+ * A [ListRow]'s minimum height. Two lines of type and a target, and the drawings are firm on it.
+ *
+ * Public because the vet directory needs the same floor without being a [ListRow]: its rows carry up
+ * to four lines at three different weights, so they are drawn by hand and only borrow the height.
+ */
+val ListRowHeight = 64.dp
 
 /**
  * The trailing mark of a [ListRow] that opens something.
@@ -450,6 +455,39 @@ fun CaveatCard(
             if (action != null) {
                 Row(modifier = Modifier.offset(x = -Spacing.snug)) { action() }
             }
+        }
+    }
+}
+
+/**
+ * A route with nothing on it, or a directory with nothing in it: **one sentence, in a card the size
+ * of a row**.
+ *
+ * `3c`'s shape, and it is deliberately that small. What the card buys is that an empty route is the
+ * same *class of object* as a full one, rather than loose text floating under the app bar. No
+ * heading and no illustration — emptiness should not be the most prominent thing on a screen — and
+ * the sentence is about the **record**, never about the rabbit (ADR-0001).
+ *
+ * [action] is for the case that is a question rather than an emptiness: there is data, it just
+ * belongs to somebody the scope has not named yet.
+ *
+ * Distinct from Care & Meds' `EmptySection`, which is one *section* of a populated screen saying it
+ * holds nothing and stays plain text so it cannot be mistaken for a row.
+ */
+@Composable
+fun MessageCard(
+    text: String,
+    modifier: Modifier = Modifier,
+    action: (@Composable () -> Unit)? = null,
+) {
+    GroupedCard(modifier = modifier, contentPadding = PaddingValues(Spacing.base)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.snug)) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            action?.invoke()
         }
     }
 }

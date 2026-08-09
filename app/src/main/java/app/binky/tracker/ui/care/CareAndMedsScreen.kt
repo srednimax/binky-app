@@ -2,7 +2,6 @@ package app.binky.tracker.ui.care
 
 import android.content.res.Resources
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -38,9 +37,9 @@ import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.bunny.dateLabel
 import app.binky.tracker.ui.common.Chevron
-import app.binky.tracker.ui.common.GroupedCard
 import app.binky.tracker.ui.common.GroupedCardItem
 import app.binky.tracker.ui.common.ListRow
+import app.binky.tracker.ui.common.MessageCard
 import app.binky.tracker.ui.common.SectionHeader
 import app.binky.tracker.ui.observations.ChooseBunnyDialog
 import app.binky.tracker.ui.reminders.ReminderCaveats
@@ -149,16 +148,11 @@ fun CareAndMedsScreen(
 }
 
 /**
- * A route with nothing on it: one sentence, in a card the size of a row.
+ * A route with nothing on it: `3c`'s [MessageCard], given the whole screen to sit at the top of.
  *
- * `3c`'s only change to the empty state, and it is deliberately that small — *"Add a bunny first"* is
- * already the right sentence, because the record is empty precisely because there is nobody to keep
- * records about. What the card buys is that an empty route is the same **class of object** as a full
- * one rather than loose text under the bar. No heading and no illustration: emptiness should not be
- * the most prominent thing on a screen.
- *
- * [action] is for the *All bunnies* case, which is a question rather than an emptiness — there is
- * data, it just belongs to somebody the scope has not named yet.
+ * *"Add a bunny first"* was already the right sentence — what `3c` changed is only that it is now in
+ * a card. The card itself moved to `Surfaces.kt` when the vet directory turned out to want the same
+ * shape for the same reason; this is the placement, which is all that is left of it here.
  */
 @Composable
 private fun RouteMessage(
@@ -167,16 +161,7 @@ private fun RouteMessage(
     action: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier = modifier.fillMaxSize().padding(horizontal = Spacing.base, vertical = Spacing.tight)) {
-        GroupedCard(contentPadding = PaddingValues(Spacing.base)) {
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.snug)) {
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                action?.invoke()
-            }
-        }
+        MessageCard(text = text, action = action)
     }
 }
 

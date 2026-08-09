@@ -8,17 +8,13 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import app.binky.tracker.AppContainer
 import app.binky.tracker.BinkyApplication
 import app.binky.tracker.data.VetEntity
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 data class VetsUiState(
     val vets: List<VetEntity> = emptyList(),
-    /** Set while the one delete confirmation is up. */
-    val pendingDelete: VetEntity? = null,
 )
 
 /**
@@ -26,46 +22,19 @@ data class VetsUiState(
  *
  * That absence is the whole difference between this screen and every other list in the app, and it
  * is why the directory lives in More rather than on the bunny-scoped Care tab.
+ *
+ * **It holds nothing but the list from Phase 7.** Deleting a vet moved onto the editor with the
+ * redraw (`5a`, following `1d`), and the confirmation went with it — so the pending-delete id, the
+ * three methods that drove it and the `combine` that folded it into the state are all in
+ * [VetEditorViewModel] now.
  */
 class VetsViewModel(
     private val container: AppContainer,
 ) : ViewModel() {
-    private val vets = container.vetRepository
-
-    /**
-     * Held as an **id** rather than as the row, so a vet renamed underneath an open dialog
-     * re-resolves to the current row instead of confirming against a stale copy — the same shape
-     * the Care list uses for its two dialogs.
-     */
-    private val pendingDelete = MutableStateFlow<String?>(null)
-
     val uiState: StateFlow<VetsUiState> =
-        combine(vets.vets, pendingDelete) { directory, deleting ->
-            VetsUiState(
-                vets = directory,
-                pendingDelete = directory.firstOrNull { it.id == deleting },
-            )
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VetsUiState())
-
-    fun requestDelete(vet: VetEntity) {
-        pendingDelete.value = vet.id
-    }
-
-    fun cancelDelete() {
-        pendingDelete.value = null
-    }
-
-    /**
-     * **One** confirmation, and it destroys nothing but the directory entry: every visit that named
-     * this vet keeps its row and loses only the name (ADR-0017, ADR-0004).
-     */
-    fun confirmDelete() {
-        val id = pendingDelete.value ?: return
-        viewModelScope.launch {
-            vets.delete(id)
-            pendingDelete.value = null
-        }
-    }
+        container.vetRepository.vets
+            .map { VetsUiState(vets = it) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VetsUiState())
 
     companion object {
         val Factory =

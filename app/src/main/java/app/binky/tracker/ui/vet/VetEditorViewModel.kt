@@ -27,11 +27,23 @@ data class VetEditorUiState(
     val isNew: Boolean = true,
     val name: String = "",
     val nameInvalid: Boolean = false,
+    /**
+     * The name as it stands **on disk**, for the delete confirmation to name.
+     *
+     * [name] is what is in the box, and the two differ exactly when the owner has retyped it and not
+     * saved — where a dialog saying a half-typed name goes from the directory would be naming
+     * something that was never in it. Same reason the visit editor keeps its stored weight.
+     */
+    val storedName: String = "",
     val clinic: String = "",
     val phone: String = "",
     val notes: String = "",
     /** Flipped once the write has landed, which is the screen's cue to leave. */
     val saved: Boolean = false,
+    /** Set while the one delete confirmation is up. */
+    val confirmingDelete: Boolean = false,
+    /** [saved]'s counterpart for the other way out of this screen. */
+    val deleted: Boolean = false,
 )
 
 /**
@@ -61,6 +73,7 @@ class VetEditorViewModel(
                 state.copy(
                     loading = false,
                     name = vet?.name.orEmpty(),
+                    storedName = vet?.name.orEmpty(),
                     clinic = vet?.clinic.orEmpty(),
                     phone = vet?.phone.orEmpty(),
                     notes = vet?.notes.orEmpty(),
@@ -102,6 +115,30 @@ class VetEditorViewModel(
                 )
             if (existing == null) vets.add(row) else vets.update(row)
             _uiState.update { it.copy(saved = true) }
+        }
+    }
+
+    fun requestDelete() {
+        _uiState.update { it.copy(confirmingDelete = true) }
+    }
+
+    fun cancelDelete() {
+        _uiState.update { it.copy(confirmingDelete = false) }
+    }
+
+    /**
+     * **One** confirmation, and it destroys nothing but the directory entry: every visit that named
+     * this vet keeps its row and loses only the name (ADR-0017, ADR-0004).
+     *
+     * Hosted here from Phase 7. The directory list draws rows with a chevron and nowhere to put a
+     * button (`5a`), which is the finding `Weight` made at `1d`; the id comes from the screen's own
+     * argument now rather than from a pending-delete flag on the list.
+     */
+    fun confirmDelete() {
+        val id = vetId ?: return
+        viewModelScope.launch {
+            vets.delete(id)
+            _uiState.update { it.copy(confirmingDelete = false, deleted = true) }
         }
     }
 
