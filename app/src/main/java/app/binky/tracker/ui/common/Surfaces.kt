@@ -246,7 +246,9 @@ fun ListRow(
                 // `then` rather than a nullable modifier: an unclickable row must not get a ripple
                 // or a semantics node at all, which is ADR-0004's rule for the archived scope.
                 .then(if (onClick == null) Modifier else Modifier.clickable(onClick = onClick))
-                .heightIn(min = ListRowHeight)
+                // 64dp buys room for two lines; a row with only a title does not need it, and `9c`
+                // draws the short one at 56dp so it can sit in the same card as a [FactRow].
+                .heightIn(min = if (subtitle == null) SingleLineRowHeight else ListRowHeight)
                 .padding(horizontal = Spacing.base, vertical = Spacing.tight),
         horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
         verticalAlignment = Alignment.CenterVertically,
@@ -284,6 +286,20 @@ fun ListRow(
  * to four lines at three different weights, so they are drawn by hand and only borrow the height.
  */
 val ListRowHeight = 64.dp
+
+/**
+ * A [ListRow] with **no subtitle**, and the floor a [FactRow] takes when it shares a card with one.
+ *
+ * `9c` is the first card in the app to mix the two — *Privacy policy* opens something so it carries a
+ * [Chevron], *Version* does not so it carries a value — and it draws both at 56dp. Neither component's
+ * own height fits: 64dp is room for a second line this row has not got, and [FactRow]'s 48dp is the
+ * floor for a *column* of facts read as one block, which Home draws and this is not.
+ *
+ * Public because [FactRow] cannot infer it. A fact row has no way to know it is standing next to a
+ * navigable one, so the caller says so — `Modifier.heightIn(min = SingleLineRowHeight)`, which wins
+ * because the outer constraint is the larger of the two.
+ */
+val SingleLineRowHeight = 56.dp
 
 /**
  * The trailing mark of a [ListRow] that opens something.

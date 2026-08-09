@@ -1,12 +1,17 @@
 package app.binky.tracker.ui.support
 
 import android.os.Build
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -22,7 +27,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -31,9 +35,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import app.binky.tracker.BuildConfig
 import app.binky.tracker.R
+import app.binky.tracker.theme.Spacing
+import app.binky.tracker.ui.common.Chevron
+import app.binky.tracker.ui.common.FactRow
+import app.binky.tracker.ui.common.GroupedCard
+import app.binky.tracker.ui.common.ListRow
+import app.binky.tracker.ui.common.RecordButtonHeight
+import app.binky.tracker.ui.common.RecordButtonRadius
+import app.binky.tracker.ui.common.RowDivider
+import app.binky.tracker.ui.common.SingleLineRowHeight
 import kotlinx.coroutines.launch
 
 /**
@@ -50,6 +62,30 @@ import kotlinx.coroutines.launch
  * **Nothing here has a pre-check.** Every button is always live, and the failure is reported *after*
  * the attempt, because on API 30+ `resolveActivity` answers "no" on a phone that has the app —
  * see `SupportHandoff.kt`. The attempt is the only honest test.
+ *
+ * ## Phase 7, against `9c` / `9d`
+ *
+ * **Every string is the app's own**, including the address and the version in full, and the order is
+ * unchanged. What the drawing fixes is *weight*:
+ *
+ * - **One filled button per screen, and it is the one that matters most.** *Report a bug* takes the
+ *   full-width primary shape ([RecordButtonHeight]); *Request a feature* and *Rate Binky* are
+ *   outlined and wrap their own labels. The before set already had this right by accident — `9c`
+ *   makes it the app-wide rule.
+ * - **The filled button keeps its helper directly beneath it.** "What a bug report carries" sits
+ *   between the button and the explanation rather than after both, because this is the first
+ *   outgoing data anywhere in Binky and naming that *before* the press is ADR-0001's rule against
+ *   silence pointed at the one screen that sends something.
+ * - **Privacy policy becomes a chevron row and pairs with Version in one card** — a link and a fact,
+ *   both single-line, previously spread over 90dp each with a rule between them. It opens something
+ *   so it gets a chevron; Version does not, so it does not. That is the row grammar, and this card
+ *   is the first in the app to draw both halves of it side by side ([SingleLineRowHeight]).
+ *
+ * **Two of the drawing's measurements are declined**, both for the reason `2b`'s surface level was:
+ * they have no home in the system and adopting them here alone would make this screen the odd one
+ * out. Card interiors are drawn at 20px and built at [Spacing.base]; the outlined buttons are drawn
+ * at 44dp and built at M3's 40dp default, which every other outlined button in the app already
+ * takes. The weighting survives either way — the filled button is full-width and 52dp.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,84 +154,139 @@ fun SupportScreen(
             )
         },
     ) { insets ->
+        // Explicit `Spacer`s rather than one `Arrangement.spacedBy`, because the gaps are not all
+        // the same and `9c` is deliberate about which: the intro is a lead paragraph belonging to
+        // the card under it (16dp), where the cards are sections and stand 24dp apart.
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(insets)
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(
+                        start = Spacing.base,
+                        end = Spacing.base,
+                        top = Spacing.tight,
+                        bottom = Spacing.section,
+                    ),
         ) {
-            Text(text = stringResource(R.string.support_intro), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = stringResource(R.string.support_intro),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(Spacing.base))
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { mail(SupportRequest.BUG, bugSubject) }) {
-                    Text(stringResource(R.string.support_bug_button))
-                }
-                // Said **before** the button is tapped, not after: this is the first outgoing data
-                // in the app, and ADR-0001's rule against silence pointed at it.
-                Text(
-                    text = stringResource(R.string.support_diagnostics_title),
-                    style = MaterialTheme.typography.titleSmall,
-                )
-                Text(
-                    text = stringResource(R.string.support_diagnostics_explain),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            ContactCard(
+                onBug = { mail(SupportRequest.BUG, bugSubject) },
+                onFeature = { mail(SupportRequest.FEATURE, featureSubject) },
+            )
+            Spacer(Modifier.height(Spacing.section))
 
-            OutlinedButton(onClick = { mail(SupportRequest.FEATURE, featureSubject) }) {
-                Text(stringResource(R.string.support_feature_button))
-            }
-
-            // Rendered whether or not a mail app exists, because it *is* the fallback: a snackbar
-            // saying "no mail app" is a dead end unless there is something on screen to copy.
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = stringResource(R.string.support_email_label),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                SelectionContainer {
-                    Text(text = SUPPORT_EMAIL, style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-
-            HorizontalDivider()
-
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                OutlinedButton(onClick = { if (!context.openPlayListing()) say(noStoreApp) }) {
-                    Text(stringResource(R.string.support_rate_button))
-                }
-                Text(
-                    text = stringResource(R.string.support_rate_help),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            TextButton(onClick = { if (!context.openUrl(PRIVACY_POLICY_URL)) say(noBrowser) }) {
-                Text(stringResource(R.string.support_privacy_button))
-            }
-
-            HorizontalDivider()
+            RateCard(onRate = { if (!context.openPlayListing()) say(noStoreApp) })
+            Spacer(Modifier.height(Spacing.section))
 
             // Here rather than in Settings: the version exists for the bug report above, and a
             // number kept away from the screen that needs it is how it goes stale unnoticed. In a
             // debug build the code is a git commit count, and is meant to be.
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = stringResource(R.string.support_version_label),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            GroupedCard {
+                ListRow(
+                    title = stringResource(R.string.support_privacy_button),
+                    onClick = { if (!context.openUrl(PRIVACY_POLICY_URL)) say(noBrowser) },
+                    trailing = { Chevron() },
                 )
-                Text(
-                    text = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-                    style = MaterialTheme.typography.bodyMedium,
+                RowDivider()
+                FactRow(
+                    label = stringResource(R.string.support_version_label),
+                    value = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                    // Lifted to the row above it: a fact row's own 48dp floor is for a *column* of
+                    // facts, and next to a 56dp navigable row it reads as a rendering fault.
+                    modifier = Modifier.heightIn(min = SingleLineRowHeight),
                 )
             }
         }
+    }
+}
+
+/**
+ * Reaching a person: the two things worth writing, and the address to write to if neither button
+ * finds a mail app.
+ *
+ * The divider is a plain [HorizontalDivider] rather than a [RowDivider] — the card has already inset
+ * its contents, so a second inset on top would leave the line hanging away from the text either side
+ * of it. `RowDivider`'s start padding is for a card whose rows draw edge to edge.
+ */
+@Composable
+private fun ContactCard(
+    onBug: () -> Unit,
+    onFeature: () -> Unit,
+) {
+    GroupedCard(contentPadding = PaddingValues(Spacing.base)) {
+        // The one action this screen exists for, so it takes the full-width primary shape.
+        Button(
+            onClick = onBug,
+            modifier = Modifier.fillMaxWidth().height(RecordButtonHeight),
+            shape = RoundedCornerShape(RecordButtonRadius),
+        ) {
+            Text(stringResource(R.string.support_bug_button))
+        }
+
+        // Said **before** the button is tapped, not after: this is the first outgoing data in the
+        // app, and ADR-0001's rule against silence pointed at it. The heading sits between the
+        // button and the sentence so the pair reads as that button's own footnote.
+        Spacer(Modifier.height(Spacing.snug))
+        Text(
+            text = stringResource(R.string.support_diagnostics_title),
+            style = MaterialTheme.typography.titleSmall,
+        )
+        Spacer(Modifier.height(Spacing.hair))
+        Text(
+            text = stringResource(R.string.support_diagnostics_explain),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(Spacing.base))
+        OutlinedButton(onClick = onFeature) {
+            Text(stringResource(R.string.support_feature_button))
+        }
+
+        Spacer(Modifier.height(Spacing.base))
+        HorizontalDivider()
+        Spacer(Modifier.height(Spacing.base))
+
+        // Rendered whether or not a mail app exists, because it *is* the fallback: a snackbar
+        // saying "no mail app" is a dead end unless there is something on screen to copy. In
+        // `primary`, which is the one place this screen spends the colour — it marks the only text
+        // on it the owner is meant to take away.
+        Text(
+            text = stringResource(R.string.support_email_label),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(Spacing.hair))
+        SelectionContainer {
+            Text(
+                text = SUPPORT_EMAIL,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+/** The only thing a free, ad-free app asks for, and the sentence saying so. */
+@Composable
+private fun RateCard(onRate: () -> Unit) {
+    GroupedCard(contentPadding = PaddingValues(Spacing.base)) {
+        OutlinedButton(onClick = onRate) {
+            Text(stringResource(R.string.support_rate_button))
+        }
+        Spacer(Modifier.height(Spacing.tight))
+        Text(
+            text = stringResource(R.string.support_rate_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
