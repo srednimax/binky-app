@@ -258,9 +258,8 @@ lives* for how to open one without loading the whole file.
 | Record an observation | `2c` / `2d` | ✅ 2026-08-09. Fixes the form rules for *every* editor — they live in `ui/common/Forms.kt` |
 | `CareAndMeds` | `3a` / `3b` | ✅ 2026-08-09. Today's doses, then the courses that generate them. The largest redraw so far: four sections of 64dp rows, three deletes moved, and the delivery caveat rewritten |
 | `CareAndMeds`, no bunnies | `3c` / `3d` | ✅ 2026-08-09. One sentence in a card the size of a row, and nothing else |
-| New course | `3e` | Same six fields, same words |
-| Vets + vet editor | `5a` / `5b` | |
-| Bunny editor | `4e` | |
+| Vets + vet editor | `5a` / `5b` | ✅ 2026-08-09. One grouped card where two vets used to fill two thirds of the screen, and the fifth delete to leave a list row. The editor has no drawing and changes no string |
+| Bunny editor | `4e` | ✅ 2026-08-09. Same eight fields, same order, same words. Settles one of the four open decisions: the field-absent states already ship |
 | Archived bunnies | `4f` / `4g` / `4h` | Populated and empty |
 | `More` | `6a` / `6b` | Same six destinations, same copy |
 | Backup & restore | `6c` / `6d` | |
@@ -317,6 +316,18 @@ Worth knowing before reading a mockup as gospel, and consistent with the palette
   "Skipped" would read as "yes, given", so skipped takes a neutral bar in the same hay circle —
   drawn as a `Box` rather than an icon, because Compose's **core** icon set has no minus and
   `material-icons-extended` is deliberately not a dependency (ADR-0009's neighbouring argument).
+- `5a` keeps **Edit and Delete on every vet row** and argues in its own note only about their
+  relative weight — *"Edit is primary and Delete is onSurfaceVariant … they were equal-weight blue
+  peers before"*. Built with **neither**: the row carries a chevron and deleting lives on the
+  editor. That is the drawing's own argument carried through — the strongest way to stop Delete
+  being Edit's peer is to take it off the row — and it is `1d`'s rule, which by this point had
+  already moved five deletes and would otherwise have left the vet directory as the one list in the
+  app that destroys a record from a list row. **The whole sweep is now one grammar**: a row that is
+  only telling you something opens.
+- `3e` puts each field's question under its own box; `4e` does the same to *Name* and then draws
+  *Colour and markings* the other way round in the same card. The label goes **above** in both
+  cases, which is the rule `3e` already settled — worth recording only because the drawing broke it
+  inconsistently within one frame, so neither reading could be taken as deliberate.
 
 **`Observations` added three things to `Surfaces.kt`, and every one of them was forced by a drawing
 whose reasoning generalises past this route:**
@@ -461,6 +472,35 @@ the dialog it opened cannot name the course two different ways. The **slot** cla
 where a slot exists — on the *edit* path, from `dose.scheduledTime` — and never on the ad-hoc one,
 where by definition no slot is being answered (ADR-0002).
 
+**`5a` and `4e` between them finished the kit rather than extending it**, which is the first sign the
+idiom has settled: two whole routes cost four small additions and no new concept.
+
+- **`MessageCard`** moved out of `CareAndMedsScreen` into `Surfaces.kt` — `3c`'s one-sentence card,
+  wanted unchanged by an empty vet directory. It is *not* Care's `EmptySection`: that is one section
+  of a populated screen saying it holds nothing, and it stays plain text precisely so it cannot be
+  mistaken for a row.
+- **`ListRowHeight` became public.** A vet is up to four lines at three weights, so the row is drawn
+  by hand and borrows only the floor — a name-only entry still matches every other row in the app.
+- **`ChangeableValueRow` grew `actionLabel` and `onClear`.** *Change* is the wrong verb beside *Not
+  known*, which is why `4e` writes *"Set a birthday"* out in full; and clearing needs a second button
+  that reads a bare *Clear* while announcing which field it empties — the same `contentDescription`
+  trick the row already played for its first button, and for the same reason.
+- **`SingleLineField` grew `keyboardOptions`**, and `NoteField`'s placeholder became optional. A
+  placeholder is an *example*, so it is left out where there is no useful one: a vet's notes are
+  whatever that owner wants to remember, and a specimen would imply the field expects a kind of
+  answer.
+
+**Neither route needed a new section idea, and the vet editor changed no string at all** — its four
+labels read as well above a box as they did inside one. The bunny editor added two,
+`bunny_editor_section_details` and a generic `action_clear`.
+
+**Check the *set* state on a screen whose sample data is all absent**, which is the inverse of the
+trap `2a` found and just as easy to ship. `4e` draws a bunny with no birthday, no breed and no
+colour, and the seeded Bijou has none of the three either — so both the drawing and the ordinary
+capture show only the empty half of a card whose whole point is the pair of states. Driving one of
+each by hand is what proved the row does not crowd at *label · value · Change · Clear*, and that the
+approximate switch lands between Birthday and Breed with a divider each side rather than after both.
+
 **`RecordedAtField` moved with it**, so the weight form inherits the treatment before `6e` redraws the
 rest of it: a titled card of two rows with an inset divider, and buttons reading just **Change** — the
 value each sits beside already says which. The old *"Change the date"* / *"Change the time"* survive as
@@ -484,9 +524,12 @@ are listed because a screen redrawn from a mockup will otherwise absorb them sil
   marker badges a stale backup"*). Needs a staleness rule that does not exist yet. ADR-0001 is safe here —
   it is a fact about the *backup*, not about a rabbit — but the threshold is a real decision and the copy
   must not imply fault. **Decide before drawing it.**
-- **Field-absent states in the bunny editor** (`4e`: *"birthday — not known"*, *"breed — not set"*). Two
-  different phrasings for two different meanings; check whether the app currently distinguishes them at all
-  before inventing the distinction.
+- ~~**Field-absent states in the bunny editor**~~ (`4e`: *"birthday — not known"*, *"breed — not set"*).
+  **Settled 2026-08-09 building `4e`, and it was never new functionality.** The check this line asked for
+  came back the good way: `bunny_birthdate_none` = *Not known* and `bunny_breed_none` = *Not set* have
+  shipped with exactly those two words since ADR-0016, and the distinction they draw is real — a birthday
+  is a fact about the rabbit that nobody may know, a breed is a field on a form that nobody has filled in.
+  The drawing was reading the app back to itself.
 - **Chips wrap rather than scroll sideways** (`2c`), and *"not checked" is a real value selected by default*.
   The second is a data-meaning claim, not a layout one — verify it matches what the observation entity
   actually stores before the UI asserts it.
