@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +37,7 @@ import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.common.RecordedAtField
 import app.binky.tracker.ui.watch.StartWatchAction
+import java.time.Instant
 
 /**
  * Add or edit one weighing — the route `NavigationKeys.kt` promised from Phase 1 and never built.
@@ -127,7 +129,37 @@ fun WeightEntryScreen(
                 // changing it here would be a second path to a derived fact (ADR-0017).
                 enabled = state.visitId == null,
             )
+            // Deleting lives here rather than on the history list, where Phase 7's row carries a
+            // value, a timestamp, a change and a chevron and nothing else. The quietest button on
+            // the screen: a destructive action does not need colour to be found, and colour would
+            // invite the tap. Absent on a new weighing, and on one a visit owns (ADR-0017).
+            if (!state.isNew && state.visitId == null) {
+                TextButton(
+                    onClick = viewModel::requestDelete,
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                ) {
+                    Text(stringResource(R.string.action_delete))
+                }
+            }
         }
+    }
+
+    // Kotlin note: read into locals first — the compiler smart-casts a local `val` to non-null
+    // after the check, which it will not do for `state.storedGrams` (a property of a data class
+    // could in principle change between two reads).
+    val storedGrams = state.storedGrams
+    val storedAt = state.storedRecordedAt
+    if (state.confirmingDelete && storedGrams != null && storedAt != null) {
+        DeleteWeighingDialog(
+            grams = storedGrams,
+            recordedAt = storedAt,
+            unit = state.unit,
+            onConfirm = viewModel::confirmDelete,
+            onDismiss = viewModel::cancelDelete,
+        )
     }
 
     if (state.collision.isNotEmpty()) {
@@ -199,6 +231,39 @@ private fun GramsField(
             )
         }
     }
+}
+
+/**
+ * **One** confirmation. ADR-0004's two-stage ceremony exists for destroying a bunny's whole
+ * history; a single weighing is a correction, and the dialog names the reading so the owner can see
+ * which one they are about to lose.
+ *
+ * It names the **stored** reading, not what is in the fields — a half-typed correction is not what
+ * is being deleted.
+ */
+@Composable
+private fun DeleteWeighingDialog(
+    grams: Int,
+    recordedAt: Instant,
+    unit: WeightUnit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.weight_delete_title)) },
+        text = {
+            Text(
+                stringResource(
+                    R.string.weight_delete_body,
+                    weightLabel(grams, unit),
+                    dateTimeLabel(recordedAt),
+                ),
+            )
+        },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.action_delete)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+    )
 }
 
 /**

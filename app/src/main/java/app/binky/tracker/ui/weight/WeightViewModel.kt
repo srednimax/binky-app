@@ -9,7 +9,6 @@ import app.binky.tracker.AppContainer
 import app.binky.tracker.BinkyApplication
 import app.binky.tracker.data.BunnyEntity
 import app.binky.tracker.data.BunnySelection
-import app.binky.tracker.data.TrendDrop
 import app.binky.tracker.data.TrendFlag
 import app.binky.tracker.data.WatchDuration
 import app.binky.tracker.data.WatchState
@@ -26,7 +25,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -75,9 +73,6 @@ data class WeightUiState(
      * there is already one to start (ADR-0001). [WatchState.None] in the archived scope.
      */
     val watch: WatchState = WatchState.None,
-    val pendingDelete: WeightRow? = null,
-    /** Set straight after a delete that leaves a visible, unacknowledged flag: the dialog host. */
-    val writeFlag: TrendDrop? = null,
     val chartRange: WeightChartRange = WeightChartRange.DAYS_90,
     val chart: WeightChartContent = WeightChartContent.NoWeighings,
 ) {
@@ -87,33 +82,21 @@ data class WeightUiState(
 }
 
 /**
- * Weight: the per-bunny history, the trend flag, and the one confirmation guarding a delete.
+ * Weight: the per-bunny history, the trend flag, and the chart's window.
  *
  * It **refuses "All bunnies"** (ADR-0015) — weight is individual, and overlaying unrelated animals
  * of different sizes on one axis would say nothing true.
+ *
+ * **Deleting a weighing is not here**: it moved to the entry screen with Phase 7's redraw, which
+ * also takes the flag that a delete can raise with it (`WeightEntryViewModel.confirmDelete`). This
+ * screen still hosts the flag as a *banner*, which is standing information rather than a report of
+ * a write that just happened.
  */
 class WeightViewModel(
     private val container: AppContainer,
 ) : ViewModel() {
     private val weights = container.weightRepository
     private val watches = container.watchRepository
-
-    private val pendingDelete = MutableStateFlow<WeightRow?>(null)
-    private val writeFlag = MutableStateFlow<TrendDrop?>(null)
-
-    /** What is on top of the screen right now. */
-    private data class Dialogs(
-        val pendingDelete: WeightRow?,
-        val writeFlag: TrendDrop?,
-    )
-
-    /**
-     * The two dialog flags as one flow, purely so the inner `combine` below stays inside Kotlin's
-     * five-flow typed overload — past that the only `combine` left takes an untyped array, and
-     * trading five named parameters for `it[3] as TrendDrop?` is not a trade worth making.
-     */
-    private val dialogs =
-        combine(pendingDelete, writeFlag) { pending, raised -> Dialogs(pending, raised) }
 
     /**
      * The chart's window — held here and **not persisted** (ADR-0022). Living in the `ViewModel`
@@ -153,9 +136,8 @@ class WeightViewModel(
                         weights.series(bunnyId),
                         weights.acknowledgment(bunnyId),
                         watches.watch(bunnyId),
-                        dialogs,
                         chartRange,
-                    ) { series, acknowledgment, watch, open, range ->
+                    ) { series, acknowledgment, watch, range ->
                         val rows = series.toRows()
                         WeightUiState(
                             selection = scope.selection,
@@ -190,8 +172,6 @@ class WeightViewModel(
                                 } else {
                                     watchState(watch, Instant.now())
                                 },
-                            pendingDelete = open.pendingDelete,
-                            writeFlag = open.writeFlag,
                         )
                     }
                 }
@@ -202,60 +182,15 @@ class WeightViewModel(
         chartRange.value = range
     }
 
-    fun requestDelete(row: WeightRow) {
-        pendingDelete.value = row
-    }
-
-    fun cancelDelete() {
-        pendingDelete.value = null
-    }
-
-    /**
-     * **One** confirmation, not two: ADR-0004's two-stage ceremony is calibrated to destroying a
-     * bunny's whole history, and one weighing is a correction.
-     */
-    fun confirmDelete() {
-        val row = pendingDelete.value ?: return
-        val bunnyId = uiState.value.bunnyId ?: return
-        viewModelScope.launch {
-            weights.delete(row.id)
-            pendingDelete.value = null
-            // A delete can *deepen* a drop — removing a low reading moves the baseline — so the
-            // flag is re-checked here exactly as it is after an insert or an edit (ADR-0001).
-            raiseFlagIfUnacknowledged(bunnyId)
-        }
-    }
-
     fun acknowledge() {
         val bunnyId = uiState.value.bunnyId ?: return
-        writeFlag.value = null
         viewModelScope.launch { weights.acknowledgeTrend(bunnyId) }
     }
 
-    /** Dismissing is explicitly **not** acknowledging: the watermark is only ever set deliberately. */
-    fun dismissWriteFlag() {
-        writeFlag.value = null
-    }
-
-    /**
-     * *Start a watch*, from the flag's secondary action — **offered, never automatic** (ADR-0001).
-     *
-     * It also closes the write dialog, if that is where the tap came from: the owner has answered
-     * the flag with an action, and leaving the dialog up would ask them to answer it again.
-     */
+    /** *Start a watch*, from the flag's secondary action — **offered, never automatic** (ADR-0001). */
     fun startWatch(duration: WatchDuration) {
         val bunnyId = uiState.value.bunnyId ?: return
-        writeFlag.value = null
         viewModelScope.launch { watches.start(bunnyId, duration) }
-    }
-
-    private suspend fun raiseFlagIfUnacknowledged(bunnyId: String) {
-        val evaluation =
-            evaluateTrend(
-                series = weights.series(bunnyId).first().map { it.toWeighing() },
-                acknowledgment = weights.acknowledgment(bunnyId).first()?.toAcknowledgment(),
-            )
-        writeFlag.value = (evaluation.flag as? TrendFlag.WorthACloserLook)?.drop
     }
 
     companion object {
