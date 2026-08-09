@@ -211,26 +211,30 @@ exists. These are the items that come first.
       preference through the container would have opened the gate from inside the screen guarding it.
 - [ ] **The rewrite sweep — every route to the new language.** The per-route table with its mockup ids is
       in [`phase-7.md`](phase-7.md) *("The rewrite checkpoint")*; one commit per route, each building and
-      installing. **`Home` (all three states) and the bunny switcher are done** — 2026-08-09, checked on
-      the device in light and dark; the no-bunnies state is code-only so far, because emptying the phone
-      to look at it would take §1's seed with it. `Weight` is next, then **`2c` Record an observation
+      installing. **`Home` (all three states), the bunny switcher and `Weight` are done** — 2026-08-09,
+      checked on the device in light and dark; Home's no-bunnies state is code-only so far, because
+      emptying the phone to look at it would take §1's seed with it. Next is **`2c` Record an observation,
       before the other editors** — its label says the form rules get fixed there and every editor inherits
       them, so doing it late means doing the editors twice. Eight routes have no drawing at all (Settings,
       Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in) and get the
       language applied by hand.
       **`ui/common/Surfaces.kt` is the shared idiom** every remaining route draws from — section header,
-      grouped card, fact row, inset divider, the two card radii, and `FabClearance`.
+      grouped card, fact row, inset divider, the two card radii, `FabClearance`, and now
+      `GroupedCardItem` for a grouped card whose rows are separate lazy items (any list that can run to
+      hundreds of rows owes it).
+      ⚠️ **`Weight` moved deleting a weighing onto the editor** — the drawn history row carries a value,
+      a timestamp, a change and a chevron and has nowhere to put a button. Nothing was lost: the delete
+      ends in the same flag re-check a save does. Every remaining list-plus-editor pair should follow it.
 - [ ] **Decide the four pieces of new functionality the designs introduce** — they are decisions, not tasks,
       because this phase is *same functionality, new looks*, and a screen redrawn from a mockup absorbs them
       silently otherwise. The last-five line on Record a weighing (likely adopt), a stale-backup marker
       (needs a staleness rule and copy that implies no fault), field-absent states in the bunny editor, and
       the claim that *"not checked"* is a real stored value. The **calendar route is deferred** — a new nav
       key is out of scope by definition. Listed with reasoning in `phase-7.md`.
-      ⚠️ **The inventory is provisional**: it was built from the mockups that survived the 256 KiB
-      truncation. The casualties are **`1d` and `1e`, the two `Weight` frames** — turn 1 is last in the byte
-      stream. **The truncation is solved** (2026-08-09): the project is exported to disk, where the two
-      frames are readable and every mockup can be sliced out one at a time. They have not been read yet,
-      so re-derive this list when `Weight` is built. `phase-7.md` has the method.
+      ✅ **The inventory is complete as of 2026-08-09.** It was provisional because `1d` and `1e`, the two
+      `Weight` frames, sat past the 256 KiB truncation; both were read from the disk export while building
+      `Weight`, and they **add nothing** to the four above. So the only one still owed by a screen that has
+      not been built is the last-five line, which lands with *Record a weighing* (`6e`).
 - [ ] **Rules the new look inherits** — weight changes always in grams; the chart plots real timestamps,
       not index; missing media is a placeholder, never a crash; image writes go through the media helper
       (ADR-0020); no empty state infers a problem from silence (ADR-0001); no *missed*/*overdue* outside

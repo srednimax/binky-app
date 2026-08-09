@@ -249,7 +249,7 @@ lives* for how to open one without loading the whole file.
 | `Home` under All bunnies | `4a` / `4b` | ✅ 2026-08-09. The flag stays inside the bunny it belongs to |
 | `Home`, no bunnies | `4c` / `4c2` | ✅ 2026-08-09 — **code only, not yet seen on the device**: the phone holds the sample fluffle, and emptying it to look at one screen would take the Doze run's seed with it (`DOD.md` §1) |
 | Bunny switcher | `4d` | ✅ 2026-08-09. Four items; *Archived* deliberately absent |
-| `Weight` + chart | `1d` / `1e` | Hero. Trend flag, the 30 days / 90 days / 1 year / All selector, the chart, *Record a weighing*, the weighings list |
+| `Weight` + chart | `1d` / `1e` | ✅ 2026-08-09. Hero. The row lost its buttons, so **deleting moved to the editor**; the chart's points became rings filled with the card |
 | Record a weighing | `6e` / `6f` | A **route, not a sheet** — corrected against the capture. Grams only. Carries the one addition below |
 | Trend flag card | `1b` and every card that nests it | ✅ 2026-08-09, and it moved twice. `errorContainer` → `tertiaryContainer` → **a quiet `surfaceContainer` card with a 10dp apricot dot**. The drawings are explicit: *"the flag card is the same surface as every other card — apricot arrives as a 10dp dot"*. A whole panel of colour asserts an urgency the sentence inside it disclaims. Apricot as a *fill* survives in one place only, the active watch row |
 | `Observations` | `2a` / `2b` | |
@@ -273,12 +273,21 @@ tint would carry no meaning) and `FabClearance`. That last one fixes a bug older
 `Scaffold` pads content for the bars it owns but **not** for the FAB floating over it, so Home's
 *Delete* button sat underneath it in the before set. Any scrolling route with a FAB owes it.
 
-**Two places where the drawings and the shipped theme disagree, both resolved in the theme's favour.**
+**`GroupedCardItem` was added building `Weight`, and every long list owes it.** A grouped card holding
+a whole history is a *single* `LazyColumn` item, so every row composes whether or not it is on screen —
+which is the one thing `LazyColumn` exists to avoid, and Bijou's seeded history is already 39 rows. It
+draws the same card the other way round: each row carries the surface itself and only the two at the
+ends round their outer corners. Observations, Photos, Documents and the dose history all want it.
+
+**Three places where the drawings and the shipped app disagree, all resolved against the drawing.**
 Worth knowing before reading a mockup as gospel, and consistent with the palette lesson above:
 - The mockups pad card interiors and row insets at **20px**; `Spacing.kt` has no such step and its
   own rule is *"no screen invents a seventh"*. Built at `Spacing.base` (16dp).
 - The mockups set card titles in **Nunito 700 at 17px**; `Type.kt` deliberately confines Nunito to
   display and headline, and `titleMedium` is the default family. Built as `titleMedium`.
+- `1d` dates the chart's x-axis **"Jul 15"**, with no year. The axis keeps its short localized date
+  (`7/13/26`) instead: the selector offers *All*, a history can span years, and a month and day with
+  no year would be ambiguous in exactly the range the drawing never had to show.
 
 **`2c` is worth doing early even though it is not a hero screen.** Its own label says the form rules get
 fixed there, and every other editor inherits them — doing it after the editors means doing the editors twice.
@@ -311,11 +320,17 @@ are listed because a screen redrawn from a mockup will otherwise absorb them sil
   but only as a spec swatch, never on a real frame.
 - **The watch-expiry sheet.**
 
-**This inventory is still provisional, but no longer blocked.** It was built from the mockups that
-survived the 256 KiB truncation plus `github.md`'s summary; the casualties were **`1d` and `1e`**,
-the two `Weight` frames, because turn 1 sits last in the byte stream. The export above makes them
-readable — **they have not been read yet**, so whatever they introduce beyond the summary is still
-missing from this list. Re-derive it when `Weight` is built, which is the next route after Home.
+**The inventory is now complete.** It was built from the mockups that survived the 256 KiB truncation
+plus `github.md`'s summary; the casualties were **`1d` and `1e`**, the two `Weight` frames, because
+turn 1 sits last in the byte stream. **Both were read on 2026-08-09** from the export, and the answer
+is that they **introduce nothing beyond this list** — "first" on the oldest row, the *· from a visit*
+suffix and the *39 weighings* count are all presentation of data the route already had. So the four
+decisions above are the whole of it, and the only one still owed by a built screen is the last-five
+line, which lands with *Record a weighing* (`6e`).
+
+What `1d` did decide, and it is a placement rather than a feature: **the history row has nowhere to
+put a Delete**, so deleting moved to the editor. That is not a loss of functionality and it is not a
+new one — but it is the shape every other list-plus-editor pair in the sweep should now follow.
 
 ## Gate
 
