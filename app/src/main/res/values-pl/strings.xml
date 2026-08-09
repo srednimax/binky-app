@@ -61,6 +61,7 @@
     <string name="action_done">Gotowe</string>
     <string name="action_open">Otwórz</string>
     <string name="action_undo">Cofnij</string>
+    <string name="action_change">Zmień</string>
     <string name="add_a_bunny_first">Najpierw dodaj królika.</string>
 
     <!-- The shared "when did this happen" field -->
@@ -525,6 +526,9 @@
     <string name="observation_symptoms_checked_help">Warto zaznaczyć. Sama pusta lista znaczy tylko tyle, że nikt nie sprawdzał.</string>
 
     <string name="observation_note_label">Coś jeszcze</string>
+    <!-- Impersonal, like observation_symptoms_checked above: "zauważyłem" and "zauważyłam" are not
+         the same word, and a placeholder cannot ask which one applies. -->
+    <string name="observation_note_placeholder">Co zwróciło uwagę, własnymi słowami</string>
 
     <!-- The timeline -->
     <string name="observations_empty">Nie zapisano jeszcze żadnej obserwacji. Wszystko, co zwróci uwagę — kuweta, nastrój, objaw — należy tutaj.</string>

@@ -41,6 +41,7 @@
     <string name="action_done">Done</string>
     <string name="action_open">Open</string>
     <string name="action_undo">Undo</string>
+    <string name="action_change">Change</string>
     <string name="add_a_bunny_first">Add a bunny first.</string>
 
     <!-- The shared "when did this happen" field, used by weighings and observations alike. Named
@@ -527,6 +528,7 @@
     <string name="observation_symptoms_checked_help">Worth ticking. An empty list on its own only means nobody checked.</string>
 
     <string name="observation_note_label">Anything else</string>
+    <string name="observation_note_placeholder">What you noticed, in your own words</string>
 
     <!-- The timeline -->
     <string name="observations_empty">No observations recorded yet. Anything you notice — the tray, the mood, a symptom — belongs here.</string>
