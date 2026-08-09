@@ -111,6 +111,14 @@ All deliberately after it, because each would disturb the armed course.
       scene's needle is a claim that some text belongs to a focusable control**, and the form idiom
       moves exactly that text. `course-editor-bottom` did not break but its note did: Save is in the
       app bar now, so the bottom edge is the notes box rather than a button.
+      ℹ️ **`5a`/`5b` and `4e` broke none either** (2026-08-09), and between them they turn the
+      exception into the rule's other half. Four needles across the two routes — `vets` and
+      `vet-editor` tap a More row and the *Add a vet* button; `bunny-editor` and its two siblings tap
+      *Edit* on Home and then swipe — and **not one of them names anything the redraw touched**, even
+      though Vets deleted two buttons off every row and the bunny editor moved six fields into cards.
+      `bunny-editor-bottom`'s shot changes, as `course-editor-bottom`'s did, but its needle does not.
+      **A needle on chrome survives a redraw of what the chrome contains**; only content needles are
+      fragile, which is now five routes' worth of evidence.
       ℹ️ **`2a`/`2b` Observations broke none** (2026-08-09), which is worth recording as the exception
       rather than as proof the rule was wrong: it *deleted* a string (`observation_observed_together`)
       and added three, and both its scenes came through clean because neither needle ever named
@@ -236,10 +244,13 @@ exists. These are the items that come first.
       ✅ **Care & Meds has now been seen on the device** (2026-08-09), which was the pass it owed for
       moving three delete paths: today's doses, the courses, the inline *Given*/*Skipped* and the
       *Done* on a due reminder all render as drawn, in both themes.
-      Next is **`5a`/`5b` Vets + vet editor**, then `4e` Bunny editor and `6e`/`6f` Record a weighing
-      (which carries the last-five line decision). Eight routes have no drawing at all (Settings,
-      Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in) and get the
-      language applied by hand.
+      ✅ **`5a`/`5b` Vets + vet editor and `4e` Bunny editor are done too** — 2026-08-09, both seen on
+      the device in light and dark. Vets became one grouped card and gave up its row-level *Delete*,
+      which is the fifth and last list-plus-editor pair to follow `1d`; its editor changes **no
+      string at all**. The bunny editor kept all eight fields, in order, in the app's own words.
+      Next is **`6e`/`6f` Record a weighing**, which carries the last-five line decision. Eight
+      routes have no drawing at all (Settings, Support, Documents, Photos, Setup, Watch expiry,
+      Schema mismatch, Reminders opt-in) and get the language applied by hand.
       **`ui/common/Surfaces.kt` is the shared idiom** every remaining route draws from — section header,
       grouped card, fact row, inset divider, the two card radii, `FabClearance`, and now
       `GroupedCardItem` for a grouped card whose rows are separate lazy items (any list that can run to
@@ -290,6 +301,11 @@ exists. These are the items that come first.
       `Weight` frames, sat past the 256 KiB truncation; both were read from the disk export while building
       `Weight`, and they **add nothing** to the four above. So the only one still owed by a screen that has
       not been built is the last-five line, which lands with *Record a weighing* (`6e`).
+      ✅ **One of the four is now closed, and it was never new functionality.** `4e`'s *field-absent
+      states* asked whether the app distinguishes "not known" from "not set"; it has since ADR-0016,
+      in those exact words — a birthday is a fact nobody may know, a breed is a field nobody filled
+      in. **Three left**: the last-five line (`6e`, likely adopt), the stale-backup marker (`6c`,
+      needs a staleness rule first) and the *"not checked" is a stored value* claim.
 - [ ] **Rules the new look inherits** — weight changes always in grams; the chart plots real timestamps,
       not index; missing media is a placeholder, never a crash; image writes go through the media helper
       (ADR-0020); no empty state infers a problem from silence (ADR-0001); no *missed*/*overdue* outside
