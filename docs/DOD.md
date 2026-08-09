@@ -253,10 +253,26 @@ exists. These are the items that come first.
       bug on the screen in front of it: a weigh-in reminder opened both completion dialogs by
       itself and could not be used. Fixed, and worth reading the phase file on *why* a phase of
       device passes missed it.
-      **Every drawn route is now redrawn.** What is left is the eight with no drawing at all —
-      Settings, Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in —
-      which get the language applied by hand, plus the two undrawn Weight surfaces (the chart's
-      empty state and the watch-expiry sheet).
+      ✅ **`6a`/`6b` More, `6c`/`6d` Backup & restore and `4f`/`4g`/`4h` Archived bunnies are done**
+      — 2026-08-09, and with them **every drawn route really is redrawn** (this line claimed that one
+      batch early; the checkpoint table in `phase-7.md` had the three of them still open). Between
+      them they cost the idiom **one parameter** — `ListRow`'s `enabled`, for a row that would open
+      something if it could — which is the second sign the language has settled. Each also states an
+      exception worth knowing: More spends **none** of the raised-card budget, Backup spends it on
+      the section the owner *cannot control*, and Archived bunnies is the one list that stays
+      separate cards **and** keeps its buttons, because *Open* leads to a read-only bunny and there
+      is nowhere for *Delete* to move to.
+      ℹ️ **No scene needle broke on any of the three** — the first batch that can say that — even
+      though every needle into them reaches into content (`settings`, `backup`, `archived`, `vets`,
+      `photos`, `documents`, `support` all tap a More row by title, and those six rows are now
+      identical 64dp merged nodes, which is Care & Meds' exact tie-breaking hazard). They survive
+      because `6a` changes **no string**. *A content needle survives a redraw that is structural
+      only.*
+      **What is left is the eight with no drawing at all** — Settings, Support, Documents, Photos,
+      Setup, Watch expiry, Schema mismatch, Reminders opt-in — which get the language applied by
+      hand, plus the two undrawn Weight surfaces (the chart's empty state and the watch-expiry
+      sheet). Setup has already taken one line of it: `BackupScopePicker` draws rows rather than its
+      own card now, so its two callers each supply one.
       **`ui/common/Surfaces.kt` is the shared idiom** every remaining route draws from — section header,
       grouped card, fact row, inset divider, the two card radii, `FabClearance`, and now
       `GroupedCardItem` for a grouped card whose rows are separate lazy items (any list that can run to
@@ -314,8 +330,13 @@ exists. These are the items that come first.
       ✅ **The last-five line is adopted** (2026-08-09, with `6e`) — the only one of the four taken,
       and what earns it a place in an appearance phase is that it is a *guard* rather than a
       feature: a digit too many in an empty box poisons the series ADR-0001's flag reports on.
-      **Two left**: the stale-backup marker (`6c`, needs a staleness rule first) and the
-      *"not checked" is a stored value* claim.
+      ✅ **The stale-backup marker is closed too** (2026-08-09, with `6c`), and like the bunny
+      editor's field-absent states it was **never new functionality**. The staleness rule this line
+      said was missing already ships: `AutoBackupStatus.Recorded.stale` is a fortnight,
+      `backup_auto_stale` is its own sentence, and `stale` already decides whether *Open Android
+      backup settings* appears. So the dot adds no rule, no threshold and no copy — it marks the
+      same two states the screen was going to act on, and a **fresh** backup gets none.
+      **One left**: the *"not checked" is a stored value* claim.
 - [ ] **Rules the new look inherits** — weight changes always in grams; the chart plots real timestamps,
       not index; missing media is a placeholder, never a crash; image writes go through the media helper
       (ADR-0020); no empty state infers a problem from silence (ADR-0001); no *missed*/*overdue* outside
