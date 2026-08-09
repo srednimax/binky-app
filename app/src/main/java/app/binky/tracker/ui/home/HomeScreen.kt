@@ -3,16 +3,24 @@ package app.binky.tracker.ui.home
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,6 +37,7 @@ import app.binky.tracker.data.BunnySelection
 import app.binky.tracker.data.WatchDuration
 import app.binky.tracker.data.WatchState
 import app.binky.tracker.data.WeightUnit
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.bunny.BunnyAvatar
 import app.binky.tracker.ui.bunny.BunnyDialogHost
@@ -38,18 +47,29 @@ import app.binky.tracker.ui.bunny.dateLabel
 import app.binky.tracker.ui.bunny.housematesLabel
 import app.binky.tracker.ui.bunny.neuterLabel
 import app.binky.tracker.ui.bunny.sexLabel
+import app.binky.tracker.ui.common.FabClearance
+import app.binky.tracker.ui.common.FactRow
+import app.binky.tracker.ui.common.GroupedCard
+import app.binky.tracker.ui.common.RowDivider
+import app.binky.tracker.ui.common.SectionHeader
 import app.binky.tracker.ui.watch.StartWatchAction
 import app.binky.tracker.ui.watch.WatchActiveCard
 import app.binky.tracker.ui.weight.TrendFlagBanner
 import app.binky.tracker.ui.weight.instantDateLabel
+import app.binky.tracker.ui.weight.showsBanner
 import app.binky.tracker.ui.weight.weightLabel
 
 /**
  * Home — the selected bunny's profile, and under "All bunnies" the fluffle dashboard (ADR-0015).
  *
  * The dashboard **is the bunny list**; there is deliberately no separate list screen, because two
- * screens rendering the same rows would diverge the moment one of them gained a field. Phase 2 grows
- * the card into the vitals card — current weight, trend flag, active watch — above what is here.
+ * screens rendering the same rows would diverge the moment one of them gained a field.
+ *
+ * Phase 7 redraws all three states against mockups `1b`/`1c`, `4a`/`4b` and `4c`/`4c2`. Nothing was
+ * added or taken away: the same facts, the same actions, the same words. What changed is that the
+ * loose label/value lines became rows in a grouped card, the flag stopped being a coloured panel,
+ * and the screen picked up the spacing rhythm — hero, then sections 24dp apart with their headers
+ * 8dp above their content.
  */
 @Composable
 fun HomeScreen(
@@ -100,24 +120,45 @@ fun HomeScreen(
     )
 }
 
+/**
+ * The first-run screen: a heading, one sentence, one button (`4c`).
+ *
+ * **The only empty state in the app with a heading**, and it keeps one because there is nothing else
+ * on the screen for a heading to compete with. No second action and no paragraph explaining what
+ * Binky is — the owner has just installed it.
+ *
+ * The tabs underneath are deliberately *not* dimmed. A navigation bar drawn as disabled on first run
+ * reads as a broken install, and the app does not actually disable them.
+ */
 @Composable
 private fun NoBunniesYet(
     onAddBunny: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
+    Column(modifier = modifier.fillMaxSize().padding(Spacing.base)) {
         Text(
             text = stringResource(R.string.home_empty_title),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.headlineSmall,
         )
+        Spacer(Modifier.height(Spacing.tight))
         Text(
             text = stringResource(R.string.home_empty_body),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Button(onClick = onAddBunny) { Text(stringResource(R.string.switcher_add_bunny)) }
+        Spacer(Modifier.height(Spacing.base))
+        // Hug-width and taller than Material's default, sitting under the sentence rather than
+        // stretched across the screen: the three elements have to read as one block, and a
+        // full-width button on an otherwise empty screen reads as a form control. This is the app's
+        // one filled button and the only saturated thing here, which is the point of it.
+        Button(
+            onClick = onAddBunny,
+            modifier = Modifier.height(52.dp),
+            shape = RoundedCornerShape(26.dp),
+            contentPadding = PaddingValues(horizontal = 28.dp),
+        ) {
+            Text(stringResource(R.string.switcher_add_bunny))
+        }
     }
 }
 
@@ -136,59 +177,109 @@ private fun OneBunny(
     onCloseWatch: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Both are decided here rather than inside the two composables that render them, because the
+    // spacing above each one depends on whether it draws at all. A `Spacer` emitted for a banner
+    // that renders nothing is a hole that appears only for the bunnies with no flag — which is
+    // almost all of them, almost all of the time.
+    val hasFlag = vitals.flag.showsBanner()
+    val hasWatch = !readOnly && vitals.watch is WatchState.Active
+
     Column(
         modifier =
             modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = Spacing.base)
+                .padding(top = Spacing.tight, bottom = FabClearance),
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.base),
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth(),
         ) {
             BunnyAvatar(avatar = profile.avatar, name = profile.name, size = 96.dp)
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.hair)) {
                 Text(text = profile.name, style = MaterialTheme.typography.headlineSmall)
                 ageLabel(profile.birthDate, profile.birthDateApproximate)?.let {
-                    Text(text = it, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 housematesLabel(profile.housemates)?.let {
-                    Text(text = it, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
 
-        // The vitals half of ADR-0015's card. The flag comes first because it is the one thing on
-        // this screen the owner has not already told the app.
-        TrendFlagBanner(
-            bunnyName = profile.name,
-            flag = vitals.flag,
-            unit = unit,
-            onAcknowledge = onAcknowledge,
-            secondaryAction = watchAction(profile.name, vitals, readOnly, onStartWatch),
-        )
-        WatchLine(vitals = vitals, readOnly = readOnly, onClose = onCloseWatch)
-        LastWeighing(vitals = vitals, unit = unit)
-        LastObservation(vitals = vitals)
-
-        Fact(stringResource(R.string.bunny_sex_label), sexLabel(profile.sex))
-        Fact(stringResource(R.string.bunny_neutered_label), neuterLabel(profile.neutered))
-        // Only an *exact* birthdate is ever shown as a date; an approximate one is an age and
-        // nothing more, or the app invents a precision the owner never had (ADR-0016).
-        if (profile.birthDate != null && !profile.birthDateApproximate) {
-            Fact(stringResource(R.string.bunny_birthdate_label), dateLabel(profile.birthDate))
+        // The flag comes first because it is the one thing on this screen the owner has not already
+        // told the app.
+        if (hasFlag) {
+            Spacer(Modifier.height(Spacing.block))
+            TrendFlagBanner(
+                bunnyName = profile.name,
+                flag = vitals.flag,
+                unit = unit,
+                onAcknowledge = onAcknowledge,
+                secondaryAction = watchAction(profile.name, vitals, readOnly, onStartWatch),
+            )
         }
-        profile.breed?.let { Fact(stringResource(R.string.bunny_breed_label), it) }
-        profile.colour?.let { Fact(stringResource(R.string.bunny_colour_label), it) }
+        if (hasWatch) {
+            // Tight under the flag when both are up — they are one thought, and the watch is
+            // usually the thing the flag talked the owner into.
+            Spacer(Modifier.height(if (hasFlag) Spacing.tight else Spacing.block))
+            WatchLine(vitals = vitals, readOnly = readOnly, onClose = onCloseWatch)
+        }
+
+        Spacer(Modifier.height(if (hasFlag || hasWatch) Spacing.section else Spacing.block))
+        SectionHeader(stringResource(R.string.home_about_bunny, profile.name))
+        Spacer(Modifier.height(Spacing.tight))
+        GroupedCard {
+            // Built as a list first so the dividers can go *between* rows without every optional
+            // field having to know whether it is the last one. Kotlin note: `buildList` is inline,
+            // so `stringResource` — a composable call — is still legal inside it.
+            val facts =
+                buildList {
+                    add(stringResource(R.string.home_last_weight_label) to lastWeighingValue(vitals, unit))
+                    add(stringResource(R.string.home_last_observation_label) to lastObservationValue(vitals))
+                    add(stringResource(R.string.bunny_sex_label) to sexLabel(profile.sex))
+                    add(stringResource(R.string.bunny_neutered_label) to neuterLabel(profile.neutered))
+                    // Only an *exact* birthdate is ever shown as a date; an approximate one is an age
+                    // and nothing more, or the app invents a precision the owner never had (ADR-0016).
+                    if (profile.birthDate != null && !profile.birthDateApproximate) {
+                        add(stringResource(R.string.bunny_birthdate_label) to dateLabel(profile.birthDate))
+                    }
+                    profile.breed?.let { add(stringResource(R.string.bunny_breed_label) to it) }
+                    profile.colour?.let { add(stringResource(R.string.bunny_colour_label) to it) }
+                }
+            facts.forEachIndexed { index, (label, value) ->
+                if (index > 0) RowDivider()
+                FactRow(label = label, value = value)
+            }
+        }
 
         if (!readOnly) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onEdit) { Text(stringResource(R.string.action_edit)) }
+            Spacer(Modifier.height(Spacing.section))
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+                // Edit is the tonal one: it is the action an owner opens this screen to take.
+                // Delete stays the quietest of the three — a destructive action does not need
+                // colour to be found, and colour here would invite the tap.
+                FilledTonalButton(onClick = onEdit) { Text(stringResource(R.string.action_edit)) }
                 TextButton(onClick = onArchive) { Text(stringResource(R.string.action_archive)) }
-                TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
+                TextButton(
+                    onClick = onDelete,
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                ) {
+                    Text(stringResource(R.string.action_delete))
+                }
             }
         }
     }
@@ -201,42 +292,33 @@ private fun OneBunny(
  * nobody looked, and the app must not let an empty series read as reassurance (ADR-0001).
  */
 @Composable
-private fun LastWeighing(
+private fun lastWeighingValue(
     vitals: BunnyVitals,
     unit: WeightUnit,
-) {
+): String {
     val grams = vitals.lastGrams
     val recordedAt = vitals.lastRecordedAt
-    Fact(
-        label = stringResource(R.string.home_last_weight_label),
-        value =
-            if (grams == null || recordedAt == null) {
-                stringResource(R.string.home_no_weighings)
-            } else {
-                stringResource(
-                    R.string.home_last_weight_value,
-                    weightLabel(grams, unit),
-                    instantDateLabel(recordedAt),
-                )
-            },
-    )
+    return if (grams == null || recordedAt == null) {
+        stringResource(R.string.home_no_weighings)
+    } else {
+        stringResource(
+            R.string.home_last_weight_value,
+            weightLabel(grams, unit),
+            instantDateLabel(recordedAt),
+        )
+    }
 }
 
 /**
- * When anything was last noticed about this bunny — the observation half of the vitals card.
+ * When anything was last noticed about this bunny.
  *
  * "None recorded yet" is a statement about the **record**, not about the bunny. Silence means nobody
  * looked, and it must never be shown as though it meant nothing was wrong (ADR-0001).
  */
 @Composable
-private fun LastObservation(vitals: BunnyVitals) {
-    Fact(
-        label = stringResource(R.string.home_last_observation_label),
-        value =
-            vitals.lastObservationAt?.let { instantDateLabel(it) }
-                ?: stringResource(R.string.home_no_observations),
-    )
-}
+private fun lastObservationValue(vitals: BunnyVitals): String =
+    vitals.lastObservationAt?.let { instantDateLabel(it) }
+        ?: stringResource(R.string.home_no_observations)
 
 /**
  * The active watch, where it is running (ADR-0001) — *"Watch active · 4 days left"*, with
@@ -249,10 +331,11 @@ private fun WatchLine(
     vitals: BunnyVitals,
     readOnly: Boolean,
     onClose: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val active = vitals.watch as? WatchState.Active ?: return
     if (readOnly) return
-    WatchActiveCard(active = active, onClose = onClose)
+    WatchActiveCard(active = active, onClose = onClose, modifier = modifier)
 }
 
 /**
@@ -273,22 +356,6 @@ private fun watchAction(
         { StartWatchAction(bunnyName = bunnyName, onStart = onStartWatch) }
     }
 
-@Composable
-private fun Fact(
-    label: String,
-    value: String,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        Text(text = value, style = MaterialTheme.typography.bodyMedium)
-    }
-}
-
 /**
  * The fluffle dashboard — **one vitals card per active bunny** (ADR-0015). The dashboard *is* the
  * bunny list; there is deliberately no separate list screen.
@@ -303,60 +370,123 @@ private fun AllBunnies(
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier.fillMaxSize().padding(horizontal = Spacing.base),
+        contentPadding = PaddingValues(top = Spacing.tight, bottom = FabClearance),
+        verticalArrangement = Arrangement.spacedBy(Spacing.tight),
     ) {
         item {
             Text(
                 text = stringResource(R.string.home_all_bunnies_stub),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = Spacing.hair, bottom = Spacing.tight),
             )
         }
         // Kotlin note: `items(list) { }` is the LazyColumn equivalent of `list.map(...)` in JSX —
         // except only the visible rows are composed, so a long list stays cheap.
         items(state.profiles, key = { it.id }) { profile ->
-            val vitals = state.vitalsFor(profile.id)
-            Card(modifier = Modifier.fillMaxWidth().clickable { onSelectBunny(profile.id) }) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        BunnyAvatar(avatar = profile.avatar, name = profile.name)
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(text = profile.name, style = MaterialTheme.typography.titleMedium)
-                            ageLabel(profile.birthDate, profile.birthDateApproximate)?.let {
-                                Text(text = it, style = MaterialTheme.typography.bodySmall)
-                            }
-                            housematesLabel(profile.housemates)?.let {
-                                Text(text = it, style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
-                    LastWeighing(vitals = vitals, unit = state.unit)
-                    LastObservation(vitals = vitals)
-                    WatchLine(
-                        vitals = vitals,
-                        readOnly = state.readOnly,
-                        onClose = { onCloseWatch(profile.id) },
-                    )
-                    TrendFlagBanner(
-                        bunnyName = profile.name,
-                        flag = vitals.flag,
-                        unit = state.unit,
-                        onAcknowledge = { onAcknowledge(profile.id) },
-                        secondaryAction =
-                            watchAction(profile.name, vitals, state.readOnly) { duration ->
-                                onStartWatch(profile.id, duration)
-                            },
+            BunnyCard(
+                profile = profile,
+                vitals = state.vitalsFor(profile.id),
+                unit = state.unit,
+                readOnly = state.readOnly,
+                onOpen = { onSelectBunny(profile.id) },
+                onAcknowledge = { onAcknowledge(profile.id) },
+                onStartWatch = { duration -> onStartWatch(profile.id, duration) },
+                onCloseWatch = { onCloseWatch(profile.id) },
+            )
+        }
+    }
+}
+
+/**
+ * One bunny on the dashboard (`4a`).
+ *
+ * **The flag stays inside the bunny it belongs to**, in full rather than compressed to a badge: at
+ * this level the owner can act on it — acknowledge it, start a watch — without opening the rabbit
+ * first, and a dot would take that away to save four lines. It steps up one surface rather than
+ * becoming a coloured panel, which is the same rule the flag follows everywhere else.
+ *
+ * A bunny with no flag simply has a shorter card, and **that difference is the signal**. Nothing is
+ * drawn to say "no flag" — an absent flag is not evidence of anything (ADR-0001).
+ */
+@Composable
+private fun BunnyCard(
+    profile: BunnyProfile,
+    vitals: BunnyVitals,
+    unit: WeightUnit,
+    readOnly: Boolean,
+    onOpen: () -> Unit,
+    onAcknowledge: () -> Unit,
+    onStartWatch: (WatchDuration) -> Unit,
+    onCloseWatch: () -> Unit,
+) {
+    val hasFlag = vitals.flag.showsBanner()
+    val hasWatch = !readOnly && vitals.watch is WatchState.Active
+
+    GroupedCard(modifier = Modifier.clickable(onClick = onOpen)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.base),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.base)
+                    .padding(top = Spacing.snug, bottom = Spacing.tight),
+        ) {
+            BunnyAvatar(avatar = profile.avatar, name = profile.name, size = 52.dp)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(text = profile.name, style = MaterialTheme.typography.titleMedium)
+                housematesLabel(profile.housemates)?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
+            // No content description: the whole card is one clickable target already named by the
+            // bunny's name and everything under it, and a second announcement would only repeat it.
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.outline,
+            )
         }
+        RowDivider()
+        FactRow(
+            label = stringResource(R.string.home_last_weight_label),
+            value = lastWeighingValue(vitals, unit),
+        )
+        RowDivider()
+        FactRow(
+            label = stringResource(R.string.home_last_observation_label),
+            value = lastObservationValue(vitals),
+        )
+        if (hasWatch) {
+            Spacer(Modifier.height(Spacing.snug))
+            WatchLine(
+                vitals = vitals,
+                readOnly = readOnly,
+                onClose = onCloseWatch,
+                modifier = Modifier.padding(horizontal = Spacing.base),
+            )
+        }
+        if (hasFlag) {
+            Spacer(Modifier.height(Spacing.tight))
+            TrendFlagBanner(
+                bunnyName = profile.name,
+                flag = vitals.flag,
+                unit = unit,
+                onAcknowledge = onAcknowledge,
+                nested = true,
+                modifier = Modifier.padding(horizontal = Spacing.base),
+                secondaryAction = watchAction(profile.name, vitals, readOnly, onStartWatch),
+            )
+        }
+        if (hasFlag || hasWatch) Spacer(Modifier.height(Spacing.snug))
     }
 }

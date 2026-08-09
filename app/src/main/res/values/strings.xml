@@ -61,6 +61,10 @@
     <string name="home_empty_title">No bunnies yet</string>
     <string name="home_empty_body">Add your first bunny to start keeping records.</string>
     <string name="home_all_bunnies_stub">Tap a bunny to open it.</string>
+    <!-- Section header over the facts card on Home. Takes the bunny's name; see the Polish, which
+         has to put the name first because "o" governs the locative and a name the owner typed
+         cannot be declined by the app. -->
+    <string name="home_about_bunny">About %1$s</string>
     <string name="home_last_weight_label">Last weighing</string>
     <string name="home_last_weight_value">%1$s on %2$s</string>
     <string name="home_last_observation_label">Last observation</string>

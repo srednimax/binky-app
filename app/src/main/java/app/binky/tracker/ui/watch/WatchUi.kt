@@ -5,12 +5,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import app.binky.tracker.R
 import app.binky.tracker.data.WatchDuration
 import app.binky.tracker.data.WatchState
+import app.binky.tracker.theme.Spacing
+import app.binky.tracker.ui.common.CardRadius
 
 /**
  * *Start a watch* — the occupant of the slot `TrendFlagUi` has carried empty since 2c.
@@ -138,12 +142,24 @@ fun WatchActiveCard(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    // **Apricot, not hay.** `Color.kt` reserves tertiary for caution — "the trend flag marker, the
+    // active watch" — and this row was still on `secondaryContainer` from before the brand existed.
+    // It is the one filled surface on Home, directly under the flag whose fill moved to a dot, and
+    // filled is right here: a watch is a thing the app is actively doing, not a warning about a
+    // rabbit. `onTertiaryContainer` for everything on it, including the button, because that pairing
+    // is contrast-checked by construction where a stray `primary` on apricot is not.
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        shape = RoundedCornerShape(CardRadius),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 52.dp)
+                    .padding(start = Spacing.base, end = Spacing.tight),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -155,7 +171,10 @@ fun WatchActiveCard(
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onClose) { Text(stringResource(R.string.watch_close)) }
+            TextButton(
+                onClick = onClose,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onTertiaryContainer),
+            ) { Text(stringResource(R.string.watch_close)) }
         }
     }
 }

@@ -77,6 +77,9 @@
     <string name="home_empty_title">Nie ma jeszcze królików</string>
     <string name="home_empty_body">Dodaj pierwszego królika, żeby zacząć prowadzić zapisy.</string>
     <string name="home_all_bunnies_stub">Dotknij królika, żeby go otworzyć.</string>
+    <!-- Not "O %1$s": after "o" Polish wants the locative, and the app cannot decline a name the
+         owner typed. Name first, then the noun, which reads naturally whatever the name is. -->
+    <string name="home_about_bunny">%1$s — informacje</string>
     <string name="home_last_weight_label">Ostatnie ważenie</string>
     <string name="home_last_weight_value">%1$s, %2$s</string>
     <string name="home_last_observation_label">Ostatnia obserwacja</string>
