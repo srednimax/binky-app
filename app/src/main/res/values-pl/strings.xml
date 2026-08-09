@@ -752,19 +752,26 @@
     <string name="med_record_when">Kiedy?</string>
     <string name="med_record_when_help">Domyślnie teraz. Datę można cofnąć, jeśli zapis powstaje później.</string>
     <string name="med_record_future">To jest później niż teraz.</string>
+    <string name="med_record_for_slot">do dawki o %1$s</string>
     <string name="med_record_note">Notatka, jeśli się przyda</string>
     <string name="med_record_action">Zapisz</string>
 
     <string name="med_editor_add_title">Nowa kuracja</string>
     <string name="med_editor_edit_title">Edytuj kurację</string>
+    <string name="med_editor_section_medication">Lek</string>
+    <string name="med_editor_section_when">Kiedy</string>
     <string name="med_editor_name">Co to jest?</string>
+    <string name="med_editor_name_placeholder">Metacam</string>
     <string name="med_editor_name_required">Warto wpisać nazwę z opakowania, żeby zapis coś znaczył także za rok.</string>
     <string name="med_editor_amount">Ile, jeśli tak powiedziano</string>
+    <string name="med_editor_amount_placeholder">0,3 ml</string>
     <string name="med_editor_amount_help">Dokładnie tak, jak powiedział weterynarz — „0,3 ml”, „pół tabletki”. Binky tego nigdy nie czyta.</string>
     <string name="med_editor_start">Początek</string>
+    <string name="med_editor_pick_start">Zmień datę początku</string>
     <string name="med_editor_ongoing">W trakcie</string>
     <string name="med_editor_ongoing_help">Włączone dla kuracji bez widocznego końca. Wyłączenie pozwala ustawić ostatni dzień.</string>
     <string name="med_editor_end">Koniec</string>
+    <string name="med_editor_pick_end">Zmień datę końca</string>
     <string name="med_editor_end_before_start">To jest przed początkiem kuracji.</string>
     <string name="med_editor_schedule">Pory dnia</string>
     <string name="med_editor_schedule_help">Opcjonalne. Puste dla kuracji, przy której dawki zapisuje się ręcznie.</string>

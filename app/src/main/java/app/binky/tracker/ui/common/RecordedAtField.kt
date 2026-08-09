@@ -2,15 +2,11 @@ package app.binky.tracker.ui.common
 
 import android.text.format.DateFormat
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,12 +19,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.binky.tracker.R
 import app.binky.tracker.theme.Spacing
@@ -181,41 +174,5 @@ fun RecordedAtField(
                 TextButton(onClick = { pickingTime = false }) { Text(stringResource(R.string.action_cancel)) }
             },
         )
-    }
-}
-
-/**
- * One value with a *Change* beside it — the shape both halves of [RecordedAtField] take.
- *
- * [description] is what a screen reader hears instead of the button's own label. Compose reads a
- * merged node's `contentDescription` in preference to the text inside it, which is what lets two
- * buttons both read "Change" on screen and still announce which one they are.
- */
-@Composable
-private fun ChangeableValueRow(
-    value: String,
-    description: String,
-    enabled: Boolean,
-    onChange: () -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 56.dp)
-                // The button carries its own padding, so it stops short of the card's edge on its
-                // own; a read-only row has nothing there and takes the full inset instead.
-                .padding(start = Spacing.base, end = if (enabled) Spacing.tight else Spacing.base),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = value, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        if (enabled) {
-            TextButton(
-                onClick = onChange,
-                modifier = Modifier.semantics { contentDescription = description },
-            ) {
-                Text(stringResource(R.string.action_change))
-            }
-        }
     }
 }

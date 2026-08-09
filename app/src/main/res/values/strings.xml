@@ -781,22 +781,29 @@
     <string name="med_record_when">When?</string>
     <string name="med_record_when_help">Defaults to now. Back-date it if you are writing it down later.</string>
     <string name="med_record_future">That is later than now.</string>
+    <string name="med_record_for_slot">for the %1$s dose</string>
     <string name="med_record_note">Note, if you want one</string>
     <string name="med_record_action">Record</string>
 
     <string name="med_editor_add_title">New course</string>
     <string name="med_editor_edit_title">Edit course</string>
+    <string name="med_editor_section_medication">The medication</string>
+    <string name="med_editor_section_when">When</string>
     <string name="med_editor_name">What is it?</string>
+    <string name="med_editor_name_placeholder">Metacam</string>
     <string name="med_editor_name_required">Give it the name on the box, so the record still means something in a year.</string>
     <!-- Free text and never required: an owner told "one syringe, morning and night" has nothing to
          type in a number field, and insisting would make them invent a figure the app would then
          show as if the vet had said it (ADR-0002). -->
     <string name="med_editor_amount">How much, if you were told</string>
+    <string name="med_editor_amount_placeholder">0.3 ml</string>
     <string name="med_editor_amount_help">Exactly as the vet said it — “0.3 ml”, “half a tablet”. Binky never reads it.</string>
     <string name="med_editor_start">Starts</string>
+    <string name="med_editor_pick_start">Change the start date</string>
     <string name="med_editor_ongoing">Ongoing</string>
     <string name="med_editor_ongoing_help">On for a course with no end in sight. Turn it off to set the last day.</string>
     <string name="med_editor_end">Ends</string>
+    <string name="med_editor_pick_end">Change the end date</string>
     <string name="med_editor_end_before_start">That is before the course starts.</string>
     <string name="med_editor_schedule">Times of day</string>
     <string name="med_editor_schedule_help">Optional. Leave it empty for a course you record doses against by hand.</string>

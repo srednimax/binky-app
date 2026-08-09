@@ -24,9 +24,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.binky.tracker.theme.Spacing
@@ -83,6 +86,23 @@ val FabClearance = 88.dp
 val NestedCardRadius = 16.dp
 
 /**
+ * The surface a [GroupedCard] draws on, when the screen it is standing on is not the background.
+ *
+ * Compose note: a `CompositionLocal` is React's context — a value provided high up and read far
+ * below without threading it through every signature in between. It earns that here because "which
+ * level am I nested on" is genuinely ambient. A card cannot know, and the alternative is a colour
+ * parameter on [GroupedCard], on [app.binky.tracker.ui.common.FormSection] and on
+ * [app.binky.tracker.ui.common.RecordedAtField] — three signatures carrying a value only the
+ * innermost one uses.
+ *
+ * [Color.Unspecified] means *take the default*, which is what every screen wants. Only
+ * [BinkyDialog] provides anything else: a dialog is a surface of its own, and a card that kept the
+ * background's level would sit **below** its own dialog in dark, which is the one thing `3g` is
+ * explicit about.
+ */
+val LocalCardSurface = compositionLocalOf { Color.Unspecified }
+
+/**
  * A section's name, sitting above its content.
  *
  * Deliberately quiet — `titleSmall` in [MaterialTheme.colorScheme.onSurfaceVariant] — because it
@@ -127,14 +147,17 @@ fun GroupedCard(
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    // A provided surface wins over [raised]: inside a dialog the level is already decided by what
+    // the dialog itself is drawn on, and nothing raises a card in there.
+    val provided = LocalCardSurface.current
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(if (raised) NestedCardRadius else CardRadius),
         color =
-            if (raised) {
-                MaterialTheme.colorScheme.surfaceContainerHigh
-            } else {
-                MaterialTheme.colorScheme.surfaceContainer
+            when {
+                provided.isSpecified -> provided
+                raised -> MaterialTheme.colorScheme.surfaceContainerHigh
+                else -> MaterialTheme.colorScheme.surfaceContainer
             },
     ) {
         Column(
