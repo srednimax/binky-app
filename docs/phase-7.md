@@ -252,7 +252,7 @@ lives* for how to open one without loading the whole file.
 | `Weight` + chart | `1d` / `1e` | ✅ 2026-08-09. Hero. The row lost its buttons, so **deleting moved to the editor**; the chart's points became rings filled with the card |
 | Record a weighing | `6e` / `6f` | A **route, not a sheet** — corrected against the capture. Grams only. Carries the one addition below |
 | Trend flag card | `1b` and every card that nests it | ✅ 2026-08-09, and it moved twice. `errorContainer` → `tertiaryContainer` → **a quiet `surfaceContainer` card with a 10dp apricot dot**. The drawings are explicit: *"the flag card is the same surface as every other card — apricot arrives as a 10dp dot"*. A whole panel of colour asserts an urgency the sentence inside it disclaims. Apricot as a *fill* survives in one place only, the active watch row |
-| `Observations` | `2a` / `2b` | |
+| `Observations` | `2a` / `2b` | ✅ 2026-08-09. Four decisions, all of which generalise — the scope chip, the dense fact block, the tray's own subheading, and hay for what the owner recorded |
 | Record an observation | `2c` / `2d` | ✅ 2026-08-09. Fixes the form rules for *every* editor — they live in `ui/common/Forms.kt` |
 | `CareAndMeds` | `3a` / `3b` | Today's doses, then the courses that generate them |
 | `CareAndMeds`, no bunnies | `3c` / `3d` | |
@@ -288,6 +288,50 @@ Worth knowing before reading a mockup as gospel, and consistent with the palette
 - `1d` dates the chart's x-axis **"Jul 15"**, with no year. The axis keeps its short localized date
   (`7/13/26`) instead: the selector offers *All*, a history can span years, and a month and day with
   no year would be ambiguous in exactly the range the drawing never had to show.
+- `2b` puts Observations' cards on **`surfaceContainerLow`**, one step below every other route's.
+  Built on `surfaceContainer` like the rest. The note's actual argument is a *relative* one — *"not
+  up to High … the cards are the content, so they sit quietly"* — and in the generated scheme
+  `surfaceContainer` already **is** the quiet level; `High` is what it rejects, and nothing here
+  takes it. Weight is a list of cards on the same tab bar one tap away, and two sibling lists on
+  different container levels reads as a rendering fault rather than a decision.
+- `2a` sets the attribute rows **2dp** apart. Built at [`Spacing.hair`] (4dp): the app is committed
+  to a 4dp grid and the difference is a rounding error at this size.
+
+**`Observations` added three things to `Surfaces.kt`, and every one of them was forced by a drawing
+whose reasoning generalises past this route:**
+
+- **`TagChip`** — the read-only chip. `2a` is explicit that *"symptoms are hay chips, not apricot:
+  apricot stays reserved for what the app raises; a symptom is something you recorded"*, which is
+  ADR-0001's line drawn in colour. Not one of M3's `Chip`s: those are all controls, carrying a click,
+  a ripple and a selected state a tag has no use for. `dense` is the smaller one that rides beside a
+  card title.
+- **`DenseFactRow`** — `FactRow`'s 28dp twin, **with no divider**, and the distinction is about
+  meaning rather than size: *"dividers separate rows that are independent of each other; these are
+  not."* Four droppings facts from one moment are one answer in four parts. Photos, the dose history
+  and the vet record all have blocks shaped like this.
+- **`RecordButtonHeight` / `RecordButtonRadius`** — 52dp and fully rounded, moved out of
+  `WeightScreen` when *Log a healthy day* turned out to want exactly the same button. Two routes is
+  where a private constant stops being private.
+
+**The scope of an entry became a chip** — `2a`'s first decision, *"'Observed together with Nugget'
+becomes a hay chip in the card's header row rather than a sentence, so the scope of what follows is
+legible before you read any of it."* It kept ADR-0008's three cases intact and only shortened the
+copy: `observation_observed_together` → **`observation_with`** ("With %1$s"), the lone survivor's
+un-named *"Observed together"* unchanged, and a solo entry showing **no chip at all** on its own
+bunny's timeline — the screen already is her — but her name under *All bunnies*, where the chip is
+the only thing that says whose entry it is.
+
+**The tray facts got their own subheading**, `2a`'s third decision, and it needed **two** strings
+rather than the drawing's one: *"Shared — the litter tray"* is a claim, and a solo observation's tray
+is nobody else's, so it reads plain **"The litter tray"** there.
+
+⚠️ **One layout bug, found on the device and not in the drawing.** The mockups only draw entries with
+attribute rows, so nothing in them shows a bunny whose entire share of an entry is *"Looked for
+symptoms, saw none"* — which the sample data has two of. The gap belongs *between* two parts of a
+block, and emitting it after an empty one left that sentence sitting the same 16dp from its own
+heading as from the next bunny's, belonging to neither. Which of the three parts exist is now worked
+out before any of them is drawn, because a part cannot answer "am I first?" from inside itself. **The
+same shape will recur on every card built from optional blocks** — Care and the vet record next.
 
 **`ui/common/Forms.kt` is the same bet for editors, and it came out of `2c`.** `FormSection` (a
 [`SectionHeader`] over a [`GroupedCard`]), `FieldLabel`, `HelpText`, `ErrorText`, `ChipRow`, `FormChip`

@@ -104,6 +104,11 @@ All deliberately after it, because each would disturb the armed course.
       landed on a plain `Text` with nothing to focus and shot a form with no keyboard. It taps the
       placeholder now. **Expect one of these per redrawn route** — a scene needle is a claim about what
       the UI says, and this phase rewrites exactly that.
+      ℹ️ **`2a`/`2b` Observations broke none** (2026-08-09), which is worth recording as the exception
+      rather than as proof the rule was wrong: it *deleted* a string (`observation_observed_together`)
+      and added three, and both its scenes came through clean because neither needle ever named
+      anything inside a card — they tap the tab and swipe. **Needles that reach into content are the
+      fragile ones**; a needle on chrome survives a redraw of what the chrome contains.
       **The fix is the needle, not the permissions**: the scenes now open the course by name
       (`MEDICATION_COURSE = "Metacam"`, the sample data's first). Granting both would also clear it
       and is the wrong lever — `SCHEDULE_EXACT_ALARM` is denied by default on Android 14+, so that
@@ -217,10 +222,10 @@ exists. These are the items that come first.
       preference through the container would have opened the gate from inside the screen guarding it.
 - [ ] **The rewrite sweep — every route to the new language.** The per-route table with its mockup ids is
       in [`phase-7.md`](phase-7.md) *("The rewrite checkpoint")*; one commit per route, each building and
-      installing. **`Home` (all three states), the bunny switcher, `Weight` and `Record an observation`
-      are done** — 2026-08-09, checked on the device in light and dark; Home's no-bunnies state is
-      code-only so far, because emptying the phone to look at it would take §1's seed with it. Next is
-      **`2a`/`2b` Observations**, the list this editor belongs to. Eight routes have no drawing at all (Settings,
+      installing. **`Home` (all three states), the bunny switcher, `Weight`, `Record an observation` and
+      `Observations` are done** — 2026-08-09, checked on the device in light and dark; Home's no-bunnies
+      state is code-only so far, because emptying the phone to look at it would take §1's seed with it.
+      Next is **`3a`/`3b` Care & Meds**. Eight routes have no drawing at all (Settings,
       Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in) and get the
       language applied by hand.
       **`ui/common/Surfaces.kt` is the shared idiom** every remaining route draws from — section header,
