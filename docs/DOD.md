@@ -98,6 +98,12 @@ All deliberately after it, because each would disturb the armed course.
       `Settings$AlarmsAndRemindersAppActivity` once the first was granted.
       **This applies to the 4f run too** — §1 records it ended `Reason=data_cleared`, so it wiped,
       so it held neither permission. Assume those three scenes' existing evidence is wrong.
+      ℹ️ **`observation-entry-ime`'s needle changed with Phase 7's `2c`** (2026-08-09) — not wrong
+      evidence, but it would have become wrong on the next run. It tapped *"Anything else"*, which is
+      now a label **above** the note box rather than the box's own floating label; the tap would have
+      landed on a plain `Text` with nothing to focus and shot a form with no keyboard. It taps the
+      placeholder now. **Expect one of these per redrawn route** — a scene needle is a claim about what
+      the UI says, and this phase rewrites exactly that.
       **The fix is the needle, not the permissions**: the scenes now open the course by name
       (`MEDICATION_COURSE = "Metacam"`, the sample data's first). Granting both would also clear it
       and is the wrong lever — `SCHEDULE_EXACT_ALARM` is denied by default on Android 14+, so that
@@ -211,17 +217,22 @@ exists. These are the items that come first.
       preference through the container would have opened the gate from inside the screen guarding it.
 - [ ] **The rewrite sweep — every route to the new language.** The per-route table with its mockup ids is
       in [`phase-7.md`](phase-7.md) *("The rewrite checkpoint")*; one commit per route, each building and
-      installing. **`Home` (all three states), the bunny switcher and `Weight` are done** — 2026-08-09,
-      checked on the device in light and dark; Home's no-bunnies state is code-only so far, because
-      emptying the phone to look at it would take §1's seed with it. Next is **`2c` Record an observation,
-      before the other editors** — its label says the form rules get fixed there and every editor inherits
-      them, so doing it late means doing the editors twice. Eight routes have no drawing at all (Settings,
+      installing. **`Home` (all three states), the bunny switcher, `Weight` and `Record an observation`
+      are done** — 2026-08-09, checked on the device in light and dark; Home's no-bunnies state is
+      code-only so far, because emptying the phone to look at it would take §1's seed with it. Next is
+      **`2a`/`2b` Observations**, the list this editor belongs to. Eight routes have no drawing at all (Settings,
       Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in) and get the
       language applied by hand.
       **`ui/common/Surfaces.kt` is the shared idiom** every remaining route draws from — section header,
       grouped card, fact row, inset divider, the two card radii, `FabClearance`, and now
       `GroupedCardItem` for a grouped card whose rows are separate lazy items (any list that can run to
       hundreds of rows owes it).
+      ✅ **`ui/common/Forms.kt` is the editor half of the same idiom**, decided on `2c` as its own label
+      said it would be: `FormSection`, `FieldLabel`, `HelpText`, `ErrorText`, `ChipRow`, `FormChip`,
+      `NoteField`. Chips wrap rather than scrolling sideways, a section is a card, help belongs to the
+      control above it, free text is an outlined box with a placeholder. Every editor left in the sweep
+      draws from it rather than re-deriving it. `RecordedAtField` moved with it, so `6e` inherits the
+      treatment already.
       ⚠️ **`Weight` moved deleting a weighing onto the editor** — the drawn history row carries a value,
       a timestamp, a change and a chevron and has nowhere to put a button. Nothing was lost: the delete
       ends in the same flag re-check a save does. Every remaining list-plus-editor pair should follow it.
