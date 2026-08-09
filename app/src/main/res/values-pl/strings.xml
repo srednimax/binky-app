@@ -206,6 +206,9 @@
     <string name="settings_language_english">English</string>
     <string name="settings_language_polish">Polski</string>
     <string name="settings_language_help">Binky może działać w innym języku niż reszta telefonu. Zmiana tego ustawienia uruchamia aplikację ponownie.</string>
+    <!-- ADR-0027 -->
+    <string name="settings_material_you">Kolory z tapety</string>
+    <string name="settings_material_you_help">Binky ma własne kolory. Po włączeniu tej opcji bierze je z Twojej tapety, tak jak Android koloruje własne ekrany.</string>
 
     <!-- First-run setup (ADR-0006) -->
     <string name="setup_step">Krok %1$d z %2$d</string>

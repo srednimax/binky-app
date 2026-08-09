@@ -1,5 +1,6 @@
 package app.binky.tracker.ui.settings
 
+import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -24,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -85,6 +88,14 @@ fun SettingsScreen(
             WeightUnitSetting(unit = state.unit, onSelect = viewModel::setUnit)
             HorizontalDivider()
             LanguageSetting()
+            // **Hidden below Android 12**, where there is no wallpaper palette to take. `BinkyTheme`
+            // already ignores the preference there, and a switch that provably does nothing is the
+            // pointless furniture ADR-0013 warned about. The stored value is untouched either way,
+            // so a backup restored onto a newer phone still carries the choice.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                HorizontalDivider()
+                MaterialYouSetting(enabled = state.materialYou, onChange = viewModel::setMaterialYou)
+            }
             HorizontalDivider()
             BackupSetting(onOpen = onOpenBackup)
 
@@ -214,6 +225,40 @@ private fun LanguageSetting() {
                 TextButton(onClick = { picking = false }) { Text(stringResource(R.string.action_cancel)) }
             },
         )
+    }
+}
+
+/**
+ * ADR-0027's other half: Binky owns its palette, and this is the way back to Material You.
+ *
+ * Until this row existed the decision was only half shipped — dynamic colour was not "off by
+ * default", it was unavailable. Only rendered on Android 12+; see the caller.
+ */
+@Composable
+private fun MaterialYouSetting(
+    enabled: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .toggleable(value = enabled, role = Role.Switch, onValueChange = onChange),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(text = stringResource(R.string.settings_material_you), style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = stringResource(R.string.settings_material_you_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        // `onCheckedChange = null` on purpose: the Row's `toggleable` owns the click *and* the
+        // accessibility semantics, so the switch must not announce itself as a second control with
+        // the same job. The same pattern as the RadioButton in the language dialog above.
+        Switch(checked = enabled, onCheckedChange = null)
     }
 }
 

@@ -184,6 +184,10 @@
     <string name="settings_language_english">English</string>
     <string name="settings_language_polish">Polski</string>
     <string name="settings_language_help">Binky can use a different language from the rest of the phone. Changing this restarts the app.</string>
+    <!-- ADR-0027. The row is shown on Android 12 and newer only, where there is a wallpaper palette
+         to take; below that the app has always used its own colours and there is nothing to offer. -->
+    <string name="settings_material_you">Colours from your wallpaper</string>
+    <string name="settings_material_you_help">Binky has its own colours. Turn this on and it takes them from your wallpaper instead, the way Android colours its own screens.</string>
 
     <!-- First-run setup (ADR-0006). Three steps at 1.1: the first bunny, backup, then reminders.
          The reminders step waited for the reminders themselves — an opt-in that cannot demonstrate

@@ -21,6 +21,7 @@ enum class SampleDataOutcome { SEEDED, ALREADY_PRESENT }
 
 data class SettingsUiState(
     val unit: WeightUnit = WeightUnit.KILOGRAMS,
+    val materialYou: Boolean = false,
     val sampleData: SampleDataOutcome? = null,
 )
 
@@ -42,14 +43,26 @@ class SettingsViewModel(
     val uiState: StateFlow<SettingsUiState> =
         combine(
             container.preferences.weightUnit,
+            container.preferences.materialYou,
             sampleData,
-        ) { unit, seeded ->
-            SettingsUiState(unit = unit, sampleData = seeded)
+        ) { unit, materialYou, seeded ->
+            SettingsUiState(unit = unit, materialYou = materialYou, sampleData = seeded)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     /** Display only: entry stays in grams either way, and changes are always shown in grams. */
     fun setUnit(unit: WeightUnit) {
         viewModelScope.launch { container.preferences.setWeightUnit(unit) }
+    }
+
+    /**
+     * ADR-0027's opt-in, and the half of it the theme commit could not ship.
+     *
+     * Writing it re-themes the app on the spot: `MainActivity` collects the same preference in front
+     * of `BinkyTheme`, so the switch moving and the app repainting are one recomposition — unlike
+     * the language row above it, which can only take effect by recreating the Activity.
+     */
+    fun setMaterialYou(enabled: Boolean) {
+        viewModelScope.launch { container.preferences.setMaterialYou(enabled) }
     }
 
     /** Debug builds only — the screen renders the row behind `BuildConfig.DEBUG`. */
