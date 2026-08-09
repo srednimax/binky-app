@@ -155,8 +155,15 @@ class CareReminderViewModel(
                             due = careDue(scheduled.dueOn, LocalDate.now()),
                             events = rows,
                             unit = unit,
-                            pendingEventDelete = rows.firstOrNull { it.id == open.event },
-                            editingEvent = rows.firstOrNull { it.id == open.editing },
+                            // **Resolved only when a flag is actually set.** `CareEventRow.id` is
+                            // null on every weight-derived row (a weighing is not a completion and
+                            // has no event to name), so `it.id == open.event` with a null flag
+                            // matched the first weighing instead of nothing — and a weigh-in's
+                            // history is made of those. Both completion dialogs opened by
+                            // themselves on entry, and cancelling re-matched on the next emission,
+                            // which made the screen unusable rather than merely wrong.
+                            pendingEventDelete = open.event?.let { id -> rows.firstOrNull { it.id == id } },
+                            editingEvent = open.editing?.let { id -> rows.firstOrNull { it.id == id } },
                             confirmingDelete = open.reminder,
                         )
                     }
