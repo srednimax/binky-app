@@ -223,6 +223,12 @@ fun GroupedCardItem(
  * something carries a [Chevron] into its own screen; a row that is *asking* you something carries
  * the answer instead, inline. Care & Meds draws both within one screen — a scheduled course chevrons
  * away, a dose due at eight o'clock offers *Given* and *Skipped* where the chevron would be.
+ *
+ * [enabled] is the third case and it is **not** the same as having no [onClick]: a row that is asking
+ * a question is also unclickable, and dimming it would be wrong. This is for a row that would open
+ * something if it could — More's *Photos* with no bunny to have photos of — where the title drops to
+ * [MaterialTheme.colorScheme.onSurfaceVariant] and the [subtitle] is what says why. The two halves go
+ * together: dimmed and mute is ADR-0001's silence.
  */
 @Composable
 fun ListRow(
@@ -230,6 +236,7 @@ fun ListRow(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
     Row(
@@ -248,7 +255,16 @@ fun ListRow(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(Spacing.hair),
         ) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color =
+                    if (enabled) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+            )
             if (subtitle != null) {
                 Text(
                     text = subtitle,
