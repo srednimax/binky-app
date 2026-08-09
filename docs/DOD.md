@@ -204,15 +204,22 @@ exists. These are the items that come first.
 - [x] **Theme commit first** — 2026-08-08. `Color.kt` generated from the seeds (both schemes in full, 22
       contrast checks green), `Type.kt`, `Spacing.kt`, `dynamicColor` off. Nunito is a new bundled asset,
       not a dependency. Two silent traps written up in `phase-7.md`'s order-of-work step 4.
-- [ ] **The Material You toggle** — the half of ADR-0027 that did not ship with the theme commit. Until it
-      exists, dynamic colour is not "off by default", it is unavailable. A key in `AppPreferences.kt`, a
-      Settings row, and two strings in **both** locales (ADR-0013).
+- [x] **The Material You toggle** — 2026-08-09, so ADR-0027 is whole and dynamic colour is now *off by
+      default* rather than unavailable. Hidden below Android 12, where there is no wallpaper palette to
+      take. **It moved `AppPreferences` onto `BinkyApplication`**: the theme wraps ADR-0007's
+      schema-mismatch screen, and `container` is the `lazy` that *is* the wipe guard, so reading the
+      preference through the container would have opened the gate from inside the screen guarding it.
 - [ ] **The rewrite sweep — every route to the new language.** The per-route table with its mockup ids is
       in [`phase-7.md`](phase-7.md) *("The rewrite checkpoint")*; one commit per route, each building and
-      installing. Start with `Home` and `Weight`, then **`2c` Record an observation before the other
-      editors** — its label says the form rules get fixed there and every editor inherits them, so doing it
-      late means doing the editors twice. Eight routes have no drawing at all (Settings, Support, Documents,
-      Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in) and get the language applied by hand.
+      installing. **`Home` (all three states) and the bunny switcher are done** — 2026-08-09, checked on
+      the device in light and dark; the no-bunnies state is code-only so far, because emptying the phone
+      to look at it would take §1's seed with it. `Weight` is next, then **`2c` Record an observation
+      before the other editors** — its label says the form rules get fixed there and every editor inherits
+      them, so doing it late means doing the editors twice. Eight routes have no drawing at all (Settings,
+      Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in) and get the
+      language applied by hand.
+      **`ui/common/Surfaces.kt` is the shared idiom** every remaining route draws from — section header,
+      grouped card, fact row, inset divider, the two card radii, and `FabClearance`.
 - [ ] **Decide the four pieces of new functionality the designs introduce** — they are decisions, not tasks,
       because this phase is *same functionality, new looks*, and a screen redrawn from a mockup absorbs them
       silently otherwise. The last-five line on Record a weighing (likely adopt), a stale-backup marker
@@ -221,7 +228,9 @@ exists. These are the items that come first.
       key is out of scope by definition. Listed with reasoning in `phase-7.md`.
       ⚠️ **The inventory is provisional**: it was built from the mockups that survived the 256 KiB
       truncation. The casualties are **`1d` and `1e`, the two `Weight` frames** — turn 1 is last in the byte
-      stream — so whatever they add beyond the known summary is missing here. Re-derive once they read.
+      stream. **The truncation is solved** (2026-08-09): the project is exported to disk, where the two
+      frames are readable and every mockup can be sliced out one at a time. They have not been read yet,
+      so re-derive this list when `Weight` is built. `phase-7.md` has the method.
 - [ ] **Rules the new look inherits** — weight changes always in grams; the chart plots real timestamps,
       not index; missing media is a placeholder, never a crash; image writes go through the media helper
       (ADR-0020); no empty state infers a problem from silence (ADR-0001); no *missed*/*overdue* outside

@@ -163,6 +163,19 @@ reasoning about what is in it. *(A read on 2026-08-08 lost the tail of `1c` onwa
 Structure, for reading it a piece at a time instead of whole: `<section class="dv-turn" id="tN">` per turn,
 `<div class="dv-opt" id="NX">` per mockup (`1a`, `1b`, `4c2`, …). Split on the opt divs and open one.
 
+**Solved on 2026-08-09 — export the project and slice it locally.** The exported
+`Binky Design Language.dc.html` is **295 007 bytes**, so `get_file`'s 262 144-byte cap cuts it 733
+bytes into `1c` — which is exactly the 2026-08-08 symptom, and puts `1d` (starts at 270 361) and
+`1e` (282 279) permanently out of reach of that tool. There is no read that gets them; the export is
+the only path.
+
+Once exported, **never read the file whole** — it is ~72k tokens and almost all of it is markup.
+Slice one `dv-opt` and strip the tags: that is ~1.5k tokens per frame, and the stripped form keeps
+the colour and size hints that carry the spec. The byte offsets of every mockup come from one
+`grep -bo 'class="dv-opt" id="[0-9a-z]*"'`, and **diffing a light frame against its dark twin** is
+how to read a dark variant for almost nothing — it is a pure role swap, so the diff *is* the
+information.
+
 ### Two things in the project that the brief did not ask for
 
 - **The calendar (`7a`/`7b`) is out of scope.** The doc itself calls it “the one thing in this pass that is
@@ -193,9 +206,20 @@ Structure, for reading it a piece at a time instead of whole: `<section class="d
    ✅ *2026-08-08.* `Color.kt` generated from the seeds, both schemes in full, 22 contrast checks passing
    in light and dark. `Type.kt` carries the scale; **Nunito is a new bundled asset** (`res/font/`, OFL in
    `docs/licenses/`) — not a Gradle dependency, so ADR-0009's quarantine is untouched. `Spacing.kt` adds
-   the six steps. `dynamicColor` now defaults **off**, which is the half of ADR-0027 that ships;
-   **the Settings toggle is still owed** — a key in `AppPreferences.kt`, a Settings row, and two strings
-   in both locales.
+   the six steps. `dynamicColor` now defaults **off**, which is the half of ADR-0027 that ships.
+
+   ✅ *2026-08-09 — the Settings toggle landed*, so ADR-0027 is whole: dynamic colour is now *off by
+   default* rather than unavailable. `material_you` in `AppPreferences.kt`, a switch row on Settings
+   hidden below Android 12 (no wallpaper palette to take, and a control that provably does nothing is
+   the furniture ADR-0013 warned about), two strings in both locales.
+
+   **One structural thing came out of it, and it is worth knowing before touching the theme again.**
+   The preference has to be read *in front of* ADR-0007's gate: `BinkyTheme` wraps the schema-mismatch
+   screen as well as the app, and `BinkyApplication.container` is the `lazy` that **is** the wipe
+   guard — reading `container.preferences` from `MainActivity` would have forced the gate open from
+   inside the screen standing in front of it. So the one `AppPreferences` now lives on the
+   application and is handed *to* the container. Anything else the theme ever needs to know follows
+   the same path.
 
    Two traps found doing it, both silent:
    - **`FontVariation.Settings` is ignored for resource fonts.** Nunito ships only as a variable font whose
@@ -221,13 +245,13 @@ lives* for how to open one without loading the whole file.
 
 | Route | Mockups | Notes |
 | --- | --- | --- |
-| `Home` (bunny selected) | `1b` / `1c` | Hero. Dark is not a tint — the flag card climbs to `surfaceContainerHigh` |
-| `Home` under All bunnies | `4a` / `4b` | The flag stays inside the bunny it belongs to |
-| `Home`, no bunnies | `4c` / `4c2` | |
-| Bunny switcher | `4d` | Four items; *Archived* deliberately absent |
+| `Home` (bunny selected) | `1b` / `1c` | ✅ 2026-08-09. Hero. Dark is not a tint — the flag card climbs to `surfaceContainerHigh` |
+| `Home` under All bunnies | `4a` / `4b` | ✅ 2026-08-09. The flag stays inside the bunny it belongs to |
+| `Home`, no bunnies | `4c` / `4c2` | ✅ 2026-08-09 — **code only, not yet seen on the device**: the phone holds the sample fluffle, and emptying it to look at one screen would take the Doze run's seed with it (`DOD.md` §1) |
+| Bunny switcher | `4d` | ✅ 2026-08-09. Four items; *Archived* deliberately absent |
 | `Weight` + chart | `1d` / `1e` | Hero. Trend flag, the 30 days / 90 days / 1 year / All selector, the chart, *Record a weighing*, the weighings list |
 | Record a weighing | `6e` / `6f` | A **route, not a sheet** — corrected against the capture. Grams only. Carries the one addition below |
-| Trend flag card | — | ✅ done: apricot, both screens |
+| Trend flag card | `1b` and every card that nests it | ✅ 2026-08-09, and it moved twice. `errorContainer` → `tertiaryContainer` → **a quiet `surfaceContainer` card with a 10dp apricot dot**. The drawings are explicit: *"the flag card is the same surface as every other card — apricot arrives as a 10dp dot"*. A whole panel of colour asserts an urgency the sentence inside it disclaims. Apricot as a *fill* survives in one place only, the active watch row |
 | `Observations` | `2a` / `2b` | |
 | Record an observation | `2c` / `2d` | Fixes the form rules for *every* editor |
 | `CareAndMeds` | `3a` / `3b` | Today's doses, then the courses that generate them |
@@ -240,6 +264,21 @@ lives* for how to open one without loading the whole file.
 | `More` | `6a` / `6b` | Same six destinations, same copy |
 | Backup & restore | `6c` / `6d` | |
 | Settings, Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in | **none** | `github.md`'s *Not yet drawn* list — apply the language by hand |
+
+**`ui/common/Surfaces.kt` is where the idiom lives, and every remaining row above depends on it.**
+The mockups draw the same four things screen after screen — `SectionHeader`, `GroupedCard`, `FactRow`,
+`RowDivider` — so they are written once rather than re-derived per route. It also holds `CardRadius`
+(20dp), `NestedCardRadius` (16dp, for a card inside a card, which is how dark stays legible where a
+tint would carry no meaning) and `FabClearance`. That last one fixes a bug older than the redesign:
+`Scaffold` pads content for the bars it owns but **not** for the FAB floating over it, so Home's
+*Delete* button sat underneath it in the before set. Any scrolling route with a FAB owes it.
+
+**Two places where the drawings and the shipped theme disagree, both resolved in the theme's favour.**
+Worth knowing before reading a mockup as gospel, and consistent with the palette lesson above:
+- The mockups pad card interiors and row insets at **20px**; `Spacing.kt` has no such step and its
+  own rule is *"no screen invents a seventh"*. Built at `Spacing.base` (16dp).
+- The mockups set card titles in **Nunito 700 at 17px**; `Type.kt` deliberately confines Nunito to
+  display and headline, and `titleMedium` is the default family. Built as `titleMedium`.
 
 **`2c` is worth doing early even though it is not a hero screen.** Its own label says the form rules get
 fixed there, and every other editor inherits them — doing it after the editors means doing the editors twice.
@@ -272,10 +311,11 @@ are listed because a screen redrawn from a mockup will otherwise absorb them sil
   but only as a spec swatch, never on a real frame.
 - **The watch-expiry sheet.**
 
-**This inventory is provisional.** It was built from the mockups that survived the 256 KiB truncation plus
-`github.md`'s summary. The casualties of that cut are **`1d` and `1e`** — turn 1 sits last in the byte
-stream because the document runs newest-turn-first — so whatever the two `Weight` frames introduce beyond
-the summary above is not in this list. Re-derive it once those two are readable.
+**This inventory is still provisional, but no longer blocked.** It was built from the mockups that
+survived the 256 KiB truncation plus `github.md`'s summary; the casualties were **`1d` and `1e`**,
+the two `Weight` frames, because turn 1 sits last in the byte stream. The export above makes them
+readable — **they have not been read yet**, so whatever they introduce beyond the summary is still
+missing from this list. Re-derive it when `Weight` is built, which is the next route after Home.
 
 ## Gate
 
