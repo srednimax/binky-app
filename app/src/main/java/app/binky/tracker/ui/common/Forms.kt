@@ -181,12 +181,14 @@ fun FormChip(
     onClick: () -> Unit,
     label: String,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     leadingIcon: (@Composable () -> Unit)? = null,
 ) {
     FilterChip(
         selected = selected,
         onClick = onClick,
         label = { Text(label) },
+        enabled = enabled,
         leadingIcon = leadingIcon,
         modifier = modifier.height(ChipHeight),
     )
@@ -267,6 +269,15 @@ fun SingleLineField(
  *
  * [enabled] false renders the same row with **no way to change it** — the button is absent rather
  * than present-and-refusing (ADR-0004's shape).
+ *
+ * [actionLabel] overrides *Change* for a value that has never been set: `4e` writes *"Set a
+ * birthday"* and *"Choose a breed"* beside *not known* and *not set*, and it is right to, because
+ * "change" is the wrong verb for a field that holds nothing yet.
+ *
+ * [onClear] adds the second, quieter button that takes the value **back** to absent. It reads a bare
+ * *Clear* on screen and announces [clearDescription] — the same trick [description] plays for the
+ * first button, and for the same reason: two rows in one card would otherwise both announce *Clear*
+ * with no way to tell which field they empty.
  */
 @Composable
 fun ChangeableValueRow(
@@ -276,6 +287,9 @@ fun ChangeableValueRow(
     modifier: Modifier = Modifier,
     label: String? = null,
     enabled: Boolean = true,
+    actionLabel: String? = null,
+    onClear: (() -> Unit)? = null,
+    clearDescription: String? = null,
 ) {
     Row(
         modifier =
@@ -306,7 +320,20 @@ fun ChangeableValueRow(
                 onClick = onChange,
                 modifier = Modifier.semantics { contentDescription = description },
             ) {
-                Text(stringResource(R.string.action_change))
+                Text(actionLabel ?: stringResource(R.string.action_change))
+            }
+            // Only when there is something to clear: a permanently visible *Clear* beside an empty
+            // field is a control that does nothing four times out of five.
+            if (onClear != null) {
+                TextButton(
+                    onClick = onClear,
+                    modifier =
+                        Modifier.semantics {
+                            if (clearDescription != null) contentDescription = clearDescription
+                        },
+                ) {
+                    Text(stringResource(R.string.action_clear))
+                }
             }
         }
     }
