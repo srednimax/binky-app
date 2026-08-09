@@ -254,8 +254,8 @@ lives* for how to open one without loading the whole file.
 | Trend flag card | `1b` and every card that nests it | ✅ 2026-08-09, and it moved twice. `errorContainer` → `tertiaryContainer` → **a quiet `surfaceContainer` card with a 10dp apricot dot**. The drawings are explicit: *"the flag card is the same surface as every other card — apricot arrives as a 10dp dot"*. A whole panel of colour asserts an urgency the sentence inside it disclaims. Apricot as a *fill* survives in one place only, the active watch row |
 | `Observations` | `2a` / `2b` | ✅ 2026-08-09. Four decisions, all of which generalise — the scope chip, the dense fact block, the tray's own subheading, and hay for what the owner recorded |
 | Record an observation | `2c` / `2d` | ✅ 2026-08-09. Fixes the form rules for *every* editor — they live in `ui/common/Forms.kt` |
-| `CareAndMeds` | `3a` / `3b` | Today's doses, then the courses that generate them |
-| `CareAndMeds`, no bunnies | `3c` / `3d` | |
+| `CareAndMeds` | `3a` / `3b` | ✅ 2026-08-09. Today's doses, then the courses that generate them. The largest redraw so far: four sections of 64dp rows, three deletes moved, and the delivery caveat rewritten |
+| `CareAndMeds`, no bunnies | `3c` / `3d` | ✅ 2026-08-09. One sentence in a card the size of a row, and nothing else |
 | New course | `3e` | Same six fields, same words |
 | Record a dose | `3f` / `3g` | |
 | Vets + vet editor | `5a` / `5b` | |
@@ -296,6 +296,17 @@ Worth knowing before reading a mockup as gospel, and consistent with the palette
   different container levels reads as a rendering fault rather than a decision.
 - `2a` sets the attribute rows **2dp** apart. Built at [`Spacing.hair`] (4dp): the app is committed
   to a 4dp grid and the difference is a rounding error at this size.
+- `3a` draws a **"+" FAB** on Care & Meds. Not built: ADR-0015 puts the global "+" on Home and
+  Observations only, because it logs an *observation* and nothing on this tab is one. A drawing may
+  not quietly add a route-level action an ADR placed somewhere else. (Consequently this route needs
+  no `FabClearance` — nothing floats over its last row.)
+- `3a` omits the **vet visits** section entirely, and `github.md` maps `5a`/`5b` to the *vet
+  directory* rather than to visits. Visits are per bunny (ADR-0017) and cannot leave this tab, so
+  the section is built by hand in the same idiom, below routine care and above the caveat.
+- `3a` shows a **hay tick** on an answered dose and never draws a *skipped* one. A tick beside
+  "Skipped" would read as "yes, given", so skipped takes a neutral bar in the same hay circle —
+  drawn as a `Box` rather than an icon, because Compose's **core** icon set has no minus and
+  `material-icons-extended` is deliberately not a dependency (ADR-0009's neighbouring argument).
 
 **`Observations` added three things to `Surfaces.kt`, and every one of them was forced by a drawing
 whose reasoning generalises past this route:**
@@ -332,6 +343,47 @@ block, and emitting it after an empty one left that sentence sitting the same 16
 heading as from the next bunny's, belonging to neither. Which of the three parts exist is now worked
 out before any of them is drawn, because a part cannot answer "am I first?" from inside itself. **The
 same shape will recur on every card built from optional blocks** — Care and the vet record next.
+
+**`Care & Meds` added four more things to `Surfaces.kt`, and the first of them is the one every
+remaining list route wants:**
+
+- **`ListRow`** — `FactRow`'s opposite number. A fact row is a label and a value the owner *reads*;
+  a list row is an object they *act on*, at 64dp with a title, one fact line and a trailing slot.
+  It is what `3a`'s "five changes" note is mostly about: a dose was a whole card with an internal
+  divider and two text buttons, so three filled the screen, and eight fit now.
+- **`Chevron`** — the trailing mark of a row that opens something, decorative to a screen reader
+  because the row's own text is what it announces.
+- **`CautionDot`** — the 10dp apricot marker, lifted out of `TrendFlagUi` on its second caller.
+- **`CaveatCard`** — dot, title, one paragraph, at most one action, on `GroupedCard`'s raised level.
+  `GroupedCard`'s parameter was renamed `nested` → **`raised`** with it: the level says *this card is
+  not like the others*, and a card inside a card was only its first reason. **Spend it once per
+  screen** — `3b` is explicit that it is "the only thing on this route at surfaceContainerHigh".
+
+**The row grammar `3a` fixes, and it generalises past this route.** *A row that is asking you
+something carries the answer; a row that is only telling you something carries a chevron.* The
+drawing states it for doses — *Given* / *Skipped* inline, collapsing to a hay marker once answered —
+and the same rule is what decides that a care reminder keeps *Done* **only while it is actually
+due**. The drawings never show a due reminder, so this had to be derived rather than read; it is the
+same class of gap as `2a`'s optional blocks.
+
+**Three deletes moved off the list, and the destination did not already have one.** `1d`'s rule
+applied three times: a course, a reminder and a visit are all deleted from their own screen now, not
+from a 64dp row. Where `Weight`'s editor could simply absorb it, none of these three could —
+`MedicationCourseScreen` and `CareReminderScreen` delete *doses* and *completions*, which are
+sub-records, and `VisitEditorScreen` had no delete at all. Each needed the dialog, a
+`confirmingDelete` flag and three methods; `CareViewModel` lost all three sets in exchange, along
+with `PendingCourseDelete`. **Check the destination before assuming the move is free.**
+
+**The delivery line became one caveat card at the bottom, and the armed state stopped rendering.**
+`DoseDeliveryLine.kt` is now `ReminderCaveats.kt`, and it renders **exactly one** caveat, ranked:
+doses channel muted → exact alarms denied → battery policy. The states are not independent — one
+switch silences both channels, one battery policy delays both — so stacking every true statement
+showed the same fix twice under two titles. Taking a fix reveals the next on resume, which the
+`LifecycleResumeEffect` was already doing for its own reasons. The **armed** sentence is gone
+entirely, which is the rule the care line already followed: a line confirming that a working app
+works is reassurance an owner learns to skip, and then skips the one that matters. `doses_state_armed`
+went with it, and `action_open` — the string DOD §2's needle trap was named after — is now unused and
+deleted.
 
 **`ui/common/Forms.kt` is the same bet for editors, and it came out of `2c`.** `FormSection` (a
 [`SectionHeader`] over a [`GroupedCard`]), `FieldLabel`, `HelpText`, `ErrorText`, `ChipRow`, `FormChip`

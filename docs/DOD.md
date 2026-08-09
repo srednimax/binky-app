@@ -222,10 +222,12 @@ exists. These are the items that come first.
       preference through the container would have opened the gate from inside the screen guarding it.
 - [ ] **The rewrite sweep — every route to the new language.** The per-route table with its mockup ids is
       in [`phase-7.md`](phase-7.md) *("The rewrite checkpoint")*; one commit per route, each building and
-      installing. **`Home` (all three states), the bunny switcher, `Weight`, `Record an observation` and
-      `Observations` are done** — 2026-08-09, checked on the device in light and dark; Home's no-bunnies
+      installing. **`Home` (all three states), the bunny switcher, `Weight`, `Record an observation`,
+      `Observations` and `Care & Meds` (both states) are done** — 2026-08-09; Home's no-bunnies
       state is code-only so far, because emptying the phone to look at it would take §1's seed with it.
-      Next is **`3a`/`3b` Care & Meds**. Eight routes have no drawing at all (Settings,
+      ⚠️ **Care & Meds is likewise not yet seen on the device** — it is the largest redraw so far and it
+      moved three delete paths; it wants a device pass before the next route starts.
+      Next is **`3e` New course** and `3f`/`3g` Record a dose. Eight routes have no drawing at all (Settings,
       Support, Documents, Photos, Setup, Watch expiry, Schema mismatch, Reminders opt-in) and get the
       language applied by hand.
       **`ui/common/Surfaces.kt` is the shared idiom** every remaining route draws from — section header,
@@ -241,6 +243,22 @@ exists. These are the items that come first.
       ⚠️ **`Weight` moved deleting a weighing onto the editor** — the drawn history row carries a value,
       a timestamp, a change and a chevron and has nowhere to put a button. Nothing was lost: the delete
       ends in the same flag re-check a save does. Every remaining list-plus-editor pair should follow it.
+      ✅ **`Care & Meds` followed it three times over** (2026-08-09) and that is the bulk of its diff:
+      deleting a **course**, a **reminder** and a **visit** all moved off the list onto
+      `MedicationCourseScreen`, `CareReminderScreen` and `VisitEditorScreen`. Unlike Weight, **the
+      destination did not already have one** — those screens delete *doses* and *completions*, which
+      are sub-records — so each needed the dialog, a `confirmingDelete` flag and three methods, and
+      `CareViewModel` lost the machinery for all three. Check the destination before assuming this move
+      is free. It also produced the route's other rule: **a row that is *asking* carries the answer, a
+      row that is *telling* carries a chevron** — which is why *Done* survives on a care reminder only
+      while it is actually due.
+      ⚠️ **Two scene needles broke on this route, both silently, and one was a coin flip.**
+      `OPEN_WEIGHT_FORM` tapped *"Record a weight"* on the Care list — a button that now appears only
+      while the weigh-in is due, which depends on the seeded weighing dates. And `care-reminder` tapped
+      *"Every"*: `find` returns the **smallest** matching node, and a course row and a reminder row are
+      now both exactly 64dp of full-width merged semantics, so the tie breaks on list order and the
+      course wins. Both fixed to name the thing they mean. **Uniform row heights are a new class of
+      needle hazard** — the before set's differently-sized cards were breaking ties for us by accident.
 - [ ] **Decide the four pieces of new functionality the designs introduce** — they are decisions, not tasks,
       because this phase is *same functionality, new looks*, and a screen redrawn from a mockup absorbs them
       silently otherwise. The last-five line on Record a weighing (likely adopt), a stale-backup marker
@@ -310,6 +328,39 @@ Apache-2.0 §4 asks for the licence and NOTICE to travel with the binary.
 - [ ] Then build it where the answer says it belongs. Support is the app's only About-shaped screen.
 
 **Before production launch**, which is when the exposure stops being theoretical — not before 1.3.
+
+---
+
+## 9 — A weight *gain* raises nothing 🟠 reported by a tester, needs a decision first
+
+Found by a tester, 2026-08-09, and written down here so it does not get lost. **Not scheduled, and not a
+bug to fix blind** — the question it asks is a real one and the answer is an ADR-shaped decision.
+
+**What they saw.** A bunny putting on a lot of weight — their words were "5 kg plus" — produces no flag,
+no notification, nothing. Only losses are ever raised.
+
+**Confirmed in the code, and it is deliberate rather than an oversight.** `WeightTrend.kt`'s trigger is
+one-sided: `current.grams <= baseline.grams - threshold`. The baseline is the *second-lowest* of the prior
+window, chosen so a lasting rise cannot park the bunny permanently "above baseline" and mute every later
+drop. So the whole mechanism is built around loss, which is what ADR-0001 was written about — a rabbit
+losing weight is the acute, hours-matter signal.
+
+**What has to be decided before anything is built**, and none of it is obvious:
+
+- **Is a gain the same kind of event?** Loss is acute; gain is chronic. A symmetrical trigger would fire
+  on the same timescale as a loss and be wrong about what it means.
+- **What threshold, against what baseline?** The current baseline exists to be resistant to rises. A gain
+  rule cannot reuse it — it would need its own, and possibly its own window.
+- **What may the copy say?** ADR-0026 and ADR-0001 both bind here, and "your rabbit is overweight" is
+  medical advice, which this app does not give. *Health features observe; they never advise.* The honest
+  form is closer to the trend flag's own voice: a fact about the numbers, not a verdict about the rabbit.
+- **Is 5 kg even the case to serve?** A Flemish Giant is legitimately 6–10 kg. Any absolute number is
+  wrong for some breed, which is an argument that only *change* can be flagged, never a weight.
+- **Which surface?** The trend flag card already exists and already says "worth a closer look" without
+  diagnosing. Reusing it is cheaper than a second mechanism — but then the dot means two things.
+
+**Do not fold this into Phase 7.** That phase is *same functionality, new looks*, and a new trigger is
+new functionality by definition. Grill the decision first, write it as an ADR, then schedule the build.
 
 ---
 
