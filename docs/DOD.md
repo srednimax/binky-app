@@ -292,9 +292,30 @@ exists. These are the items that come first.
       `SwitchRow` was at M3's `bodyLarge` and `ListRow` at `titleMedium`, invisible until Settings
       became the first card to hold both. Fixed in `Forms.kt`, so every switch in the app moved with
       it. No scene needle broke — `backup`, `settings-scrolled` and `reminders-sheet` all still land.
-      **What is left is the seven with no drawing** — Support, Documents, Photos, Setup, Watch
-      expiry, Schema mismatch, Reminders opt-in — plus the two undrawn Weight surfaces (the chart's
-      empty state and the watch-expiry sheet). Setup has already taken one line of it:
+      ✅ **`Support` is done** — 2026-08-09, against `9c`/`9d`, seen on the device in light and dark
+      (it fits without scrolling). Every string is the app's own, the order is unchanged, and what
+      the drawing fixes is **weight**: *Report a bug* takes the full-width filled primary while
+      *Request a feature* and *Rate Binky* are outlined, which `9c` promotes to an app-wide rule —
+      **one filled button per screen, and it is the one that matters most.** *Privacy policy* became
+      a chevron row paired with *Version* in one card, and that pairing is what cost the idiom
+      `SingleLineRowHeight`: a subtitle-less `ListRow` is 56dp, not 64dp, and a `FactRow` beside one
+      has to be lifted to match. Two of the drawing's measurements were declined for `2b`'s reason —
+      20px card padding and 44dp outlined buttons have no home in the system.
+      ⚠️ **A second export arrived mid-session and it redrew Settings too** (`9a`/`9b`), a few hours
+      after Settings shipped hand-built. **The hand-built structure held** — same two cards, same
+      rows, same chip pair, same rhythm — so the idiom is now strong enough to predict a drawing,
+      which is the best evidence yet that `Surfaces.kt` earned being written first. `9a` corrected
+      two things, both taken: the **current language moves into the row's trailing slot** beside the
+      chevron (as a line under the title it read as a section heading of its own, and the hand-built
+      version had traded it against the help text), and the **two debug blocks group under one
+      *Debug builds only* header** instead of each repeating the phrase in its body. That last one is
+      the sweep's **only copy change so far** — one new string plus the prefix stripped from two, in
+      both locales, no new words invented. `9a` predates the Material You row and does not show it;
+      kept, since removing a shipped setting is not what "new looks" means.
+      **What is left is five with no drawing** — Documents, Photos, Setup, Schema mismatch,
+      Reminders opt-in — plus **two drawn but not yet built**: the chart's four empty states
+      (`8a`/`8b`) and the watch-expiry prompt (`8c`/`8d`/`8e`, where `8d` is the no-live-flag case,
+      "silence must not read as good news"). Setup has already taken one line of the language:
       `BackupScopePicker` draws rows rather than its own card now, so its two callers each supply one.
       **`ui/common/Surfaces.kt` is the shared idiom** every remaining route draws from — section header,
       grouped card, fact row, inset divider, the two card radii, `FabClearance`, and now

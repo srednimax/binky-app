@@ -3,12 +3,18 @@ package app.binky.tracker.ui.settings
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlowRowScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -17,11 +23,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,6 +59,7 @@ import app.binky.tracker.ui.common.GroupedCard
 import app.binky.tracker.ui.common.HelpText
 import app.binky.tracker.ui.common.ListRow
 import app.binky.tracker.ui.common.RowDivider
+import app.binky.tracker.ui.common.SectionHeader
 import app.binky.tracker.ui.common.SwitchRow
 import app.binky.tracker.ui.reminders.RemindersOptIn
 import app.binky.tracker.work.scheduleDebugReminder
@@ -63,29 +70,32 @@ import app.binky.tracker.work.scheduleDebugReminder
  * The weight display unit, and the way in to backup and restore. ADR-0013's language switcher lands
  * here too, with the Polish translation.
  *
- * ## Phase 7 — undrawn, so the language is applied by hand
+ * ## Phase 7, against `9a` / `9b`
  *
- * `github.md`'s *Not yet drawn* list starts with this screen, so there is no mockup to adjust
- * against; what follows is `Surfaces.kt` and `Forms.kt` read onto it. Five settings separated by
- * five full-width `HorizontalDivider`s — the shape `6c` replaced on Backup & restore — become the
- * standard header rhythm and grouped cards.
+ * Built by hand first, while this route was still on the *Not yet drawn* list, then checked against
+ * the drawing when it arrived. **The hand-built structure held**: five settings separated by five
+ * full-width `HorizontalDivider`s — the shape `6c` replaced on Backup & restore — become the header
+ * rhythm and grouped cards, with Language and Backup & restore as rows in one card and the unit
+ * chips as the standard filled/outlined pair. The rule that produced it generalises to every route
+ * left: **a control that cannot name itself gets a [SectionHeader]; a row that names itself does
+ * not.** *Show weights in* is a sentence two chips finish, so it is a header over a card, where the
+ * three rows each say what they are inside the row.
  *
- * **Not one string changed, and none was added.** One line *moved*: `settings_language_help`
- * ("Changing this restarts the app") used to sit under the Language row on the scrolling screen and
- * now sits inside the picker, above the options. It is a warning about the act of choosing, so it
- * belongs where the choice is made rather than where the choice is reported.
+ * `9a` corrected it in two places, both of which the drawing argues for and both taken:
  *
- * **The rule this route settles for every undrawn screen left in the sweep: a control that cannot
- * name itself gets a [app.binky.tracker.ui.common.SectionHeader]; a row that names itself does
- * not.** *Show weights in* is a sentence two chips finish, so it is a header over a card. *Language*,
- * *Colours from your wallpaper* and *Backup & restore* each say what they are inside the row, and a
- * header repeating the row's own title would be the same words twice.
+ * - **The current language belongs in the row's trailing slot**, beside the chevron — not as a line
+ *   under the title, where it read as a section heading of its own, and not (as the hand-built
+ *   version had it) traded against the help text. The row keeps its help *and* reports its value.
+ * - **The two debug blocks group under one header** instead of each repeating "Debug builds only"
+ *   in its own body. See [DebugSection]; it is the only place on this screen where a string moved.
  *
- * Those three share **one** card rather than splitting the door off from the two settings. Three
- * rows with a divider between them already read as three separate things, where a card of two and a
- * card of one makes the single row look like the exception — which is the raised-card claim made
- * with geometry instead of surface. Like `6a`, this route spends **none** of the raised budget: there
- * is nothing here the app is raising.
+ * **The drawing predates the Material You row and does not show it** — `9a` is built from the before
+ * captures, and ADR-0027's toggle landed the same day. Kept, in the card the drawing gives it, since
+ * removing a shipped setting is not what "new looks" means.
+ *
+ * Like `6a`, this route spends **none** of the raised budget: there is nothing here the app is
+ * raising. And no filled button, which is `9c`'s rule read the other way — a screen whose actions
+ * are all secondary has no primary to fill.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -162,12 +172,11 @@ fun SettingsScreen(
             }
 
             if (BuildConfig.DEBUG) {
-                SampleDataSetting(
+                DebugSection(
                     outcome = state.sampleData,
                     onSeed = viewModel::seedSampleData,
                     onDismiss = viewModel::clearSampleDataOutcome,
                 )
-                DebugReminderSetting()
             }
         }
     }
@@ -237,11 +246,21 @@ private fun LanguageRow() {
 
     ListRow(
         title = stringResource(R.string.settings_language),
-        subtitle =
-            chosen?.let { stringResource(it.labelRes) }
-                ?: stringResource(R.string.settings_language_system),
+        subtitle = stringResource(R.string.settings_language_help),
         onClick = { picking = true },
-        trailing = { Chevron() },
+        // The current language rides in the **trailing** slot beside the chevron rather than
+        // standing as a line under the title, which is `9a`'s one correction to this row: as a line
+        // it read as a section heading of its own. A row that both tells and opens carries the
+        // answer *and* the arrow.
+        trailing = {
+            Text(
+                text =
+                    chosen?.let { stringResource(it.labelRes) }
+                        ?: stringResource(R.string.settings_language_system),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Chevron()
+        },
     )
 
     if (picking) {
@@ -252,9 +271,6 @@ private fun LanguageRow() {
                 TextButton(onClick = { picking = false }) { Text(stringResource(R.string.action_cancel)) }
             },
         ) {
-            // Moved here from under the row. "Changing this restarts the app" is a fact about the
-            // act of choosing, and this is the one moment the owner is about to.
-            HelpText(stringResource(R.string.settings_language_help))
             // Kotlin note: `listOf(null) + entries` builds the offered list with the
             // follow-the-phone case as a first-class member rather than a special row, so the
             // radio group has one shape and one selection rule.
@@ -294,48 +310,95 @@ private fun LanguageRow() {
 }
 
 /**
- * **What makes 4a provable with no reminders in existence** (ADR-0024): a notification two minutes
- * from now, on its own one-shot path rather than through the daily sweep.
+ * The two things that vanish in a release build, under **one** header that says so once.
  *
+ * `9a`'s third structural change, and the reason is accuracy rather than length: both help strings
+ * used to open with "Debug builds only", which said it twice and said it in the wrong place — it is
+ * a fact about the *section*, not about seeding a fluffle. So the phrase is hoisted to a
+ * [app.binky.tracker.ui.common.SectionHeader] and both bodies start at the sentence that describes
+ * what the tool does. Three strings touched in both locales, no new words invented.
+ *
+ * They share a card and a divider because they are one class of thing, where every other section on
+ * this screen is its own. The actions stay **text buttons** pulled back to the card's text edge
+ * (a text button carries its own padding, so one laid out flush looks indented) — nothing here is
+ * the screen's primary action, and `9c`'s one-filled-button-per-screen rule means Settings has none.
+ *
+ * ## Both blocks in detail
+ *
+ * *Sample data* is **the tail of the scrolling column on purpose**: `edge-to-edge.py`'s `seed()`
+ * reaches *Add the sample data* by letting `tap` scroll until it finds the label.
+ *
+ * *Reminder delivery* is **what makes 4a provable with no reminders in existence** (ADR-0024): a
+ * notification two minutes from now, on its own one-shot path rather than through the daily sweep.
  * It was also the point-of-use host for [RemindersOptIn] until 4c gave it a real one on the Care
  * screen — which is what proves ADR-0006's "one composable in two hosts" claim rather than leaving
- * it as an intention. The sheet is the *only* path anyone takes at 1.1, since every install that
- * exists today has already been through first-run setup.
+ * it as an intention.
  *
- * Debug builds only; the caller renders it behind `BuildConfig.DEBUG`. It stays after this
- * checkpoint as the fastest way to re-prove delivery after any change to it.
- *
- * **Both button labels are load-bearing outside the app**: `edge-to-edge.py`'s `reminders-optin`
- * scenes reach the sheet by tapping *Reminder settings* by name. The redraw changes the button's
- * kind, not its words.
+ * **Both button labels are load-bearing outside the app**: `edge-to-edge.py`'s `reminders-sheet`
+ * scenes reach the sheet by tapping *Reminder settings* by name, and `seed()` taps *Add the sample
+ * data*. The redraw changes no label on this screen.
  *
  * The sheet itself is left alone — *Reminders opt-in* is its own entry on the undrawn list.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DebugReminderSetting() {
+private fun DebugSection(
+    outcome: SampleDataOutcome?,
+    onSeed: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     val context = LocalContext.current
     var scheduled by remember { mutableStateOf(false) }
     var optingIn by remember { mutableStateOf(false) }
 
-    FormSection(
-        title = stringResource(R.string.settings_debug_reminder),
-        spacing = Spacing.snug,
-    ) {
-        HelpText(stringResource(R.string.settings_debug_reminder_help))
-        // Stacked rather than side by side: "Remind me in two minutes" and "Reminder settings" do
-        // not fit one line on a narrow phone, and a button row that wraps mid-label is worse than
-        // two full-width-ish buttons under each other.
-        OutlinedButton(onClick = { optingIn = true }) {
-            Text(stringResource(R.string.settings_debug_reminder_settings_action))
+    Column {
+        SectionHeader(stringResource(R.string.settings_debug_header))
+        Spacer(Modifier.height(Spacing.tight))
+        GroupedCard(contentPadding = PaddingValues(Spacing.base)) {
+            DebugBlock(
+                title = stringResource(R.string.settings_sample_data),
+                help = stringResource(R.string.settings_sample_data_help),
+            ) {
+                DebugAction(stringResource(R.string.settings_sample_data_action), onSeed)
+            }
+
+            Spacer(Modifier.height(Spacing.snug))
+            // A plain divider, not a `RowDivider`: the card has already inset its contents, and a
+            // second inset would leave the line hanging away from the text either side of it.
+            HorizontalDivider()
+            Spacer(Modifier.height(Spacing.snug))
+
+            DebugBlock(
+                title = stringResource(R.string.settings_debug_reminder),
+                help = stringResource(R.string.settings_debug_reminder_help),
+            ) {
+                DebugAction(
+                    stringResource(R.string.settings_debug_reminder_settings_action),
+                ) { optingIn = true }
+                DebugAction(stringResource(R.string.settings_debug_reminder_action)) {
+                    scheduleDebugReminder(context)
+                    scheduled = true
+                }
+            }
         }
-        OutlinedButton(
-            onClick = {
-                scheduleDebugReminder(context)
-                scheduled = true
+    }
+
+    if (outcome != null) {
+        BinkyDialog(
+            title = stringResource(R.string.settings_sample_data),
+            onDismiss = onDismiss,
+            confirmButton = {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_ok)) }
             },
         ) {
-            Text(stringResource(R.string.settings_debug_reminder_action))
+            Text(
+                stringResource(
+                    when (outcome) {
+                        SampleDataOutcome.SEEDED -> R.string.settings_sample_data_seeded
+                        SampleDataOutcome.ALREADY_PRESENT -> R.string.settings_sample_data_present
+                    },
+                ),
+            )
         }
     }
 
@@ -381,40 +444,36 @@ private fun DebugReminderSetting() {
 }
 
 /**
- * The debug seed, and **the tail of the scrolling column on purpose**: `edge-to-edge.py`'s `seed()`
- * reaches *Add the sample data* by letting `tap` scroll until it finds the label, so this stays last
- * and keeps the label exactly.
+ * One debug tool: what it is, what it does, and the actions that run it.
+ *
+ * The title is `bodyLarge` rather than [SectionHeader]'s `titleSmall` — it names a block *inside* a
+ * card, and the card's own header has already named the group.
  */
 @Composable
-private fun SampleDataSetting(
-    outcome: SampleDataOutcome?,
-    onSeed: () -> Unit,
-    onDismiss: () -> Unit,
+private fun DebugBlock(
+    title: String,
+    help: String,
+    actions: @Composable FlowRowScope.() -> Unit,
 ) {
-    FormSection(
-        title = stringResource(R.string.settings_sample_data),
-        spacing = Spacing.snug,
-    ) {
-        HelpText(stringResource(R.string.settings_sample_data_help))
-        OutlinedButton(onClick = onSeed) { Text(stringResource(R.string.settings_sample_data_action)) }
-    }
+    Text(text = title, style = MaterialTheme.typography.bodyLarge)
+    Spacer(Modifier.height(Spacing.hair))
+    HelpText(help)
+    // Wrapping, because "Remind me in two minutes" and "Reminder settings" do not fit one line on a
+    // narrow phone and a row that clipped one of them would hide a control entirely.
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
+        // Pulled back to the text edge on the left and bottom: a text button carries its own
+        // padding, so a row of them laid out flush looks indented against the paragraph above.
+        modifier = Modifier.offset(x = -Spacing.snug),
+        content = actions,
+    )
+}
 
-    if (outcome != null) {
-        BinkyDialog(
-            title = stringResource(R.string.settings_sample_data),
-            onDismiss = onDismiss,
-            confirmButton = {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_ok)) }
-            },
-        ) {
-            Text(
-                stringResource(
-                    when (outcome) {
-                        SampleDataOutcome.SEEDED -> R.string.settings_sample_data_seeded
-                        SampleDataOutcome.ALREADY_PRESENT -> R.string.settings_sample_data_present
-                    },
-                ),
-            )
-        }
-    }
+/** A debug tool's action. A text button: nothing on this screen is its primary action. */
+@Composable
+private fun DebugAction(
+    label: String,
+    onClick: () -> Unit,
+) {
+    TextButton(onClick = onClick) { Text(label) }
 }

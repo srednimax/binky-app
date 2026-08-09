@@ -266,12 +266,13 @@
 
     <!-- Debug builds only, and never shown in a release build. -->
     <string name="settings_sample_data">Sample data</string>
-    <string name="settings_sample_data_help">Debug builds only. Adds two bonded bunnies, a year of uneven, back-dated weighings and a handful of observations, so the chart, the trend flag and the timeline can be reviewed against real history.</string>
+    <string name="settings_debug_header">Debug builds only</string>
+    <string name="settings_sample_data_help">Adds two bonded bunnies, a year of uneven, back-dated weighings and a handful of observations, so the chart, the trend flag and the timeline can be reviewed against real history.</string>
     <string name="settings_sample_data_action">Add the sample data</string>
     <string name="settings_sample_data_seeded">Sample data added.</string>
     <string name="settings_sample_data_present">The sample bunnies are already here.</string>
     <string name="settings_debug_reminder">Reminder delivery</string>
-    <string name="settings_debug_reminder_help">Debug builds only. Posts one notification two minutes from now, on its own path rather than through the daily sweep — so the channel, the permission and the delivery can be proven with no reminders in existence.</string>
+    <string name="settings_debug_reminder_help">Posts one notification two minutes from now, on its own path rather than through the daily sweep — so the channel, the permission and the delivery can be proven with no reminders in existence.</string>
     <string name="settings_debug_reminder_settings_action">Reminder settings</string>
     <string name="settings_debug_reminder_action">Remind me in two minutes</string>
     <string name="settings_debug_reminder_scheduled">A test reminder will arrive in two minutes. Lock the phone and wait.</string>
