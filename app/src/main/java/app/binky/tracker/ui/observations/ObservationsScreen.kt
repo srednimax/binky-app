@@ -1,18 +1,23 @@
 package app.binky.tracker.ui.observations
 
+import android.content.res.Resources
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -30,16 +35,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
 import app.binky.tracker.data.BunnySelection
+import app.binky.tracker.data.IndividualFacts
 import app.binky.tracker.data.SymptomEntity
 import app.binky.tracker.data.TrayFacts
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.bunny.dateLabel
 import app.binky.tracker.ui.bunny.joinNames
+import app.binky.tracker.ui.common.ChipRow
+import app.binky.tracker.ui.common.DenseFactRow
+import app.binky.tracker.ui.common.FabClearance
+import app.binky.tracker.ui.common.GroupedCard
+import app.binky.tracker.ui.common.HelpText
+import app.binky.tracker.ui.common.RecordButtonHeight
+import app.binky.tracker.ui.common.RecordButtonRadius
+import app.binky.tracker.ui.common.SectionHeader
+import app.binky.tracker.ui.common.TagChip
 import app.binky.tracker.ui.shell.ShellUiState
 import app.binky.tracker.ui.weight.timeLabel
 import java.time.ZoneId
@@ -93,7 +108,7 @@ fun ObservationsScreen(
                 Text(
                     text = stringResource(R.string.add_a_bunny_first),
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    modifier = Modifier.fillMaxSize().padding(Spacing.base),
                 )
             else ->
                 Timeline(
@@ -194,42 +209,61 @@ private fun Timeline(
     val symptomsById = remember(state.symptoms) { state.symptoms.associateBy { it.id } }
 
     LazyColumn(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier.fillMaxSize(),
+        // No `verticalArrangement`: the gaps here are not even. A day's header sits Spacing.section
+        // from the day above it and Spacing.tight from its own first card, which is the rhythm rule,
+        // and one arrangement value cannot say both.
+        contentPadding =
+            PaddingValues(
+                start = Spacing.base,
+                end = Spacing.base,
+                top = Spacing.tight,
+                bottom = FabClearance,
+            ),
     ) {
         if (!state.readOnly) {
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Button(onClick = onHealthyDay, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.healthy_day_action))
-                    }
-                    // The button names what it records, because one tap commits facts on the owner's
-                    // behalf and they are entitled to know which (ADR-0001).
-                    Text(
-                        text = stringResource(R.string.healthy_day_help),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Button(
+                    onClick = onHealthyDay,
+                    modifier = Modifier.fillMaxWidth().height(RecordButtonHeight),
+                    shape = RoundedCornerShape(RecordButtonRadius),
+                ) {
+                    Text(stringResource(R.string.healthy_day_action))
                 }
+                Spacer(Modifier.height(Spacing.hair))
+                // The button names what it records, because one tap commits facts on the owner's
+                // behalf and they are entitled to know which (ADR-0001). Spacing.hair from the
+                // button, so it reads as that button's footnote and not as the next thing down.
+                HelpText(
+                    text = stringResource(R.string.healthy_day_help),
+                    modifier = Modifier.padding(horizontal = Spacing.hair),
+                )
             }
         }
 
         if (state.isEmpty) {
             item {
+                Spacer(Modifier.height(Spacing.section))
                 Text(
                     // A statement about the record, never about the bunny (ADR-0001).
                     text = stringResource(R.string.observations_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = Spacing.hair),
                 )
             }
         }
 
-        state.days.forEach { day ->
+        state.days.forEachIndexed { dayIndex, day ->
             item(key = "day-${day.date}") {
-                Text(text = dateLabel(day.date), style = MaterialTheme.typography.titleSmall)
+                // Nothing above the very first header in the archived scope, where there is no
+                // button — a section gap against the top of the screen is a hole, not a rhythm.
+                if (dayIndex > 0 || !state.readOnly) Spacer(Modifier.height(Spacing.section))
+                SectionHeader(dateLabel(day.date))
+                Spacer(Modifier.height(Spacing.tight))
             }
-            items(day.entries, key = { it.id }) { entry ->
+            itemsIndexed(day.entries, key = { _, entry -> entry.id }) { index, entry ->
+                if (index > 0) Spacer(Modifier.height(Spacing.tight))
                 EntryCard(
                     entry = entry,
                     symptomsById = symptomsById,
@@ -262,55 +296,112 @@ private fun EntryCard(
     onDelete: () -> Unit,
 ) {
     val resources = LocalResources.current
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = timeLabel(entry.recordedAt.atZone(ZoneId.systemDefault()).toLocalTime()),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                )
-            }
+    val hasTray = entry.tray.hasAnything()
+    // Lifted out of `IndividualFactLines`, which used to decide for itself whether it had anything
+    // to draw: the gap *above* a block belongs to whoever is laying the blocks out, and a Spacer
+    // emitted next to a participant who renders nothing would be a hole with no row under it.
+    val spoken = entry.participants.filter { it.facts.hasAnything() }
 
-            // Who to name: everyone under "All bunnies", and only the *others* on one bunny's own
-            // timeline — "observed together with Bijou" on Bijou's page names her back to herself.
-            val others = entry.participants.filterNot { it.bunnyId == focusBunnyId }.map { it.name }
+    GroupedCard(contentPadding = PaddingValues(Spacing.base)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
-                text =
-                    when {
-                        !entry.shared -> joinNames(resources, entry.participants.map { it.name })
-                        // "Observed together" comes from the group id, so a lone survivor still says
-                        // it — never silently downgraded to an individual observation (ADR-0008).
-                        entry.participants.size > 1 ->
-                            stringResource(R.string.observation_observed_together, joinNames(resources, others))
-                        // ...and says it **un-named**: the housemate was deleted, or is archived and
-                        // out of this scope. ADR-0008 wants no tombstone of them — the marker alone
-                        // keeps the record honest, and inventing a name for the gap would not.
-                        else -> stringResource(R.string.observation_observed_together_alone)
-                    },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = timeLabel(entry.recordedAt.atZone(ZoneId.systemDefault()).toLocalTime()),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
             )
+            scopeLabel(entry, focusBunnyId, resources)?.let { TagChip(text = it, dense = true) }
+        }
 
+        if (hasTray) {
+            Spacer(Modifier.height(Spacing.snug))
+            // Named, so the tray facts are visibly facts about a litter tray rather than claims
+            // about whichever rabbit's name is above them (ADR-0008).
+            BlockHeader(
+                stringResource(
+                    if (entry.shared) R.string.observation_tray_section_shared else R.string.observation_tray_section,
+                ),
+            )
+            Spacer(Modifier.height(Spacing.hair))
             TrayFactLines(entry.tray)
+        }
 
-            entry.participants.forEach { participant ->
-                IndividualFactLines(
-                    participant = participant,
-                    named = entry.participants.size > 1,
-                    symptomsById = symptomsById,
-                )
-            }
+        spoken.forEachIndexed { index, participant ->
+            Spacer(Modifier.height(if (index == 0 && !hasTray) Spacing.snug else Spacing.base))
+            IndividualFactLines(
+                participant = participant,
+                named = entry.participants.size > 1,
+                symptomsById = symptomsById,
+            )
+        }
 
-            if (!readOnly) {
-                HorizontalDivider()
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onEdit) { Text(stringResource(R.string.action_edit)) }
-                    TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
+        if (!readOnly) {
+            Spacer(Modifier.height(Spacing.base))
+            HorizontalDivider()
+            // Pulled back to the card's text edge, as on the trend flag: a text button carries its
+            // own padding, so a row of them laid out flush looks indented against everything above.
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
+                modifier = Modifier.offset(x = -Spacing.snug),
+            ) {
+                TextButton(onClick = onEdit) { Text(stringResource(R.string.action_edit)) }
+                // Deliberately quieter than Edit. Both are here, but only one of them is what the
+                // owner came to do — and this is the destructive one.
+                TextButton(onClick = onDelete) {
+                    Text(
+                        text = stringResource(R.string.action_delete),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
     }
+}
+
+/**
+ * The scope of an entry, for the chip in its card's header — **who this moment covered**, legible
+ * before any of the facts below it are read. It was a sentence under the time before Phase 7.
+ *
+ * Null is a real answer: on one bunny's own timeline an observation of her alone needs no scope
+ * declared, because the whole screen already is her.
+ */
+private fun scopeLabel(
+    entry: TimelineEntry,
+    /** Whose timeline this is, or null under "All bunnies". Only affects who the chip names. */
+    focusBunnyId: String?,
+    resources: Resources,
+): String? {
+    // Only the *others* on one bunny's own timeline — "with Bijou" on Bijou's page names her back
+    // to herself. Under "All bunnies" nobody is focused, so this is everyone.
+    val others = entry.participants.filterNot { it.bunnyId == focusBunnyId }.map { it.name }
+    return when {
+        !entry.shared -> others.takeIf { it.isNotEmpty() }?.let { joinNames(resources, it) }
+        // "Observed together" comes from the group id, so a lone survivor still says it — never
+        // silently downgraded to an individual observation (ADR-0008).
+        others.isNotEmpty() -> resources.getString(R.string.observation_with, joinNames(resources, others))
+        // ...and says it **un-named**: the housemate was deleted, or is archived and out of this
+        // scope. ADR-0008 wants no tombstone of them — the marker alone keeps the record honest,
+        // and inventing a name for the gap would not.
+        else -> resources.getString(R.string.observation_observed_together_alone)
+    }
+}
+
+/**
+ * The name of one block of facts *inside* an entry's card.
+ *
+ * [SectionHeader]'s type, without its 4dp start inset: the card has already inset its contents, and
+ * a header nudged a further 4dp would sit out of line with the rows it names.
+ */
+@Composable
+private fun BlockHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 /**
@@ -323,11 +414,32 @@ private fun EntryCard(
  */
 @Composable
 private fun TrayFactLines(tray: TrayFacts) {
-    tray.droppingsAmount?.let { FactLine(stringResource(R.string.observation_droppings_amount_label), label(it)) }
-    tray.droppingsSize?.let { FactLine(stringResource(R.string.observation_droppings_size_label), label(it)) }
-    tray.droppingsForm?.let { FactLine(stringResource(R.string.observation_droppings_form_label), label(it)) }
-    tray.cecotropes?.let { FactLine(stringResource(R.string.observation_cecotropes_label), label(it)) }
+    FactBlock {
+        tray.droppingsAmount?.let {
+            DenseFactRow(
+                stringResource(R.string.observation_droppings_amount_label),
+                label(it),
+            )
+        }
+        tray.droppingsSize?.let { DenseFactRow(stringResource(R.string.observation_droppings_size_label), label(it)) }
+        tray.droppingsForm?.let { DenseFactRow(stringResource(R.string.observation_droppings_form_label), label(it)) }
+        tray.cecotropes?.let { DenseFactRow(stringResource(R.string.observation_cecotropes_label), label(it)) }
+    }
 }
+
+/** True when this bunny's half of an entry has something to show. Never assume the answer is no. */
+private fun IndividualFacts.hasAnything(): Boolean =
+    appetite != null ||
+        mood != null ||
+        activity != null ||
+        water != null ||
+        !note.isNullOrBlank() ||
+        symptomsChecked ||
+        symptomIds.isNotEmpty()
+
+/** The tray half, same question. */
+private fun TrayFacts.hasAnything(): Boolean =
+    droppingsAmount != null || droppingsSize != null || droppingsForm != null || cecotropes != null
 
 @Composable
 private fun IndividualFactLines(
@@ -337,59 +449,74 @@ private fun IndividualFactLines(
 ) {
     val facts = participant.facts
     val ticked = facts.symptomIds.mapNotNull { symptomsById[it] }
-    val hasAnything =
-        facts.appetite != null ||
-            facts.mood != null ||
-            facts.activity != null ||
-            facts.water != null ||
-            !facts.note.isNullOrBlank() ||
-            facts.symptomsChecked
-    if (!hasAnything) return
+    val note = facts.note?.takeIf { it.isNotBlank() }
 
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    // Which of the three parts are here, worked out before anything is drawn.
+    //
+    // Spacing.snug goes *between* two of them, so a part that turns out to be first under the name
+    // must not open with one: a bunny whose whole entry is "looked for symptoms, saw none" would
+    // otherwise sit the same 16dp from its own heading as from the next bunny's, and belong to
+    // neither. That is the rhythm rule in `Spacing.kt`, and it cannot be answered from inside the
+    // part that needs the gap — only from out here, where all three are known.
+    val hasRows =
+        facts.appetite != null || facts.mood != null || facts.activity != null || facts.water != null
+    val hasChips = ticked.isNotEmpty()
+    // The affirmative claim, and the whole reason `symptomsChecked` is a column: *looked, none
+    // seen*, which no count of links could express (ADR-0010). A sentence rather than a chip,
+    // because it is not a thing that was recorded — it is the absence of them.
+    val hasNoneSeen = !hasChips && facts.symptomsChecked
+
+    Column {
         if (named) {
-            Text(text = participant.name, style = MaterialTheme.typography.titleSmall)
+            BlockHeader(participant.name)
+            Spacer(Modifier.height(Spacing.hair))
         }
-        facts.appetite?.let { FactLine(stringResource(R.string.observation_appetite_label), label(it)) }
-        facts.mood?.let { FactLine(stringResource(R.string.observation_mood_label), label(it)) }
-        facts.activity?.let { FactLine(stringResource(R.string.observation_activity_label), label(it)) }
-        facts.water?.let { FactLine(stringResource(R.string.observation_water_label), label(it)) }
 
-        if (ticked.isNotEmpty()) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ticked.forEach { symptom ->
-                    Text(text = symptomLabel(symptom), style = MaterialTheme.typography.bodyMedium)
-                }
+        if (hasRows) {
+            FactBlock {
+                facts.appetite?.let { DenseFactRow(stringResource(R.string.observation_appetite_label), label(it)) }
+                facts.mood?.let { DenseFactRow(stringResource(R.string.observation_mood_label), label(it)) }
+                facts.activity?.let { DenseFactRow(stringResource(R.string.observation_activity_label), label(it)) }
+                facts.water?.let { DenseFactRow(stringResource(R.string.observation_water_label), label(it)) }
             }
-        } else if (facts.symptomsChecked) {
-            // The affirmative claim, and the whole reason `symptomsChecked` is a column: *looked,
-            // none seen*, which no count of links could express (ADR-0010).
+        }
+
+        if (hasChips) {
+            if (hasRows) Spacer(Modifier.height(Spacing.snug))
+            // Hay chips, not apricot: a symptom is something the *owner* ticked, and apricot is
+            // reserved for what the app itself raises. Wrapping, so a long name is never cut off
+            // the right edge — the same rule the editor's chips follow.
+            ChipRow {
+                ticked.forEach { symptom -> TagChip(text = symptomLabel(symptom)) }
+            }
+        }
+
+        if (hasNoneSeen) {
+            if (hasRows) Spacer(Modifier.height(Spacing.snug))
             Text(
                 text = stringResource(R.string.observation_no_symptoms_seen),
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
-        facts.note?.takeIf { it.isNotBlank() }?.let {
-            Text(text = it, style = MaterialTheme.typography.bodyMedium)
+        if (note != null) {
+            if (hasRows || hasChips || hasNoneSeen) Spacer(Modifier.height(Spacing.snug))
+            Text(text = note, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
 
+/**
+ * The attribute pairs of one observation, as a single block.
+ *
+ * No dividers, deliberately: a divider separates rows that are independent of each other, and four
+ * facts about the same tray at the same moment are not. [Spacing.hair] between them rather than the
+ * drawing's 2dp, which is below the 4dp grid `Spacing` commits the whole app to.
+ */
 @Composable
-private fun FactLine(
-    label: String,
-    value: String,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        Text(text = value, style = MaterialTheme.typography.bodySmall)
-    }
+private fun FactBlock(content: @Composable ColumnScope.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.hair), content = content)
 }
 
 /**
