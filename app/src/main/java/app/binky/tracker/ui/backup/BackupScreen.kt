@@ -171,7 +171,14 @@ fun BackupScreen(
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Spacing.base, vertical = Spacing.tight),
+                    // `section` at the bottom, not `tight`: this screen ends in a footnote rather
+                    // than a card, and 8dp put it under the gesture bar on the first device pass.
+                    .padding(
+                        start = Spacing.base,
+                        end = Spacing.base,
+                        top = Spacing.tight,
+                        bottom = Spacing.section,
+                    ),
             // The gap a section header expects above it. No dividers: the header rhythm is what
             // separates sections now, and a rule as well would be the same statement made twice.
             verticalArrangement = Arrangement.spacedBy(Spacing.section),
@@ -511,12 +518,17 @@ private fun ExportReminderSection(
         title = stringResource(R.string.backup_reminder_title),
         // The switch row spans the card so its whole width is the target; the text around it takes
         // the inset back a block at a time.
+        //
+        // `spacing = 0` and every gap written out, because the two mechanisms compound otherwise:
+        // [SwitchRow] already carries 12dp of its own inside a 64dp floor, so a section gap on top
+        // of that left the paragraph, the switch and the state line floating as three unrelated
+        // things. Found on the device, not in the code.
         contentPadding = PaddingValues(vertical = Spacing.hair),
-        spacing = Spacing.snug,
+        spacing = 0.dp,
     ) {
         HelpText(
             text = stringResource(R.string.backup_reminder_help),
-            modifier = Modifier.padding(horizontal = Spacing.base, vertical = Spacing.tight),
+            modifier = Modifier.padding(start = Spacing.base, end = Spacing.base, top = Spacing.tight),
         )
 
         SwitchRow(
@@ -532,7 +544,7 @@ private fun ExportReminderSection(
             Text(
                 text = stringResource(R.string.backup_reminder_off),
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(horizontal = Spacing.base, vertical = Spacing.tight),
+                modifier = Modifier.padding(start = Spacing.base, end = Spacing.base, bottom = Spacing.snug),
             )
             return@FormSection
         }
@@ -540,7 +552,13 @@ private fun ExportReminderSection(
         RowDivider()
 
         Column(
-            modifier = Modifier.padding(horizontal = Spacing.base, vertical = Spacing.tight),
+            modifier =
+                Modifier.padding(
+                    start = Spacing.base,
+                    end = Spacing.base,
+                    top = Spacing.snug,
+                    bottom = Spacing.snug,
+                ),
             verticalArrangement = Arrangement.spacedBy(Spacing.snug),
         ) {
             // **The certain failure, stated** (ADR-0003's three honest states). A switch that
