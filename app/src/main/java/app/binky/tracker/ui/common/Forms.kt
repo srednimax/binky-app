@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.FilterChip
@@ -198,18 +199,22 @@ fun FormChip(
  * a fixed height, because a height leaves the caret floating in the middle of an empty box where
  * three lines of room start the text at the top and grow from there — the drawing's 88dp minimum,
  * expressed the way the text field can honour it.
+ *
+ * [placeholder] is an **example** of what to type, so it is left out where there is no useful one to
+ * give: a vet's notes are whatever that owner wants to remember about that clinic, and inventing a
+ * specimen would suggest the field expects a particular kind of answer.
  */
 @Composable
 fun NoteField(
     value: String,
     onValueChange: (String) -> Unit,
-    placeholder: String,
     modifier: Modifier = Modifier,
+    placeholder: String? = null,
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(placeholder) },
+        placeholder = placeholder?.let { { Text(it) } },
         shape = RoundedCornerShape(FieldRadius),
         minLines = 3,
         modifier = modifier.fillMaxWidth(),
@@ -223,6 +228,10 @@ fun NoteField(
  * and one that flies away on focus takes the question with it exactly when the owner starts
  * answering. The error *text* is [ErrorText]'s job below the field; [isError] only colours the box,
  * so the two cannot say different things.
+ *
+ * [keyboardOptions] is what the field asks the system for. It matters more than it looks: a clinic's
+ * phone number wants the *phone* keypad rather than the numeric one, because a number can carry a
+ * `+`, spaces and parentheses and is stored exactly as it was typed.
  */
 @Composable
 fun SingleLineField(
@@ -231,6 +240,7 @@ fun SingleLineField(
     modifier: Modifier = Modifier,
     placeholder: String? = null,
     isError: Boolean = false,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
 ) {
     OutlinedTextField(
         value = value,
@@ -238,6 +248,7 @@ fun SingleLineField(
         placeholder = placeholder?.let { { Text(it) } },
         shape = RoundedCornerShape(FieldRadius),
         isError = isError,
+        keyboardOptions = keyboardOptions,
         singleLine = true,
         modifier = modifier.fillMaxWidth(),
     )
