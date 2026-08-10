@@ -225,8 +225,11 @@ exists. These are the items that come first.
       routes now have a drawing. **`phase-7.md` says where the project is and how to read it** — including
       that `get_file` truncates it at 256 KiB without saying so, and that its hexes are hand-picked
       despite claiming to be generated. Take the four seeds, not the hexes.
-      Still undrawn: Settings, Support, Documents, Photos, Setup, Watch expiry, Schema mismatch,
-      Reminders opt-in. The calendar in `7a`/`7b` is a new route and **out of scope** for this phase.
+      ✅ **Nothing is undrawn any more** — 2026-08-10. A turn-10 export adds `10a`–`10n` and their dark
+      twins `10a2`–`10n2`, and `github.md` closes with *"Nothing. All 46 frames exist in light and
+      dark."* It covers the eight this line listed **and four routes no checkpoint row ever had** —
+      course detail, reminder detail, reminder editor and visit editor. The calendar in `7a`/`7b` is a
+      new route and **out of scope** for this phase.
 - [x] **Theme commit first** — 2026-08-08. `Color.kt` generated from the seeds (both schemes in full, 22
       contrast checks green), `Type.kt`, `Spacing.kt`, `dynamicColor` off. Nunito is a new bundled asset,
       not a dependency. Two silent traps written up in `phase-7.md`'s order-of-work step 4.
@@ -312,10 +315,14 @@ exists. These are the items that come first.
       the sweep's **only copy change so far** — one new string plus the prefix stripped from two, in
       both locales, no new words invented. `9a` predates the Material You row and does not show it;
       kept, since removing a shipped setting is not what "new looks" means.
-      **What is left is five with no drawing** — Documents, Photos, Setup, Schema mismatch,
-      Reminders opt-in — plus **two drawn but not yet built**: the chart's four empty states
-      (`8a`/`8b`) and the watch-expiry prompt (`8c`/`8d`/`8e`, where `8d` is the no-live-flag case,
-      "silence must not read as good news"). Setup has already taken one line of the language:
+      ✅ **Every route left in the sweep is now drawn, in both themes** (2026-08-10) — so the
+      undrawn half of this phase is over, and what remains is thirteen surfaces with a mockup each:
+      the chart's four empty states (`8a`/`8b`), the watch-expiry prompt (`8c`/`8d`/`8e`, where `8d`
+      is the no-live-flag case, "silence must not read as good news"), and the turn-10 pairs —
+      Documents list and detail, Photos grid and viewer, the three setup steps, reminders opt-in,
+      **both** schema-mismatch variants, and the four routes that had no row at all: one course, one
+      reminder, the reminder editor and the visit editor. Setup has already taken one line of the
+      language:
       `BackupScopePicker` draws rows rather than its own card now, so its two callers each supply one.
       **`ui/common/Surfaces.kt` is the shared idiom** every remaining route draws from — section header,
       grouped card, fact row, inset divider, the two card radii, `FabClearance`, and now
