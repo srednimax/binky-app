@@ -267,7 +267,34 @@ lives* for how to open one without loading the whole file.
 | `Support` | `9c` / `9d` | ✅ 2026-08-09. **One filled button per screen, and it is the one that matters most** — now app-wide. First card to hold a chevron row and a fact row side by side, which cost the idiom `SingleLineRowHeight` |
 | Chart empty states | `8a` / `8b` | **Not built yet.** Four states, not one — one of the two Weight surfaces that had no drawing |
 | Watch expiry prompt | `8c` / `8d` / `8e` | **Not built yet.** `8d` is the case with no live flag, *"where silence must not read as good news"* — ADR-0001 drawn |
-| Documents, Photos, Setup, Schema mismatch, Reminders opt-in | **none** | `github.md`'s *Not yet drawn* list — apply the language by hand |
+| Documents list | `10a` / `10a2` | **Not built yet.** *"A list, because a thumbnail of A4 tells you nothing"* |
+| One document | `10b` / `10b2` | **Not built yet.** A route with no row until 2026-08-10 |
+| Photos | `10c` / `10c2` | **Not built yet.** *"A grid, and the '+' that is two ways in"* |
+| One photo | `10d` / `10d2` | **Not built yet.** *"'Taken' and 'Added' are different claims"* |
+| Setup, steps 1-3 | `10e`–`10g` / `10e2`–`10g2` | **Not built yet.** One frame per step, as `SetupBunny`/`SetupBackup`/`SetupReminders` already are |
+| Reminders opt-in | `10h` / `10h2` | **Not built yet.** Drawn at the point of use — *"the same body, in a sheet, blocked"* |
+| Schema mismatch | `10i` / `10i2`, `10j` / `10j2` | **Not built yet**, and it is **two** variants: debug *"the wipe is happening; the choice is whether you look first"*, release *"nothing is destroyed, and there is no forward"* |
+| One course | `10k` / `10k2` | **Not built yet.** No row until 2026-08-10, though the Care & Meds redraw moved a delete onto it |
+| One reminder | `10l` / `10l2` | **Not built yet.** Same — edited by the sweep, never redrawn by it |
+| Reminder editor | `10m` / `10m2` | **Not built yet.** *"Three presets and something else"* — the one editor that never drew from `Forms.kt` |
+| Visit editor | `10n` / `10n2` | **Not built yet.** Same — and it took a moved delete too |
+
+**The drawings are complete as of 2026-08-10, and four of them are routes this table never listed.**
+A turn-10 export closes the undrawn half of the sweep: `10a`–`10n` with dark twins `10a2`–`10n2`, 72
+`dv-opt` frames in the file, and `github.md` ending *"Nothing. All 46 frames exist in light and dark."*
+Everything above now has a mockup in both themes. Three things are worth carrying:
+
+- **The four routes with no row** — one course, one reminder, the reminder editor, the visit editor —
+  were not an oversight in the export but in *this table*. Three of them were **edited by the Care &
+  Meds redraw**, which moved a delete onto each, which is exactly how they stayed invisible: a file
+  the sweep touches reads as a file the sweep did. Check the table against `ui/`, not against itself.
+- **The dark twin is `10a2`, not `10b`.** Turn 10 follows `4c`/`4c2`, not the `1b`/`1c` letter-pair
+  convention of the earlier turns. A script that assumes "the next id is the dark one" pairs the
+  wrong frames here.
+- **The export was replaced nine minutes after it was downloaded** — a 418 KB copy carrying turn 10
+  in *light only* became a 482 KB one with the dark twins, and **every byte offset moved** (`9a`:
+  73032 → 136728). Re-`grep -bo` after any re-download; a slice offset does not survive one.
+  `github.md`'s closing line is the cheapest freshness check there is.
 
 **`ui/common/Surfaces.kt` is where the idiom lives, and every remaining row above depends on it.**
 The mockups draw the same four things screen after screen — `SectionHeader`, `GroupedCard`, `FactRow`,
