@@ -354,6 +354,25 @@ exists. These are the items that come first.
       `weight(1f)` on the caption, where the drawing sets it **beside** the caption it acts on.
       `weight(1f, fill = false)` is the fix and the whole of that line's design — a short caption and
       its action stay a pair, a long one still wraps rather than shoving the button off.
+      ✅ **The two Weight surfaces that had no drawing are done** — 2026-08-11, `8a`–`8e`, both seen on
+      the device in light and dark. **No string added, changed or moved on either**: all four chart
+      sentences and every line of the prompt were already the app's own, which is the drawings reading
+      the app back to itself for the third time this phase. `8a` adds the **only artwork in the app** —
+      three dashed gridlines at `outlineVariant` with one ring on them, at the plot's own [POINT_SIZE]
+      and [POINT_STROKE] so the sketch and the real chart draw the same marker. It goes on the two
+      single-point states and **deliberately not on the other two**: a grid with a point in it says
+      "one reading, nothing to join it to", where an empty grid says nothing the sentence has not
+      already said and starts to read as a chart that failed to load. `8c`–`8e` is mostly `BinkyDialog`
+      plus two designed lines — the nested trend flag (`nested = true` for the 16dp radius; the colour
+      already came from the dialog's `LocalCardSurface`), and ***Close it* going quiet**. Closing a
+      watch is an ordinary answer to the question asked, not a deletion — the row it removes is a
+      present-tense state rather than a record — so it takes `onSurfaceVariant`, the same treatment
+      *Delete document* took inside its menu on `10b`. `8d` needed no change at all: the no-live-flag
+      case already stated the record and claimed nothing about the rabbit.
+      **The seed cannot show `8c`, by design.** `SampleData.kt` pairs the flag with the *running* watch
+      (Bijou) and the steady series with the *expired* one (Nugget), so an ordinary capture only ever
+      reaches `8d` — the same trap `4e` fell into. Verifying it meant a throwaway seed patch, one
+      expired watch on the flagged bunny, reverted before the commit.
       ✅ **Four of the ~20 `AlertDialog` sites took the retrofit `3f`/`3g` asked for**, since they sit
       on routes this batch was redrawing anyway: rename, attach-to-a-visit, manage-pages and both
       delete confirmations now call `BinkyDialog`. Two of them dropped a `LazyColumn` doing so —
