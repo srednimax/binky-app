@@ -230,6 +230,13 @@ exists. These are the items that come first.
       dark."* It covers the eight this line listed **and four routes no checkpoint row ever had** —
       course detail, reminder detail, reminder editor and visit editor. The calendar in `7a`/`7b` is a
       new route and **out of scope** for this phase.
+      ✅ **And nothing new has arrived since** — re-checked 2026-08-11 against the *live* project
+      rather than the download. Remote `github.md` is identical to the exported copy (`last sync
+      2026-08-10T18:05Z`, closing line *"Nothing. All 46 frames exist in light and dark."*), and the
+      export carries turns `t1`–`t10` with every `10a`–`10n2` present. **There is no turn 11**, so no
+      part of the sweep is waiting on a drawing. `list_projects` returning an empty list is not
+      evidence either way — it filters to design-*system* projects, and this is an ordinary one; pass
+      the id. Reading remote `github.md` is the whole freshness check and costs ~1k tokens.
 - [x] **Theme commit first** — 2026-08-08. `Color.kt` generated from the seeds (both schemes in full, 22
       contrast checks green), `Type.kt`, `Spacing.kt`, `dynamicColor` off. Nunito is a new bundled asset,
       not a dependency. Two silent traps written up in `phase-7.md`'s order-of-work step 4.
@@ -538,7 +545,19 @@ exists. These are the items that come first.
 - [ ] **Gate: 4f's edge-to-edge matrix re-run in full**, both orientations, both navigation modes. A
       visual overhaul is exactly what that matrix exists to catch.
 - [ ] Re-capture and compare, same routes, same locales. `lint` still 0 errors, 0 warnings.
-- [ ] **Answer whether any string changed** — a clean "no" would let Phase 8 start in parallel.
+- [x] **Answered, and it is not the clean "no" that line hoped for** — 2026-08-11, measured across the
+      whole sweep (`61abe63^` → `91f524b`): **29 names added** (28 strings and one `plurals`), **9
+      removed**, **5 reworded in place**, 648 → 668 entries. So Phase 8 does not start in parallel; it
+      starts after this phase, as planned. **Both locales are level** — every added name exists in
+      `values-pl`, every removed one is gone from it (ADR-0013), and the only en-only entry is
+      `app_name`, `translatable="false"` on purpose. Nearly all of the churn is **naming rather than new
+      words**: section headers the old screens did without (`weight_chart_section`,
+      `med_editor_section_when`, `observation_tray_section`), placeholders the form idiom needs
+      (`med_editor_name_placeholder`), and two generic actions (`action_change`, `action_clear`) taking
+      over from per-screen ones. The five rewordings are the same move — `weight_grams_label` folded
+      into `weight_grams_help` when the label left its box, and *"Debug builds only."* stripped from
+      two help strings once `settings_debug_header` said it once. **Final only if the gate finds
+      nothing**: the matrix re-run and the *"not checked"* decision can each still move copy.
 - [x] **1.4, not 2.0** — decided 2026-08-08. Nothing breaks in the data, the schema or the backup format,
       so a major bump would claim something untrue. **This is now a commit rule: no `feat!:` anywhere in
       the phase**, because a single one makes `release-please` cut 2.0 regardless of what the docs say.
