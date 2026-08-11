@@ -457,6 +457,22 @@ exists. These are the items that come first.
       three steps; the seed the wipe takes is put back by the same run. What made the earlier call
       right was the 5 Aug run that wiped and had nothing to restore with — that gap is closed.
       Check §1 is **not armed** before running it, which it was not on 2026-08-11.
+      ✅ **The dialog retrofit is finished** — 2026-08-11, the **eleven** sites left after the route
+      table went all-✅, in their own commit because none of them was a route. The three weight prompts
+      (delete plus ADR-0021's two collisions), the observation delete, `TrendFlagDialog`,
+      `StartWatchDialog`, `CompleteCareDialog`, `ChooseBunnyDialog`, and ADR-0004's archive and delete
+      ceremonies. **Three `AlertDialog`s remain and all three are the documented exemption** — the two
+      `TimePicker` frames and `SearchablePicker` — and the last one now carries a comment saying so,
+      because a survivor looks like a miss. Two were more than frame swaps: `CompleteCareDialog` is
+      `RecordDoseDialog`'s twin (the reminder's name became the **subject line**, the date took
+      `RecordedAtField`'s section shape, the note took its placeholder as its label) and
+      `ChooseBunnyDialog`'s bare clickable `Text`s became `ListRow`s in a `GroupedCard`. **The first
+      batch of the whole sweep to cost the idiom nothing at all.** Five dialogs seen on the device;
+      `complete-care`, `choose-bunny` and `start-watch` in both themes.
+      ⚠️ **`BunnyDialogs.kt` hid from every count of this retrofit, and the filter was the cause.**
+      The inventory was always `grep -v "Dialogs.kt"`, meant to spare `ui/common/Dialogs.kt` — it
+      spared `BunnyDialogs.kt` too, by substring, so ADR-0004's two ceremonies were never in a total.
+      **Exclude a path, not a basename**, and print what is left rather than counting it.
       ✅ **Four more `AlertDialog` sites took the retrofit** — the course-delete, dose-delete,
       reminder-delete and completion-delete confirmations, plus the visit-delete and attach-a-document
       dialogs, so six on this batch. The attach dialog dropped a `LazyColumn` doing so, for the third

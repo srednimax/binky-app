@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +45,7 @@ import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.bunny.dateLabel
 import app.binky.tracker.ui.bunny.joinNames
+import app.binky.tracker.ui.common.BinkyDialog
 import app.binky.tracker.ui.common.ChipRow
 import app.binky.tracker.ui.common.DenseFactRow
 import app.binky.tracker.ui.common.FabClearance
@@ -534,19 +534,18 @@ private fun DeleteObservationDialog(
 ) {
     val resources = LocalResources.current
     val names = joinNames(resources, entry.participants.map { it.name })
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.observation_delete_title)) },
-        text = {
-            Text(
-                if (entry.shared) {
-                    stringResource(R.string.observation_delete_body_shared, names)
-                } else {
-                    stringResource(R.string.observation_delete_body, names)
-                },
-            )
-        },
+    BinkyDialog(
+        title = stringResource(R.string.observation_delete_title),
+        onDismiss = onDismiss,
         confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.action_delete)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
+    ) {
+        Text(
+            if (entry.shared) {
+                stringResource(R.string.observation_delete_body_shared, names)
+            } else {
+                stringResource(R.string.observation_delete_body, names)
+            },
+        )
+    }
 }

@@ -1,15 +1,10 @@
 package app.binky.tracker.ui.care
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -20,12 +15,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.binky.tracker.R
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.bunny.dateLabel
+import app.binky.tracker.ui.common.BinkyDialog
+import app.binky.tracker.ui.common.ChangeableValueRow
+import app.binky.tracker.ui.common.ErrorText
+import app.binky.tracker.ui.common.FormSection
+import app.binky.tracker.ui.common.HelpText
+import app.binky.tracker.ui.common.NoteField
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -35,13 +36,18 @@ import java.time.ZoneOffset
  *
  * Defaults to today, the past is allowed, and the future is **refused with the reason stated**
  * rather than quietly greyed out in the picker. That is the one deliberate departure from
- * `RecordedAtField`, which does grey it out: a weighing carries a time as well as a date and has to
- * re-check the whole instant anyway, where a completion is a bare day and an owner who taps
- * tomorrow deserves the sentence explaining why not.
+ * [app.binky.tracker.ui.common.RecordedAtField], which does grey it out: a weighing carries a time as
+ * well as a date and has to re-check the whole instant anyway, where a completion is a bare day and
+ * an owner who taps tomorrow deserves the sentence explaining why not.
  *
  * Accepting one would be worse than untidy. The next occurrence is scheduled from the completion, so
  * a date the owner has not reached yet pushes the whole schedule out by the mistake *plus* the
  * interval.
+ *
+ * Built as `RecordDoseDialog`'s twin, because it asks the same three things: **the reminder's name is
+ * the dialog's subject line** rather than a line of body text — "Complete" alone cannot say *which* — the
+ * date sits in the section shape `RecordedAtField` draws, and the note takes its placeholder as its
+ * label, since one more heading in a dialog this size would out-number the fields.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,48 +70,11 @@ fun CompleteCareDialog(
     val today = remember { LocalDate.now() }
     val inFuture = completedOn.isAfter(today)
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
+    BinkyDialog(
+        title = title,
+        subject = reminderLabel,
+        onDismiss = onDismiss,
         modifier = modifier,
-        title = { Text(title) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(text = reminderLabel, style = MaterialTheme.typography.titleSmall)
-                Text(
-                    text = stringResource(R.string.care_complete_when),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = dateLabel(completedOn),
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(onClick = { pickingDate = true }) {
-                        Text(stringResource(R.string.recorded_at_pick_date))
-                    }
-                }
-                if (inFuture) {
-                    Text(
-                        text = stringResource(R.string.care_complete_future),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-                Text(
-                    text = stringResource(R.string.care_complete_help),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = { Text(stringResource(R.string.care_complete_note)) },
-                    singleLine = false,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        },
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(completedOn, note.ifBlank { null }) },
@@ -115,7 +84,47 @@ fun CompleteCareDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
-    )
+    ) {
+        // The card carries the row's own insets, so it takes none of its own — the same reason
+        // `RecordedAtField` is built this way, and this is that field with the time left off.
+        FormSection(
+            title = stringResource(R.string.care_complete_when),
+            contentPadding = PaddingValues(vertical = Spacing.hair),
+            spacing = 0.dp,
+        ) {
+            ChangeableValueRow(
+                value = dateLabel(completedOn),
+                // "Change" on screen; the old wording stays as what a screen reader hears, where
+                // there is no value in view to disambiguate it.
+                description = stringResource(R.string.recorded_at_pick_date),
+                onChange = { pickingDate = true },
+            )
+            // The help text explains how to back-date, so it goes with the control that can.
+            HelpText(
+                text = stringResource(R.string.care_complete_help),
+                modifier =
+                    Modifier.padding(
+                        start = Spacing.base,
+                        end = Spacing.base,
+                        top = Spacing.tight,
+                        bottom = Spacing.snug,
+                    ),
+            )
+            if (inFuture) {
+                ErrorText(
+                    text = stringResource(R.string.care_complete_future),
+                    modifier =
+                        Modifier.padding(start = Spacing.base, end = Spacing.base, bottom = Spacing.snug),
+                )
+            }
+        }
+
+        NoteField(
+            value = note,
+            onValueChange = { note = it },
+            placeholder = stringResource(R.string.care_complete_note),
+        )
+    }
 
     if (pickingDate) {
         // UTC midnight throughout, which is what the Material date picker works in — the same

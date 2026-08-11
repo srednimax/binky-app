@@ -1,18 +1,15 @@
 package app.binky.tracker.ui.observations
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import app.binky.tracker.R
+import app.binky.tracker.ui.common.BinkyDialog
+import app.binky.tracker.ui.common.GroupedCard
+import app.binky.tracker.ui.common.ListRow
+import app.binky.tracker.ui.common.RowDivider
 import app.binky.tracker.ui.shell.BunnySummary
 
 /**
@@ -25,6 +22,12 @@ import app.binky.tracker.ui.shell.BunnySummary
  * unchanged.
  *
  * The single-bunny scope never sees this dialog, and the healthy day stays one tap there.
+ *
+ * The names are [ListRow]s in a [GroupedCard], which is what every other list in the app is now made
+ * of — [BinkyDialog] provides the nested level, so the card reads as raised off the dialog the way it
+ * reads as raised off the background outside one. **No [app.binky.tracker.ui.common.Chevron] on them**:
+ * a chevron marks a row that is only telling you something and opens its own screen, and these rows
+ * are the *answer* to the question in the title.
  */
 @Composable
 fun ChooseBunnyDialog(
@@ -34,27 +37,21 @@ fun ChooseBunnyDialog(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
+    BinkyDialog(
+        title = title,
+        onDismiss = onDismiss,
         modifier = modifier,
-        title = { Text(title) },
-        text = {
-            Column {
-                bunnies.forEach { bunny ->
-                    Text(
-                        text = bunny.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable { onPick(bunny.id) }
-                                .padding(vertical = 12.dp),
-                    )
-                }
-            }
-        },
+        // The only way out that is not a choice, so it takes the trailing slot on its own.
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
-    )
+    ) {
+        GroupedCard {
+            bunnies.forEachIndexed { index, bunny ->
+                // Two bunnies are independent of each other, which is the rule a divider states.
+                if (index > 0) RowDivider()
+                ListRow(title = bunny.name, onClick = { onPick(bunny.id) })
+            }
+        }
+    }
 }
