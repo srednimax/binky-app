@@ -274,10 +274,10 @@ lives* for how to open one without loading the whole file.
 | Setup, steps 1-3 | `10e`–`10g` / `10e2`–`10g2` | **Not built yet.** One frame per step, as `SetupBunny`/`SetupBackup`/`SetupReminders` already are |
 | Reminders opt-in | `10h` / `10h2` | **Not built yet.** Drawn at the point of use — *"the same body, in a sheet, blocked"* |
 | Schema mismatch | `10i` / `10i2`, `10j` / `10j2` | **Not built yet**, and it is **two** variants: debug *"the wipe is happening; the choice is whether you look first"*, release *"nothing is destroyed, and there is no forward"* |
-| One course | `10k` / `10k2` | **Not built yet.** No row until 2026-08-10, though the Care & Meds redraw moved a delete onto it |
-| One reminder | `10l` / `10l2` | **Not built yet.** Same — edited by the sweep, never redrawn by it |
-| Reminder editor | `10m` / `10m2` | **Not built yet.** *"Three presets and something else"* — the one editor that never drew from `Forms.kt` |
-| Visit editor | `10n` / `10n2` | **Not built yet.** Same — and it took a moved delete too |
+| One course | `10k` / `10k2` | ✅ 2026-08-11. The facts and the three actions become **one card**, with *End the course* below a hairline rather than a gap — a rule separates two kinds of action, where a gap would separate two subjects. The dose history goes from three stacked cards to one grouped card of rows |
+| One reminder | `10l` / `10l2` | ✅ 2026-08-11, and it is `10k` again on purpose: a course and a reminder are the same shape. What differs is what sits below the hairline — the **calendar hand-off**, the one action here that is about the repeat rather than this occurrence. Adds the sweep's only new mark: an **overdue reminder takes the [`CautionDot`]** |
+| Reminder editor | `10m` / `10m2` | ✅ 2026-08-11. Kind, name and interval are **one card** — one answer in three parts, and the unit chips belong beside the number they inflect. The read-back line sits outside every card, last before the fold. Cost the idiom `ChangeableValueRow.stacked` |
+| Visit editor | `10n` / `10n2` | ✅ 2026-08-11. Three cards by *kind of thing*: two value rows, three typed fields, then the paperwork under its own header with both ways in beneath a hairline. Cost `SingleLineField`/`NoteField` an `enabled`, which is ADR-0004's archived scope |
 
 **The drawings are complete as of 2026-08-10, and four of them are routes this table never listed.**
 A turn-10 export closes the undrawn half of the sweep: `10a`–`10n` with dark twins `10a2`–`10n2`, 72
@@ -359,6 +359,15 @@ Worth knowing before reading a mockup as gospel, and consistent with the palette
   reads as a footnote about what you just typed, and Forms.kt's *"help belongs to the control above
   it"* was written for footnotes. The amount keeps its real footnote underneath, which is what the
   rule is for, and both examples stay in the boxes as drawn.
+- `10k` gives the filled button **52dp** and the outlined one beside it **44dp**. Neither is taken.
+  52dp is `RecordButtonHeight`, which is for the action a *tab* exists for standing alone between two
+  sections — its own doc says "in a row of peers a default-sized button would be right", and this is
+  that row. 44dp is the step `9c` already declined. What carries the weight is the **fill**, which is
+  `9c`'s app-wide rule.
+- `10m` and `10n` draw the date button as **"Pick a date"**. It reads *Change*, as every other value
+  row in the app does: the label stacked above it already says what changes, and `recorded_at_pick_date`
+  ("Change the date") stays as what a screen reader hears. A new string would cost both locales to say
+  what the row already says (ADR-0013).
 - `3e` **omits the reminder switch**, and it should not have: it draws a course with two times set,
   which is exactly the state in which the switch shows (ADR-0003 hides it only when there are no
   times). Built inside the *Times of day* card below a divider — *"remind me at these times"* is a

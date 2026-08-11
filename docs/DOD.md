@@ -373,6 +373,38 @@ exists. These are the items that come first.
       (Bijou) and the steady series with the *expired* one (Nugget), so an ordinary capture only ever
       reaches `8d` — the same trap `4e` fell into. Verifying it meant a throwaway seed patch, one
       expired watch on the flagged bunny, reverted before the commit.
+      ✅ **The four Care detail routes are done** — 2026-08-11, `10k`–`10n`: one course, one
+      reminder, the reminder editor and the visit editor, all four seen on the device in light and
+      dark. These are the four the checkpoint table never listed, and three of them had already been
+      *edited* by the Care & Meds redraw without being redrawn by it. **A course and a reminder turn
+      out to be the same screen** — what is next, what to do about it, what has happened — so `10l`
+      is `10k` twice over; the only difference is what sits below the card's hairline, which is
+      *ending* on a course and the **calendar hand-off** on a reminder. A hairline rather than a gap
+      is the point: a gap separates two subjects, a rule separates two kinds of action on one.
+      **One mark is added and it is the only new one in the sweep**: an overdue reminder takes the
+      apricot `CautionDot`. `10l` says the file "already uses it on Care & Meds" and the file did
+      not — but the marker's own definition is *the app itself is raising this*, and a reminder whose
+      day has been and gone is exactly that. The list row does **not** take it: its trailing slot is
+      already spoken for by `3a`'s grammar (a row that asks carries the answer, a row that tells
+      carries a chevron).
+      **No string added, changed or moved on any of the four** — the fourth batch running that way.
+      Two of the drawings' measurements were declined for `9c`'s reason (52dp/44dp buttons in a row
+      of peers), and "Pick a date" stayed *Change* rather than minting a string in two locales.
+      The idiom cost **three parameters this time, not one**, and each names a state the drawn routes
+      never arranged: `ChangeableValueRow.stacked` (a label that is a **question** cannot ride beside
+      its own answer, where *Starts*, *Ends* and *Birthday* can), and `enabled` on `SingleLineField`
+      and `NoteField` — ADR-0004's archived scope, which the visit editor is the only editor to have.
+      `ChangeableValueRow`'s *Clear* also went quiet, which moves the bunny editor with it: of two
+      actions on one row, the one that takes something away is `onSurfaceVariant`.
+      ℹ️ **One thing the device pass found that the code reads fine as**: a dose row's title wraps to
+      two lines. The drawing writes "Given · 10 August at 08:04"; the app writes "Given · Aug 11, 2026
+      at 6:47 PM", and two text buttons at M3's 58dp minimum width leave it about 250dp. Accepted —
+      the row is still half the height of the card it replaced — but it is the reason a drawing's
+      one-line row is a claim about *that* date format and not about the layout.
+      ✅ **Four more `AlertDialog` sites took the retrofit** — the course-delete, dose-delete,
+      reminder-delete and completion-delete confirmations, plus the visit-delete and attach-a-document
+      dialogs, so six on this batch. The attach dialog dropped a `LazyColumn` doing so, for the third
+      time in the sweep and the same reason.
       ✅ **Four of the ~20 `AlertDialog` sites took the retrofit `3f`/`3g` asked for**, since they sit
       on routes this batch was redrawing anyway: rename, attach-to-a-visit, manage-pages and both
       delete confirmations now call `BinkyDialog`. Two of them dropped a `LazyColumn` doing so —

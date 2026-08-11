@@ -218,6 +218,7 @@ fun NoteField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String? = null,
+    enabled: Boolean = true,
 ) {
     OutlinedTextField(
         value = value,
@@ -225,6 +226,7 @@ fun NoteField(
         placeholder = placeholder?.let { { Text(it) } },
         shape = RoundedCornerShape(FieldRadius),
         minLines = 3,
+        enabled = enabled,
         modifier = modifier.fillMaxWidth(),
     )
 }
@@ -248,6 +250,7 @@ fun SingleLineField(
     modifier: Modifier = Modifier,
     placeholder: String? = null,
     isError: Boolean = false,
+    enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
 ) {
     OutlinedTextField(
@@ -256,6 +259,7 @@ fun SingleLineField(
         placeholder = placeholder?.let { { Text(it) } },
         shape = RoundedCornerShape(FieldRadius),
         isError = isError,
+        enabled = enabled,
         keyboardOptions = keyboardOptions,
         singleLine = true,
         modifier = modifier.fillMaxWidth(),
@@ -284,6 +288,12 @@ fun SingleLineField(
  * *Clear* on screen and announces [clearDescription] — the same trick [description] plays for the
  * first button, and for the same reason: two rows in one card would otherwise both announce *Clear*
  * with no way to tell which field they empty.
+ *
+ * [stacked] puts the [label] **above** the value instead of beside it, which `10m` needs and the
+ * rows before it did not: *Starts*, *Ends*, *Birthday* and *Breed* are nouns, and a noun sits beside
+ * its answer comfortably. *"When is it next due?"* is a **question**, and a question beside its own
+ * answer and a button leaves each of the three about a third of a phone. Stacked, the label also
+ * drops to `bodySmall` — above the value it is a caption on it rather than half of a pair.
  */
 @Composable
 fun ChangeableValueRow(
@@ -294,6 +304,7 @@ fun ChangeableValueRow(
     label: String? = null,
     enabled: Boolean = true,
     actionLabel: String? = null,
+    stacked: Boolean = false,
     onClear: (() -> Unit)? = null,
     clearDescription: String? = null,
 ) {
@@ -307,19 +318,30 @@ fun ChangeableValueRow(
                 .padding(start = Spacing.base, end = if (enabled) Spacing.tight else Spacing.base),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (label != null) {
+        if (label != null && stacked) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Text(text = value, style = MaterialTheme.typography.bodyLarge)
             }
-            Text(text = value, style = MaterialTheme.typography.bodyLarge)
+        } else {
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (label != null) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(text = value, style = MaterialTheme.typography.bodyLarge)
+            }
         }
         if (enabled) {
             TextButton(
@@ -329,7 +351,10 @@ fun ChangeableValueRow(
                 Text(actionLabel ?: stringResource(R.string.action_change))
             }
             // Only when there is something to clear: a permanently visible *Clear* beside an empty
-            // field is a control that does nothing four times out of five.
+            // field is a control that does nothing four times out of five. Quieter than the button
+            // beside it — `10n` draws it in `onSurfaceVariant`, the same treatment *Delete* takes on
+            // `10b` and `10k`: of two actions on one row, the one that takes something away goes
+            // quiet.
             if (onClear != null) {
                 TextButton(
                     onClick = onClear,
@@ -338,7 +363,10 @@ fun ChangeableValueRow(
                             if (clearDescription != null) contentDescription = clearDescription
                         },
                 ) {
-                    Text(stringResource(R.string.action_clear))
+                    Text(
+                        text = stringResource(R.string.action_clear),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

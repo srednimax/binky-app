@@ -3,27 +3,27 @@ package app.binky.tracker.ui.care
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.SnackbarHostState
@@ -43,15 +43,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
 import app.binky.tracker.data.WeightUnit
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.bunny.dateLabel
+import app.binky.tracker.ui.common.BinkyDialog
+import app.binky.tracker.ui.common.ChangeableValueRow
+import app.binky.tracker.ui.common.ErrorText
+import app.binky.tracker.ui.common.FieldLabel
+import app.binky.tracker.ui.common.GroupedCard
+import app.binky.tracker.ui.common.HelpText
+import app.binky.tracker.ui.common.ListRow
+import app.binky.tracker.ui.common.ListRowHeight
+import app.binky.tracker.ui.common.NoteField
 import app.binky.tracker.ui.common.PickerOption
+import app.binky.tracker.ui.common.RowDivider
 import app.binky.tracker.ui.common.SearchablePickerDialog
+import app.binky.tracker.ui.common.SectionHeader
+import app.binky.tracker.ui.common.SingleLineField
 import app.binky.tracker.ui.documents.DocumentRow
 import app.binky.tracker.ui.documents.ScanNoticeHost
 import app.binky.tracker.ui.documents.rememberDocumentScan
@@ -75,6 +87,13 @@ import java.time.ZoneOffset
  *   copy of the number, and clearing the field deletes that row.
  * - **[readOnly] is the archived scope** (ADR-0004): the fields render with what was recorded and
  *   nothing can be typed or saved, because a memorial's history is for reading.
+ *
+ * **Phase 7 (`10n`).** Six fields and one list, all with the app's own labels and helpers, grouped
+ * into three cards by what kind of thing they are. The date and the vet are **value rows** — both
+ * are a value plus the control that sets it, and both used to be a heading with a right-aligned
+ * link. The three typed fields are a second card. The documents get a section header of their own,
+ * because a visit's paperwork is a different subject from the visit's facts, and the two ways in sit
+ * under a hairline inside that card.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -143,49 +162,33 @@ fun VisitEditorScreen(
         if (state.loading) return@Column
 
         Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        start = Spacing.base,
+                        end = Spacing.base,
+                        top = Spacing.tight,
+                        bottom = Spacing.section,
+                    ),
         ) {
-            VisitedOnField(
+            WhenAndWhoCard(
                 date = state.visitedOn,
                 inFuture = state.inFuture,
-                enabled = !readOnly,
-                onPick = { pickingDate = true },
-            )
-            OutlinedTextField(
-                value = state.reason,
-                onValueChange = viewModel::onReasonChanged,
-                label = { Text(stringResource(R.string.visit_reason_label)) },
-                isError = state.reasonInvalid,
-                supportingText = {
-                    if (state.reasonInvalid) Text(stringResource(R.string.visit_reason_required))
-                },
-                enabled = !readOnly,
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            VetField(
                 vetName = state.vetName,
                 enabled = !readOnly,
-                onPick = { pickingVet = true },
-                onClear = { viewModel.onVetChanged(null) },
+                onPickDate = { pickingDate = true },
+                onPickVet = { pickingVet = true },
+                onClearVet = { viewModel.onVetChanged(null) },
             )
-            GramsField(
-                grams = state.grams,
-                invalid = state.gramsInvalid,
-                parsedGrams = state.parsedGrams,
-                unit = state.unit,
-                enabled = !readOnly,
-                onGramsChanged = viewModel::onGramsChanged,
-            )
-            OutlinedTextField(
-                value = state.notes,
-                onValueChange = viewModel::onNotesChanged,
-                label = { Text(stringResource(R.string.visit_notes_label)) },
-                enabled = !readOnly,
-                singleLine = false,
-                modifier = Modifier.fillMaxWidth(),
-            )
+
+            Spacer(Modifier.height(Spacing.section))
+
+            WhatHappenedCard(state = state, enabled = !readOnly, viewModel = viewModel)
+
+            Spacer(Modifier.height(Spacing.section))
+
             DocumentsSection(
                 documents = state.documents,
                 // A document points at a `visitId`, so there is nothing for one to attach to until
@@ -207,11 +210,14 @@ fun VisitEditorScreen(
             // at `1d`. Only on a visit that exists: there is nothing to delete before the first
             // save, and a button that refuses when tapped is what ADR-0004 rules out.
             if (!readOnly && !state.isNew) {
-                TextButton(onClick = viewModel::requestDelete) {
-                    Text(
-                        text = stringResource(R.string.action_delete),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Spacer(Modifier.height(Spacing.base))
+                Row(modifier = Modifier.padding(start = Spacing.hair).offset(x = -Spacing.snug)) {
+                    TextButton(onClick = viewModel::requestDelete) {
+                        Text(
+                            text = stringResource(R.string.action_delete),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }
@@ -263,115 +269,130 @@ fun VisitEditorScreen(
 }
 
 /**
- * **When it happened** — today by default, back-dating allowed, the future refused with the reason
- * stated rather than silently clamped.
+ * **When it happened, and who saw them** — the two facts that are a value plus the control that sets
+ * it, so they are the one card of value rows.
  *
- * A day rather than a moment (ADR-0017): a visit happens *on* a date, and there is no time field
- * here at all. The weighing taken at it needs an instant, and that is derived — `min(noon, now)` —
- * rather than being a second thing to type.
+ * A visit is on a day rather than at a moment (ADR-0017): there is no time field here at all. The
+ * weighing taken at it needs an instant, and that is derived — `min(noon, now)` — rather than being
+ * a second thing to type. The future is refused with the reason stated rather than silently clamped,
+ * and that line is [ErrorText] because it is why a save would not go through.
+ *
+ * Both labels stack above their values. *Vet* would sit beside its own comfortably, but *When was
+ * it?* would not, and two rows in one card with the label in two different places reads as a
+ * rendering fault rather than as a distinction.
  */
 @Composable
-private fun VisitedOnField(
+private fun WhenAndWhoCard(
     date: LocalDate,
     inFuture: Boolean,
-    enabled: Boolean,
-    onPick: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text = stringResource(R.string.visit_date_label), style = MaterialTheme.typography.titleSmall)
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text(text = dateLabel(date), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-            if (enabled) {
-                TextButton(onClick = onPick) { Text(stringResource(R.string.recorded_at_pick_date)) }
-            }
-        }
-        if (inFuture) {
-            Text(
-                text = stringResource(R.string.visit_future_rejected),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-    }
-}
-
-/** The optional vet, and the one control that also *creates* one (ADR-0017). */
-@Composable
-private fun VetField(
     vetName: String?,
     enabled: Boolean,
-    onPick: () -> Unit,
-    onClear: () -> Unit,
+    onPickDate: () -> Unit,
+    onPickVet: () -> Unit,
+    onClearVet: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text = stringResource(R.string.visit_vet_label), style = MaterialTheme.typography.titleSmall)
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = vetName ?: stringResource(R.string.visit_vet_none),
-                style = MaterialTheme.typography.bodyLarge,
-                color =
-                    if (vetName == null) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                modifier = Modifier.weight(1f),
+    GroupedCard {
+        ChangeableValueRow(
+            label = stringResource(R.string.visit_date_label),
+            value = dateLabel(date),
+            // The button says only *Change*: the label stacked above it already says what changes,
+            // and the longer wording stays as what a screen reader hears.
+            description = stringResource(R.string.recorded_at_pick_date),
+            stacked = true,
+            enabled = enabled,
+            onChange = onPickDate,
+        )
+        if (inFuture) {
+            ErrorText(
+                text = stringResource(R.string.visit_future_rejected),
+                modifier = Modifier.padding(start = Spacing.base, end = Spacing.base, bottom = Spacing.tight),
             )
-            if (enabled) {
-                TextButton(onClick = onPick) { Text(stringResource(R.string.visit_vet_choose)) }
-                // Only when there is something to clear — a permanently visible "clear" beside an
-                // empty field is a control that does nothing four times out of five.
-                if (vetName != null) {
-                    TextButton(onClick = onClear) { Text(stringResource(R.string.visit_vet_clear)) }
-                }
-            }
         }
+        RowDivider()
+        ChangeableValueRow(
+            label = stringResource(R.string.visit_vet_label),
+            value = vetName ?: stringResource(R.string.visit_vet_none),
+            description = stringResource(R.string.visit_vet_choose),
+            actionLabel = stringResource(R.string.visit_vet_choose),
+            stacked = true,
+            enabled = enabled,
+            onChange = onPickVet,
+            // Only when there is something to clear — a permanently visible "clear" beside an empty
+            // field is a control that does nothing four times out of five.
+            onClear = if (vetName == null) null else onClearVet,
+            clearDescription = stringResource(R.string.visit_vet_clear),
+        )
     }
 }
 
 /**
- * The weighing the vet took, **in grams and optional**.
+ * **What it was for, what they weighed and what to remember** — the three typed fields, in one card
+ * because all three are things the owner writes rather than picks.
  *
- * Empty is the ordinary case and never an error: most visits are consultations. When the owner reads
- * kilograms the conversion is echoed underneath rather than the field switching unit, exactly as the
- * weight form does — what they type and what they see are never the same box.
+ * The kilogram echo sits directly **under** the grams field rather than replacing what is in it:
+ * what an owner types and what they read back are never the same box, which is the rule the weight
+ * form set. Empty is the ordinary case for the weight and never an error — most visits are
+ * consultations.
  */
 @Composable
-private fun GramsField(
-    grams: String,
-    invalid: Boolean,
-    parsedGrams: Int?,
-    unit: WeightUnit,
+private fun WhatHappenedCard(
+    state: VisitEditorUiState,
     enabled: Boolean,
-    onGramsChanged: (String) -> Unit,
+    viewModel: VisitEditorViewModel,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        OutlinedTextField(
-            value = grams,
-            onValueChange = onGramsChanged,
-            label = { Text(stringResource(R.string.visit_weight_label)) },
-            isError = invalid,
-            supportingText = {
-                if (invalid) {
-                    Text(stringResource(R.string.visit_weight_invalid))
+    GroupedCard(
+        contentPadding = PaddingValues(Spacing.base),
+        verticalArrangement = Arrangement.spacedBy(Spacing.base),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+            FieldLabel(stringResource(R.string.visit_reason_label))
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.hair)) {
+                SingleLineField(
+                    value = state.reason,
+                    onValueChange = viewModel::onReasonChanged,
+                    isError = state.reasonInvalid,
+                    enabled = enabled,
+                )
+                if (state.reasonInvalid) ErrorText(stringResource(R.string.visit_reason_required))
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+            FieldLabel(stringResource(R.string.visit_weight_label))
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.hair)) {
+                SingleLineField(
+                    value = state.grams,
+                    onValueChange = viewModel::onGramsChanged,
+                    isError = state.gramsInvalid,
+                    enabled = enabled,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                )
+                if (state.gramsInvalid) {
+                    ErrorText(stringResource(R.string.visit_weight_invalid))
                 } else {
-                    Text(stringResource(R.string.visit_weight_help))
+                    HelpText(stringResource(R.string.visit_weight_help))
                 }
-            },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            enabled = enabled,
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        if (parsedGrams != null && unit == WeightUnit.KILOGRAMS) {
-            Text(
-                text =
-                    stringResource(
-                        R.string.weight_grams_as_kilograms,
-                        weightLabel(parsedGrams, WeightUnit.KILOGRAMS),
-                    ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                // Kotlin note: pulled into a local because `parsedGrams` has a custom getter, so
+                // the compiler cannot prove it returns the same value twice — the null check and
+                // the use would be two separate calls.
+                val parsed = state.parsedGrams
+                if (parsed != null && state.unit == WeightUnit.KILOGRAMS) {
+                    HelpText(
+                        stringResource(
+                            R.string.weight_grams_as_kilograms,
+                            weightLabel(parsed, WeightUnit.KILOGRAMS),
+                        ),
+                    )
+                }
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+            FieldLabel(stringResource(R.string.visit_notes_label))
+            NoteField(
+                value = state.notes,
+                onValueChange = viewModel::onNotesChanged,
+                enabled = enabled,
             )
         }
     }
@@ -381,7 +402,8 @@ private fun GramsField(
  * **The paperwork this visit produced** (ADR-0017).
  *
  * Two ways in, because paperwork arrives two ways: scanned there and then, or already on the phone
- * from a scan the owner did before opening the visit. Both write the same `visitId`.
+ * from a scan the owner did before opening the visit. Both write the same `visitId`, and both sit
+ * under a hairline inside the card — they are how the list grows rather than entries in it.
  *
  * Detaching is offered per row and is deliberately not called *delete*: the document keeps its bunny
  * and stays in their document list, which is the survival rule a visit itself gets from its vet.
@@ -397,16 +419,16 @@ private fun DocumentsSection(
     onOpen: (String) -> Unit,
     onDetach: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text = stringResource(R.string.visit_documents_label), style = MaterialTheme.typography.titleSmall)
+    SectionHeader(stringResource(R.string.visit_documents_label))
+    Spacer(Modifier.height(Spacing.tight))
 
+    GroupedCard(contentPadding = PaddingValues(top = Spacing.hair, bottom = Spacing.snug)) {
         if (!visitSaved) {
-            Text(
+            HelpText(
                 text = stringResource(R.string.visit_documents_save_first),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = Spacing.base, vertical = Spacing.tight),
             )
-            return@Column
+            return@GroupedCard
         }
 
         if (documents.isEmpty()) {
@@ -414,36 +436,46 @@ private fun DocumentsSection(
                 text = stringResource(R.string.visit_documents_none),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier =
+                    Modifier
+                        .heightIn(min = ListRowHeight)
+                        .padding(horizontal = Spacing.base, vertical = Spacing.snug),
             )
         } else {
-            documents.forEach { document ->
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = document.title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f).clickable { onOpen(document.id) },
-                    )
-                    Text(
-                        text =
-                            pluralStringResource(
-                                R.plurals.document_page_count,
-                                document.pageCount,
-                                document.pageCount,
-                            ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    if (enabled) {
-                        TextButton(onClick = { onDetach(document.id) }) {
-                            Text(stringResource(R.string.visit_documents_detach))
+            documents.forEachIndexed { index, document ->
+                if (index > 0) RowDivider()
+                ListRow(
+                    title = document.title,
+                    subtitle =
+                        pluralStringResource(
+                            R.plurals.document_page_count,
+                            document.pageCount,
+                            document.pageCount,
+                        ),
+                    onClick = { onOpen(document.id) },
+                    trailing = {
+                        if (enabled) {
+                            TextButton(
+                                onClick = { onDetach(document.id) },
+                                modifier = Modifier.offset(x = Spacing.tight),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.visit_documents_detach),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
-                    }
-                }
+                    },
+                )
             }
         }
 
         if (enabled) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            RowDivider()
+            Row(
+                modifier = Modifier.padding(top = Spacing.tight, start = Spacing.hair),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 TextButton(onClick = onScan, enabled = !scanning) {
                     Text(stringResource(R.string.document_scan))
                 }
@@ -461,6 +493,10 @@ private fun DocumentsSection(
  * Only the unclaimed ones, because `visitId` is single-valued: offering one that already belongs to
  * another visit would silently move it, and a document quietly leaving last year's dental record is
  * the kind of change nobody notices until they go looking for it.
+ *
+ * The list is a plain [Column], not a `LazyColumn`: [BinkyDialog] scrolls its own content, and a
+ * lazy list inside a scrolling parent measures against an unbounded height and composes every row —
+ * losing the only thing it is for. `10a`–`10d` made the same swap twice.
  */
 @Composable
 private fun AttachDocumentDialog(
@@ -468,32 +504,31 @@ private fun AttachDocumentDialog(
     onPick: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.visit_documents_attach_existing)) },
-        text = {
-            if (choices.isEmpty()) {
-                Text(stringResource(R.string.visit_documents_none_free))
-            } else {
-                LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
-                    items(choices, key = { it.id }) { document ->
-                        Text(
-                            text = document.title,
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onPick(document.id) }
-                                    .padding(vertical = 12.dp),
-                        )
-                    }
-                }
-            }
-        },
+    BinkyDialog(
+        title = stringResource(R.string.visit_documents_attach_existing),
+        onDismiss = onDismiss,
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
-    )
+    ) {
+        if (choices.isEmpty()) {
+            Text(stringResource(R.string.visit_documents_none_free))
+        } else {
+            Column {
+                choices.forEach { document ->
+                    Text(
+                        text = document.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { onPick(document.id) }
+                                .padding(vertical = Spacing.snug),
+                    )
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -564,34 +599,33 @@ private fun DeleteVisitDialog(
 ) {
     var keepWeighing by remember(visitedOn) { mutableStateOf(true) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.visit_delete_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.visit_delete_body, dateLabel(visitedOn)))
-                weightGrams?.let { grams ->
-                    Text(stringResource(R.string.visit_delete_weighing, gramsLabel(grams)))
-                    WeighingChoice(
-                        label = stringResource(R.string.visit_delete_keep_weighing),
-                        selected = keepWeighing,
-                        onSelect = { keepWeighing = true },
-                    )
-                    WeighingChoice(
-                        label = stringResource(R.string.visit_delete_remove_weighing),
-                        selected = !keepWeighing,
-                        onSelect = { keepWeighing = false },
-                    )
-                }
-            }
-        },
+    BinkyDialog(
+        title = stringResource(R.string.visit_delete_title),
+        onDismiss = onDismiss,
         confirmButton = {
             TextButton(onClick = { onConfirm(weightGrams == null || keepWeighing) }) {
                 Text(stringResource(R.string.action_delete))
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
+    ) {
+        Text(stringResource(R.string.visit_delete_body, dateLabel(visitedOn)))
+        weightGrams?.let { grams ->
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+                Text(stringResource(R.string.visit_delete_weighing, gramsLabel(grams)))
+                WeighingChoice(
+                    label = stringResource(R.string.visit_delete_keep_weighing),
+                    selected = keepWeighing,
+                    onSelect = { keepWeighing = true },
+                )
+                WeighingChoice(
+                    label = stringResource(R.string.visit_delete_remove_weighing),
+                    selected = !keepWeighing,
+                    onSelect = { keepWeighing = false },
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -605,6 +639,10 @@ private fun WeighingChoice(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onSelect),
     ) {
         RadioButton(selected = selected, onClick = null)
-        Text(text = label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 8.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(start = Spacing.tight),
+        )
     }
 }
