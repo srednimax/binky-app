@@ -1,6 +1,7 @@
 package app.binky.tracker.ui.weight
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -24,7 +26,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -107,6 +112,9 @@ fun WeightChart(
                 WeightChartContent.NoWeighings ->
                     ChartPlaceholder(stringResource(R.string.weight_chart_no_weighings))
 
+                // Both single-point states draw the sketch: a lone weighing is real data, and showing
+                // it sitting in a grid says "one reading, nothing to join it to" in a way the
+                // sentence alone cannot (`8a`/`8b`).
                 is WeightChartContent.SinglePoint ->
                     if (content.moreOutsideRange) {
                         ChartPlaceholder(
@@ -116,9 +124,13 @@ fun WeightChart(
                                     stringResource(range.windowRes()),
                                 ),
                             onShowAll = { onRangeChange(WeightChartRange.ALL) },
+                            sketch = true,
                         )
                     } else {
-                        ChartPlaceholder(stringResource(R.string.weight_chart_single_point))
+                        ChartPlaceholder(
+                            text = stringResource(R.string.weight_chart_single_point),
+                            sketch = true,
+                        )
                     }
 
                 // Names the date rather than claiming nothing was recorded — saying "no weight
@@ -209,17 +221,27 @@ private fun RangeSelector(
  *
  * The escape is **offered, never taken** on the owner's behalf: auto-widening would silently
  * override a choice they made and leave the selector showing a range it is not drawing (ADR-0022).
+ *
+ * [sketch] draws [SinglePointSketch] above the sentence. The extra horizontal inset is the
+ * drawing's: the card already contributes [Spacing.snug], and [Spacing.base] on top of it makes the
+ * 28dp that keeps a centred sentence off the card's rounded corners.
  */
 @Composable
 private fun ChartPlaceholder(
     text: String,
     onShowAll: (() -> Unit)? = null,
+    sketch: Boolean = false,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().height(CHART_HEIGHT),
-        verticalArrangement = Arrangement.Center,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(CHART_HEIGHT)
+                .padding(horizontal = Spacing.base),
+        verticalArrangement = Arrangement.spacedBy(Spacing.hair, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        if (sketch) SinglePointSketch()
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
@@ -229,6 +251,68 @@ private fun ChartPlaceholder(
         onShowAll?.let { showAll ->
             TextButton(onClick = showAll) { Text(stringResource(R.string.weight_chart_show_all)) }
         }
+    }
+}
+
+/** The sketch's drawn size — capped rather than fixed, so a narrow phone shrinks it instead of clipping. */
+private val SketchWidth = 240.dp
+private val SketchHeight = 96.dp
+
+/** Where the three gridlines and the lone point sit, as fractions of [SketchHeight]. */
+private val SketchGridFractions = listOf(16f / 96f, 48f / 96f, 80f / 96f)
+private const val SKETCH_POINT_FRACTION = 44f / 96f
+
+/** The gridlines stop short of the edges, as fractions of [SketchWidth]. */
+private const val SKETCH_INSET_FRACTION = 8f / 240f
+
+private val SketchDashOn = 2.dp
+private val SketchDashOff = 4.dp
+private val SketchGridStroke = 1.dp
+
+/**
+ * Three dashed gridlines with one ring on them — the only artwork in the app.
+ *
+ * It is drawn on the **single-point states only**, and deliberately not on the two states with no
+ * point: an empty grid says nothing the sentence has not already said and starts to read as a chart
+ * that failed to load (`8b`). The grid takes `outlineVariant`, the quietest line the scheme has that
+ * is still a line, and the ring is the plot's own marker at the plot's own size — [POINT_SIZE] and
+ * [POINT_STROKE], filled with the card so it reads as a hole punched through it, exactly as
+ * [WeightLineChart] draws every other point.
+ *
+ * Kotlin note: `Canvas` gives a `DrawScope` where `size` is the measured size in **pixels**, so `dp`
+ * values are converted with `.toPx()` inside it — the composable's own units do not carry through.
+ */
+@Composable
+private fun SinglePointSketch() {
+    val grid = MaterialTheme.colorScheme.outlineVariant
+    val ring = MaterialTheme.colorScheme.primary
+    val hole = MaterialTheme.colorScheme.surfaceContainer
+
+    Canvas(
+        modifier =
+            Modifier
+                .widthIn(max = SketchWidth)
+                .fillMaxWidth()
+                .height(SketchHeight),
+    ) {
+        val dash = PathEffect.dashPathEffect(floatArrayOf(SketchDashOn.toPx(), SketchDashOff.toPx()))
+        val left = size.width * SKETCH_INSET_FRACTION
+        val right = size.width * (1f - SKETCH_INSET_FRACTION)
+        SketchGridFractions.forEach { fraction ->
+            val y = size.height * fraction
+            drawLine(
+                color = grid,
+                start = Offset(left, y),
+                end = Offset(right, y),
+                strokeWidth = SketchGridStroke.toPx(),
+                pathEffect = dash,
+            )
+        }
+
+        val centre = Offset(size.width / 2f, size.height * SKETCH_POINT_FRACTION)
+        val radius = POINT_SIZE.toPx() / 2f
+        drawCircle(color = hole, radius = radius, center = centre)
+        drawCircle(color = ring, radius = radius, center = centre, style = Stroke(POINT_STROKE.toPx()))
     }
 }
 

@@ -2,7 +2,7 @@ package app.binky.tracker.ui.watch
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -12,7 +12,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -31,6 +30,8 @@ import app.binky.tracker.data.evaluateTrend
 import app.binky.tracker.data.toAcknowledgment
 import app.binky.tracker.data.toWeighing
 import app.binky.tracker.data.watchState
+import app.binky.tracker.theme.Spacing
+import app.binky.tracker.ui.common.BinkyDialog
 import app.binky.tracker.ui.weight.TrendFlagBanner
 import app.binky.tracker.ui.weight.instantDateLabel
 import app.binky.tracker.ui.weight.weightLabel
@@ -201,7 +202,7 @@ fun WatchExpiryHost() {
 /**
  * Extend or close, with the current trend in front of the owner.
  *
- * `onDismissRequest` is [onClose] and not a no-op: swiping the dialog away **is** an answer, and
+ * `onDismiss` is [onClose] and not a no-op: swiping the dialog away **is** an answer, and
  * treating it as anything else would leave an unanswered row occupying the only watch slot that
  * bunny has, forever, with nothing on screen ever mentioning it again.
  */
@@ -214,46 +215,72 @@ private fun WatchExpiredDialog(
 ) {
     var duration by remember { mutableStateOf(WatchDuration.Default) }
 
-    AlertDialog(
-        onDismissRequest = onClose,
-        title = { Text(stringResource(R.string.watch_expired_title, prompt.bunnyName)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = stringResource(R.string.watch_expired_body),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                // The flag itself, not a second telling of it — `TrendFlagUi` is where that
-                // sentence is written, and a prompt that paraphrased it could drift from the banner
-                // the owner reads everywhere else. It renders nothing when there is no live flag.
-                TrendFlagBanner(
-                    bunnyName = prompt.bunnyName,
-                    flag = prompt.flag,
-                    unit = prompt.unit,
-                    onAcknowledge = onAcknowledge,
-                )
-                // And when there is none, the record rather than a verdict: absence of a flag is
-                // never evidence of health (ADR-0001), so this says what was weighed and when, and
-                // makes no claim at all about the bunny.
-                if (prompt.flag !is TrendFlag.WorthACloserLook && prompt.flag !is TrendFlag.Acknowledged) {
-                    LastWeighingLine(prompt)
-                }
-                Text(
-                    text = stringResource(R.string.watch_duration_question),
-                    style = MaterialTheme.typography.labelLarge,
-                )
-                WatchDurationChoice(selected = duration, onSelect = { duration = it })
-            }
-        },
+    BinkyDialog(
+        title = stringResource(R.string.watch_expired_title, prompt.bunnyName),
+        onDismiss = onClose,
         confirmButton = {
+            // *Extend it* is the confirming action and sits last (`8c`).
             TextButton(onClick = { onExtend(duration) }) {
                 Text(stringResource(R.string.watch_expired_extend))
             }
         },
         dismissButton = {
-            TextButton(onClick = onClose) { Text(stringResource(R.string.watch_close)) }
+            // **Quiet, not destructive-red.** Closing a watch is an ordinary answer to the question,
+            // not a deletion: the row it removes is a present-tense state rather than a record. The
+            // same treatment *Delete document* takes inside its menu (`10b`).
+            TextButton(
+                onClick = onClose,
+                colors =
+                    ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+            ) {
+                Text(stringResource(R.string.watch_close))
+            }
         },
-    )
+    ) {
+        // One child, so `BinkyDialog`'s own 16dp rhythm never applies — `8c` sets the prompt at
+        // 12dp, tighter, because the flag it nests is already a card with its own padding.
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.snug)) {
+            Text(
+                text = stringResource(R.string.watch_expired_body),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            // The flag itself, not a second telling of it — `TrendFlagUi` is where that
+            // sentence is written, and a prompt that paraphrased it could drift from the banner
+            // the owner reads everywhere else. It renders nothing when there is no live flag.
+            //
+            // `nested = true` is what `8c` calls "it steps up one surface, the same move a nested
+            // flag makes on the all-bunnies list". The colour comes from the dialog's
+            // `LocalCardSurface` either way; what `nested` buys here is the 16dp radius, because a
+            // card inside a dialog is a card inside a card. This and the flag on Home's list are
+            // the only two-level nesting in the app, and the ceiling of it.
+            TrendFlagBanner(
+                bunnyName = prompt.bunnyName,
+                flag = prompt.flag,
+                unit = prompt.unit,
+                onAcknowledge = onAcknowledge,
+                nested = true,
+            )
+            // And when there is none, the record rather than a verdict: absence of a flag is
+            // never evidence of health (ADR-0001), so this says what was weighed and when, and
+            // makes no claim at all about the bunny. `8d` draws it with no container of its own,
+            // so it reads as a fact rather than as a card competing with the flag it replaces.
+            if (prompt.flag !is TrendFlag.WorthACloserLook && prompt.flag !is TrendFlag.Acknowledged) {
+                LastWeighingLine(prompt)
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+                Text(
+                    text = stringResource(R.string.watch_duration_question),
+                    style = MaterialTheme.typography.labelLarge,
+                    // The dialog's text slot is `onSurfaceVariant`, which is right for the body and
+                    // the last-weighing line but not for a question expecting an answer below it.
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                WatchDurationChoice(selected = duration, onSelect = { duration = it })
+            }
+        }
+    }
 }
 
 @Composable
