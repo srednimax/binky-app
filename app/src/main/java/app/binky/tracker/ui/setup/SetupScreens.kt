@@ -2,14 +2,16 @@ package app.binky.tracker.ui.setup
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -19,14 +21,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.backup.BackupScopePicker
 import app.binky.tracker.ui.backup.PhotosNotProtectedNote
 import app.binky.tracker.ui.common.GroupedCard
+import app.binky.tracker.ui.common.RecordButtonHeight
+import app.binky.tracker.ui.common.RecordButtonRadius
+import app.binky.tracker.ui.common.SectionHeader
 import app.binky.tracker.ui.common.openSystemBackupSettings
 import app.binky.tracker.ui.reminders.RemindersOptIn
 import app.binky.tracker.ui.shell.BunnySummary
@@ -57,40 +65,42 @@ fun SetupBunnyStep(
     SetupStep(
         step = 1,
         title = stringResource(R.string.setup_bunny_title),
+        // The one step with no card on it, so it keeps the wide text inset rather than lining up
+        // with cards it does not have.
+        gutter = Spacing.section,
         modifier = modifier,
     ) {
-        Text(text = stringResource(R.string.setup_bunny_body), style = MaterialTheme.typography.bodyMedium)
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.base)) {
+            Text(text = stringResource(R.string.setup_bunny_body), style = MaterialTheme.typography.bodyMedium)
 
-        if (added) {
-            Text(
-                // Two strings rather than a `<plurals>`: the singular names the bunny and the
-                // plural cannot, so they are different sentences, not one sentence with a count in
-                // it. Pluralising a string whose *argument* changes shape is how a translation ends
-                // up with a name where a number should be (ADR-0013).
-                text =
-                    if (bunnies.size == 1) {
-                        stringResource(R.string.setup_bunny_added_one, bunnies.first().name)
-                    } else {
-                        stringResource(R.string.setup_bunny_added_many)
-                    },
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             if (added) {
-                Button(onClick = onContinue, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.setup_continue))
-                }
-                OutlinedButton(onClick = onAddBunny, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.setup_bunny_add_another))
-                }
-            } else {
-                Button(onClick = onAddBunny, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.setup_bunny_action))
-                }
-                TextButton(onClick = onContinue, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.setup_bunny_skip))
+                Text(
+                    // Two strings rather than a `<plurals>`: the singular names the bunny and the
+                    // plural cannot, so they are different sentences, not one sentence with a count in
+                    // it. Pluralising a string whose *argument* changes shape is how a translation ends
+                    // up with a name where a number should be (ADR-0013).
+                    text =
+                        if (bunnies.size == 1) {
+                            stringResource(R.string.setup_bunny_added_one, bunnies.first().name)
+                        } else {
+                            stringResource(R.string.setup_bunny_added_many)
+                        },
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            // `Spacing.block` above the actions, which the step's own 16dp makes out of 16 more.
+            StepActions(modifier = Modifier.padding(top = Spacing.base)) {
+                if (added) {
+                    PrimaryStepButton(onClick = onContinue, label = stringResource(R.string.setup_continue))
+                    OutlinedButton(onClick = onAddBunny, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.setup_bunny_add_another))
+                    }
+                } else {
+                    PrimaryStepButton(onClick = onAddBunny, label = stringResource(R.string.setup_bunny_action))
+                    TextButton(onClick = onContinue, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.setup_bunny_skip))
+                    }
                 }
             }
         }
@@ -127,57 +137,75 @@ fun SetupBackupStep(
         title = stringResource(R.string.setup_backup_title),
         modifier = modifier,
     ) {
-        Text(text = stringResource(R.string.setup_backup_body), style = MaterialTheme.typography.bodyMedium)
+        // `10f`: the two horizontal rules that used to divide this step were doing the work of
+        // structure, and a line through a screen is the weakest way to say "a new subject starts
+        // here". They become section headers on the app's 24-up / 8-down rhythm — which is why this
+        // column sits at 8dp and every header adds 16 of its own on top.
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+            Text(text = stringResource(R.string.setup_backup_body), style = MaterialTheme.typography.bodyMedium)
 
-        HorizontalDivider()
-
-        Text(text = stringResource(R.string.backup_auto_title), style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = stringResource(R.string.backup_auto_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(text = stringResource(R.string.setup_backup_auto_ask), style = MaterialTheme.typography.bodyMedium)
-        Text(
-            text = stringResource(R.string.backup_auto_photos),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        OutlinedButton(onClick = { context.openSystemBackupSettings() }) {
-            Text(stringResource(R.string.backup_auto_settings_action))
-        }
-
-        HorizontalDivider()
-
-        Text(text = stringResource(R.string.backup_scope_title), style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = stringResource(R.string.setup_backup_scope_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        // The picker draws rows, not a card — Backup shares its card with the photo warning and the
-        // export button, so the caller supplies one. Zero content padding because a selected row is
-        // a full-bleed fill that the card's own corners clip at the ends.
-        GroupedCard(contentPadding = PaddingValues(0.dp)) {
-            BackupScopePicker(scope = state.scope, onSelect = viewModel::setScope)
-        }
-        PhotosNotProtectedNote()
-
-        Text(
-            text = stringResource(R.string.setup_backup_changeable),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            // Continue, not Finish: the reminders step is now the last one, and it is the only place
-            // the wizard ends. Two steps that both wrote the completion flag would be two answers to
-            // one question.
-            Button(onClick = onContinue, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.setup_continue))
+            SectionHeader(
+                text = stringResource(R.string.backup_auto_title),
+                modifier = Modifier.padding(top = Spacing.base),
+            )
+            // What Android's own backup is, what it leaves out, and the one screen that owns the
+            // switch — one subject, so one card, rather than four loose paragraphs the eye has to
+            // group for itself.
+            GroupedCard(contentPadding = PaddingValues(Spacing.base)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.snug)) {
+                    Text(
+                        text = stringResource(R.string.backup_auto_help),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = stringResource(R.string.setup_backup_auto_ask),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = stringResource(R.string.backup_auto_photos),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(
+                        onClick = { context.openSystemBackupSettings() },
+                        modifier = Modifier.padding(top = Spacing.hair),
+                    ) {
+                        Text(stringResource(R.string.backup_auto_settings_action))
+                    }
+                }
             }
-            TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.setup_back))
+
+            SectionHeader(
+                text = stringResource(R.string.backup_scope_title),
+                modifier = Modifier.padding(top = Spacing.base),
+            )
+            // The picker draws rows, not a card — Backup shares its card with the photo warning and the
+            // export button, so the caller supplies one. Zero content padding because a selected row is
+            // a full-bleed fill that the card's own corners clip at the ends.
+            GroupedCard(contentPadding = PaddingValues(0.dp)) {
+                BackupScopePicker(scope = state.scope, onSelect = viewModel::setScope)
+            }
+            // Apricot here and nowhere else on the step: it is the one sentence that describes
+            // something the owner can actually lose. On Backup settings the same note stays plain,
+            // because there it sits inside the export block that already qualifies it (`6c`).
+            PhotosNotProtectedNote(caution = true, modifier = Modifier.padding(top = Spacing.hair))
+
+            Text(
+                text = stringResource(R.string.setup_backup_changeable),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = Spacing.hair),
+            )
+
+            StepActions(modifier = Modifier.padding(top = Spacing.base)) {
+                // Continue, not Finish: the reminders step is now the last one, and it is the only
+                // place the wizard ends. Two steps that both wrote the completion flag would be two
+                // answers to one question.
+                PrimaryStepButton(onClick = onContinue, label = stringResource(R.string.setup_continue))
+                TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.setup_back))
+                }
             }
         }
     }
@@ -211,14 +239,14 @@ fun SetupRemindersStep(
         title = stringResource(R.string.reminders_title),
         modifier = modifier,
     ) {
-        RemindersOptIn()
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.base)) {
+            RemindersOptIn()
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            Button(onClick = viewModel::finish, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.setup_finish))
-            }
-            TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.setup_back))
+            StepActions(modifier = Modifier.padding(top = Spacing.tight)) {
+                PrimaryStepButton(onClick = viewModel::finish, label = stringResource(R.string.setup_finish))
+                TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.setup_back))
+                }
             }
         }
     }
@@ -236,18 +264,73 @@ private fun SetupStep(
     step: Int,
     title: String,
     modifier: Modifier = Modifier,
+    gutter: Dp = Spacing.base,
     content: @Composable () -> Unit,
 ) {
     Column(
-        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                // `Spacing.block` top and bottom: the wizard has no app bar to sit under and no FAB
+                // to clear, so its own breathing room is all there is. The horizontal inset defaults
+                // to the app's card gutter, so the steps that host cards line them up with every
+                // other card in the app rather than indenting them by a wizard-only amount.
+                .padding(start = gutter, end = gutter, top = Spacing.block, bottom = Spacing.block),
+        verticalArrangement = Arrangement.spacedBy(Spacing.base),
     ) {
-        Text(
-            text = stringResource(R.string.setup_step, step, SETUP_STEPS),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Text(text = title, style = MaterialTheme.typography.headlineSmall)
+        // The counter and the title are one block — where you are, and what this is — so they sit at
+        // `tight` while the outer column keeps `base` between that block and the step's content.
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+            Text(
+                text = stringResource(R.string.setup_step, step, SETUP_STEPS),
+                // Tracked out slightly, which is the whole of the difference between a position and a
+                // heading. This is the only orientation on screen: no app bar, no switcher, no nav.
+                style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 0.6.sp),
+                color = MaterialTheme.colorScheme.primary,
+            )
+            // The app's display face, and the wizard is the only place that spends it (`10e`). This
+            // is the first thing anyone sees, and the one moment the product gets to have a voice.
+            Text(text = title, style = MaterialTheme.typography.headlineMedium)
+        }
         content()
+    }
+}
+
+/**
+ * The pair of buttons every step ends with: the way on, filled, and the way back or past, quiet.
+ *
+ * 8dp apart, because they are two answers to one question rather than two sections.
+ */
+@Composable
+private fun StepActions(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(Spacing.tight),
+        modifier = modifier.fillMaxWidth(),
+        content = content,
+    )
+}
+
+/**
+ * A step's one filled action, at the app's primary-button size rather than M3's 40dp default.
+ *
+ * The same shape *Record a weighing* takes: the single action its screen exists for, standing alone
+ * rather than in a row of peers.
+ */
+@Composable
+private fun PrimaryStepButton(
+    onClick: () -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth().height(RecordButtonHeight),
+        shape = RoundedCornerShape(RecordButtonRadius),
+    ) {
+        Text(label)
     }
 }
