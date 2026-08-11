@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +34,7 @@ import app.binky.tracker.R
 import app.binky.tracker.data.DoseStatus
 import app.binky.tracker.data.ScheduledDose
 import app.binky.tracker.theme.Spacing
+import app.binky.tracker.ui.common.BinkyDialog
 import app.binky.tracker.ui.common.Chevron
 import app.binky.tracker.ui.common.GroupedCardItem
 import app.binky.tracker.ui.common.HelpText
@@ -329,24 +329,28 @@ fun DeleteCourseDialog(
     onEndInstead: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.med_delete_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
-                Text(stringResource(R.string.med_delete_body, courseName))
-                if (doseCount > 0) {
-                    Text(pluralStringResource(R.plurals.med_delete_doses, doseCount, doseCount))
-                }
-                if (open) {
-                    HelpText(stringResource(R.string.med_delete_end_help))
-                    OutlinedButton(onClick = onEndInstead, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.med_delete_end_action))
-                    }
-                }
-            }
-        },
+    BinkyDialog(
+        title = stringResource(R.string.med_delete_title),
+        onDismiss = onDismiss,
         confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.action_delete)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
+    ) {
+        // Two children, not four: the dialog spaces its own content at [Spacing.section]'s
+        // neighbour, which is right between *what this deletes* and *what you could do instead* and
+        // too much between a sentence and the count that qualifies it.
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+            Text(stringResource(R.string.med_delete_body, courseName))
+            if (doseCount > 0) {
+                Text(pluralStringResource(R.plurals.med_delete_doses, doseCount, doseCount))
+            }
+        }
+        if (open) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+                HelpText(stringResource(R.string.med_delete_end_help))
+                OutlinedButton(onClick = onEndInstead, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.med_delete_end_action))
+                }
+            }
+        }
+    }
 }
