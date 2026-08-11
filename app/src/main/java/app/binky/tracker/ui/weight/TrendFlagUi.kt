@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -22,6 +21,7 @@ import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.bunny.Age
 import app.binky.tracker.ui.bunny.ageOn
+import app.binky.tracker.ui.common.BinkyDialog
 import app.binky.tracker.ui.common.CautionDot
 import app.binky.tracker.ui.common.GroupedCard
 import java.time.Duration
@@ -238,12 +238,11 @@ fun TrendFlagDialog(
     onDismiss: () -> Unit,
     secondaryAction: (@Composable () -> Unit)? = null,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.trend_flag_title)) },
-        text = { TrendFlagBody(bunnyName, drop, unit, acknowledgedAt = null) },
+    BinkyDialog(
+        title = stringResource(R.string.trend_flag_title),
+        onDismiss = onDismiss,
         confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.tight)) {
                 secondaryAction?.invoke()
                 TextButton(onClick = onAcknowledge) { Text(stringResource(R.string.trend_flag_acknowledge)) }
             }
@@ -251,5 +250,7 @@ fun TrendFlagDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.trend_flag_close)) }
         },
-    )
+    ) {
+        TrendFlagBody(bunnyName, drop, unit, acknowledgedAt = null)
+    }
 }

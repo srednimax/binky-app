@@ -16,7 +16,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -40,6 +39,7 @@ import app.binky.tracker.R
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
+import app.binky.tracker.ui.common.BinkyDialog
 import app.binky.tracker.ui.common.ErrorText
 import app.binky.tracker.ui.common.FieldRadius
 import app.binky.tracker.ui.common.GroupedCard
@@ -295,21 +295,20 @@ private fun DeleteWeighingDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.weight_delete_title)) },
-        text = {
-            Text(
-                stringResource(
-                    R.string.weight_delete_body,
-                    weightLabel(grams, unit),
-                    dateTimeLabel(recordedAt),
-                ),
-            )
-        },
+    BinkyDialog(
+        title = stringResource(R.string.weight_delete_title),
+        onDismiss = onDismiss,
         confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.action_delete)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
+    ) {
+        Text(
+            stringResource(
+                R.string.weight_delete_body,
+                weightLabel(grams, unit),
+                dateTimeLabel(recordedAt),
+            ),
+        )
+    }
 }
 
 /**
@@ -324,15 +323,16 @@ private fun CollisionDialog(
     onAddSecond: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.weight_collision_title)) },
-        text = { Text(pluralStringResource(R.plurals.weight_collision_body, count, count)) },
+    BinkyDialog(
+        title = stringResource(R.string.weight_collision_title),
+        onDismiss = onDismiss,
         confirmButton = { TextButton(onClick = onReplace) { Text(stringResource(R.string.weight_collision_replace)) } },
         dismissButton = {
             TextButton(onClick = onAddSecond) { Text(stringResource(R.string.weight_collision_add_second)) }
         },
-    )
+    ) {
+        Text(pluralStringResource(R.plurals.weight_collision_body, count, count))
+    }
 }
 
 /**
@@ -351,13 +351,14 @@ private fun VisitCollisionDialog(
     onOpenVisit: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.weight_collision_title)) },
-        text = { Text(stringResource(R.string.weight_collision_visit_body)) },
+    BinkyDialog(
+        title = stringResource(R.string.weight_collision_title),
+        onDismiss = onDismiss,
         confirmButton = {
             TextButton(onClick = onAddSecond) { Text(stringResource(R.string.weight_collision_add_second)) }
         },
         dismissButton = { TextButton(onClick = onOpenVisit) { Text(stringResource(R.string.weight_open_visit)) } },
-    )
+    ) {
+        Text(stringResource(R.string.weight_collision_visit_body))
+    }
 }

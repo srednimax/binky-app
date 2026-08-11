@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -29,7 +28,9 @@ import app.binky.tracker.R
 import app.binky.tracker.data.WatchDuration
 import app.binky.tracker.data.WatchState
 import app.binky.tracker.theme.Spacing
+import app.binky.tracker.ui.common.BinkyDialog
 import app.binky.tracker.ui.common.CardRadius
+import app.binky.tracker.ui.common.FieldLabel
 
 /**
  * *Start a watch* — the occupant of the slot `TrendFlagUi` has carried empty since 2c.
@@ -78,22 +79,9 @@ private fun StartWatchDialog(
 ) {
     var duration by remember { mutableStateOf(WatchDuration.Default) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.watch_start_title, bunnyName)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = stringResource(R.string.watch_start_body),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Text(
-                    text = stringResource(R.string.watch_duration_question),
-                    style = MaterialTheme.typography.labelLarge,
-                )
-                WatchDurationChoice(selected = duration, onSelect = { duration = it })
-            }
-        },
+    BinkyDialog(
+        title = stringResource(R.string.watch_start_title, bunnyName),
+        onDismiss = onDismiss,
         confirmButton = {
             TextButton(onClick = { onStart(duration) }) {
                 Text(stringResource(R.string.watch_start_action))
@@ -102,7 +90,18 @@ private fun StartWatchDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
-    )
+    ) {
+        Text(
+            text = stringResource(R.string.watch_start_body),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        // Two children, not three: the question is the chips' label and belongs against them, where
+        // the dialog's own [Spacing.base] belongs between the explanation and the thing being asked.
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+            FieldLabel(stringResource(R.string.watch_duration_question))
+            WatchDurationChoice(selected = duration, onSelect = { duration = it })
+        }
+    }
 }
 
 /** Shared with the expiry prompt: starting and extending ask the same question the same way. */

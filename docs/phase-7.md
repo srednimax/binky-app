@@ -560,6 +560,31 @@ pickers are deliberately left alone: `DatePickerDialog` and the time picker are 
 their own container contract, and re-colouring the frame round a picker that still paints itself
 would only make the two disagree.
 
+**The retrofit finished on 2026-08-11, and it needed its own commit because it was never a route.**
+`3f` decided this file governs *every* dialog, but the conversions rode along with whichever route
+happened to be open — four on `10a`–`10d`, more on the Care details — so when the rewrite table went
+all-✅ there were still **eleven** M3 `AlertDialog`s left, on no row of it. They are the three weight
+prompts (delete, and ADR-0021's two collisions), the observation delete, `TrendFlagDialog`,
+`StartWatchDialog`, `CompleteCareDialog`, `ChooseBunnyDialog`, and **ADR-0004's two ceremonies in
+`BunnyDialogs.kt`**. What remains is three sites and all three are the exemption above:
+`RecordedAtField` and `MedicationCourseEditorScreen` each frame an M3 `TimePicker`, and
+`SearchablePicker` is a picker of the same kind. The last carries a comment saying so, because an
+`AlertDialog` that survives a sweep looks like one the sweep missed.
+
+⚠️ **`BunnyDialogs.kt` hid from the count for the whole sweep, and the filter was mine.** Every
+inventory was `grep -v "Dialogs.kt"`, meant to spare `ui/common/Dialogs.kt` — and it spared
+`BunnyDialogs.kt` too, by substring, so ADR-0004's archive and delete never appeared in a total. The
+count only came right when the final check listed the paths instead of counting them. **Exclude a
+path, never a basename**, and print what is left rather than how many.
+
+**Two of the eleven were not frame swaps, and both cost nothing new.** `CompleteCareDialog` is
+`RecordDoseDialog`'s twin once you see it — the same three questions — so the reminder's name became
+the dialog's **subject** rather than a line of body text, the date took `RecordedAtField`'s section
+shape, and the note took its placeholder as its label. `ChooseBunnyDialog`'s bunny names were bare
+clickable `Text`s at 12dp; they are `ListRow`s in a `GroupedCard` now, which is what every other list
+in the app is made of. Neither needed a parameter added to the idiom — the first batch of the sweep
+that cost the idiom **nothing at all**.
+
 **The subject line is real data or it is absent.** `3f` adds *"Metacam · 0.3 ml · for the 8:00 PM
 dose"* because with two doses a day the course name alone does not say which one you are answering
 for. The name and the amount reuse `MedicationsSection`'s `courseTitle`, so the row you tapped and

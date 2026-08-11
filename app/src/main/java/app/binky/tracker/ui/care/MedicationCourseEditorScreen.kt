@@ -184,6 +184,10 @@ fun MedicationCourseEditorScreen(
                 initialMinute = 0,
                 is24Hour = DateFormat.is24HourFormat(context),
             )
+        // Deliberately **not** a `BinkyDialog`, and the last M3 `AlertDialog` left in the app: this
+        // is a frame around an M3 `TimePicker`, which paints its own container, and re-colouring the
+        // frame round a picker that still paints itself would only make the two disagree. Same
+        // exemption `Dialogs.kt` names for the date picker and `SearchablePicker`.
         AlertDialog(
             onDismissRequest = { pickingTime = false },
             text = { TimePicker(state = pickerState) },
