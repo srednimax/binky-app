@@ -222,7 +222,6 @@
     <string name="setup_backup_title">Keeping your records safe</string>
     <string name="setup_backup_body">Everything lives on this phone, which means a lost phone is a lost history unless something is copying it. Two different things can, and neither one covers everything.</string>
     <string name="setup_backup_auto_ask">Binky cannot tell whether it is switched on, and cannot switch it on for you. Now is a good moment to check.</string>
-    <string name="setup_backup_scope_help">This is what an export you make yourself will contain. It is also the default you can change later.</string>
     <string name="setup_backup_changeable">All of this stays editable in Settings › Backup &amp; restore.</string>
     <string name="setup_finish">Finish setup</string>
 

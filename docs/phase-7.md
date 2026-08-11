@@ -271,9 +271,9 @@ lives* for how to open one without loading the whole file.
 | One document | `10b` / `10b2` | ✅ 2026-08-11. **The one route where "put it in a card" is the wrong answer** — the page stays full-bleed, and gets `surfaceVariant` under it so a page that does not fill the frame has a ground rather than a gap. *Delete document* drops to `onSurfaceVariant` inside the menu |
 | Photos | `10c` / `10c2` | ✅ 2026-08-11. **The one screen that goes edge to edge**, and the drawing says so — the grid keeps its 2dp bleed while everything the app *says* stays in the 16dp gutter |
 | One photo | `10d` / `10d2` | ✅ 2026-08-11. The caption line is the only thing drawn: a missing caption stays `onSurfaceVariant` and reads *Add one*, so it cannot pass for a caption that failed to load |
-| Setup, steps 1-3 | `10e`–`10g` / `10e2`–`10g2` | **Not built yet.** One frame per step, as `SetupBunny`/`SetupBackup`/`SetupReminders` already are |
-| Reminders opt-in | `10h` / `10h2` | **Not built yet.** Drawn at the point of use — *"the same body, in a sheet, blocked"* |
-| Schema mismatch | `10i` / `10i2`, `10j` / `10j2` | **Not built yet**, and it is **two** variants: debug *"the wipe is happening; the choice is whether you look first"*, release *"nothing is destroyed, and there is no forward"* |
+| Setup, steps 1-3 | `10e`–`10g` / `10e2`–`10g2` | ✅ 2026-08-11. **The wizard is the one place with no app bar, no switcher and no nav**, so the step counter is the only orientation on screen — tracked out to read as a position, not a heading — and the title takes `headlineMedium`, the display face the wizard alone spends. Step 2's two horizontal rules become the header rhythm and its four loose paragraphs become one card. Step 3 answers *two filled buttons on one screen* with **containment rather than demotion** |
+| Reminders opt-in | `10h` / `10h2` | ✅ 2026-08-11. Every drawn state already shipped — blocked lines in `onSurfaceVariant` not `error`, the button swapping to *Open notification settings*, the battery card absent when nothing will be delivered. What it was missing was a **name**: the block opened mid-explanation. The drawing's sheet framing is **not adopted** — see below |
+| Schema mismatch | `10i` / `10i2`, `10j` / `10j2` | ✅ 2026-08-11. Two variants, one screen: the path and the two sentences about the copy **group into one card**, and the path gains a container of its own because a file path wrapping mid-name on a plain background is unreadable and this one has to be typed somewhere else. The single deliberate difference is emphasis — **share is filled in release**, where it is the only action, and outlined in debug, where the continue outranks it |
 | One course | `10k` / `10k2` | ✅ 2026-08-11. The facts and the three actions become **one card**, with *End the course* below a hairline rather than a gap — a rule separates two kinds of action, where a gap would separate two subjects. The dose history goes from three stacked cards to one grouped card of rows |
 | One reminder | `10l` / `10l2` | ✅ 2026-08-11, and it is `10k` again on purpose: a course and a reminder are the same shape. What differs is what sits below the hairline — the **calendar hand-off**, the one action here that is about the repeat rather than this occurrence. Adds the sweep's only new mark: an **overdue reminder takes the [`CautionDot`]** |
 | Reminder editor | `10m` / `10m2` | ✅ 2026-08-11. Kind, name and interval are **one card** — one answer in three parts, and the unit chips belong beside the number they inflect. The read-back line sits outside every card, last before the fold. Cost the idiom `ChangeableValueRow.stacked` |
@@ -295,6 +295,41 @@ Everything above now has a mockup in both themes. Three things are worth carryin
   in *light only* became a 482 KB one with the dark twins, and **every byte offset moved** (`9a`:
   73032 → 136728). Re-`grep -bo` after any re-download; a slice offset does not survive one.
   `github.md`'s closing line is the cheapest freshness check there is.
+
+**Two things in the last batch were declined, and both for the same reason: a drawing can describe
+behaviour it is not the drawing's place to change.**
+
+- **`10h` frames the opt-in as a modal sheet over a dimmed Care & Meds, and the app hosts it inline
+  at the foot of that screen.** Every *drawn* decision on the frame — the blocked lines in
+  `onSurfaceVariant` rather than `error`, the button swapping to *Open notification settings*, the
+  battery card absent because nothing is going to be delivered anyway — already shipped correct. What
+  is left is a sheet, which is a behaviour change with a trigger to design, not a redraw; and the
+  inline foot of Care & Meds *is* the point of use ADR-0006 asks for. What the frame did win is the
+  **title**: the block used to open on a paragraph explaining what reminders are for, and a block
+  that opens mid-explanation cannot say what it is. It takes a `SectionHeader` rather than the sheet's
+  title, because here it is the last section of a scrolling screen. No new string — the wizard's own
+  step title already says *Reminders*.
+- **`10f` puts the wizard's gutter at 20dp and gives the reason as "so the cards line up with every
+  other card in the app".** Every other card in the app is at 16dp, and `Spacing` has no 20. The
+  reason is right and the number is the mockup's own rounding, so steps 2 and 3 take `Spacing.base`
+  and the reason comes true. Step 1 keeps `Spacing.section`: it is the one step with no card on it,
+  so it has nothing to line up with, and 24dp is the right inset for a screen that is only type.
+
+**All six were seen on the phone, and the wizard turned out to be both reachable and recoverable.**
+`edge-to-edge.py` already carried `wipe()`, `reset_to_seeded()` and scenes for all three steps, so
+the seed a wipe takes is put back by the same run — what made the earlier "code-only" call right was
+the 5 Aug run that wiped with nothing to restore from, and that gap is closed. Check §1 is **not
+armed** first. `fake_schema_mismatch()` covers `10i` without touching the database; `10j` needed a
+throwaway `destructiveMigrationAllowed()` patch, reverted after.
+
+**The pass found one real defect, and it is the exact rule `10g` exists to answer.** `pm clear`
+revokes `POST_NOTIFICATIONS`, so the honest first-run step 3 is the **blocked** state — which `10g`
+never draws, because it draws the armed one. There, *Turn reminders on* rendered as a bare filled
+button directly above *Finish setup*: two filled buttons on one surface. The fix is the frame's own
+answer applied to a state it did not arrange — the blocked ask takes the same apricot surface as the
+battery ask, and its button becomes the filled button of that card. **A frame that draws one state
+has said nothing about the others**, and this is the third time the sweep has paid for that (`2a`,
+`4e`, now `10g`) — the first where the state it skipped was the *common* one rather than the rare one.
 
 **`ui/common/Surfaces.kt` is where the idiom lives, and every remaining row above depends on it.**
 The mockups draw the same four things screen after screen — `SectionHeader`, `GroupedCard`, `FactRow`,

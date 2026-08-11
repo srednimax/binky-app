@@ -2,12 +2,16 @@ package app.binky.tracker.ui.reminders
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -23,7 +27,11 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
+import app.binky.tracker.ui.common.CardRadius
+import app.binky.tracker.ui.common.RecordButtonHeight
+import app.binky.tracker.ui.common.RecordButtonRadius
 import app.binky.tracker.work.NotificationPermissionOutcome
 import app.binky.tracker.work.ReminderChannel
 import app.binky.tracker.work.ReminderDelivery
@@ -145,6 +153,19 @@ fun RemindersOptIn(modifier: Modifier = Modifier) {
  *
  * A blocked state does **not** stop reminders being created. The Care screen carries overdue state on
  * its own, so the reminder is still worth having; it just must not claim it will notify.
+ *
+ * **It takes [AndroidStateCard], which the device pass is what found.** `10g` draws the wizard's third
+ * step *armed*, so it never arranged the state a genuine first run is actually in: a fresh install has
+ * no notification permission, and this ask rendered as a bare filled button directly above *Finish
+ * setup* — two filled buttons on one surface, which is the exact rule `10g` exists to answer. Its
+ * answer is containment rather than demotion, so the ask gets a surface of its own and its button
+ * becomes the filled button *of that surface*. The two asks are the same class of thing anyway: an
+ * Android state that stops delivery, and the one screen that changes it.
+ *
+ * `10h` draws this state uncarded, and that is the one place the drawing is not followed — it draws
+ * the sheet, where the ask is the only filled button on screen and a card buys nothing. One
+ * composable serves both hosts (ADR-0006's arithmetic about denials), so the containment has to hold
+ * in the host where it is load-bearing.
  */
 @Composable
 private fun BlockedState(
@@ -153,33 +174,72 @@ private fun BlockedState(
     onAsk: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+    AndroidStateCard {
         Text(
             text = stringResource(R.string.reminders_state_blocked),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (permanentlyDenied) {
             Text(
                 text = stringResource(R.string.reminders_permanently_denied),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.reminders_open_settings_action))
-            }
+            CardPrimaryButton(
+                onClick = onOpenSettings,
+                label = stringResource(R.string.reminders_open_settings_action),
+            )
         } else {
             if (deniedOnce) {
                 Text(
                     text = stringResource(R.string.reminders_denied_once),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Button(onClick = onAsk, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.reminders_enable_action))
-            }
+            CardPrimaryButton(onClick = onAsk, label = stringResource(R.string.reminders_enable_action))
         }
+    }
+}
+
+/**
+ * The surface the two Android-state asks share: apricot, and containing its own filled button.
+ *
+ * Apricot is `Color.kt`'s caution role, and caution is exactly the register — nothing is broken and
+ * nothing the owner did is wrong. `onTertiaryContainer` carries every glyph on it, because that
+ * pairing is contrast-checked by construction where a stray `onSurfaceVariant` on it is not; the
+ * quieting these lines used to do with colour is done by the card itself now.
+ */
+@Composable
+private fun AndroidStateCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(CardRadius),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+    ) {
+        Column(
+            modifier = Modifier.padding(Spacing.base),
+            verticalArrangement = Arrangement.spacedBy(Spacing.tight),
+            content = content,
+        )
+    }
+}
+
+/** A card's own filled action, at the app's primary-button size. */
+@Composable
+private fun CardPrimaryButton(
+    onClick: () -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth().height(RecordButtonHeight),
+        shape = RoundedCornerShape(RecordButtonRadius),
+    ) {
+        Text(label)
     }
 }
 
@@ -198,28 +258,53 @@ private fun DeliveryLine(
     }
 }
 
+/**
+ * The one thing standing between an armed reminder and one that actually arrives — **apricot, and
+ * containing its own filled button** (`10g`).
+ *
+ * Two filled buttons on one screen breaks the app's one-filled-button rule, and setup's third step
+ * would have exactly that: this ask and *Finish setup*. The fix is containment rather than demotion.
+ * The card is a surface of its own, so its button is the filled button *of the card* while Finish is
+ * the filled button of the screen — the same nesting the trend flag uses inside a bunny card. A
+ * demoted ask would be the wrong answer, because this is the difference between reminders working
+ * and reminders silently not.
+ *
+ * Apricot is `Color.kt`'s caution role, and this is caution rather than alarm: nothing is broken and
+ * nothing the owner did is wrong. `onTertiaryContainer` carries the text *and* the dismissal, because
+ * that pairing is contrast-checked by construction where a stray `primary` on apricot is not.
+ */
 @Composable
 private fun BatteryExemptionCard(
     onAllow: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    AndroidStateCard {
+        Text(
+            text = stringResource(R.string.reminders_battery_title),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+            text = stringResource(R.string.reminders_battery_body),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        // The pair sits `hair` apart and `base` below the paragraph, so the two buttons read as
+        // one choice rather than two more items in the card's list.
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.hair),
+            modifier = Modifier.padding(top = Spacing.tight),
         ) {
-            Text(
-                text = stringResource(R.string.reminders_battery_title),
-                style = MaterialTheme.typography.titleMedium,
+            CardPrimaryButton(
+                onClick = onAllow,
+                label = stringResource(R.string.reminders_battery_action),
             )
-            Text(
-                text = stringResource(R.string.reminders_battery_body),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Button(onClick = onAllow, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.reminders_battery_action))
-            }
-            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                colors =
+                    ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    ),
+            ) {
                 Text(stringResource(R.string.reminders_battery_dismiss))
             }
         }

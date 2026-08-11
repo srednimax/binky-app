@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import app.binky.tracker.R
 import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.common.CaveatCard
+import app.binky.tracker.ui.common.SectionHeader
 import app.binky.tracker.work.ReminderChannel
 import app.binky.tracker.work.ReminderDelivery
 import app.binky.tracker.work.canScheduleExactAlarms
@@ -85,7 +86,16 @@ fun ReminderCaveats(
 
     Column(modifier = modifier.padding(top = Spacing.section)) {
         if (ask) {
-            RemindersOptIn()
+            // `10h` draws the opt-in under a heading, because its first line is a paragraph about
+            // what reminders are for and a block that opens mid-explanation cannot say what it is.
+            // A `SectionHeader` rather than the drawing's sheet title: here it is the last section of
+            // a scrolling screen, not the top of its own surface, and it sits on the same rhythm as
+            // every other header on Care & Meds. No new string — the wizard's step title already
+            // says "Reminders" (ADR-0013).
+            SectionHeader(text = stringResource(R.string.reminders_title))
+            Column(modifier = Modifier.padding(top = Spacing.tight)) {
+                RemindersOptIn()
+            }
         } else if (caveat != null) {
             CaveatCard(
                 title = stringResource(caveat.title),

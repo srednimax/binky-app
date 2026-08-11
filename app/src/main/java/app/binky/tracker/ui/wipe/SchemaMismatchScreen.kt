@@ -2,11 +2,14 @@ package app.binky.tracker.ui.wipe
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,7 +32,17 @@ import app.binky.tracker.R
 import app.binky.tracker.SchemaMismatch
 import app.binky.tracker.data.PRESERVED_DIRECTORY
 import app.binky.tracker.data.preservedCopyOf
+import app.binky.tracker.theme.Spacing
+import app.binky.tracker.ui.common.GroupedCard
+import app.binky.tracker.ui.common.RecordButtonHeight
+import app.binky.tracker.ui.common.RecordButtonRadius
 import app.binky.tracker.ui.common.sharePreservedCopy
+
+/**
+ * The path chip's corner — smaller than any card's, because it is a fragment of text with a
+ * background rather than a surface of its own.
+ */
+private val PathRadius = 10.dp
 
 /**
  * The blocking screen that stands between a schema this build does not know and the database
@@ -71,9 +84,12 @@ fun SchemaMismatchScreen(
                     // would otherwise draw its title beneath the status bar.
                     .safeDrawingPadding()
                     .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(horizontal = Spacing.section, vertical = Spacing.block),
+            verticalArrangement = Arrangement.spacedBy(Spacing.base),
         ) {
+            // No app bar, no nav and one way out, so the heading carries the whole orientation:
+            // `headlineSmall`, the app's largest non-display size, standing on the background rather
+            // than in a card.
             Text(
                 text =
                     stringResource(
@@ -89,54 +105,105 @@ fun SchemaMismatchScreen(
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(
+                // The two format numbers are corroboration for the sentence above, not news of their
+                // own — so they drop to `onSurfaceVariant` rather than sitting at the same weight.
                 text = stringResource(R.string.wipe_versions, mismatch.fromVersion, mismatch.toVersion),
                 style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                text =
-                    stringResource(
-                        if (mismatch.wipeOnConsent) {
-                            R.string.wipe_copy_taken
-                        } else {
-                            R.string.schema_refused_copy_taken
-                        },
-                    ),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                // The path as the owner would find it, not the absolute one, which changes across
-                // installs and means nothing on screen.
-                text = "files/$PRESERVED_DIRECTORY/${mismatch.preservedCopy.name}",
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = FontFamily.Monospace,
-            )
-            Text(
-                text =
-                    stringResource(
-                        if (mismatch.wipeOnConsent) R.string.wipe_copy_reach else R.string.schema_refused_reach,
-                    ),
-                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            // Offered in both variants, and the *only* action in the release one. Settings is
-            // unreachable from here — the app behind this screen has not opened.
-            OutlinedButton(
-                onClick = { context.sharePreservedCopy(preservedCopyOf(mismatch.preservedCopy)) },
-                modifier = Modifier.fillMaxWidth(),
+            // **One card, because the copy is one subject**: where it is, and what can be done with
+            // it. What separates it from the news above is the card itself (`10i`).
+            GroupedCard(
+                contentPadding = PaddingValues(Spacing.base),
+                modifier = Modifier.padding(top = Spacing.tight),
             ) {
-                Text(stringResource(R.string.preserved_share))
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.snug)) {
+                    Text(
+                        text =
+                            stringResource(
+                                if (mismatch.wipeOnConsent) {
+                                    R.string.wipe_copy_taken
+                                } else {
+                                    R.string.schema_refused_copy_taken
+                                },
+                            ),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(PathRadius),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    ) {
+                        Text(
+                            // The path as the owner would find it, not the absolute one, which
+                            // changes across installs and means nothing on screen. It gets a
+                            // container of its own because a file path wrapping mid-name across a
+                            // plain background is unreadable, and this one has to be typed out
+                            // somewhere else.
+                            text = "files/$PRESERVED_DIRECTORY/${mismatch.preservedCopy.name}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier.padding(horizontal = Spacing.snug, vertical = Spacing.tight),
+                        )
+                    }
+                    Text(
+                        text =
+                            stringResource(
+                                if (mismatch.wipeOnConsent) {
+                                    R.string.wipe_copy_reach
+                                } else {
+                                    R.string.schema_refused_reach
+                                },
+                            ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    // Sits with the copy it acts on, inside the card, in both variants — and its
+                    // *emphasis* is the one deliberate difference between them. In release it is the
+                    // only action on the screen, so it takes the filled shape the app reserves for
+                    // the thing that matters most; in debug the destructive continue outranks it and
+                    // it stays outlined.
+                    val share = { context.sharePreservedCopy(preservedCopyOf(mismatch.preservedCopy)) }
+                    if (mismatch.wipeOnConsent) {
+                        OutlinedButton(
+                            onClick = share,
+                            modifier = Modifier.padding(top = Spacing.hair),
+                        ) {
+                            Text(stringResource(R.string.preserved_share))
+                        }
+                    } else {
+                        Button(
+                            onClick = share,
+                            modifier =
+                                Modifier
+                                    .padding(top = Spacing.hair)
+                                    .fillMaxWidth()
+                                    .height(RecordButtonHeight),
+                            shape = RoundedCornerShape(RecordButtonRadius),
+                        ) {
+                            Text(stringResource(R.string.preserved_share))
+                        }
+                    }
+                }
             }
 
             if (mismatch.wipeOnConsent) {
                 if (working) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                 } else {
+                    // The screen's filled button, and it says what it does rather than "OK".
                     Button(
                         onClick = {
                             working = true
                             onContinue()
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier =
+                            Modifier
+                                .padding(top = Spacing.tight)
+                                .fillMaxWidth()
+                                .height(RecordButtonHeight),
+                        shape = RoundedCornerShape(RecordButtonRadius),
                     ) {
                         Text(stringResource(R.string.wipe_continue))
                     }

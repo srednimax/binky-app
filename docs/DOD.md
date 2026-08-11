@@ -401,6 +401,62 @@ exists. These are the items that come first.
       at 6:47 PM", and two text buttons at M3's 58dp minimum width leave it about 250dp. Accepted —
       the row is still half the height of the card it replaced — but it is the reason a drawing's
       one-line row is a claim about *that* date format and not about the layout.
+      ✅ **The last six frames are done** — 2026-08-11, `10e`–`10j`: the three setup steps, the
+      reminders opt-in and both schema-mismatch variants. **Every drawn route in the sweep is now
+      redrawn**, and this time the line is checked against the table rather than against itself.
+      The wizard is *the one place in Binky with no app bar, no switcher and no nav*, which is what
+      the whole of `10e` follows from: the step counter is the only orientation on screen, so it is
+      tracked out to read as a position rather than a heading, and the title takes the display face
+      the wizard alone spends. Step 2's **two horizontal rules become the header rhythm** — a line
+      through a screen is the weakest way to say a new subject starts here — and its four loose
+      paragraphs about Android's own backup become one card, because they are one subject. Step 3
+      answers *two filled buttons on one screen* with **containment rather than demotion**: the
+      battery ask sits in an apricot card and its button is the filled button *of that card*, while
+      *Finish setup* is the filled button of the screen. Demoting it would have been the wrong answer
+      — it is the difference between reminders working and reminders silently not.
+      `10i`/`10j` are one screen in two states, and the only deliberate difference is emphasis:
+      **share is filled in release**, where it is the only action, and outlined in debug, where the
+      destructive continue outranks it. The path gains a container of its own, because a file path
+      wrapping mid-name across a plain background is unreadable and this is the one string on the
+      screen an owner has to type somewhere else.
+      **One string was removed and none added** — step 2's scope help line, which `10f` drops
+      because the header above it now says the same thing. Removed from both locales (ADR-0013).
+      The idiom cost **one parameter**: `PhotosNotProtectedNote.caution`, and the difference it names
+      is *where the note stands*. Inside Backup's export block a plain tint is enough, because the
+      block already qualifies it; standing alone between two cards on step 2 it is the one sentence
+      describing something the owner can lose, so it takes apricot and the dot.
+      ℹ️ **Two of the drawings were declined, both because a frame described behaviour rather than
+      looks.** `10h` frames the opt-in as a modal sheet where the app hosts it inline at the foot of
+      Care & Meds — a sheet is a trigger to design, not a redraw, and the inline foot *is* ADR-0006's
+      point of use. Every state the frame actually draws already shipped correct; what it won was a
+      **title**, since the block used to open on a paragraph explaining what reminders are for.
+      `10f`'s 20dp gutter was taken as `Spacing.base`: the drawing's stated reason — *so the cards
+      line up with every other card in the app* — is right, every other card is at 16dp, and
+      `Spacing` has no 20.
+      ⚠️ **The device pass found a real defect, and it is the exact rule `10g` exists to answer.**
+      All six frames were seen on the phone in light and dark — the wizard through the driver's
+      `empty` suite, both mismatch variants through `fake_schema_mismatch`, and `10j` through a
+      throwaway `destructiveMigrationAllowed()` patch, reverted. **`10g` draws step 3 *armed*, so it
+      never arranged the state a genuine first run is in**: `pm clear` revokes `POST_NOTIFICATIONS`,
+      so the honest first-run step 3 is *blocked* — and there *Turn reminders on* rendered as a bare
+      filled button directly above *Finish setup*. Two filled buttons on one surface. The fix is the
+      frame's own: containment, so the blocked ask takes the same apricot surface its sibling battery
+      ask just got, and its button becomes the filled button *of that card*. The two asks are the
+      same class anyway — an Android state that stops delivery, and the one screen that changes it.
+      This is `10h`'s geometry declined a second time, and for the same reason: it draws the ask
+      uncarded *in the sheet*, where it is the only filled button on screen and a card buys nothing.
+      **A frame that draws one state has said nothing about the others** — the third time this sweep
+      has paid for that (`2a`, `4e`, now `10g`), and the first where the missing state was the
+      *common* one rather than the rare one.
+      ℹ️ **The other device finding was padding**: the apricot photo note kept the 12dp it has inside
+      Backup's export block, and standing alone between two 16dp cards on step 2 it read as cramped.
+      The caution variant takes 16dp horizontally; the plain one keeps 12, where matching its
+      parent would push its text out to the card's own edge.
+      ℹ️ **The wizard is reachable and recoverable after all, which retires `4c`'s objection for this
+      route.** `edge-to-edge.py` already had `wipe()` **and** `reset_to_seeded()`, and scenes for all
+      three steps; the seed the wipe takes is put back by the same run. What made the earlier call
+      right was the 5 Aug run that wiped and had nothing to restore with — that gap is closed.
+      Check §1 is **not armed** before running it, which it was not on 2026-08-11.
       ✅ **Four more `AlertDialog` sites took the retrofit** — the course-delete, dose-delete,
       reminder-delete and completion-delete confirmations, plus the visit-delete and attach-a-document
       dialogs, so six on this batch. The attach dialog dropped a `LazyColumn` doing so, for the third

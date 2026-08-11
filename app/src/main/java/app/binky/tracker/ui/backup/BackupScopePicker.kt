@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.Role
 import app.binky.tracker.R
 import app.binky.tracker.data.backup.BackupScope
 import app.binky.tracker.theme.Spacing
+import app.binky.tracker.ui.common.CautionDot
 import app.binky.tracker.ui.common.HelpText
 import app.binky.tracker.ui.common.ListRowHeight
 import app.binky.tracker.ui.common.NestedCardRadius
@@ -120,19 +121,58 @@ fun BackupScopePicker(
  * two sections belonging to neither — and keeps it on a surface of its own so it does not read as one
  * more scope description. [NestedCardRadius], because a card inside a card matching its parent's
  * corner reads as a rendering mistake.
+ *
+ * [caution] is the setup wizard's variant (`10f`), and the difference is where the note stands rather
+ * than what it says. On Backup settings it sits *inside* the export block, under a header and above
+ * the button it qualifies, so the block itself supplies the context and a plain tint is enough. On
+ * step 2 it stands on the background between two cards, and it is the one sentence on that step
+ * describing something the owner can actually lose — so it takes apricot and the caution dot, which
+ * `Color.kt` reserves for exactly this. Never both variants on one screen.
  */
 @Composable
-fun PhotosNotProtectedNote(modifier: Modifier = Modifier) {
+fun PhotosNotProtectedNote(
+    modifier: Modifier = Modifier,
+    caution: Boolean = false,
+) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(NestedCardRadius),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        color =
+            if (caution) {
+                MaterialTheme.colorScheme.tertiaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHigh
+            },
+        // `onTertiaryContainer` for everything on apricot, because that pairing is contrast-checked
+        // by construction where a stray `onSurface` on it is not.
+        contentColor =
+            if (caution) {
+                MaterialTheme.colorScheme.onTertiaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
     ) {
-        Text(
-            text = stringResource(R.string.backup_photos_warning),
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(Spacing.snug),
-        )
+        Row(
+            // The caution variant stands alone between two 16dp cards, and 12dp all round read as
+            // cramped beside them on the device. The plain variant keeps 12: it is nested *inside*
+            // the export block, where matching its parent's padding would push its text out to meet
+            // the card's own edge.
+            modifier =
+                if (caution) {
+                    Modifier.padding(horizontal = Spacing.base, vertical = Spacing.snug)
+                } else {
+                    Modifier.padding(Spacing.snug)
+                },
+            horizontalArrangement = Arrangement.spacedBy(Spacing.snug),
+        ) {
+            // Top-padded rather than centred: the dot marks the paragraph's first line, and a dot
+            // centred against four lines of type floats in the middle of nothing.
+            if (caution) CautionDot(modifier = Modifier.padding(top = Spacing.hair))
+            Text(
+                text = stringResource(R.string.backup_photos_warning),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
     }
 }
 

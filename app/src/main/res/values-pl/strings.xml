@@ -237,7 +237,6 @@
     <string name="setup_backup_title">Bezpieczeństwo Twoich zapisów</string>
     <string name="setup_backup_body">Wszystko jest na tym telefonie, więc zgubiony telefon to stracona historia, o ile nic jej nie kopiuje. Mogą to robić dwie różne rzeczy i żadna z nich nie obejmuje wszystkiego.</string>
     <string name="setup_backup_auto_ask">Binky nie potrafi sprawdzić, czy jest włączona, ani jej za Ciebie włączyć. To dobry moment, żeby to sprawdzić.</string>
-    <string name="setup_backup_scope_help">To będzie zawartość eksportu robionego samodzielnie. To także ustawienie domyślne, które można później zmienić.</string>
     <string name="setup_backup_changeable">Wszystko to można zmienić w Ustawieniach › Kopia zapasowa i przywracanie.</string>
     <string name="setup_finish">Zakończ konfigurację</string>
 
