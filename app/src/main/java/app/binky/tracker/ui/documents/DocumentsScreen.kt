@@ -6,20 +6,22 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -34,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalResources
@@ -43,9 +46,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
+import app.binky.tracker.ui.common.Chevron
+import app.binky.tracker.ui.common.GroupedCardItem
+import app.binky.tracker.ui.common.ListRowHeight
+import app.binky.tracker.ui.common.MessageCard
 import app.binky.tracker.ui.weight.instantDateLabel
 import coil3.compose.AsyncImage
+
+/** `10a`'s tile: the same 56dp as before, rounded so it matches the avatar treatment. */
+private val ThumbnailSize = 56.dp
+
+private val ThumbnailRadius = 12.dp
 
 /**
  * A bunny's paperwork: a list of documents, and the scanner behind the "+".
@@ -60,6 +73,18 @@ import coil3.compose.AsyncImage
  *
  * [readOnly] is the archived scope (ADR-0004): scanning is **absent** rather than present and
  * refusing, and every document is still here to read.
+ *
+ * ## Phase 7, against `10a`
+ *
+ * Three changes, and every one of them is a rule from elsewhere applied here rather than a decision
+ * this screen makes: the rows **group into one card** with inset dividers instead of running
+ * full-bleed with a rule across the background; each row **gains a chevron**, because it opens
+ * something; and the thumbnail becomes a **rounded tile** rather than a hard square, which is the
+ * treatment the avatars already take.
+ *
+ * Scanning **stays in the app bar** and does not become a FAB. This is a detail screen with a bar of
+ * its own, and the gallery beside it needs a menu up there rather than a button — two sibling routes
+ * putting their one way in at opposite ends of the screen is the inconsistency, not the fix.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -140,16 +165,38 @@ fun DocumentsScreen(
             state.loading -> Unit
             state.documents.isEmpty() -> EmptyDocuments(readOnly = readOnly)
             else ->
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(state.documents, key = { it.id }) { document ->
-                        DocumentListRow(document = document, onClick = { onOpenDocument(document.id) })
-                        HorizontalDivider()
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding =
+                        PaddingValues(
+                            start = Spacing.base,
+                            end = Spacing.base,
+                            top = Spacing.tight,
+                            bottom = Spacing.section,
+                        ),
+                ) {
+                    // `GroupedCardItem` rather than a `GroupedCard` around the lot: a bunny's
+                    // paperwork can run to dozens of rows, and one card wrapping them would be a
+                    // single lazy item — every row composed whether or not it is on screen.
+                    itemsIndexed(state.documents, key = { _, it -> it.id }) { index, document ->
+                        GroupedCardItem(index = index, count = state.documents.size) {
+                            DocumentListRow(
+                                document = document,
+                                onClick = { onOpenDocument(document.id) },
+                            )
+                        }
                     }
                 }
         }
     }
 }
 
+/**
+ * Drawn by hand rather than through [app.binky.tracker.ui.common.ListRow], for the same reason the
+ * vet directory is: a `ListRow` is a title, one subtitle and a trailing slot, and this carries a
+ * leading thumbnail and **two** lines under the title. It borrows the height and the trailing
+ * chevron so it still reads as one of the app's rows.
+ */
 @Composable
 private fun DocumentListRow(
     document: DocumentRow,
@@ -157,11 +204,19 @@ private fun DocumentListRow(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.base),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .heightIn(min = ListRowHeight)
+                .padding(horizontal = Spacing.base, vertical = Spacing.snug),
     ) {
         PageThumbnail(document)
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(Spacing.hair),
+            modifier = Modifier.weight(1f),
+        ) {
             Text(text = document.title, style = MaterialTheme.typography.titleMedium)
             Text(
                 text =
@@ -185,15 +240,25 @@ private fun DocumentListRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        Chevron()
     }
 }
 
-/** **Missing media renders as a placeholder, never a crash** (house rule). */
+/**
+ * **Missing media renders as a placeholder, never a crash** (house rule).
+ *
+ * Rounded rather than square since `10a`: a hard-edged square is the one shape nothing else in the
+ * app uses, and the same corner the avatars take makes the tile read as belonging to its row.
+ */
 @Composable
 private fun PageThumbnail(document: DocumentRow) {
     val missing = rememberVectorPainter(Icons.Filled.Info)
     Box(
-        modifier = Modifier.size(56.dp).background(MaterialTheme.colorScheme.surfaceVariant),
+        modifier =
+            Modifier
+                .size(ThumbnailSize)
+                .clip(RoundedCornerShape(ThumbnailRadius))
+                .background(MaterialTheme.colorScheme.surfaceVariant),
     ) {
         AsyncImage(
             model = remember(document.thumbnail) { document.thumbnail?.let(Uri::fromFile) },
@@ -206,21 +271,22 @@ private fun PageThumbnail(document: DocumentRow) {
     }
 }
 
+/**
+ * `10a` draws the empty state **in place**, as a card where the first row would be, rather than as a
+ * screen of its own — so an empty directory is the same class of object as a full one.
+ *
+ * In the archived scope there is no way in to invite, so the sentence stands alone (ADR-0004).
+ */
 @Composable
 private fun EmptyDocuments(readOnly: Boolean) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(text = stringResource(R.string.documents_empty), style = MaterialTheme.typography.titleMedium)
-        if (!readOnly) {
-            Text(
-                text = stringResource(R.string.documents_empty_help),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+    MessageCard(
+        title = if (readOnly) null else stringResource(R.string.documents_empty),
+        text =
+            stringResource(
+                if (readOnly) R.string.documents_empty else R.string.documents_empty_help,
+            ),
+        modifier = Modifier.padding(horizontal = Spacing.base, vertical = Spacing.tight),
+    )
 }
 
 /**

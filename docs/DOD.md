@@ -339,6 +339,26 @@ exists. These are the items that come first.
       the app bar** — `3e` draws a bottom filled button and then recommends against it in its own
       notes, and the change was taken deliberately rather than slipped in, so **every editor left in
       the sweep has one chrome to copy**.
+      ✅ **The media pair is done** — 2026-08-11, `10a`–`10d`: Documents list and detail, Photos grid
+      and viewer, all four seen on the device in light and dark. Between them they say where the
+      language **stops**. `10b` is the one route where *put it in a card* is the wrong answer — a scan
+      of a sheet is the content, so the page stays full-bleed and takes `surfaceVariant` under it, and
+      the band that gives a page which does not fill the frame is only visible on the phone. `10c` is
+      the one screen that goes **edge to edge** at all: the grid keeps its 2dp bleed while everything
+      the app *says* about the photos — the import bar, the viewer's date and caption — stays in the
+      16dp gutter, so the rhythm still holds wherever there is type. The empty states moved **in
+      place**, as a card where the first row would be, which cost the idiom **one parameter**
+      (`MessageCard`'s optional `title`) — the third such, after `ListRow`'s `enabled` and
+      `SingleLineRowHeight`. **No string added, changed or moved on any of the four.**
+      The device pass earned its keep on `10d`: *Add one* was pushed to the far screen edge by a
+      `weight(1f)` on the caption, where the drawing sets it **beside** the caption it acts on.
+      `weight(1f, fill = false)` is the fix and the whole of that line's design — a short caption and
+      its action stay a pair, a long one still wraps rather than shoving the button off.
+      ✅ **Four of the ~20 `AlertDialog` sites took the retrofit `3f`/`3g` asked for**, since they sit
+      on routes this batch was redrawing anyway: rename, attach-to-a-visit, manage-pages and both
+      delete confirmations now call `BinkyDialog`. Two of them dropped a `LazyColumn` doing so —
+      `BinkyDialog` scrolls its own content, and a lazy list nested in a scrolling parent measures
+      against an unbounded height and composes every row, losing the only thing it is for.
       ✅ **`ui/common/Dialogs.kt` is the third file of the idiom**, decided on `3f`/`3g` for *all*
       dialogs. Most of the rules are M3's `AlertDialog` defaults; the one that is not is the level,
       and it runs in **opposite directions** — light steps *down* to `surfaceContainerLow`, dark steps

@@ -497,8 +497,15 @@ fun CaveatCard(
  *
  * `3c`'s shape, and it is deliberately that small. What the card buys is that an empty route is the
  * same *class of object* as a full one, rather than loose text floating under the app bar. No
- * heading and no illustration — emptiness should not be the most prominent thing on a screen — and
- * the sentence is about the **record**, never about the rabbit (ADR-0001).
+ * illustration — emptiness should not be the most prominent thing on a screen — and the sentence is
+ * about the **record**, never about the rabbit (ADR-0001).
+ *
+ * [title] is `10a`'s addition, and it stays optional because most empty states do not want it. A
+ * directory that offers a *way in* has two things to say — that there is nothing here, and what
+ * would put something here — and running them together as one paragraph buries the second. The card
+ * is still the size of a row; what changes is that its first line is the state and the rest is the
+ * invitation. Where there is no way in — the archived scope (ADR-0004) — pass the sentence as [text]
+ * alone and the card goes back to `3c`'s shape.
  *
  * [action] is for the case that is a question rather than an emptiness: there is data, it just
  * belongs to somebody the scope has not named yet.
@@ -510,15 +517,27 @@ fun CaveatCard(
 fun MessageCard(
     text: String,
     modifier: Modifier = Modifier,
+    title: String? = null,
     action: (@Composable () -> Unit)? = null,
 ) {
     GroupedCard(modifier = modifier, contentPadding = PaddingValues(Spacing.base)) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.snug)) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            // The two lines are one statement, so they sit at [Spacing.hair] and the card's own
+            // spacing only separates them from the action below.
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.hair)) {
+                if (title != null) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             action?.invoke()
         }
     }

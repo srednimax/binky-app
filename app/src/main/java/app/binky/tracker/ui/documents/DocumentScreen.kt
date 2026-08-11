@@ -1,6 +1,7 @@
 package app.binky.tracker.ui.documents
 
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,10 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -20,7 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -46,13 +44,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.bunny.dateLabel
+import app.binky.tracker.ui.common.BinkyDialog
 import app.binky.tracker.ui.common.InstantDatePickerDialog
+import app.binky.tracker.ui.common.MessageCard
 import app.binky.tracker.ui.weight.instantDateLabel
 import java.time.Instant
 
@@ -65,6 +65,19 @@ import java.time.Instant
  *
  * [readOnly] is the archived scope (ADR-0004): every write action is **absent** rather than present
  * and refusing.
+ *
+ * ## Phase 7, against `10b`
+ *
+ * Drawn with the **menu open**, because five of this route's six actions live in it — and that is
+ * the whole layout argument. The page area stays **full-bleed on its own surface** rather than
+ * moving into a card: a scan of a sheet is the content of the screen, and a rounded container round
+ * it would only make it smaller. It is the one place in the sweep where "put it in a card" is the
+ * wrong answer.
+ *
+ * *Delete document* takes `onSurfaceVariant` **inside the menu** — the same quieting every
+ * destructive action gets when it shares a surface with ordinary ones (`1d`, `5a`, `4f`). It is not
+ * red: red in this palette means a field is wrong, and spending it on a menu item that has not
+ * happened yet would leave nothing to say that with.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -212,10 +225,9 @@ fun DocumentScreen(
     }
 
     if (confirmingDelete) {
-        AlertDialog(
-            onDismissRequest = { confirmingDelete = false },
-            title = { Text(stringResource(R.string.document_delete)) },
-            text = { Text(stringResource(R.string.document_delete_body, state.title)) },
+        BinkyDialog(
+            title = stringResource(R.string.document_delete),
+            onDismiss = { confirmingDelete = false },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -229,7 +241,9 @@ fun DocumentScreen(
                     Text(stringResource(R.string.action_cancel))
                 }
             },
-        )
+        ) {
+            Text(stringResource(R.string.document_delete_body, state.title))
+        }
     }
 }
 
@@ -303,6 +317,12 @@ private fun DocumentMenu(
                     expanded = false
                     onDelete()
                 },
+                // Last, and quieter than the five above it — `10b`'s rule for a destructive action
+                // that has to share a surface with ordinary ones.
+                colors =
+                    MenuDefaults.itemColors(
+                        textColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
             )
         }
     }
@@ -323,7 +343,15 @@ private fun PagePager(
         HorizontalPager(
             state = pagerState,
             key = { pages[it].id },
-            modifier = Modifier.fillMaxWidth().weight(1f),
+            // `surfaceVariant` under the pages, edge to edge. It gives a page that does not fill the
+            // frame — a portrait scan in a landscape gap, a short receipt — a surface to sit on
+            // instead of floating on the background, and it makes the boundary between "the
+            // document" and "what the app says about it" a change of ground rather than a rule.
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
         ) { index ->
             val page = pages[index]
             ZoomablePage(
@@ -339,7 +367,10 @@ private fun PagePager(
                 text = stringResource(R.string.document_page_position, pagerState.currentPage + 1, pages.size),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.base, vertical = Spacing.hair),
             )
         }
     }
@@ -358,18 +389,14 @@ private fun EmptyDocument(
     readOnly: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(text = stringResource(R.string.document_no_pages), style = MaterialTheme.typography.titleMedium)
-        if (!readOnly) {
-            Text(
-                text = stringResource(R.string.document_no_pages_help),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+    Column(modifier = modifier.fillMaxSize().padding(Spacing.base)) {
+        MessageCard(
+            title = if (readOnly) null else stringResource(R.string.document_no_pages),
+            text =
+                stringResource(
+                    if (readOnly) R.string.document_no_pages else R.string.document_no_pages_help,
+                ),
+        )
     }
 }
 
@@ -388,8 +415,8 @@ private fun DocumentFacts(
     onOpenVisit: (String) -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.base, vertical = Spacing.snug),
+        verticalArrangement = Arrangement.spacedBy(Spacing.hair),
     ) {
         Text(
             text =
@@ -398,7 +425,9 @@ private fun DocumentFacts(
                 } else {
                     stringResource(R.string.document_no_date)
                 },
-            style = MaterialTheme.typography.bodyMedium,
+            // The one line of the three the owner is meant to read first — `10b` draws it a step
+            // above the two beneath it, which are the provenance rather than the fact.
+            style = MaterialTheme.typography.bodyLarge,
             color =
                 if (capturedAt != null) {
                     MaterialTheme.colorScheme.onSurface
@@ -432,18 +461,9 @@ private fun TitleDialog(
 ) {
     var text by rememberSaveable { mutableStateOf(initial) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.document_rename)) },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text(stringResource(R.string.document_title_label)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
+    BinkyDialog(
+        title = stringResource(R.string.document_rename),
+        onDismiss = onDismiss,
         confirmButton = {
             TextButton(
                 onClick = { onSave(text) },
@@ -455,7 +475,15 @@ private fun TitleDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
-    )
+    ) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            label = { Text(stringResource(R.string.document_title_label)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
 
 /**
@@ -472,35 +500,36 @@ private fun AttachVisitDialog(
     onPick: (String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.document_attach_visit)) },
-        text = {
-            if (choices.isEmpty()) {
-                Text(stringResource(R.string.document_attach_no_visits))
-            } else {
-                LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
-                    item {
-                        DialogRow(
-                            label = stringResource(R.string.document_attach_none),
-                            selected = attachedId == null,
-                            onClick = { onPick(null) },
-                        )
-                    }
-                    items(choices, key = { it.id }) { choice ->
-                        DialogRow(
-                            label = "${dateLabel(choice.visitedOn)} — ${choice.reason}",
-                            selected = choice.id == attachedId,
-                            onClick = { onPick(choice.id) },
-                        )
-                    }
-                }
-            }
-        },
+    BinkyDialog(
+        title = stringResource(R.string.document_attach_visit),
+        onDismiss = onDismiss,
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) }
         },
-    )
+    ) {
+        if (choices.isEmpty()) {
+            Text(stringResource(R.string.document_attach_no_visits))
+        } else {
+            // A plain `Column`, not a `LazyColumn`: [BinkyDialog] already scrolls its own content,
+            // and a lazy list nested in a scrolling parent gets an unbounded height to measure
+            // against — it would try to compose every row and lose the only thing it is for. The
+            // list is one bunny's visits, so it is tens of rows at the very most.
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.hair)) {
+                DialogRow(
+                    label = stringResource(R.string.document_attach_none),
+                    selected = attachedId == null,
+                    onClick = { onPick(null) },
+                )
+                choices.forEach { choice ->
+                    DialogRow(
+                        label = "${dateLabel(choice.visitedOn)} — ${choice.reason}",
+                        selected = choice.id == attachedId,
+                        onClick = { onPick(choice.id) },
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -511,7 +540,7 @@ private fun DialogRow(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = Spacing.snug),
     ) {
         Text(
             text = label,
@@ -537,28 +566,28 @@ private fun ManagePagesDialog(
     onDelete: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.document_manage_pages)) },
-        text = {
-            LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
-                items(pages, key = { it.id }) { page ->
-                    val index = pages.indexOfFirst { it.id == page.id }
-                    ManagePageRow(
-                        number = index + 1,
-                        canMoveUp = index > 0,
-                        canMoveDown = index < pages.size - 1,
-                        onUp = { onMove(page.id, -1) },
-                        onDown = { onMove(page.id, 1) },
-                        onDelete = { onDelete(page.id) },
-                    )
-                }
-            }
-        },
+    BinkyDialog(
+        title = stringResource(R.string.document_manage_pages),
+        onDismiss = onDismiss,
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) }
         },
-    )
+    ) {
+        // Plain rather than lazy for the same reason as [AttachVisitDialog]: a scanned document is
+        // a handful of pages, and the dialog does the scrolling.
+        Column {
+            pages.forEachIndexed { index, page ->
+                ManagePageRow(
+                    number = index + 1,
+                    canMoveUp = index > 0,
+                    canMoveDown = index < pages.size - 1,
+                    onUp = { onMove(page.id, -1) },
+                    onDown = { onMove(page.id, 1) },
+                    onDelete = { onDelete(page.id) },
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -572,7 +601,7 @@ private fun ManagePageRow(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.hair),
     ) {
         Text(
             text = stringResource(R.string.document_page_number, number),

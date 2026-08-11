@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -28,7 +29,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,10 +61,24 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
+import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
+import app.binky.tracker.ui.common.BinkyDialog
+import app.binky.tracker.ui.common.MessageCard
 import app.binky.tracker.ui.common.newCameraTarget
 import app.binky.tracker.ui.weight.instantDateLabel
 import coil3.compose.AsyncImage
+
+/**
+ * The grid's bleed to the frame edge — the one place in the app content is not in the 16dp gutter.
+ *
+ * Carried on the tiles as well as the grid, so the space between two photos is twice it and the
+ * space to the screen edge is once: a seam between pictures rather than a margin round each.
+ */
+private val GridBleed = 2.dp
+
+/** The viewer's own bar, matched to the app bar it opens over. */
+private val ViewerBarHeight = 56.dp
 
 /**
  * A bunny's photo gallery: a grid of tiles, and a full-screen viewer behind a tap.
@@ -74,6 +88,18 @@ import coil3.compose.AsyncImage
  *
  * [readOnly] is the archived scope (ADR-0004): the write actions are **absent** rather than present
  * and refusing. Archiving destroys nothing, so every photo is still here to look at.
+ *
+ * ## Phase 7, against `10c` / `10d`
+ *
+ * **The one screen in Binky where content goes edge to edge**, and the drawing says so in as many
+ * words: a photo is not a row, so the grid keeps its 2dp bleed instead of moving into the 16dp
+ * gutter every other list sits in. Everything the screen says *about* the photos — the import bar,
+ * the viewer's date and caption — stays in the gutter, so the rhythm still holds where there is
+ * type.
+ *
+ * The two things `10c` designs are already the app's: the **determinate** import bar counted in
+ * photos rather than a spinner, and the "+" as **one control with two labelled ways in** rather than
+ * two glyphs. What changed is where the bar sits and how quietly it reads.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -248,16 +274,23 @@ private fun AddPhotoMenu(
     }
 }
 
-/** Determinate, and counted in photos: "adding" with no end in sight reads as a hang. */
+/**
+ * Determinate, and counted in photos: "adding" with no end in sight reads as a hang.
+ *
+ * It sits directly under the app bar in the **same 16dp gutter as the type on every other screen**,
+ * not in the grid's 2dp bleed — it is the app talking, and the grid below it is the content. The
+ * count drops to `onSurfaceVariant` because it is a progress note, not something to read.
+ */
 @Composable
 private fun ImportProgressBar(progress: ImportProgress) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.base, vertical = Spacing.tight),
+        verticalArrangement = Arrangement.spacedBy(Spacing.hair),
     ) {
         Text(
             text = stringResource(R.string.photo_import_progress, progress.done, progress.total),
             style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         LinearProgressIndicator(
             progress = { progress.done.toFloat() / progress.total },
@@ -266,24 +299,22 @@ private fun ImportProgressBar(progress: ImportProgress) {
     }
 }
 
+/** The empty state in place, as a card where the first row of the grid would be — `10a`'s rule. */
 @Composable
 private fun EmptyGallery(
     bunnyName: String,
     readOnly: Boolean,
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(text = stringResource(R.string.photo_gallery_empty), style = MaterialTheme.typography.titleMedium)
-        if (!readOnly) {
-            Text(
-                text = stringResource(R.string.photo_gallery_empty_help, bunnyName),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+    MessageCard(
+        title = if (readOnly) null else stringResource(R.string.photo_gallery_empty),
+        text =
+            if (readOnly) {
+                stringResource(R.string.photo_gallery_empty)
+            } else {
+                stringResource(R.string.photo_gallery_empty_help, bunnyName)
+            },
+        modifier = Modifier.padding(horizontal = Spacing.base, vertical = Spacing.tight),
+    )
 }
 
 @Composable
@@ -296,7 +327,10 @@ private fun PhotoGrid(
         // Adaptive rather than a fixed column count: three columns on a phone, more on a tablet or
         // in landscape, without this screen having to ask how wide it is.
         columns = GridCells.Adaptive(minSize = 112.dp),
-        contentPadding = PaddingValues(2.dp),
+        // The bleed, and the one place it is right. `10c` starts the grid a step below whatever is
+        // above it — the app bar, or the import bar when one is running — and takes it to the frame
+        // edge on the sides.
+        contentPadding = PaddingValues(start = GridBleed, end = GridBleed, top = Spacing.snug, bottom = GridBleed),
         modifier = Modifier.fillMaxSize(),
     ) {
         items(photos, key = { it.id }) { photo ->
@@ -322,7 +356,7 @@ private fun PhotoTile(
     Box(
         modifier =
             Modifier
-                .padding(2.dp)
+                .padding(GridBleed)
                 .aspectRatio(1f)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .clickable(onClick = onClick),
@@ -369,9 +403,17 @@ private fun PhotoViewer(
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         Column(modifier = Modifier.fillMaxSize()) {
+            // A bar of its own rather than a `TopAppBar`: it opens with a **close cross, not a back
+            // arrow**, because the viewer renders over the grid instead of being a route the owner
+            // navigated to. `10d` keeps that and gives the row the app bar's own 56dp so the two
+            // read as the same band when the viewer opens over the grid.
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = ViewerBarHeight)
+                        .padding(horizontal = Spacing.tight),
             ) {
                 IconButton(onClick = onClose) {
                     Icon(
@@ -380,6 +422,8 @@ private fun PhotoViewer(
                     )
                 }
                 Box(modifier = Modifier.weight(1f))
+                // Delete stays an app-bar icon. A button under the photo would compete with the
+                // picture, and it is the only destructive action on the screen.
                 if (!readOnly && current != null) {
                     IconButton(onClick = { confirmingDelete = true }) {
                         Icon(
@@ -394,7 +438,13 @@ private fun PhotoViewer(
             HorizontalPager(
                 state = pagerState,
                 key = { photos[it].id },
-                modifier = Modifier.fillMaxWidth().weight(1f),
+                // The same `surfaceVariant` the tiles take, so a portrait shot fitted into a
+                // landscape frame has a ground either side of it rather than a gap.
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
             ) { page ->
                 val photo = photos[page]
                 AsyncImage(
@@ -430,10 +480,9 @@ private fun PhotoViewer(
     }
 
     if (confirmingDelete && current != null) {
-        AlertDialog(
-            onDismissRequest = { confirmingDelete = false },
-            title = { Text(stringResource(R.string.photo_delete)) },
-            text = { Text(stringResource(R.string.photo_delete_body)) },
+        BinkyDialog(
+            title = stringResource(R.string.photo_delete),
+            onDismiss = { confirmingDelete = false },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -447,7 +496,9 @@ private fun PhotoViewer(
                     Text(stringResource(R.string.action_cancel))
                 }
             },
-        )
+        ) {
+            Text(stringResource(R.string.photo_delete_body))
+        }
     }
 }
 
@@ -457,6 +508,10 @@ private fun PhotoViewer(
  * "Taken" and "Added" are deliberately different words: only a picture whose own metadata carried a
  * date can be said to have been *taken* then. Everything else — screenshots, anything through a
  * messaging app — is dated by when it arrived here, and saying "taken" of those would invent a fact.
+ *
+ * The caption line is the only thing `10d` designs: a **missing** caption stays `onSurfaceVariant`
+ * and its action reads *Add one*, so an uncaptioned photo cannot be mistaken for a captioned one
+ * whose text failed to load.
  */
 @Composable
 private fun PhotoDetails(
@@ -465,8 +520,8 @@ private fun PhotoDetails(
     onEditCaption: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.base, vertical = Spacing.snug),
+        verticalArrangement = Arrangement.spacedBy(Spacing.hair),
     ) {
         val date = instantDateLabel(photo.takenAt)
         Text(
@@ -479,7 +534,10 @@ private fun PhotoDetails(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
+        ) {
             Text(
                 text = photo.caption ?: stringResource(R.string.photo_caption_none),
                 style = MaterialTheme.typography.bodyLarge,
@@ -489,7 +547,14 @@ private fun PhotoDetails(
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     },
-                modifier = Modifier.weight(1f),
+                // `fill = false` is the whole of `10d`'s caption line: the action belongs *beside*
+                // the caption it acts on, not at the far edge of the screen with the width of a
+                // phone between them. Compose note — a plain `weight(1f)` makes the text take all
+                // the spare room and shove the button to the edge; `fill = false` means "you may
+                // grow to the whole row if the caption is long, but take only what you need", so a
+                // short caption and its button stay a pair and a long one still wraps rather than
+                // pushing the button off.
+                modifier = Modifier.weight(1f, fill = false),
             )
             if (!readOnly) {
                 TextButton(onClick = onEditCaption) {
@@ -516,24 +581,23 @@ private fun CaptionDialog(
 ) {
     var text by rememberSaveable { mutableStateOf(initial) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.photo_caption_label)) },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text(stringResource(R.string.photo_caption_label)) },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
+    BinkyDialog(
+        title = stringResource(R.string.photo_caption_label),
+        onDismiss = onDismiss,
         confirmButton = {
             TextButton(onClick = { onSave(text) }) { Text(stringResource(R.string.action_save)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
-    )
+    ) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            label = { Text(stringResource(R.string.photo_caption_label)) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
 
 /**

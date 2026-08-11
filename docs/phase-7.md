@@ -267,10 +267,10 @@ lives* for how to open one without loading the whole file.
 | `Support` | `9c` / `9d` | ✅ 2026-08-09. **One filled button per screen, and it is the one that matters most** — now app-wide. First card to hold a chevron row and a fact row side by side, which cost the idiom `SingleLineRowHeight` |
 | Chart empty states | `8a` / `8b` | **Not built yet.** Four states, not one — one of the two Weight surfaces that had no drawing |
 | Watch expiry prompt | `8c` / `8d` / `8e` | **Not built yet.** `8d` is the case with no live flag, *"where silence must not read as good news"* — ADR-0001 drawn |
-| Documents list | `10a` / `10a2` | **Not built yet.** *"A list, because a thumbnail of A4 tells you nothing"* |
-| One document | `10b` / `10b2` | **Not built yet.** A route with no row until 2026-08-10 |
-| Photos | `10c` / `10c2` | **Not built yet.** *"A grid, and the '+' that is two ways in"* |
-| One photo | `10d` / `10d2` | **Not built yet.** *"'Taken' and 'Added' are different claims"* |
+| Documents list | `10a` / `10a2` | ✅ 2026-08-11. Three changes, none of them this screen's own decision: rows group into one card, each gains a chevron, the thumbnail rounds. The empty state moves **in place**, which cost `MessageCard` an optional title |
+| One document | `10b` / `10b2` | ✅ 2026-08-11. **The one route where "put it in a card" is the wrong answer** — the page stays full-bleed, and gets `surfaceVariant` under it so a page that does not fill the frame has a ground rather than a gap. *Delete document* drops to `onSurfaceVariant` inside the menu |
+| Photos | `10c` / `10c2` | ✅ 2026-08-11. **The one screen that goes edge to edge**, and the drawing says so — the grid keeps its 2dp bleed while everything the app *says* stays in the 16dp gutter |
+| One photo | `10d` / `10d2` | ✅ 2026-08-11. The caption line is the only thing drawn: a missing caption stays `onSurfaceVariant` and reads *Add one*, so it cannot pass for a caption that failed to load |
 | Setup, steps 1-3 | `10e`–`10g` / `10e2`–`10g2` | **Not built yet.** One frame per step, as `SetupBunny`/`SetupBackup`/`SetupReminders` already are |
 | Reminders opt-in | `10h` / `10h2` | **Not built yet.** Drawn at the point of use — *"the same body, in a sheet, blocked"* |
 | Schema mismatch | `10i` / `10i2`, `10j` / `10j2` | **Not built yet**, and it is **two** variants: debug *"the wipe is happening; the choice is whether you look first"*, release *"nothing is destroyed, and there is no forward"* |
