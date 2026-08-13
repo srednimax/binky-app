@@ -4,12 +4,24 @@
   ExtraLight (200). Pinning the `wght` axis here, in the font resource, is the
   documented way to instance it: the Compose-side FontVariation.Settings API is
   ignored by the resource-font loader, which renders a silent ExtraLight rather
-  than an error. Requires API 26 — our minSdk exactly.
+  than an error.
+
+  `fontVariationSettings` is API 28, not 26 — `tools:targetApi` records that
+  deliberately rather than letting lint carry it as a standing warning. On API
+  26-27 the attribute is ignored and the platform falls back to synthesising the
+  weight from the default instance, so headlines there are approximate rather
+  than wrong-weight. Upstream publishes no static instances (google/fonts
+  ofl/nunito holds only the two variable files), so shipping true statics would
+  mean instancing the axis ourselves and bundling a font nothing in this project
+  can render-test below API 28.
 -->
-<font-family xmlns:android="http://schemas.android.com/apk/res/android">
+<font-family
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <font
         android:font="@font/nunito_variable"
         android:fontStyle="normal"
         android:fontVariationSettings="'wght' 700"
-        android:fontWeight="700" />
+        android:fontWeight="700"
+        tools:targetApi="28" />
 </font-family>
