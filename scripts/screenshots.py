@@ -234,11 +234,15 @@ def main() -> int:
     manifest = {
         "config": CONFIG.name,
         "themes": [],
-        # The palette is wallpaper-derived until Phase 7's theme commit lands (`dynamicColor = true`
-        # in Theme.kt, and this phone is well past API 31). So the colours in a *before* shot are
-        # this phone's wallpaper on this day and are not reproducible; the structure, density and
-        # copy — which is what the set is actually read for — are.
-        "dynamic_color": "wallpaper-derived (Theme.kt dynamicColor = true at capture time)",
+        # Binky's own generated scheme since Phase 7's theme commit: `dynamicColor` defaults **off**
+        # (ADR-0027) and every cell here starts from a wipe, so the Material You toggle is at its
+        # default and the colours are reproducible from `theme/Color.kt` alone.
+        #
+        # The *before* set is not, and the difference is the point rather than a caveat: it was shot
+        # while `dynamicColor = true`, so its colours are this phone's wallpaper on that day. Compare
+        # the two sets on structure, density and copy — which is what the set is read for — and never
+        # on hue, where the before half is not a fixed target.
+        "dynamic_color": "off — Binky's own scheme (ADR-0027); the before set was wallpaper-derived",
     }
     for theme in themes:
         print(f"\n=== {theme}")
