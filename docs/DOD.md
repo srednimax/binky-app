@@ -74,6 +74,20 @@ All deliberately after it, because each would disturb the armed course.
       ADR-0025's self-heal consequence gets reworded to.
 - [ ] Timezone change: today's answered doses stay answered, no alarm re-armed for a dose already given.
 - [ ] Edge-to-edge matrix re-run (`scripts/edge-to-edge.py`, **61 scenes** — Support added two).
+      ⚠️ **A wipe costs the rotation, so every wiping scene in a landscape cell has been shot in
+      portrait — in this run and in 4f's** (found 2026-08-12). `pm clear` kills the app, the
+      portrait-locked launcher takes the foreground, and HyperOS writes `user_rotation` back to **0**;
+      `accelerometer_rotation` stays 0, so nothing puts it back. The cell goes on capturing, checking
+      and reporting *clean* at 1220×2712 under a name saying `landscape`. Confirmed both ways:
+      `settings get system user_rotation` read `0` moments after `apply_config` set it to `1`, and the
+      committed `docs/edge-to-edge/ime-landscape-*.png` are genuinely 1400×630, so landscape did work
+      where nothing wiped. **The blast radius is the `empty` suite** — all six of its scenes wipe as
+      their first step, so the setup wizard has never actually been seen in landscape by this harness;
+      `mismatch` corrupts the database without a wipe and is unaffected, and `full` was only exposed
+      once a per-config re-seed was added. Fixed in `wipe()`, which now re-pins the rotation it just
+      cost, with `apply_config` recording what to re-pin to; and the per-config re-seed now runs
+      **before** `apply_config` rather than after it. **A cell that cannot fail is not evidence** —
+      the check ran 53 times per landscape cell and passed every time, on portrait screenshots.
       ✅ **The tap blocker is gone** (6c, 2026-08-06). It was never a permission: `input` picks a
       default source when none is named, and HyperOS stopped honouring that inference. **`input
       touchscreen tap` lands where bare `input tap` is dropped** — A/B'd on one screen at one
@@ -245,7 +259,11 @@ exists. These are the items that come first.
       take. **It moved `AppPreferences` onto `BinkyApplication`**: the theme wraps ADR-0007's
       schema-mismatch screen, and `container` is the `lazy` that *is* the wipe guard, so reading the
       preference through the container would have opened the gate from inside the screen guarding it.
-- [ ] **The rewrite sweep — every route to the new language.** The per-route table with its mockup ids is
+- [x] **The rewrite sweep — every route to the new language.** ✅ **Closed 2026-08-13**, verified against
+      the code rather than against this line: all **33** rows of `phase-7.md`'s checkpoint table are ✅, and
+      exactly **three** `AlertDialog` sites survive — `MedicationCourseEditorScreen`, `RecordedAtField`,
+      `SearchablePicker` — which are the three documented exemptions and no others. The per-route table
+      with its mockup ids is
       in [`phase-7.md`](phase-7.md) *("The rewrite checkpoint")*; one commit per route, each building and
       installing. **`Home` (all three states), the bunny switcher, `Weight`, `Record an observation`,
       `Observations`, `Care & Meds` (both states), `New course` and `Record a dose` are done** —
@@ -514,7 +532,9 @@ exists. These are the items that come first.
       now both exactly 64dp of full-width merged semantics, so the tie breaks on list order and the
       course wins. Both fixed to name the thing they mean. **Uniform row heights are a new class of
       needle hazard** — the before set's differently-sized cards were breaking ties for us by accident.
-- [ ] **Decide the four pieces of new functionality the designs introduce** — they are decisions, not tasks,
+- [x] **Decide the four pieces of new functionality the designs introduce** — ✅ **all four closed as of
+      2026-08-12**: one adopted (the last-five line), three that turned out never to be new functionality
+      (field-absent states, the stale-backup marker, and *"not checked"*). They are decisions, not tasks,
       because this phase is *same functionality, new looks*, and a screen redrawn from a mockup absorbs them
       silently otherwise. The last-five line on Record a weighing (likely adopt), a stale-backup marker
       (needs a staleness rule and copy that implies no fault), field-absent states in the bunny editor, and
@@ -537,14 +557,97 @@ exists. These are the items that come first.
       `backup_auto_stale` is its own sentence, and `stale` already decides whether *Open Android
       backup settings* appears. So the dot adds no rule, no threshold and no copy — it marks the
       same two states the screen was going to act on, and a **fresh** backup gets none.
-      **One left**: the *"not checked" is a stored value* claim.
-- [ ] **Rules the new look inherits** — weight changes always in grams; the chart plots real timestamps,
-      not index; missing media is a placeholder, never a crash; image writes go through the media helper
-      (ADR-0020); no empty state infers a problem from silence (ADR-0001); no *missed*/*overdue* outside
-      care reminders (ADR-0026); every new string is a resource in **both** locales (ADR-0013).
-- [ ] **Gate: 4f's edge-to-edge matrix re-run in full**, both orientations, both navigation modes. A
-      visual overhaul is exactly what that matrix exists to catch.
-- [ ] Re-capture and compare, same routes, same locales. `lint` still 0 errors, 0 warnings.
+      ✅ **The last of the four is closed** (2026-08-12) — the *"not checked" is a stored value* claim,
+      and it is **false in the half that matters**, correctly so. *Not checked* is a real default-selected
+      **chip**, but no vocabulary carries a `NOT_CHECKED` entry: the column is nullable and `null` *is*
+      "not checked" (ADR-0001). `NullableChoiceField` writes `null` and lights on `selected == null`, so
+      the UI already says what the column means. No code, no string. **All four decided** — one adopted,
+      three that were never new functionality.
+- [x] **Rules the new look inherits** — **all seven checked against the code, 2026-08-12**, not asserted.
+      `weightChangeLabel(deltaGrams: Int)` takes grams and renders grams with no unit preference in reach;
+      the chart's `xs` are `daysBetween(origin, it.recordedAt)`, real elapsed time rather than list index;
+      every `AsyncImage` in the app (`PhotoGalleryScreen`, `DocumentsScreen`, `BunnyAvatar`) sets **both**
+      `error` and `fallback` to a placeholder; **no `Bitmap.compress` or `FileOutputStream` exists outside
+      `media/MediaFiles.kt`** and the backup writer (ADR-0020); every empty state names the absence of
+      *records* and what the surface is for — none turns silence into reassurance (ADR-0001); *overdue*
+      survives in exactly two places and both are care reminders, `care_due_overdue` and
+      `care_notification_overdue` (ADR-0026); and `PolishTranslationTest` is green, which is ADR-0013's
+      enforcement rather than a promise about it.
+- [x] **Gate: 4f's edge-to-edge matrix re-run in full** — **done 2026-08-12, 244 scenes**: `full` 53×4,
+      `mismatch` 2×4, `empty` 6×4, both orientations and both navigation modes. **No confirmed
+      edge-to-edge defect in the redesign.** `mismatch` and `empty` are perfectly clean (0 skips, 0
+      `drawn`), and `landscape-threebutton` — the **vertical right-edge** navigation bar, a geometry
+      nothing in this app had ever been checked against — came back 50/53 with no findings at all.
+      Four `drawn`-tier findings, three closed:
+      **`document-viewer` reads 13px in three different geometries** (48px bar, 142px bar, and
+      landscape), and a residual that does not grow with the bar is the signature of *correct* inset
+      handling — the caption moves up by exactly the bar's height and only its padding box crosses the
+      line. Invariance across cells proved this where a screenshot could not.
+      **`reminders-sheet` tracks the bar exactly** (48 → 142 → 48px): scrolling content passing under
+      the bar, which the scene's own note already calls "a list scrolling, not a defect", and its
+      `-bottom` companion proves the end clears.
+      **`reminders-sheet-bottom` is the M3 scrim** (`View`, "Close sheet", a 16px full-width strip).
+      The checker skips a scrim only when the overlap equals the *whole* inset rect; expanded, the
+      scrim is reported as a thin strip and trips instead. **A harness false positive** — it will
+      recur at every gate until the rule matches the shape rather than the coverage.
+      ✅ **`care-reminder-editor` is closed too, by hand, and it is the reason the table grew a scene.**
+      Its opening frame puts an `EditText` (the interval field) 27px under the gesture bar in
+      **landscape only**, and with no `-bottom` companion nothing in the matrix could say whether the
+      *end* of that scroll clears. Driven by hand at the same config: the opening frame reproduces the
+      finding exactly (same bounds), and **scrolled to the end it is `drawn=0 touch=0`**. So it is
+      `reminders-sheet`'s case — content below the fold in a scrolling form — and not a defect.
+      `care-reminder-editor-bottom` is now scene **62**, because *a route whose opening frame can trip
+      the check owes a `-bottom`* or every future run re-litigates it from scratch.
+      ⚠️ **Six skips, all landscape, all reachability rather than needles** — `observation-entry-ime`
+      (one `swipe_up` does not reach the note box on a 1220px-tall viewport) and
+      `visit-editor`/`visit-editor-bottom` (*Add a visit* sits below routine care and out of reach).
+      Identical in both landscape cells, clean in both portrait ones. **The scene table has never been
+      landscape-proof** and could not have been known to be: every prior landscape cell was secretly
+      portrait (see the rotation defect above), so these three scenes have never actually run.
+      **All three fixed**: `observation-entry-ime` takes `swipe_end` rather than one `swipe_up` — the
+      note is the *last* field, so scrolling to the end asks where it is instead of guessing — and both
+      `visit-editor` scenes get a `swipe_up` before *Add a visit*, which is the last section of Care &
+      Meds. `tap` does scroll when it cannot find its target, but one round is not enough at 1220px
+      tall, which is the whole difference between the two orientations.
+- [ ] Re-capture and compare, same routes, same locales. **`lint` is 0 errors, 0 warnings** (2026-08-12,
+      after fixing two `UnusedAttribute` warnings the theme commit left on the Nunito weight XMLs — the
+      attribute is API 28 and the files claimed 26, so `tools:targetApi` records the version gate and
+      the comment now says what happens on 26-27).
+      ✅ **English after set captured** — 2026-08-13, **62 light + 62 dark** in
+      `~/binky-screenshots/phase-7/after/`, against the before set's 61+61. Every before scene has a
+      counterpart in both themes; the one extra is `care-reminder-editor-bottom`, added today, which by
+      definition has no before. **Compare on structure, density and copy — never on hue**: the before
+      set was shot while `dynamicColor = true`, so its colours are that day's wallpaper, and the after
+      set is Binky's own scheme. `screenshots.py`'s manifest said the old thing and now says this.
+      ⚠️ **The seed's 8:00 PM dose makes evening captures unreliable, and Do Not Disturb is the fix.**
+      Two runs were wrecked and a third crippled before the cause was pinned: `reset_to_seeded` recreates
+      the Metacam course, whose 20:00 dose is minutes in the past, so a heads-up banner (`importance=4`,
+      two actions) posts a minute or so after **every** seed — over Home, exactly where `SELECT_BUNNY`
+      taps. The tap opens the course, `AUTO_CANCEL` clears the banner (so a later `dumpsys notification`
+      finds nothing and the evidence looks impossible), and **Nav3's `rememberNavBackStack` then restores
+      that screen on every relaunch**, so one stolen tap poisons every scene after it. `cmd notification
+      set_dnd on` suppresses the banner without touching `POST_NOTIFICATIONS`, so the reminder copy the
+      scenes photograph stays truthful. **With DND on, the dark cell ran 62/62 with zero skips** where the
+      two runs before it had cascaded. **Turn DND off afterwards** — it is a phone-wide setting.
+      ℹ️ **`am start -S -f 0x10008000` in `relaunch()` was aimed at the wrong mechanism.** It is correct
+      hardening and stays, but it does not clear a restored Nav3 stack; the matrix's 212 clean scenes did
+      not prove it against this case, because that run started after the 20:00 dose had already fired.
+      **Scene isolation needs a return-to-Home step, not a restart** — unwritten, and `KEYCODE_BACK` is
+      not it: backing past Home exits to the launcher and makes the next scenes worse.
+- [ ] **Polish after set still owed, and it is blocked on the driver rather than the phone** — attempted
+      2026-08-13 and **every scene fails at its first tap**. `--locale pl` does switch the app (the dump
+      comes back `14 dni, 3 dni, 7 dni`), but **the scene needles are English string literals**, so
+      `tap("Choose which bunny")` matches nothing the moment the app is not English. The flag has never
+      been exercised: it sets the locale correctly and then cannot drive a single scene, which is why both
+      this file and `phase-8.md` have been treating a `--locale` flag as if it were the whole job.
+      **The fix has a clean shape, thanks to ADR-0013**: every user-visible string is a resource in both
+      locales and `PolishTranslationTest` keeps them level, so a needle can resolve *through the resource
+      name* — parse `values/strings.xml` and `values-pl/strings.xml`, build the map, translate at tap
+      time. Two wrinkles: several needles are deliberate **substrings** of their string
+      (`"What you noticed"`), and several are not resources at all (`Bijou`, `Metacam` are sample data and
+      identical in both locales), so the lookup must fall through to the literal rather than fail.
+      **Phase 8 wants this before it starts** — it is the copy-length canary — so it is worth building
+      once, properly, rather than hand-driving one locale.
 - [x] **Answered, and it is not the clean "no" that line hoped for** — 2026-08-11, measured across the
       whole sweep (`61abe63^` → `91f524b`): **29 names added** (28 strings and one `plurals`), **9
       removed**, **5 reworded in place**, 648 → 668 entries. So Phase 8 does not start in parallel; it
