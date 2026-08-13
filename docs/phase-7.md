@@ -737,9 +737,17 @@ are listed because a screen redrawn from a mockup will otherwise absorb them sil
   shipped with exactly those two words since ADR-0016, and the distinction they draw is real — a birthday
   is a fact about the rabbit that nobody may know, a breed is a field on a form that nobody has filled in.
   The drawing was reading the app back to itself.
-- **Chips wrap rather than scroll sideways** (`2c`), and *"not checked" is a real value selected by default*.
-  The second is a data-meaning claim, not a layout one — verify it matches what the observation entity
-  actually stores before the UI asserts it.
+- ~~**Chips wrap rather than scroll sideways** (`2c`), and *"not checked" is a real value selected by
+  default*~~. **Settled 2026-08-12, and the claim is exactly half right — the half that matters being the
+  one it gets wrong.** *Not checked* is a real, tappable, default-selected **chip**; it is **not** a stored
+  value. No vocabulary has a `NOT_CHECKED` entry, the column is nullable, and `null` *is* "not checked"
+  (ADR-0001) — `ObservationEntity.kt`'s own words are *"absence with two spellings is absence nobody can
+  query"*. `NullableChoiceField` writes `null` when the chip is tapped and lights it on `selected == null`,
+  so the UI asserts precisely what the column means. The drawing was reading the app back to itself for the
+  fourth time this phase (after `4e`, `6c` and `8d`), and the reason it still needed checking is that a chip
+  lit by default is indistinguishable, on a frame, from a value the row stores. **No code and no string
+  changed.** With this the four new-functionality decisions are closed: one adopted (the last-five line),
+  three that were never new functionality.
 
 **Two Weight surfaces are deliberately not drawn**, and both need the language applied by hand:
 
