@@ -598,6 +598,10 @@ exists. These are the items that come first.
       `reminders-sheet`'s case — content below the fold in a scrolling form — and not a defect.
       `care-reminder-editor-bottom` is now scene **62**, because *a route whose opening frame can trip
       the check owes a `-bottom`* or every future run re-litigates it from scratch.
+      ℹ️ **`home-bottom` is scene 63**, added 2026-08-13 by Phase 7's comparison (§6) for the same rule.
+      Like 62 it is **not in the 244-scene evidence above** — that run predates both. Neither needs the
+      matrix re-run to close Phase 7: 62 was verified by hand at the config that tripped it, and 63 is
+      wanted for the *screenshot* set rather than the inset check. **The next matrix run is 63×4.**
       ⚠️ **Six skips, all landscape, all reachability rather than needles** — `observation-entry-ime`
       (one `swipe_up` does not reach the note box on a 1220px-tall viewport) and
       `visit-editor`/`visit-editor-bottom` (*Add a visit* sits below routine care and out of reach).
@@ -609,7 +613,7 @@ exists. These are the items that come first.
       `visit-editor` scenes get a `swipe_up` before *Add a visit*, which is the last section of Care &
       Meds. `tap` does scroll when it cannot find its target, but one round is not enough at 1220px
       tall, which is the whole difference between the two orientations.
-- [ ] Re-capture and compare, same routes, same locales. **`lint` is 0 errors, 0 warnings** (2026-08-12,
+- [x] Re-capture and compare, same routes, same locales. **`lint` is 0 errors, 0 warnings** (2026-08-12,
       after fixing two `UnusedAttribute` warnings the theme commit left on the Nunito weight XMLs — the
       attribute is API 28 and the files claimed 26, so `tools:targetApi` records the version gate and
       the comment now says what happens on 26-27).
@@ -634,6 +638,24 @@ exists. These are the items that come first.
       not prove it against this case, because that run started after the 20:00 dose had already fired.
       **Scene isolation needs a return-to-Home step, not a restart** — unwritten, and `KEYCODE_BACK` is
       not it: backing past Home exits to the launcher and makes the next scenes worse.
+      ✅ **The comparison is done** — 2026-08-13, **12 route pairs read in light**, written up in
+      [`phase-7.md`](phase-7.md) *("The comparison — what the after set actually says")*. The gains are
+      **affordance rather than decoration** (`More` and `Documents` had nothing saying a row was tappable
+      and change no string between them; Care & Meds carries ~3× the content; the chart's readings became
+      visible at all), and the honest cost is that the **record-reading screens got less dense** —
+      Observations fits one entry where it fit one and a half, Backup and Home each lose a section to the
+      fold. `setup-reminders` is the pair that photographs a defect being fixed: the before shot is the
+      two-stacked-filled-buttons state `10g` never drew, which means **the before set had been carrying
+      that bug's evidence since 2026-08-06 and nobody read it**.
+- [ ] **Shoot `home-bottom`** — the one thing the comparison found that the after set cannot answer.
+      `FabClearance` was written for Home (`Scaffold` pads for its own bars, not for the FAB, so *Delete*
+      sat under it in the before set) and **there is no `home-bottom` scene in either set**, so no frame
+      shows the end of Home's scroll. The scene is now in `edge-to-edge.py`'s `SCENES`, on
+      `care-reminder-editor-bottom`'s rule; it still needs one run in both themes into
+      `~/binky-screenshots/phase-7/after/`. Attempted 2026-08-13 and **blocked on a locked phone**, not on
+      the driver: `scripts/screenshots.py --out ~/binky-screenshots/phase-7/after --scene home-bottom`,
+      with `cmd notification set_dnd on` first (the seed's 8:00 PM dose posts a heads-up banner over Home
+      minutes after every reseed) and **off afterwards** — it is a phone-wide setting.
 - [x] **The Polish after set is moved to Phase 8** — decided 2026-08-13, and it moves as a *box*, not as a
       capture nobody takes. Attempted that day, and **every scene fails at its first tap**: `--locale pl`
       does switch the app (the dump comes back `14 dni, 3 dni, 7 dni`), but **the scene needles are English

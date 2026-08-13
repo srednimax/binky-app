@@ -699,6 +699,12 @@ SCENES = [
         "detail",
         [("tap", "More"), ("tap", "Settings"), ("tap", "Backup"), ("swipe_end", "")],
     ),
+    # Home is the route FabClearance was written for: Scaffold pads content for the bars it owns but
+    # not for the FAB floating over it, so Edit/Archive/Delete sat underneath it. The `home` scene
+    # cannot show that — the FAB only collides at the *end* of the scroll — so the redesign's after
+    # set had no frame proving the fix. Same rule as care-reminder-editor-bottom: a route whose last
+    # row can end up under something owes a -bottom, or every future gate re-litigates it.
+    Scene("home-bottom", "tab", [*SELECT_BUNNY, ("swipe_end", "")]),
     Scene("weight-bottom", "tab", [*SELECT_BUNNY, ("tap", "Weight"), ("swipe_end", "")]),
     Scene(
         "observations-bottom",
