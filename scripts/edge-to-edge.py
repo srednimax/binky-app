@@ -86,6 +86,13 @@ CONFIGS = [
 ]
 
 
+# The config the phone is currently pinned to, so a wipe can put the rotation back. `pm clear` kills
+# the app, which hands the foreground to the portrait-locked launcher, and HyperOS writes
+# `user_rotation` back to 0 when it does — silently turning a landscape cell into a second portrait
+# one that still captures, still checks, and still reports "clean".
+_PINNED: "Config | None" = None
+
+
 def apply_config(config: Config) -> None:
     """Pin the rotation and the navigation mode, then wait for the window to settle.
 
@@ -94,6 +101,8 @@ def apply_config(config: Config) -> None:
     `force_fsg_nav_bar` global instead. Verified against the navigation bar's reported inset, which
     is the thing being tested and cannot be faked by the setting alone.
     """
+    global _PINNED
+    _PINNED = config
     shell("settings put system accelerometer_rotation 0")
     shell(f"settings put system user_rotation {config.rotation}")
     shell(f"settings put global force_fsg_nav_bar {1 if config.nav == 'gesture' else 0}")
@@ -275,10 +284,18 @@ def relaunch() -> None:
 
     `force-stop` rather than plain `am start`: the back stack is saved state, so a warm start would
     reopen wherever the previous scene left off.
+
+    **`force-stop` is not enough on its own, and the gap cost a whole cell.** It kills the process but
+    leaves the task record, so Android may restore the saved-instance bundle on the next `am start` —
+    the app comes back on whatever screen it was last on rather than at Home. One stray tap is then
+    permanent: on 2026-08-12 a dose notification posted mid-run (`importance=4`, two actions, drawn
+    over Home exactly where `SELECT_BUNNY` taps), the tap landed on the banner instead of the app, and
+    every scene afterwards relaunched into the record-dose screen and failed on a needle that was
+    never wrong. `-S` force-stops, and `0x10008000` is `FLAG_ACTIVITY_CLEAR_TASK | NEW_TASK`, which
+    drops the record the restore reads from. **A scene must not be able to inherit the last one's
+    screen** — that is what makes 61 scenes independent rather than a sequence.
     """
-    shell(f"am force-stop {PACKAGE}")
-    settle(0.5)
-    shell(f"am start -n {ACTIVITY}")
+    shell(f"am start -S -n {ACTIVITY} -f 0x10008000")
     wait_for_app()
 
 
@@ -387,6 +404,14 @@ def wipe() -> None:
     settle(1.0)
     shell(f"am start -n {ACTIVITY}")
     wait_for_app()
+    # Re-pin the rotation the wipe just cost us. Only the rotation: the navigation mode is a global
+    # and survives, and re-writing it would buy another 3s settle per wiping scene for nothing.
+    # Verified by the failure it exists to stop — `mRotation=ROTATION_0` and 1220x2712 PNGs in a
+    # cell named `landscape-gesture`.
+    if _PINNED is not None:
+        shell("settings put system accelerometer_rotation 0")
+        shell(f"settings put system user_rotation {_PINNED.rotation}")
+        settle(1.5)
 
 
 def reset_to_seeded() -> None:
@@ -619,7 +644,21 @@ SCENES = [
         "form",
         [*SELECT_BUNNY, ("tap", "Record an observation"), ("swipe_up", "")],
     ),
-    Scene("care-reminder-editor", "form", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a reminder")]),
+    Scene(
+        "care-reminder-editor",
+        "form",
+        [*SELECT_BUNNY, ("tap", "Care"), ("swipe_up", ""), ("tap", "Add a reminder")],
+    ),
+    # Owed, and its absence cost a gate. In landscape the opening frame puts the interval `EditText`
+    # 27px under the navigation bar, which reads as a defect until something proves the *end* of the
+    # scroll clears — and with no `-bottom` companion nothing could. Checked by hand on 2026-08-12
+    # (`drawn=0 touch=0`), then written down here so the next run answers it without a person.
+    # **A route whose opening frame can trip the check owes a `-bottom`**, or every run re-litigates it.
+    Scene(
+        "care-reminder-editor-bottom",
+        "form",
+        [*SELECT_BUNNY, ("tap", "Care"), ("swipe_up", ""), ("tap", "Add a reminder"), ("swipe_end", "")],
+    ),
     # --- the IME, which is the case a still screen never shows --------------------------------
     Scene(
         "weight-entry-ime",
@@ -633,7 +672,12 @@ SCENES = [
         [
             *SELECT_BUNNY,
             ("tap", "Record an observation"),
-            ("swipe_up", ""),
+            # `swipe_end`, not one `swipe_up`: the note is the *last* field, so one swipe reaches it
+            # only on a screen tall enough — which is why this scene skipped in both landscape cells
+            # on 2026-08-12 and passed in both portrait ones. Scrolling to the end asks for the
+            # field's position rather than guessing at it, and the end is where this field lives in
+            # every geometry.
+            ("swipe_end", ""),
             # The field's *placeholder*, not "Anything else". Phase 7 moved that label out of the
             # box and above it, so tapping it now lands on a plain Text with nothing to focus and
             # the keyboard never comes up — a scene that still passes and shoots the wrong frame.
@@ -743,11 +787,19 @@ SCENES = [
         [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a course"), ("tap", "Metacam"), ("wait", "1.5")],
         note="the first field of the phase's longest form; in landscape the IME leaves two rows",
     ),
-    Scene("visit-editor", "form", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a visit")]),
+    # `swipe_up` before the button, because *Add a visit* is the last section of Care & Meds and sits
+    # below the fold at 1220px tall — both of these skipped in both landscape cells on 2026-08-12 and
+    # passed in both portrait ones. `tap` scrolls when it cannot find its target, but it scrolls the
+    # screen it is *on*, and one round is not enough here.
+    Scene(
+        "visit-editor",
+        "form",
+        [*SELECT_BUNNY, ("tap", "Care"), ("swipe_up", ""), ("tap", "Add a visit")],
+    ),
     Scene(
         "visit-editor-bottom",
         "form",
-        [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a visit"), ("swipe_end", "")],
+        [*SELECT_BUNNY, ("tap", "Care"), ("swipe_up", ""), ("tap", "Add a visit"), ("swipe_end", "")],
     ),
     Scene("vets", "detail", [("tap", "More"), ("tap", "Vets")]),
     Scene("vet-editor", "form", [("tap", "More"), ("tap", "Vets"), ("tap", "Add a vet")]),
@@ -943,23 +995,51 @@ def main() -> int:
         scenes = [scene for scene in SCENES if scene.name in wanted]
 
     report = {"configs": []}
+    report_path = args.out / f"report-{args.suite}.json"
     try:
-        run_matrix(report, configs, scenes, args.out)
+        run_matrix(report, configs, scenes, args.out, args.suite, report_path)
     finally:
         # The mismatch suite leaves a deliberately corrupted database behind, so putting it back is
         # the one piece of cleanup that must happen even when a scene throws — a run that crashed
         # halfway is exactly when an app left unopenable is hardest to explain.
         if args.suite == "mismatch":
             restore_schema_version()
-
-    report_path = args.out / f"report-{args.suite}.json"
-    report_path.write_text(json.dumps(report, indent=2))
+        # Write whatever was reached, always. A full matrix is four cells over about two hours on a
+        # phone somebody also owns, and writing the report only at the end means an interruption at
+        # 95% produces *nothing* — the screenshots survive on disk but the inset findings, which are
+        # the point, do not. Twice on 2026-08-12 a run had to be stopped mid-cell and both times the
+        # completed cells were lost. `run_matrix` also writes after each config, so the file is
+        # complete for every cell that finished.
+        report_path.write_text(json.dumps(report, indent=2))
     print(f"\nreport: {report_path}")
     return 0
 
 
-def run_matrix(report: dict, configs: list[Config], scenes: list[Scene], out: Path) -> None:
+def run_matrix(
+    report: dict,
+    configs: list[Config],
+    scenes: list[Scene],
+    out: Path,
+    suite: str,
+    report_path: Path | None = None,
+) -> None:
+    # `keeps_watch_prompt` scenes go first, exactly as they do in `screenshots.py`, and for the same
+    # reason: the seed leaves one expired watch and every other scene opens by tapping `Close it`,
+    # which *deletes the row* (WatchExpiry.kt — "close, dismiss and swipe-away are one action"). In
+    # declared order `home` runs ~20 scenes ahead of `watch-expiry`, so the prompt is gone by then
+    # and the shot is a plain Home screen under a dialog's name. Sorting is stable, so every other
+    # scene keeps the order it is written in — which the inset findings are read against.
+    scenes = sorted(scenes, key=lambda scene: not scene.keeps_watch_prompt)
     for config in configs:
+        # Seed *before* pinning the config, never after. Sorting fixes the watch prompt in the first
+        # cell only — answering it is permanent, so cell 1 eats the one expired watch the seed
+        # leaves and cells 2-4 would shoot a stale screen however they are ordered. But the seed
+        # starts with a `pm clear`, and a wipe costs the rotation (see [wipe]), so seeding after
+        # `apply_config` silently unpins every landscape cell. `full` only: `empty` wipes on purpose
+        # to reach the wizard, and `mismatch` manages its own database surgery.
+        if suite == "full":
+            print("  -- seeding")
+            reset_to_seeded()
         apply_config(config)
         out_dir = out / config.name
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -991,6 +1071,9 @@ def run_matrix(report: dict, configs: list[Config], scenes: list[Scene], out: Pa
                 "scenes": results,
             }
         )
+        # Land each cell as it finishes rather than banking four of them against a clean exit.
+        if report_path is not None:
+            report_path.write_text(json.dumps(report, indent=2))
 
 
 if __name__ == "__main__":
