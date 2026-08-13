@@ -11,9 +11,9 @@ its *result* is written back into the checkpoint below and its detail deleted fr
 
 **A phase still being planned or built gets its own file** — `phase-N.md` beside this one — so that
 working on it costs the phase rather than the whole history. It moves in here, or simply stops being
-read, once it closes. Phases 0–5 are finished and live below; **Phase 6 is finished and stays in
-[`phase-6.md`](phase-6.md)** rather than being copied in, and **Phases 7 and 8 are in
-[`phase-7.md`](phase-7.md) and [`phase-8.md`](phase-8.md)**.
+read, once it closes. Phases 0–5 are finished and live below; **Phases 6 and 7 are finished and stay in
+[`phase-6.md`](phase-6.md) and [`phase-7.md`](phase-7.md)** rather than being copied in, and **Phase 8 is
+in [`phase-8.md`](phase-8.md)**.
 
 ## Status
 
@@ -27,7 +27,10 @@ read, once it closes. Phases 0–5 are finished and live below; **Phase 6 is fin
 - [x] **Phase 6** — Support contact — **ships as 1.3** — record in [`phase-6.md`](phase-6.md), not here
   *(closed on the build and the documents; Play's per-app contact email and the received-mail read are
   carried in [`DOD.md`](DOD.md) §5)*
-- [ ] **Phase 7** — The redesign — **ships as 1.4** — sketched in [`phase-7.md`](phase-7.md), not here
+- [x] **Phase 7** — The redesign — **ships as 1.4** — record in [`phase-7.md`](phase-7.md), not here
+  *(closed 2026-08-13 on the sweep, the 244-scene matrix, lint at 0/0 and the before/after comparison; the
+  **Polish capture moved to Phase 8**, which owns the locale-aware driver it needs — see
+  [`DOD.md`](DOD.md) §7)*
 - [ ] **Phase 8** — Nine languages — **ships as 1.5** — planned in [`phase-8.md`](phase-8.md), not here
 
 The rule is **no release before the data is safe**, which Phase 3 satisfies (ADR-0019). It replaces the

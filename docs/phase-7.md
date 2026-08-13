@@ -815,7 +815,14 @@ On Care the same idiom bought three times the content, so this is the grouped ca
 there is less structure to win back — not a fault in it. It is the one dimension on which the redesign is
 not uniformly an improvement.
 
-⚠️ **The set cannot prove `FabClearance` on the one route it was written for.** `Surfaces.kt` records that
+✅ **`FabClearance` is proven, and the scene that proves it now exists.** Shot 2026-08-13 in both themes:
+at the end of Home's scroll **all three of *Edit*, *Archive* and *Delete* stand clear of the FAB**, with
+the scroll's own bottom padding holding them off the navigation bar. The bug the constant was written for
+does not survive the redesign — which the after set could not have said an hour earlier, because the frame
+did not exist. What follows is the finding as it stood; it is kept because the *gap* is the lesson, not
+the outcome.
+
+⚠️ **The set could not prove `FabClearance` on the one route it was written for.** `Surfaces.kt` records that
 `Scaffold` pads for the bars it owns but not for the FAB, and that **Home's *Delete* sat underneath it in
 the before set** — yet the scene table has `home`, `home-all-bunnies`, `home-empty` and **no `home-bottom`**,
 so no frame in either set shows the end of Home's scroll. The after `home` shot has the FAB floating over
@@ -871,6 +878,32 @@ pair is usable evidence.
 - **How is "more user friendly" judged?** Today the answer is one person's eye. That is acceptable for a
   free app with no installs, and it should be *stated* rather than dressed up as a method.
 
-## When it closes
+## Closed — 2026-08-13
 
-Write the results into this file, tick **Phase 7** in `PLAN.md`'s status list, and empty §6 of `DOD.md`.
+**Ships as 1.4.** Every route in the sweep redrawn against the drawings, the dialog retrofit finished, the
+244-scene edge-to-edge matrix re-run with no confirmed defect in the redesign, `lint` at **0 errors and 0
+warnings**, `PolishTranslationTest` green with both locales level, and the before/after comparison read and
+written up above. `PLAN.md`'s status list is ticked and `DOD.md` §6 is emptied.
+
+**What the phase actually cost in copy**, measured across the whole sweep (`61abe63^` → the last route
+commit): **29 names added** (28 strings and one `plurals`), **9 removed**, **5 reworded in place**, 648 →
+668 entries — nearly all of it *naming* rather than new words, and every one of it present in both locales.
+
+**Three things carried out of the phase rather than finished in it**, each with a home:
+
+- **The Polish after set → Phase 8** (`DOD.md` §7). It was never a capture problem: `--locale pl` switches
+  the app and then every scene fails at its first tap, because the needles are English string literals.
+  Resolving them through resource names is a translation tool and that phase's copy-length canary. What
+  this phase gives up by moving it is **Polish copy-length overflow against the redrawn layouts**, which
+  is now a Phase 8 gate line beside the languages that make it worst.
+- **The `4f` copy question** — *"Lived with Marzipan"* versus the app's *"Lives with Nugget"*. Left
+  unchanged deliberately: `housematesLabel` is shared with Home and the bunny editor, so the past tense
+  costs a second string in both locales, and this phase does not rewrite copy on its own authority.
+- **The calendar route** (`7a`/`7b`) — deferred by definition, since a new nav key is out of scope.
+
+**The one methodological result worth carrying into every later phase.** `setup-reminders`' before shot
+contains the two-stacked-filled-buttons defect in plain sight, captured 2026-08-06 and not noticed until
+the route was rebuilt in August. And `home-bottom` did not exist, so the after set could not answer the
+one question `FabClearance` was written to answer. **A before set is a bug report nobody has read yet, and
+a scene that does not exist is a question nobody can be asked.** Both are cheap to fix and neither is
+found by looking at code.

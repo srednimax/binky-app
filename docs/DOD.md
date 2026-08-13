@@ -7,7 +7,11 @@ closes, tick it here, write the *result* into `PLAN.md`, and delete the detail f
 **Phase 5** (vet, medications, documents, dose reminders — ships as 1.2) — software half **done**,
 evidence half open. Status read 2026-08-05 20:30. **Phase 6** (the support contact — ships as 1.3) is
 built, device-tested and documented as of 2026-08-06; only §5's two hand items are left, and 1.3.0 is
-waiting on a release PR.
+waiting on a release PR. **Phase 7** (the redesign — ships as 1.4) **closed 2026-08-13**; §6 is its
+closing note, and the one thing it carried out is §7's first box.
+
+**So what is actually open is evidence, not code**: §1's overnight run and the gate items behind it, one
+calibration (§3), Play's own count (§4), two hand items (§5), and then Phase 8.
 
 ---
 
@@ -174,8 +178,11 @@ All three land in **one sitting** once the count clears, in this order:
       count has cleared, production becomes available for the first time — whether 1.3 takes it is an
       ADR-0009 decision made then.
 - [ ] **Screenshots for both listings** (EN + PL), owed for the screens 1.1 and 1.2 both added.
-      §2's tap blocker is fixed as of 6c, so this is no longer waiting on tooling — only on Phase 7,
-      per §6's closing note.
+      **No longer blocked on anything of ours**: §2's tap blocker was fixed at 6c, and Phase 7 closed on
+      2026-08-13, so the screens are final and a set taken now will not be stale. The **English** set can
+      be taken today — `~/binky-screenshots/phase-7/after/` already holds 63 scenes in light and dark, so
+      the listing shots are a *selection* from it rather than a new run. **Polish waits on §7's
+      locale-aware driver**, which is the same blocker as the Polish after set.
 - [ ] **The field upgrade proof: 1.0.0 → 1.3**, real bunny history intact. The Xiaomi's Play build is on
       **1.0.0**, not the 1.0.1 4h assumed, so the chain crosses *both* hand-written migrations. It cannot
       run locally — the installed build is Play-signed and a local APK is refused on signature mismatch —
@@ -207,491 +214,19 @@ migrations, so §4's field-upgrade proof retargets to **1.0.0 → 1.3** and stil
 
 ---
 
-## 6 — Phase 7: the redesign 🟢 sketched, not started
+## 6 — Phase 7: the redesign ✅ closed 2026-08-13, ships as 1.4
 
-Shape and decisions in **[`phase-7.md`](phase-7.md)**. **Same functionality, new looks** across all 26
-routes — no schema, no new nav key, no new dependency, so the test suite stays valid throughout and the
-phase ships screen by screen. **Runs after Phase 6** (so Support is designed once) and **before Phase 8**
-(so its copy is translated once).
+**Done.** The record is [`phase-7.md`](phase-7.md) — the per-route checkpoint table, the idiom the sweep
+built (`Surfaces.kt`, `Forms.kt`, `Dialogs.kt`), the four new-functionality decisions, the 244-scene matrix
+result, and the before/after comparison. `PLAN.md`'s status list is ticked.
 
-The per-screen worklist is **not written yet, on purpose** — it cannot be, before the visual language
-exists. These are the items that come first.
+**One thing left the phase rather than closing in it:** the **Polish after set**, moved to Phase 8 on
+2026-08-13 because it turned out to need a *translation* tool rather than a capture — the scene needles are
+English string literals, so `--locale pl` switches the app and then every scene fails at its first tap. It
+is §7's first box, along with the two driver findings that came out of this phase's captures.
 
-- [x] **Decide dynamic colour** — **own a brand**, 2026-08-06,
-      [ADR-0027](adr/0027-binky-owns-its-palette-material-you-is-opt-in.md). Default off, Material You kept
-      as a Settings toggle. The deciding argument turned out to be **ADR-0012**, not brand preference: that
-      ADR buys the whole redesign with *"the visual pass then edits one file"*, and `dynamicColor = true`
-      means nothing reads that file on Android 12+. Two things follow into the work below — a **full**
-      scheme is owed rather than three roles (`surface`, `background`, `outline` and every
-      `on*`/`*Container` are still M3's purple baseline), and the toggle needs **two new strings in both
-      locales**, which is the first partial answer to "does any string change?" below: yes.
-- [x] **Capture the before set** — 2026-08-06, **61 scenes × light and dark = 122 PNGs, 23 MB**, in
-      `~/binky-screenshots/phase-7/before/{light,dark}/`. Out of the repo, per `docs/edge-to-edge/`'s
-      precedent of committing only the shots that make a point. Taken by **`scripts/screenshots.py`**,
-      which imports `edge-to-edge.py`'s scene table rather than copying it.
-      **The axes changed from what this line asked for**: light/dark rather than en/pl, portrait +
-      gesture only. Dark is not a variant of light and does not review as one, and the orientation
-      matrix is the *gate* below rather than a design input. **Polish is therefore still owed** — the
-      script takes `--locale`, and Phase 8's copy-length canary wants it before that phase starts.
-      Four defects were found and fixed getting here; two were in `edge-to-edge.py` and are written up
-      in §2, because they mean some existing 4f evidence is wrong rather than merely missing.
-- [x] **Fix the visual language** — 2026-08-08, in Claude Design. It went past `Home` and `Weight`: most
-      routes now have a drawing. **`phase-7.md` says where the project is and how to read it** — including
-      that `get_file` truncates it at 256 KiB without saying so, and that its hexes are hand-picked
-      despite claiming to be generated. Take the four seeds, not the hexes.
-      ✅ **Nothing is undrawn any more** — 2026-08-10. A turn-10 export adds `10a`–`10n` and their dark
-      twins `10a2`–`10n2`, and `github.md` closes with *"Nothing. All 46 frames exist in light and
-      dark."* It covers the eight this line listed **and four routes no checkpoint row ever had** —
-      course detail, reminder detail, reminder editor and visit editor. The calendar in `7a`/`7b` is a
-      new route and **out of scope** for this phase.
-      ✅ **And nothing new has arrived since** — re-checked 2026-08-11 against the *live* project
-      rather than the download. Remote `github.md` is identical to the exported copy (`last sync
-      2026-08-10T18:05Z`, closing line *"Nothing. All 46 frames exist in light and dark."*), and the
-      export carries turns `t1`–`t10` with every `10a`–`10n2` present. **There is no turn 11**, so no
-      part of the sweep is waiting on a drawing. `list_projects` returning an empty list is not
-      evidence either way — it filters to design-*system* projects, and this is an ordinary one; pass
-      the id. Reading remote `github.md` is the whole freshness check and costs ~1k tokens.
-- [x] **Theme commit first** — 2026-08-08. `Color.kt` generated from the seeds (both schemes in full, 22
-      contrast checks green), `Type.kt`, `Spacing.kt`, `dynamicColor` off. Nunito is a new bundled asset,
-      not a dependency. Two silent traps written up in `phase-7.md`'s order-of-work step 4.
-- [x] **The Material You toggle** — 2026-08-09, so ADR-0027 is whole and dynamic colour is now *off by
-      default* rather than unavailable. Hidden below Android 12, where there is no wallpaper palette to
-      take. **It moved `AppPreferences` onto `BinkyApplication`**: the theme wraps ADR-0007's
-      schema-mismatch screen, and `container` is the `lazy` that *is* the wipe guard, so reading the
-      preference through the container would have opened the gate from inside the screen guarding it.
-- [x] **The rewrite sweep — every route to the new language.** ✅ **Closed 2026-08-13**, verified against
-      the code rather than against this line: all **33** rows of `phase-7.md`'s checkpoint table are ✅, and
-      exactly **three** `AlertDialog` sites survive — `MedicationCourseEditorScreen`, `RecordedAtField`,
-      `SearchablePicker` — which are the three documented exemptions and no others. The per-route table
-      with its mockup ids is
-      in [`phase-7.md`](phase-7.md) *("The rewrite checkpoint")*; one commit per route, each building and
-      installing. **`Home` (all three states), the bunny switcher, `Weight`, `Record an observation`,
-      `Observations`, `Care & Meds` (both states), `New course` and `Record a dose` are done** —
-      2026-08-09; Home's no-bunnies state is code-only so far, because emptying the phone to look at it
-      would take §1's seed with it.
-      ✅ **Care & Meds has now been seen on the device** (2026-08-09), which was the pass it owed for
-      moving three delete paths: today's doses, the courses, the inline *Given*/*Skipped* and the
-      *Done* on a due reminder all render as drawn, in both themes.
-      ✅ **`5a`/`5b` Vets + vet editor and `4e` Bunny editor are done too** — 2026-08-09, both seen on
-      the device in light and dark. Vets became one grouped card and gave up its row-level *Delete*,
-      which is the fifth and last list-plus-editor pair to follow `1d`; its editor changes **no
-      string at all**. The bunny editor kept all eight fields, in order, in the app's own words.
-      ✅ **`6e`/`6f` Record a weighing is done too** — 2026-08-09, and the **last-five line is
-      adopted**, so three of the four open decisions are now closed. Building it surfaced a shipped
-      bug on the screen in front of it: a weigh-in reminder opened both completion dialogs by
-      itself and could not be used. Fixed, and worth reading the phase file on *why* a phase of
-      device passes missed it.
-      ✅ **`6a`/`6b` More, `6c`/`6d` Backup & restore and `4f`/`4g`/`4h` Archived bunnies are done**
-      — 2026-08-09, and with them **every drawn route really is redrawn** (this line claimed that one
-      batch early; the checkpoint table in `phase-7.md` had the three of them still open). Between
-      them they cost the idiom **one parameter** — `ListRow`'s `enabled`, for a row that would open
-      something if it could — which is the second sign the language has settled. Each also states an
-      exception worth knowing: More spends **none** of the raised-card budget, Backup spends it on
-      the section the owner *cannot control*, and Archived bunnies is the one list that stays
-      separate cards **and** keeps its buttons, because *Open* leads to a read-only bunny and there
-      is nowhere for *Delete* to move to.
-      ✅ **All three seen on the device, light and dark** (2026-08-09), including `4f`'s **populated**
-      card, which the seed cannot reach — nothing is archived in the sample data, so the `archived`
-      scene only ever shoots `4g`. Driven by hand: archive from Home, then More → Archived.
-      Two defects came off the phone and neither was visible in the code, both **compounding
-      padding**: `SwitchRow` carries its own insets *and* got a section gap, and a screen that ends
-      in a footnote rather than a card needs `Spacing.section` at the bottom of the scroll or the
-      last line sits under the gesture bar. The scope picker's divider was also asymmetric around the
-      selected band. All fixed and re-shot.
-      ❓ **One copy question is left open on purpose**: `4f` writes *"Lived with Marzipan"* where the
-      app says *"Lives with Nugget"*. The drawing is arguably right — an archived bunny may have been
-      rehomed or died — but `housematesLabel` is shared with Home and the bunny editor, so it means a
-      second string in both locales. Not taken; recorded in `phase-7.md`.
-      ℹ️ **No scene needle broke on any of the three** — the first batch that can say that — even
-      though every needle into them reaches into content (`settings`, `backup`, `archived`, `vets`,
-      `photos`, `documents`, `support` all tap a More row by title, and those six rows are now
-      identical 64dp merged nodes, which is Care & Meds' exact tie-breaking hazard). They survive
-      because `6a` changes **no string**. *A content needle survives a redraw that is structural
-      only.*
-      ✅ **`Settings` is done** — 2026-08-09, the **first route with no drawing at all**, seen on the
-      device in light and dark including its picker. Five settings separated by five full-width
-      rules become the header rhythm and two cards. It states the rule the other seven undrawn
-      routes follow: **a control that cannot name itself gets a section header, a row that names
-      itself does not** — *"Show weights in"* is a sentence two chips finish, where *Language*,
-      *Colours from your wallpaper* and *Backup & restore* each say what they are inside the row.
-      **No string added and none changed; one moved** — `settings_language_help` ("Changing this
-      restarts the app") went from under the row into the picker, because it is a warning about the
-      act of choosing. The device pass earned its keep again and this time on **type, not padding**:
-      `SwitchRow` was at M3's `bodyLarge` and `ListRow` at `titleMedium`, invisible until Settings
-      became the first card to hold both. Fixed in `Forms.kt`, so every switch in the app moved with
-      it. No scene needle broke — `backup`, `settings-scrolled` and `reminders-sheet` all still land.
-      ✅ **`Support` is done** — 2026-08-09, against `9c`/`9d`, seen on the device in light and dark
-      (it fits without scrolling). Every string is the app's own, the order is unchanged, and what
-      the drawing fixes is **weight**: *Report a bug* takes the full-width filled primary while
-      *Request a feature* and *Rate Binky* are outlined, which `9c` promotes to an app-wide rule —
-      **one filled button per screen, and it is the one that matters most.** *Privacy policy* became
-      a chevron row paired with *Version* in one card, and that pairing is what cost the idiom
-      `SingleLineRowHeight`: a subtitle-less `ListRow` is 56dp, not 64dp, and a `FactRow` beside one
-      has to be lifted to match. Two of the drawing's measurements were declined for `2b`'s reason —
-      20px card padding and 44dp outlined buttons have no home in the system.
-      ⚠️ **A second export arrived mid-session and it redrew Settings too** (`9a`/`9b`), a few hours
-      after Settings shipped hand-built. **The hand-built structure held** — same two cards, same
-      rows, same chip pair, same rhythm — so the idiom is now strong enough to predict a drawing,
-      which is the best evidence yet that `Surfaces.kt` earned being written first. `9a` corrected
-      two things, both taken: the **current language moves into the row's trailing slot** beside the
-      chevron (as a line under the title it read as a section heading of its own, and the hand-built
-      version had traded it against the help text), and the **two debug blocks group under one
-      *Debug builds only* header** instead of each repeating the phrase in its body. That last one is
-      the sweep's **only copy change so far** — one new string plus the prefix stripped from two, in
-      both locales, no new words invented. `9a` predates the Material You row and does not show it;
-      kept, since removing a shipped setting is not what "new looks" means.
-      ✅ **Every route left in the sweep is now drawn, in both themes** (2026-08-10) — so the
-      undrawn half of this phase is over, and what remains is thirteen surfaces with a mockup each:
-      the chart's four empty states (`8a`/`8b`), the watch-expiry prompt (`8c`/`8d`/`8e`, where `8d`
-      is the no-live-flag case, "silence must not read as good news"), and the turn-10 pairs —
-      Documents list and detail, Photos grid and viewer, the three setup steps, reminders opt-in,
-      **both** schema-mismatch variants, and the four routes that had no row at all: one course, one
-      reminder, the reminder editor and the visit editor. Setup has already taken one line of the
-      language:
-      `BackupScopePicker` draws rows rather than its own card now, so its two callers each supply one.
-      **`ui/common/Surfaces.kt` is the shared idiom** every remaining route draws from — section header,
-      grouped card, fact row, inset divider, the two card radii, `FabClearance`, and now
-      `GroupedCardItem` for a grouped card whose rows are separate lazy items (any list that can run to
-      hundreds of rows owes it).
-      ✅ **`ui/common/Forms.kt` is the editor half of the same idiom**, decided on `2c` as its own label
-      said it would be: `FormSection`, `FieldLabel`, `HelpText`, `ErrorText`, `ChipRow`, `FormChip`,
-      `NoteField`. Chips wrap rather than scrolling sideways, a section is a card, help belongs to the
-      control above it, free text is an outlined box with a placeholder. Every editor left in the sweep
-      draws from it rather than re-deriving it. `RecordedAtField` moved with it, so `6e` inherits the
-      treatment already.
-      ✅ **`3e` finished the editor kit**: `SingleLineField`, `SwitchRow`, `RemovableChip`, and
-      `ChangeableValueRow` lifted out of `RecordedAtField` with an optional label. **Save moved into
-      the app bar** — `3e` draws a bottom filled button and then recommends against it in its own
-      notes, and the change was taken deliberately rather than slipped in, so **every editor left in
-      the sweep has one chrome to copy**.
-      ✅ **The media pair is done** — 2026-08-11, `10a`–`10d`: Documents list and detail, Photos grid
-      and viewer, all four seen on the device in light and dark. Between them they say where the
-      language **stops**. `10b` is the one route where *put it in a card* is the wrong answer — a scan
-      of a sheet is the content, so the page stays full-bleed and takes `surfaceVariant` under it, and
-      the band that gives a page which does not fill the frame is only visible on the phone. `10c` is
-      the one screen that goes **edge to edge** at all: the grid keeps its 2dp bleed while everything
-      the app *says* about the photos — the import bar, the viewer's date and caption — stays in the
-      16dp gutter, so the rhythm still holds wherever there is type. The empty states moved **in
-      place**, as a card where the first row would be, which cost the idiom **one parameter**
-      (`MessageCard`'s optional `title`) — the third such, after `ListRow`'s `enabled` and
-      `SingleLineRowHeight`. **No string added, changed or moved on any of the four.**
-      The device pass earned its keep on `10d`: *Add one* was pushed to the far screen edge by a
-      `weight(1f)` on the caption, where the drawing sets it **beside** the caption it acts on.
-      `weight(1f, fill = false)` is the fix and the whole of that line's design — a short caption and
-      its action stay a pair, a long one still wraps rather than shoving the button off.
-      ✅ **The two Weight surfaces that had no drawing are done** — 2026-08-11, `8a`–`8e`, both seen on
-      the device in light and dark. **No string added, changed or moved on either**: all four chart
-      sentences and every line of the prompt were already the app's own, which is the drawings reading
-      the app back to itself for the third time this phase. `8a` adds the **only artwork in the app** —
-      three dashed gridlines at `outlineVariant` with one ring on them, at the plot's own [POINT_SIZE]
-      and [POINT_STROKE] so the sketch and the real chart draw the same marker. It goes on the two
-      single-point states and **deliberately not on the other two**: a grid with a point in it says
-      "one reading, nothing to join it to", where an empty grid says nothing the sentence has not
-      already said and starts to read as a chart that failed to load. `8c`–`8e` is mostly `BinkyDialog`
-      plus two designed lines — the nested trend flag (`nested = true` for the 16dp radius; the colour
-      already came from the dialog's `LocalCardSurface`), and ***Close it* going quiet**. Closing a
-      watch is an ordinary answer to the question asked, not a deletion — the row it removes is a
-      present-tense state rather than a record — so it takes `onSurfaceVariant`, the same treatment
-      *Delete document* took inside its menu on `10b`. `8d` needed no change at all: the no-live-flag
-      case already stated the record and claimed nothing about the rabbit.
-      **The seed cannot show `8c`, by design.** `SampleData.kt` pairs the flag with the *running* watch
-      (Bijou) and the steady series with the *expired* one (Nugget), so an ordinary capture only ever
-      reaches `8d` — the same trap `4e` fell into. Verifying it meant a throwaway seed patch, one
-      expired watch on the flagged bunny, reverted before the commit.
-      ✅ **The four Care detail routes are done** — 2026-08-11, `10k`–`10n`: one course, one
-      reminder, the reminder editor and the visit editor, all four seen on the device in light and
-      dark. These are the four the checkpoint table never listed, and three of them had already been
-      *edited* by the Care & Meds redraw without being redrawn by it. **A course and a reminder turn
-      out to be the same screen** — what is next, what to do about it, what has happened — so `10l`
-      is `10k` twice over; the only difference is what sits below the card's hairline, which is
-      *ending* on a course and the **calendar hand-off** on a reminder. A hairline rather than a gap
-      is the point: a gap separates two subjects, a rule separates two kinds of action on one.
-      **One mark is added and it is the only new one in the sweep**: an overdue reminder takes the
-      apricot `CautionDot`. `10l` says the file "already uses it on Care & Meds" and the file did
-      not — but the marker's own definition is *the app itself is raising this*, and a reminder whose
-      day has been and gone is exactly that. The list row does **not** take it: its trailing slot is
-      already spoken for by `3a`'s grammar (a row that asks carries the answer, a row that tells
-      carries a chevron).
-      **No string added, changed or moved on any of the four** — the fourth batch running that way.
-      Two of the drawings' measurements were declined for `9c`'s reason (52dp/44dp buttons in a row
-      of peers), and "Pick a date" stayed *Change* rather than minting a string in two locales.
-      The idiom cost **three parameters this time, not one**, and each names a state the drawn routes
-      never arranged: `ChangeableValueRow.stacked` (a label that is a **question** cannot ride beside
-      its own answer, where *Starts*, *Ends* and *Birthday* can), and `enabled` on `SingleLineField`
-      and `NoteField` — ADR-0004's archived scope, which the visit editor is the only editor to have.
-      `ChangeableValueRow`'s *Clear* also went quiet, which moves the bunny editor with it: of two
-      actions on one row, the one that takes something away is `onSurfaceVariant`.
-      ℹ️ **One thing the device pass found that the code reads fine as**: a dose row's title wraps to
-      two lines. The drawing writes "Given · 10 August at 08:04"; the app writes "Given · Aug 11, 2026
-      at 6:47 PM", and two text buttons at M3's 58dp minimum width leave it about 250dp. Accepted —
-      the row is still half the height of the card it replaced — but it is the reason a drawing's
-      one-line row is a claim about *that* date format and not about the layout.
-      ✅ **The last six frames are done** — 2026-08-11, `10e`–`10j`: the three setup steps, the
-      reminders opt-in and both schema-mismatch variants. **Every drawn route in the sweep is now
-      redrawn**, and this time the line is checked against the table rather than against itself.
-      The wizard is *the one place in Binky with no app bar, no switcher and no nav*, which is what
-      the whole of `10e` follows from: the step counter is the only orientation on screen, so it is
-      tracked out to read as a position rather than a heading, and the title takes the display face
-      the wizard alone spends. Step 2's **two horizontal rules become the header rhythm** — a line
-      through a screen is the weakest way to say a new subject starts here — and its four loose
-      paragraphs about Android's own backup become one card, because they are one subject. Step 3
-      answers *two filled buttons on one screen* with **containment rather than demotion**: the
-      battery ask sits in an apricot card and its button is the filled button *of that card*, while
-      *Finish setup* is the filled button of the screen. Demoting it would have been the wrong answer
-      — it is the difference between reminders working and reminders silently not.
-      `10i`/`10j` are one screen in two states, and the only deliberate difference is emphasis:
-      **share is filled in release**, where it is the only action, and outlined in debug, where the
-      destructive continue outranks it. The path gains a container of its own, because a file path
-      wrapping mid-name across a plain background is unreadable and this is the one string on the
-      screen an owner has to type somewhere else.
-      **One string was removed and none added** — step 2's scope help line, which `10f` drops
-      because the header above it now says the same thing. Removed from both locales (ADR-0013).
-      The idiom cost **one parameter**: `PhotosNotProtectedNote.caution`, and the difference it names
-      is *where the note stands*. Inside Backup's export block a plain tint is enough, because the
-      block already qualifies it; standing alone between two cards on step 2 it is the one sentence
-      describing something the owner can lose, so it takes apricot and the dot.
-      ℹ️ **Two of the drawings were declined, both because a frame described behaviour rather than
-      looks.** `10h` frames the opt-in as a modal sheet where the app hosts it inline at the foot of
-      Care & Meds — a sheet is a trigger to design, not a redraw, and the inline foot *is* ADR-0006's
-      point of use. Every state the frame actually draws already shipped correct; what it won was a
-      **title**, since the block used to open on a paragraph explaining what reminders are for.
-      `10f`'s 20dp gutter was taken as `Spacing.base`: the drawing's stated reason — *so the cards
-      line up with every other card in the app* — is right, every other card is at 16dp, and
-      `Spacing` has no 20.
-      ⚠️ **The device pass found a real defect, and it is the exact rule `10g` exists to answer.**
-      All six frames were seen on the phone in light and dark — the wizard through the driver's
-      `empty` suite, both mismatch variants through `fake_schema_mismatch`, and `10j` through a
-      throwaway `destructiveMigrationAllowed()` patch, reverted. **`10g` draws step 3 *armed*, so it
-      never arranged the state a genuine first run is in**: `pm clear` revokes `POST_NOTIFICATIONS`,
-      so the honest first-run step 3 is *blocked* — and there *Turn reminders on* rendered as a bare
-      filled button directly above *Finish setup*. Two filled buttons on one surface. The fix is the
-      frame's own: containment, so the blocked ask takes the same apricot surface its sibling battery
-      ask just got, and its button becomes the filled button *of that card*. The two asks are the
-      same class anyway — an Android state that stops delivery, and the one screen that changes it.
-      This is `10h`'s geometry declined a second time, and for the same reason: it draws the ask
-      uncarded *in the sheet*, where it is the only filled button on screen and a card buys nothing.
-      **A frame that draws one state has said nothing about the others** — the third time this sweep
-      has paid for that (`2a`, `4e`, now `10g`), and the first where the missing state was the
-      *common* one rather than the rare one.
-      ℹ️ **The other device finding was padding**: the apricot photo note kept the 12dp it has inside
-      Backup's export block, and standing alone between two 16dp cards on step 2 it read as cramped.
-      The caution variant takes 16dp horizontally; the plain one keeps 12, where matching its
-      parent would push its text out to the card's own edge.
-      ℹ️ **The wizard is reachable and recoverable after all, which retires `4c`'s objection for this
-      route.** `edge-to-edge.py` already had `wipe()` **and** `reset_to_seeded()`, and scenes for all
-      three steps; the seed the wipe takes is put back by the same run. What made the earlier call
-      right was the 5 Aug run that wiped and had nothing to restore with — that gap is closed.
-      Check §1 is **not armed** before running it, which it was not on 2026-08-11.
-      ✅ **The dialog retrofit is finished** — 2026-08-11, the **eleven** sites left after the route
-      table went all-✅, in their own commit because none of them was a route. The three weight prompts
-      (delete plus ADR-0021's two collisions), the observation delete, `TrendFlagDialog`,
-      `StartWatchDialog`, `CompleteCareDialog`, `ChooseBunnyDialog`, and ADR-0004's archive and delete
-      ceremonies. **Three `AlertDialog`s remain and all three are the documented exemption** — the two
-      `TimePicker` frames and `SearchablePicker` — and the last one now carries a comment saying so,
-      because a survivor looks like a miss. Two were more than frame swaps: `CompleteCareDialog` is
-      `RecordDoseDialog`'s twin (the reminder's name became the **subject line**, the date took
-      `RecordedAtField`'s section shape, the note took its placeholder as its label) and
-      `ChooseBunnyDialog`'s bare clickable `Text`s became `ListRow`s in a `GroupedCard`. **The first
-      batch of the whole sweep to cost the idiom nothing at all.** Five dialogs seen on the device;
-      `complete-care`, `choose-bunny` and `start-watch` in both themes.
-      ⚠️ **`BunnyDialogs.kt` hid from every count of this retrofit, and the filter was the cause.**
-      The inventory was always `grep -v "Dialogs.kt"`, meant to spare `ui/common/Dialogs.kt` — it
-      spared `BunnyDialogs.kt` too, by substring, so ADR-0004's two ceremonies were never in a total.
-      **Exclude a path, not a basename**, and print what is left rather than counting it.
-      ✅ **Four more `AlertDialog` sites took the retrofit** — the course-delete, dose-delete,
-      reminder-delete and completion-delete confirmations, plus the visit-delete and attach-a-document
-      dialogs, so six on this batch. The attach dialog dropped a `LazyColumn` doing so, for the third
-      time in the sweep and the same reason.
-      ✅ **Four of the ~20 `AlertDialog` sites took the retrofit `3f`/`3g` asked for**, since they sit
-      on routes this batch was redrawing anyway: rename, attach-to-a-visit, manage-pages and both
-      delete confirmations now call `BinkyDialog`. Two of them dropped a `LazyColumn` doing so —
-      `BinkyDialog` scrolls its own content, and a lazy list nested in a scrolling parent measures
-      against an unbounded height and composes every row, losing the only thing it is for.
-      ✅ **`ui/common/Dialogs.kt` is the third file of the idiom**, decided on `3f`/`3g` for *all*
-      dialogs. Most of the rules are M3's `AlertDialog` defaults; the one that is not is the level,
-      and it runs in **opposite directions** — light steps *down* to `surfaceContainerLow`, dark steps
-      *up* to `surfaceContainerHigh` to lift off the scrim. That forced the app's first
-      `CompositionLocal`, `LocalCardSurface`: a card inside a dialog has to sit one step above it or
-      it renders darker than the dialog holding it. The M3 pickers are left alone on purpose.
-      ⚠️ **`Weight` moved deleting a weighing onto the editor** — the drawn history row carries a value,
-      a timestamp, a change and a chevron and has nowhere to put a button. Nothing was lost: the delete
-      ends in the same flag re-check a save does. Every remaining list-plus-editor pair should follow it.
-      ✅ **`Care & Meds` followed it three times over** (2026-08-09) and that is the bulk of its diff:
-      deleting a **course**, a **reminder** and a **visit** all moved off the list onto
-      `MedicationCourseScreen`, `CareReminderScreen` and `VisitEditorScreen`. Unlike Weight, **the
-      destination did not already have one** — those screens delete *doses* and *completions*, which
-      are sub-records — so each needed the dialog, a `confirmingDelete` flag and three methods, and
-      `CareViewModel` lost the machinery for all three. Check the destination before assuming this move
-      is free. It also produced the route's other rule: **a row that is *asking* carries the answer, a
-      row that is *telling* carries a chevron** — which is why *Done* survives on a care reminder only
-      while it is actually due.
-      ⚠️ **Two scene needles broke on this route, both silently, and one was a coin flip.**
-      `OPEN_WEIGHT_FORM` tapped *"Record a weight"* on the Care list — a button that now appears only
-      while the weigh-in is due, which depends on the seeded weighing dates. And `care-reminder` tapped
-      *"Every"*: `find` returns the **smallest** matching node, and a course row and a reminder row are
-      now both exactly 64dp of full-width merged semantics, so the tie breaks on list order and the
-      course wins. Both fixed to name the thing they mean. **Uniform row heights are a new class of
-      needle hazard** — the before set's differently-sized cards were breaking ties for us by accident.
-- [x] **Decide the four pieces of new functionality the designs introduce** — ✅ **all four closed as of
-      2026-08-12**: one adopted (the last-five line), three that turned out never to be new functionality
-      (field-absent states, the stale-backup marker, and *"not checked"*). They are decisions, not tasks,
-      because this phase is *same functionality, new looks*, and a screen redrawn from a mockup absorbs them
-      silently otherwise. The last-five line on Record a weighing (likely adopt), a stale-backup marker
-      (needs a staleness rule and copy that implies no fault), field-absent states in the bunny editor, and
-      the claim that *"not checked"* is a real stored value. The **calendar route is deferred** — a new nav
-      key is out of scope by definition. Listed with reasoning in `phase-7.md`.
-      ✅ **The inventory is complete as of 2026-08-09.** It was provisional because `1d` and `1e`, the two
-      `Weight` frames, sat past the 256 KiB truncation; both were read from the disk export while building
-      `Weight`, and they **add nothing** to the four above. So the only one still owed by a screen that has
-      not been built is the last-five line, which lands with *Record a weighing* (`6e`).
-      ✅ **One of the four is now closed, and it was never new functionality.** `4e`'s *field-absent
-      states* asked whether the app distinguishes "not known" from "not set"; it has since ADR-0016,
-      in those exact words — a birthday is a fact nobody may know, a breed is a field nobody filled
-      in.
-      ✅ **The last-five line is adopted** (2026-08-09, with `6e`) — the only one of the four taken,
-      and what earns it a place in an appearance phase is that it is a *guard* rather than a
-      feature: a digit too many in an empty box poisons the series ADR-0001's flag reports on.
-      ✅ **The stale-backup marker is closed too** (2026-08-09, with `6c`), and like the bunny
-      editor's field-absent states it was **never new functionality**. The staleness rule this line
-      said was missing already ships: `AutoBackupStatus.Recorded.stale` is a fortnight,
-      `backup_auto_stale` is its own sentence, and `stale` already decides whether *Open Android
-      backup settings* appears. So the dot adds no rule, no threshold and no copy — it marks the
-      same two states the screen was going to act on, and a **fresh** backup gets none.
-      ✅ **The last of the four is closed** (2026-08-12) — the *"not checked" is a stored value* claim,
-      and it is **false in the half that matters**, correctly so. *Not checked* is a real default-selected
-      **chip**, but no vocabulary carries a `NOT_CHECKED` entry: the column is nullable and `null` *is*
-      "not checked" (ADR-0001). `NullableChoiceField` writes `null` and lights on `selected == null`, so
-      the UI already says what the column means. No code, no string. **All four decided** — one adopted,
-      three that were never new functionality.
-- [x] **Rules the new look inherits** — **all seven checked against the code, 2026-08-12**, not asserted.
-      `weightChangeLabel(deltaGrams: Int)` takes grams and renders grams with no unit preference in reach;
-      the chart's `xs` are `daysBetween(origin, it.recordedAt)`, real elapsed time rather than list index;
-      every `AsyncImage` in the app (`PhotoGalleryScreen`, `DocumentsScreen`, `BunnyAvatar`) sets **both**
-      `error` and `fallback` to a placeholder; **no `Bitmap.compress` or `FileOutputStream` exists outside
-      `media/MediaFiles.kt`** and the backup writer (ADR-0020); every empty state names the absence of
-      *records* and what the surface is for — none turns silence into reassurance (ADR-0001); *overdue*
-      survives in exactly two places and both are care reminders, `care_due_overdue` and
-      `care_notification_overdue` (ADR-0026); and `PolishTranslationTest` is green, which is ADR-0013's
-      enforcement rather than a promise about it.
-- [x] **Gate: 4f's edge-to-edge matrix re-run in full** — **done 2026-08-12, 244 scenes**: `full` 53×4,
-      `mismatch` 2×4, `empty` 6×4, both orientations and both navigation modes. **No confirmed
-      edge-to-edge defect in the redesign.** `mismatch` and `empty` are perfectly clean (0 skips, 0
-      `drawn`), and `landscape-threebutton` — the **vertical right-edge** navigation bar, a geometry
-      nothing in this app had ever been checked against — came back 50/53 with no findings at all.
-      Four `drawn`-tier findings, three closed:
-      **`document-viewer` reads 13px in three different geometries** (48px bar, 142px bar, and
-      landscape), and a residual that does not grow with the bar is the signature of *correct* inset
-      handling — the caption moves up by exactly the bar's height and only its padding box crosses the
-      line. Invariance across cells proved this where a screenshot could not.
-      **`reminders-sheet` tracks the bar exactly** (48 → 142 → 48px): scrolling content passing under
-      the bar, which the scene's own note already calls "a list scrolling, not a defect", and its
-      `-bottom` companion proves the end clears.
-      **`reminders-sheet-bottom` is the M3 scrim** (`View`, "Close sheet", a 16px full-width strip).
-      The checker skips a scrim only when the overlap equals the *whole* inset rect; expanded, the
-      scrim is reported as a thin strip and trips instead. **A harness false positive** — it will
-      recur at every gate until the rule matches the shape rather than the coverage.
-      ✅ **`care-reminder-editor` is closed too, by hand, and it is the reason the table grew a scene.**
-      Its opening frame puts an `EditText` (the interval field) 27px under the gesture bar in
-      **landscape only**, and with no `-bottom` companion nothing in the matrix could say whether the
-      *end* of that scroll clears. Driven by hand at the same config: the opening frame reproduces the
-      finding exactly (same bounds), and **scrolled to the end it is `drawn=0 touch=0`**. So it is
-      `reminders-sheet`'s case — content below the fold in a scrolling form — and not a defect.
-      `care-reminder-editor-bottom` is now scene **62**, because *a route whose opening frame can trip
-      the check owes a `-bottom`* or every future run re-litigates it from scratch.
-      ℹ️ **`home-bottom` is scene 63**, added 2026-08-13 by Phase 7's comparison (§6) for the same rule.
-      Like 62 it is **not in the 244-scene evidence above** — that run predates both. Neither needs the
-      matrix re-run to close Phase 7: 62 was verified by hand at the config that tripped it, and 63 is
-      wanted for the *screenshot* set rather than the inset check. **The next matrix run is 63×4.**
-      ⚠️ **Six skips, all landscape, all reachability rather than needles** — `observation-entry-ime`
-      (one `swipe_up` does not reach the note box on a 1220px-tall viewport) and
-      `visit-editor`/`visit-editor-bottom` (*Add a visit* sits below routine care and out of reach).
-      Identical in both landscape cells, clean in both portrait ones. **The scene table has never been
-      landscape-proof** and could not have been known to be: every prior landscape cell was secretly
-      portrait (see the rotation defect above), so these three scenes have never actually run.
-      **All three fixed**: `observation-entry-ime` takes `swipe_end` rather than one `swipe_up` — the
-      note is the *last* field, so scrolling to the end asks where it is instead of guessing — and both
-      `visit-editor` scenes get a `swipe_up` before *Add a visit*, which is the last section of Care &
-      Meds. `tap` does scroll when it cannot find its target, but one round is not enough at 1220px
-      tall, which is the whole difference between the two orientations.
-- [x] Re-capture and compare, same routes, same locales. **`lint` is 0 errors, 0 warnings** (2026-08-12,
-      after fixing two `UnusedAttribute` warnings the theme commit left on the Nunito weight XMLs — the
-      attribute is API 28 and the files claimed 26, so `tools:targetApi` records the version gate and
-      the comment now says what happens on 26-27).
-      ✅ **English after set captured** — 2026-08-13, **62 light + 62 dark** in
-      `~/binky-screenshots/phase-7/after/`, against the before set's 61+61. Every before scene has a
-      counterpart in both themes; the one extra is `care-reminder-editor-bottom`, added today, which by
-      definition has no before. **Compare on structure, density and copy — never on hue**: the before
-      set was shot while `dynamicColor = true`, so its colours are that day's wallpaper, and the after
-      set is Binky's own scheme. `screenshots.py`'s manifest said the old thing and now says this.
-      ⚠️ **The seed's 8:00 PM dose makes evening captures unreliable, and Do Not Disturb is the fix.**
-      Two runs were wrecked and a third crippled before the cause was pinned: `reset_to_seeded` recreates
-      the Metacam course, whose 20:00 dose is minutes in the past, so a heads-up banner (`importance=4`,
-      two actions) posts a minute or so after **every** seed — over Home, exactly where `SELECT_BUNNY`
-      taps. The tap opens the course, `AUTO_CANCEL` clears the banner (so a later `dumpsys notification`
-      finds nothing and the evidence looks impossible), and **Nav3's `rememberNavBackStack` then restores
-      that screen on every relaunch**, so one stolen tap poisons every scene after it. `cmd notification
-      set_dnd on` suppresses the banner without touching `POST_NOTIFICATIONS`, so the reminder copy the
-      scenes photograph stays truthful. **With DND on, the dark cell ran 62/62 with zero skips** where the
-      two runs before it had cascaded. **Turn DND off afterwards** — it is a phone-wide setting.
-      ℹ️ **`am start -S -f 0x10008000` in `relaunch()` was aimed at the wrong mechanism.** It is correct
-      hardening and stays, but it does not clear a restored Nav3 stack; the matrix's 212 clean scenes did
-      not prove it against this case, because that run started after the 20:00 dose had already fired.
-      **Scene isolation needs a return-to-Home step, not a restart** — unwritten, and `KEYCODE_BACK` is
-      not it: backing past Home exits to the launcher and makes the next scenes worse.
-      ✅ **The comparison is done** — 2026-08-13, **12 route pairs read in light**, written up in
-      [`phase-7.md`](phase-7.md) *("The comparison — what the after set actually says")*. The gains are
-      **affordance rather than decoration** (`More` and `Documents` had nothing saying a row was tappable
-      and change no string between them; Care & Meds carries ~3× the content; the chart's readings became
-      visible at all), and the honest cost is that the **record-reading screens got less dense** —
-      Observations fits one entry where it fit one and a half, Backup and Home each lose a section to the
-      fold. `setup-reminders` is the pair that photographs a defect being fixed: the before shot is the
-      two-stacked-filled-buttons state `10g` never drew, which means **the before set had been carrying
-      that bug's evidence since 2026-08-06 and nobody read it**.
-- [ ] **Shoot `home-bottom`** — the one thing the comparison found that the after set cannot answer.
-      `FabClearance` was written for Home (`Scaffold` pads for its own bars, not for the FAB, so *Delete*
-      sat under it in the before set) and **there is no `home-bottom` scene in either set**, so no frame
-      shows the end of Home's scroll. The scene is now in `edge-to-edge.py`'s `SCENES`, on
-      `care-reminder-editor-bottom`'s rule; it still needs one run in both themes into
-      `~/binky-screenshots/phase-7/after/`. Attempted 2026-08-13 and **blocked on a locked phone**, not on
-      the driver: `scripts/screenshots.py --out ~/binky-screenshots/phase-7/after --scene home-bottom`,
-      with `cmd notification set_dnd on` first (the seed's 8:00 PM dose posts a heads-up banner over Home
-      minutes after every reseed) and **off afterwards** — it is a phone-wide setting.
-- [x] **The Polish after set is moved to Phase 8** — decided 2026-08-13, and it moves as a *box*, not as a
-      capture nobody takes. Attempted that day, and **every scene fails at its first tap**: `--locale pl`
-      does switch the app (the dump comes back `14 dni, 3 dni, 7 dni`), but **the scene needles are English
-      string literals**, so `tap("Choose which bunny")` matches nothing the moment the app is not English.
-      The flag has never been exercised — it sets the locale correctly and then cannot drive a single
-      scene, which is why both this file and `phase-8.md` have been treating a `--locale` flag as if it
-      were the whole job.
-      **What makes it Phase 8's rather than this phase's**: the fix is a *translation* tool, it is that
-      phase's copy-length canary, and building it here means building it against one locale and then
-      generalising it to nine. This phase's own claim is about looks, and looks are what the English set
-      shows; ADR-0013 and `PolishTranslationTest` are what keep the Polish strings level meanwhile, and
-      they are green. **What is genuinely deferred with it is copy-length overflow in Polish** — a longer
-      string clipping or wrapping wrongly in the redesigned layouts — which is a real risk this phase is
-      choosing not to photograph. It is already a gate line in `phase-8.md`, on the same languages that
-      make it worst (German compounds, Ukrainian), so it is checked once rather than twice.
-      The shape of the fix and its two wrinkles are written up in §7 and in `phase-8.md`.
-- [x] **Answered, and it is not the clean "no" that line hoped for** — 2026-08-11, measured across the
-      whole sweep (`61abe63^` → `91f524b`): **29 names added** (28 strings and one `plurals`), **9
-      removed**, **5 reworded in place**, 648 → 668 entries. So Phase 8 does not start in parallel; it
-      starts after this phase, as planned. **Both locales are level** — every added name exists in
-      `values-pl`, every removed one is gone from it (ADR-0013), and the only en-only entry is
-      `app_name`, `translatable="false"` on purpose. Nearly all of the churn is **naming rather than new
-      words**: section headers the old screens did without (`weight_chart_section`,
-      `med_editor_section_when`, `observation_tray_section`), placeholders the form idiom needs
-      (`med_editor_name_placeholder`), and two generic actions (`action_change`, `action_clear`) taking
-      over from per-screen ones. The five rewordings are the same move — `weight_grams_label` folded
-      into `weight_grams_help` when the label left its box, and *"Debug builds only."* stripped from
-      two help strings once `settings_debug_header` said it once. **Final only if the gate finds
-      nothing**: the matrix re-run and the *"not checked"* decision can each still move copy.
-- [x] **1.4, not 2.0** — decided 2026-08-08. Nothing breaks in the data, the schema or the backup format,
-      so a major bump would claim something untrue. **This is now a commit rule: no `feat!:` anywhere in
-      the phase**, because a single one makes `release-please` cut 2.0 regardless of what the docs say.
-      A screen replaced wholesale is still `feat:`.
-
-**§4's Play screenshots wait for this phase**, or they are taken twice and the first set is stale before
-the testing count clears.
+**§4's Play screenshots are unblocked by this** — they were waiting on the redesign so they would not be
+taken twice. The screens they photograph are now final.
 
 ---
 
@@ -718,6 +253,24 @@ in nine languages and having it read twice by nine native speakers.
       Build it **before drafting the seven** — it is the copy-length canary, and a draft that clips is
       cheaper to find before a native speaker reads it than after. It belongs in `edge-to-edge.py`, where
       the needles live; `screenshots.py` imports that table rather than copying it, so both get it.
+      **Two driver facts carried out of Phase 7, both paid for the hard way:**
+      ⚠️ **The seed's 8:00 PM dose wrecks evening captures, and Do Not Disturb is the fix.** Two runs were
+      wrecked and a third crippled before the cause was pinned: `reset_to_seeded` recreates the Metacam
+      course, whose 20:00 dose is minutes in the past, so a heads-up banner (`importance=4`, two actions)
+      posts a minute or so after **every** seed — over Home, exactly where `SELECT_BUNNY` taps. The tap
+      opens the course, `AUTO_CANCEL` clears the banner (so a later `dumpsys notification` finds nothing
+      and the evidence looks impossible), and **Nav3's `rememberNavBackStack` then restores that screen on
+      every relaunch**, so one stolen tap poisons every scene after it. `cmd notification set_dnd on`
+      suppresses the banner without touching `POST_NOTIFICATIONS`, so the reminder copy the scenes
+      photograph stays truthful. With DND on a full dark cell ran 62/62 with zero skips where the two runs
+      before it had cascaded. **Turn it off afterwards** — it is a phone-wide setting.
+      ⚠️ **Scene isolation needs a return-to-Home step, and it is still unwritten.**
+      `am start -S -f 0x10008000` in `relaunch()` is correct hardening and stays, but it does **not** clear
+      a restored Nav3 back stack, which is the actual failure above. `KEYCODE_BACK` is not the fix either:
+      backing past Home exits to the launcher and makes the following scenes worse. The matrix's 212 clean
+      scenes did not prove the current code against this case — that run started after the 20:00 dose had
+      already fired. **Write the step while building the locale work**, since a locale run walks every
+      scene twice over.
 - [ ] `settings_language_*` → `translatable="false"` — endonyms are locale-invariant, and this removes
       81 duplicated entries at nine languages.
 - [ ] Translator brief + per-language banned-word lists (ADR-0026's *missed*/*overdue*, ADR-0001's
