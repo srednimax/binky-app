@@ -79,9 +79,28 @@ it is declared anyway for the same reason Polish declares `other`.
   screenshots when a language has none, but there is no fallback for *discovery* — an untranslated
   listing means nobody in that market finds the app at all. So the title, short and full descriptions are
   part of this phase for every language, and localised screenshots are taken for the languages with
-  installs once there are installs to count. `scripts/edge-to-edge.py` needs a `--locale` flag it does
-  not have today; the app's own switcher is what it drives, so this is a capture-time argument rather
-  than a second matrix.
+  installs once there are installs to count. They wait on the locale-aware driver below — **not** on a
+  `--locale` flag, which is what this line used to say was missing and which already exists.
+- **The capture driver has to be locale-aware, and that is a translation job rather than a capture one.**
+  Carried in from Phase 7 on 2026-08-13, where it was the single box that phase did not close. `--locale`
+  already exists on `screenshots.py` and already switches the app — the dump comes back `14 dni, 3 dni,
+  7 dni` — and then **every scene fails at its first tap**, because the scene needles in
+  `edge-to-edge.py`'s table are English string literals and `tap("Choose which bunny")` matches nothing.
+  The flag has never actually been exercised, which is why two phase files had been treating it as the
+  whole job.
+  **ADR-0013 is what makes the fix small.** Every user-visible string is a resource in every locale and
+  `TranslationTest` keeps them level, so a needle can resolve *through the resource name*: parse
+  `values/strings.xml` and `values-<locale>/strings.xml`, build the map, translate at tap time. Two
+  wrinkles, and both argue for a lookup that **falls through to the literal** rather than failing —
+  several needles are deliberate **substrings** of their string (`"What you noticed"`), and several are
+  not resources at all (`Bijou` and `Metacam` are sample data, identical in every locale).
+  It belongs in `edge-to-edge.py`, where the needles live and where the inset matrix reads them too;
+  `screenshots.py` imports that table rather than copying it, so one fix serves both.
+  **Build it before the seven drafts land**, not after: it is the copy-length canary, and a German
+  compound clipping a redrawn row is cheaper to find before a native speaker reads that language than
+  after. It is also what pays back Phase 7's one deferred claim — that phase shipped its comparison in
+  English, so **Polish is the first language whose copy length has never been photographed against the
+  new layouts**, and it goes through this driver alongside the seven rather than as a special case.
 - **`values-pt-rBR`, not `values-pt-BR`.** The resource qualifier uses the `r` prefix for a region; the
   BCP-47 tag in `locales_config.xml` and in `AppLanguage` does not (`pt-BR`). Two spellings of one
   locale, in two files that must agree, is exactly the shape of mistake `AppLanguageTest` exists to
@@ -125,6 +144,8 @@ hold is tone — that is the native read-through, and it is why a language ships
   plurals.
 - Edge-to-edge unaffected: longest-string languages (German compounds, Ukrainian) do not clip or wrap
   wrongly on the narrowest supported screen — the one visual risk a translation genuinely carries.
+  **Polish is checked here too, not assumed**: Phase 7 deferred its capture, so it is the one shipped
+  language whose copy length has never been seen against the redrawn layouts.
 
 `spotlessApply`, `assembleDebug`, `test` and `lint` at the gate. No `connectedAndroidTest` is owed —
 there is no schema change and no media path.
@@ -134,9 +155,12 @@ there is no schema change and no media path.
 1. Generalise the test and the locale table **first**, on `en` + `pl` alone. It must be able to fail
    before there is anything to check.
 2. Endonym labels to `translatable="false"`; the brief and the banned-word lists written.
-3. Draft all seven into `translations/`, validated by the test in place.
-4. Promote one language at a time as its native read completes — four edits, one commit, one language.
-5. Listing text for the promoted set; screenshots later, driven by install data.
+3. **The locale-aware capture driver**, proven on `pl` — the one locale that is already complete, so it
+   is the only one that can prove the mechanism before there is anything to draft. It also clears Phase
+   7's deferred Polish pass in passing.
+4. Draft all seven into `translations/`, validated by the test in place.
+5. Promote one language at a time as its native read completes — four edits, one commit, one language.
+6. Listing text for the promoted set; screenshots later, driven by install data.
 
 ## When it closes
 
