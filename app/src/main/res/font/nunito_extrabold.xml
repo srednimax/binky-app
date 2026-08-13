@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- See nunito_bold.xml: the wght axis must be pinned in the resource. -->
-<font-family xmlns:android="http://schemas.android.com/apk/res/android">
+<!-- See nunito_bold.xml: the wght axis must be pinned in the resource, and the
+     attribute that pins it is API 28. -->
+<font-family
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <font
         android:font="@font/nunito_variable"
         android:fontStyle="normal"
         android:fontVariationSettings="'wght' 800"
-        android:fontWeight="800" />
+        android:fontWeight="800"
+        tools:targetApi="28" />
 </font-family>
