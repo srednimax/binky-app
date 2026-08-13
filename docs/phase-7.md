@@ -770,7 +770,16 @@ new one — but it is the shape every other list-plus-editor pair in the sweep s
 
 ## Gate
 
-- **All 26 routes visited on the device**, in both locales, against the before set.
+- **All 26 routes visited on the device**, against the before set. **In English only — the Polish pass
+  moved to Phase 8 on 2026-08-13**, and the reason is that it turned out to be a *translation* tool
+  rather than a capture. `--locale pl` switches the app and then every scene fails at its first tap,
+  because the needles in `edge-to-edge.py`'s table are English string literals; resolving them through
+  resource names is Phase 8's copy-length canary, and building it here would mean building it for one
+  locale and generalising it to nine. What this phase gives up by moving it is **Polish copy-length
+  overflow in the redrawn layouts** — a longer string clipping or wrapping wrongly — which is already a
+  gate line in `phase-8.md` alongside the languages that make it worst. What it does *not* give up is
+  string parity: ADR-0013 and `PolishTranslationTest` hold that, and both locales are level
+  (`DOD.md` §6). The full write-up is `DOD.md` §7.
 - **4f's edge-to-edge matrix re-run in full** — both orientations, both navigation modes. A visual
   overhaul is precisely the change that matrix exists to catch, and it is the one gate here that cannot
   be argued down.

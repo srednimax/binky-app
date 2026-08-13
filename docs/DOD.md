@@ -634,20 +634,22 @@ exists. These are the items that come first.
       not prove it against this case, because that run started after the 20:00 dose had already fired.
       **Scene isolation needs a return-to-Home step, not a restart** — unwritten, and `KEYCODE_BACK` is
       not it: backing past Home exits to the launcher and makes the next scenes worse.
-- [ ] **Polish after set still owed, and it is blocked on the driver rather than the phone** — attempted
-      2026-08-13 and **every scene fails at its first tap**. `--locale pl` does switch the app (the dump
-      comes back `14 dni, 3 dni, 7 dni`), but **the scene needles are English string literals**, so
-      `tap("Choose which bunny")` matches nothing the moment the app is not English. The flag has never
-      been exercised: it sets the locale correctly and then cannot drive a single scene, which is why both
-      this file and `phase-8.md` have been treating a `--locale` flag as if it were the whole job.
-      **The fix has a clean shape, thanks to ADR-0013**: every user-visible string is a resource in both
-      locales and `PolishTranslationTest` keeps them level, so a needle can resolve *through the resource
-      name* — parse `values/strings.xml` and `values-pl/strings.xml`, build the map, translate at tap
-      time. Two wrinkles: several needles are deliberate **substrings** of their string
-      (`"What you noticed"`), and several are not resources at all (`Bijou`, `Metacam` are sample data and
-      identical in both locales), so the lookup must fall through to the literal rather than fail.
-      **Phase 8 wants this before it starts** — it is the copy-length canary — so it is worth building
-      once, properly, rather than hand-driving one locale.
+- [x] **The Polish after set is moved to Phase 8** — decided 2026-08-13, and it moves as a *box*, not as a
+      capture nobody takes. Attempted that day, and **every scene fails at its first tap**: `--locale pl`
+      does switch the app (the dump comes back `14 dni, 3 dni, 7 dni`), but **the scene needles are English
+      string literals**, so `tap("Choose which bunny")` matches nothing the moment the app is not English.
+      The flag has never been exercised — it sets the locale correctly and then cannot drive a single
+      scene, which is why both this file and `phase-8.md` have been treating a `--locale` flag as if it
+      were the whole job.
+      **What makes it Phase 8's rather than this phase's**: the fix is a *translation* tool, it is that
+      phase's copy-length canary, and building it here means building it against one locale and then
+      generalising it to nine. This phase's own claim is about looks, and looks are what the English set
+      shows; ADR-0013 and `PolishTranslationTest` are what keep the Polish strings level meanwhile, and
+      they are green. **What is genuinely deferred with it is copy-length overflow in Polish** — a longer
+      string clipping or wrapping wrongly in the redesigned layouts — which is a real risk this phase is
+      choosing not to photograph. It is already a gate line in `phase-8.md`, on the same languages that
+      make it worst (German compounds, Ukrainian), so it is checked once rather than twice.
+      The shape of the fix and its two wrinkles are written up in §7 and in `phase-8.md`.
 - [x] **Answered, and it is not the clean "no" that line hoped for** — 2026-08-11, measured across the
       whole sweep (`61abe63^` → `91f524b`): **29 names added** (28 strings and one `plurals`), **9
       removed**, **5 reworded in place**, 648 → 668 entries. So Phase 8 does not start in parallel; it
@@ -680,6 +682,20 @@ in nine languages and having it read twice by nine native speakers.
 - [ ] Generalise `PolishTranslationTest` → `TranslationTest`, parameterised over the locale table, with
       **per-language plural categories from CLDR** (not a hardcoded set of four). Do this **first**, on
       `en` + `pl`, so it can fail before there is anything to check.
+- [ ] **Make the capture driver locale-aware — needles that resolve through resource names**, carried
+      from Phase 7 (§6) on 2026-08-13, where it was the one box that phase did not close. `--locale`
+      already exists on `screenshots.py` and already switches the app; what does not work is everything
+      after it, because **the scene needles in `edge-to-edge.py`'s table are English string literals**
+      and `tap("Choose which bunny")` matches nothing in Polish. Every scene fails at its first tap.
+      **The fix has a clean shape, thanks to ADR-0013**: every user-visible string is a resource in every
+      locale and `TranslationTest` keeps them level, so a needle can resolve *through the resource name* —
+      parse `values/strings.xml` and `values-<locale>/strings.xml`, build the map, translate at tap time.
+      Two wrinkles: several needles are deliberate **substrings** of their string (`"What you noticed"`),
+      and several are not resources at all (`Bijou`, `Metacam` are sample data, identical in every
+      locale), so the lookup must **fall through to the literal** rather than fail.
+      Build it **before drafting the seven** — it is the copy-length canary, and a draft that clips is
+      cheaper to find before a native speaker reads it than after. It belongs in `edge-to-edge.py`, where
+      the needles live; `screenshots.py` imports that table rather than copying it, so both get it.
 - [ ] `settings_language_*` → `translatable="false"` — endonyms are locale-invariant, and this removes
       81 duplicated entries at nine languages.
 - [ ] Translator brief + per-language banned-word lists (ADR-0026's *missed*/*overdue*, ADR-0001's
@@ -692,7 +708,8 @@ in nine languages and having it read twice by nine native speakers.
 - [ ] `AppLanguageTest` extended to compare resource directories too (`values-pt-rBR` vs `pt-BR` — two
       spellings of one locale in two files).
 - [ ] Play listing title + short + full description in all nine. Screenshots may lag (Play falls back);
-      `scripts/edge-to-edge.py` needs a `--locale` flag first.
+      they need the locale-aware driver above — **not** a `--locale` flag, which already exists and is
+      not the missing half.
 - [ ] **Decide the lagging-translation policy** when the test is generalised — strict red build, or a
       dated `translations-pending` allowlist. See phase-8.md's open question.
 
