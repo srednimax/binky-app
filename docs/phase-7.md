@@ -768,6 +768,71 @@ What `1d` did decide, and it is a placement rather than a feature: **the history
 put a Delete**, so deleting moved to the editor. That is not a loss of functionality and it is not a
 new one — but it is the shape every other list-plus-editor pair in the sweep should now follow.
 
+## The comparison — what the after set actually says
+
+Done 2026-08-13 against the English after set (62 light + 62 dark), reading **12 route pairs in light**:
+`home`, `weight`, `care`, `observations`, `more`, `support`, `backup`, `documents`, `settings`,
+`medication-course`, `setup-bunny`, `setup-reminders`. Light only, and on **structure, density and copy —
+never hue**: the before set was shot while `dynamicColor = true`, so its colours are that day's wallpaper.
+
+**The gains are mostly affordance, not decoration**, which is not what a "redesign" is usually expected to
+buy and is the most useful thing this comparison found.
+
+- **`More` and `Documents` are the clearest pair.** Both were content on a bare background with **nothing
+  saying a row could be tapped** — six headings with paragraphs, three document rows split by edge-to-edge
+  rules. Both are now one grouped card, inset dividers, a chevron per row. `More` changes **no string at
+  all**, so the entire improvement is that its rows finally look like the objects they are.
+- **`Care & Meds` is the largest single gain.** Before, the delivery caveat sat *at the top* with its own
+  outlined button and ate the first third of the screen; below it fitted two dose cards and one course.
+  After: two doses, three courses, *Add a course*, the vet caveat **and** *Routine care* already begun —
+  about **three times the content**, with the caveat demoted to one sentence far down. This route on its
+  own justifies `ListRow` and the 64dp floor.
+- **The weight chart gained its data back.** The before chart draws a bare line with **no point markers**,
+  so a reading is indistinguishable from a vertex — on a chart whose whole point is that weighings are
+  irregular and plotted against real time. The rings fix exactly that.
+- **Home's flag card is ADR-0026 made visible.** It was a salmon panel shouting while its own text said
+  *"an observation about the numbers, not a diagnosis"*. The quiet card and the 10dp dot end that
+  contradiction; the panel-and-copy disagreement is obvious once the two shots are side by side.
+- **`medication-course` moved a whole action onto the screen** and still got denser: three dose cards with
+  inline *Edit*/*Delete* became four-plus rows in one grouped card, and *Delete* — moved off the Care list
+  by `1d`'s rule — fits without costing a row.
+- **`setup-reminders` is the one pair that photographs a defect being fixed.** The before shot is the exact
+  state `10g` never drew: *Turn reminders on* and *Finish setup* as **two identical filled buttons stacked
+  on one surface**. The after shows containment — the blocked ask in an apricot card, its button the filled
+  button *of that card*. **The before set had been carrying the evidence for that bug since 2026-08-06**,
+  and nobody looked until the route was rebuilt. A before set is a bug report nobody has read yet.
+
+**The honest cost: the record-reading screens got less dense.** This runs against the phase's own aim and
+is worth stating plainly rather than filing under "breathing room".
+
+- **`Observations` fits one entry** where the before fit one and a half; the fact rows sit ~35% further
+  apart, and the tray subheading and symptom chips add height. The chips *are* more scannable — but this
+  is a timeline, and a timeline that shows less per screen is a real trade.
+- **`Backup`** reaches *Export a backup* at the fold where the before reached *Where exports go*.
+- **`Home`** pushes *Edit / Archive / Delete* below the fold; all three were visible before.
+
+On Care the same idiom bought three times the content, so this is the grouped card's cost showing up where
+there is less structure to win back — not a fault in it. It is the one dimension on which the redesign is
+not uniformly an improvement.
+
+⚠️ **The set cannot prove `FabClearance` on the one route it was written for.** `Surfaces.kt` records that
+`Scaffold` pads for the bars it owns but not for the FAB, and that **Home's *Delete* sat underneath it in
+the before set** — yet the scene table has `home`, `home-all-bunnies`, `home-empty` and **no `home-bottom`**,
+so no frame in either set shows the end of Home's scroll. The after `home` shot has the FAB floating over
+the *About Bijou* card with the three buttons below the fold, which is the state the fix is about and not a
+view of the fix. **`home-bottom` is added to `SCENES`** on `care-reminder-editor-bottom`'s rule — *a route
+whose last row can end up under something owes a `-bottom`*, or every future gate re-litigates it from
+scratch.
+
+ℹ️ **Three differences that are not the redesign**, recorded so the next reader does not chase them: every
+date moves (`Jul 23` → `Jul 30`, `Aug 4` → `Aug 11`, `Aug 6` → `Aug 13`) because the seed is relative to
+capture day; `Support` reads `1.2.0 (218)` before and `1.3.0 (265)` after; and `Settings` gains the
+Material You row, which did not exist when the before set was taken.
+
+ℹ️ **`medication-course`'s before shot is the real course, not the system Settings mis-capture.** DOD §2
+records that trap for `edge-to-edge.py`'s matrix run; `screenshots.py`'s before set is unaffected, so this
+pair is usable evidence.
+
 ## Gate
 
 - **All 26 routes visited on the device**, against the before set. **In English only — the Polish pass
