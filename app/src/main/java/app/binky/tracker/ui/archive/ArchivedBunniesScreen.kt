@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
@@ -168,7 +169,15 @@ private fun ArchivedBunny(
                         )
                     }
                     housematesLabel(profile.housemates)?.let {
-                        Text(text = it, style = MaterialTheme.typography.bodySmall)
+                        // Bounded like both Home sites (Phase 7.5 §8), and this is the site where
+                        // the label is longest by construction: an archived bunny's row names every
+                        // housemate it kept (ADR-0004), on a card built for one line.
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
             }
