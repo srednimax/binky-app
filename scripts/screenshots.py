@@ -84,21 +84,11 @@ def set_theme(theme: str) -> None:
     e2e.settle(2.5)
 
 
-def set_locale(locale: str | None) -> None:
-    """Pin the app's language, or hand it back to the device default when `locale` is None.
-
-    Per-app locales are system state keyed by package, which is why this is `cmd locale` and not the
-    in-app Settings picker: same mechanism the picker drives, reachable without eight taps.
-
-    **It does not survive `pm clear`.** Every wipe drops it back to the device default, so this is
-    re-applied per suite rather than once per cell — the `empty` suite would otherwise shoot the
-    setup wizard in English inside a Polish run and label it Polish.
-    """
-    if locale is None:
-        e2e.shell(f"cmd locale set-app-locales {e2e.PACKAGE} --locales")
-    else:
-        e2e.shell(f"cmd locale set-app-locales {e2e.PACKAGE} --locales {locale}")
-    e2e.settle(1.5)
+# The locale lever moved to `edge-to-edge.py`, beside the needle table it has to agree with — the
+# same argument that imports [SCENES] rather than copying them. `wipe` there re-applies it after
+# every `pm clear`, so this script no longer re-pins it per suite: the `empty` suite wipes as its
+# first *step*, which a once-per-suite call could never have covered anyway.
+set_locale = e2e.set_locale
 
 
 # --------------------------------------------------------------------------------------------
@@ -169,8 +159,6 @@ def run_cell(theme: str, locale: str | None, scenes: list, out: Path, reseed: bo
             # reasons as `edge-to-edge.py`'s [run_matrix].
             wanted.sort(key=lambda scene: (scene.seed, not scene.keeps_watch_prompt))
             schema_dirty = schema_dirty or suite == "mismatch"
-            # Re-applied per suite because `empty`'s wipe drops it — see [set_locale].
-            set_locale(locale)
             print(f"  -- {suite} ({len(wanted)} scenes)")
             for scene in wanted:
                 if suite == "full" and reseed:
@@ -246,6 +234,12 @@ def main() -> int:
         if unknown:
             parser.error(f"unknown scene(s): {', '.join(sorted(unknown))}")
         scenes = [scene for scene in scenes if scene.name in wanted]
+
+    # Needles first, phone second: an ambiguous or missing one is a fact about this repository, and
+    # finding it out before the first tap is the difference between a minute and an evening.
+    if args.locale:
+        e2e.resolve_needles(args.locale)
+    set_locale(args.locale)
 
     e2e.apply_config(CONFIG)
     started = time.time()
