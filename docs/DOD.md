@@ -160,19 +160,21 @@ All deliberately after it, because each would disturb the armed course.
 
 ---
 
-## 3 — The document downsample spec, still uncalibrated 🟠 ⤷ Phase 7.5
+## 3 — The document downsample spec 🟢 answered 2026-08-14
 
-Phase 5's intro calls this *"a deliverable and not an assumption"*, and `MediaFiles.kt:60` still carries
-the **unverified** comment on `MediaKind.Document` = `LongEdge(maxEdge = 3000, quality = 92)`. The
-fixture exercises the downsample on a 3200 px page and the pinch-zoom viewer reads it back, but the
-judgement has never been made.
+Phase 5's intro called this *"a deliverable and not an assumption"*. Judged on the phone against a real
+scan, not the fixture.
 
-- [ ] Scan a **real vet printout** — not a fixture — and answer two questions: is the small print legible
-      on the phone at full zoom, and what does the file weigh. Retune the two numbers if not, or delete
-      the "unverified" comment if so.
+- [x] **`Document` stays `LongEdge(maxEdge = 3000, quality = 92)`.** A4 of dense 9 pt text stored
+      **2129×3000, 1.29 MiB**; legible at 1:1 with no ringing or blocking. Quality 92 sits just above the
+      knee — 85 costs fourteen times the damage to save 18% of the file. The "unverified" comment is gone
+      and the measurement is in its place.
+- [x] Same sitting settled §6.5's new **`MediaKind.Observation` = `LongEdge(2048, quality = 88)`**, which
+      **disproved** the "closer to `Document`" hypothesis. Reasoning in phase-7.5.md §2 and §7.
 
-Do this **before** real documents pile up. `MediaFiles` re-encodes at write time and keeps no original,
-so every scan already taken is permanent at whatever spec was in force when it was written.
+Both were taken **before** real documents piled up, which was the point: `MediaFiles` re-encodes at write
+time and keeps no original, so every scan already taken is permanent at the spec in force when it was
+written.
 
 ---
 
@@ -262,7 +264,8 @@ three get more expensive with time. **Both ADRs are made** — ADR-0028 and
       matched the **help line underneath it** — a plain `Text` that focuses nothing. Third IME scene
       caught by that trap and the only silent one. Fixed by tapping the *n*-th `EditText` instead;
       **assume the existing `weight-entry-ime` evidence is wrong** rather than re-reading it.
-- [ ] **§3's downsample answer**, taken while the phone is already in hand.
+- [x] **§3's downsample answer**, taken while the phone was already in hand — **both** specs, `Document`
+      kept and `Observation` set, on one tray and one printout. 2026-08-14.
 - [ ] **§9's gain signal**, per **[ADR-0028](adr/0028-a-weight-gain-is-observed-against-a-six-month-anchor.md)**
       — grilled and written 2026-08-14; merge it before any trend code. Same flag, anchored on the weighing
       nearest **six months** back (4–8 month window), at **+10 %** — one body-condition step on the
@@ -296,7 +299,10 @@ three get more expensive with time. **Both ADRs are made** — ADR-0028 and
       Values are stored **by name**, so additions cannot rewrite history. **No per-value urgency copy** —
       the app records `BLOOD` and says nothing about it (ADR-0026).
       Its `MediaKind` is **new — `Observation`, writing to `observations/`**, record-grade so `Records`,
-      `Everything` and the cloud queue carry it; only its downsample numbers wait for §3's phone judgement.
+      `Everything` and the cloud queue carry it. **Added 2026-08-14 at `LongEdge(2048, quality = 88)`**,
+      already in `Records` and `Everything`; **the cloud queue is still owed** — it is named for documents
+      throughout, so it renames a field its copy and tests read. The tray photo takes the **photo capture
+      path, never the scanner**: ML Kit's filter clips highlights and destroys pellet outlines (§7).
       Cost: two join tables + media link, one `MIGRATION_6_7` that **rebuilds `observations`** (no
       `DROP COLUMN` at `minSdk` 26, and the drop cascades into `observation_symptoms` — stage the links and
       put them back), **schema 7**, a fixture and the `connectedAndroidTest` run nothing else here owes. Accepted knowingly 2026-08-14. **If the phase runs
