@@ -301,11 +301,18 @@ def screen_signature(nodes: list[Node]) -> str:
 _TRANSLATED: dict[str, str] = {}
 
 
-def find(nodes: list[Node], needle: str) -> Node | None:
+def find(nodes: list[Node], needle: str, *, text_only: bool = False) -> Node | None:
     """The smallest node whose text or description contains `needle`, case-insensitively.
 
     Smallest, because Compose reports a merged semantics node for a whole row as well as the leaf
     inside it, and the leaf is the one whose centre is unambiguously on the thing named.
+
+    `text_only` drops content descriptions from the match, which is how a **label** is told apart
+    from an **icon that carries the same words**. The "+" describes itself as *Record an
+    observation* and so does one row of the sheet it opens (Phase 7.5 §6 reuses the string rather
+    than spending a new one in nine languages), and the FAB is the smaller of the two — so a plain
+    needle would tap the button that is already open and dismiss the sheet on the scrim. The row has
+    text and no description; the FAB has a description and no text. Structure, not copy, again.
 
     **Every needle is translated here**, which is the one place it can be: `tap`, `return_to_home`
     and `showing_home` all arrive through this function, so a locale run needs no second table and
@@ -316,7 +323,7 @@ def find(nodes: list[Node], needle: str) -> Node | None:
         node
         for node in nodes
         if node.package == PACKAGE
-        and (needle in node.text.casefold() or needle in node.desc.casefold())
+        and (needle in node.text.casefold() or (not text_only and needle in node.desc.casefold()))
         and node.bounds.area > 0
     ]
     return min(matches, key=lambda node: node.bounds.area) if matches else None
@@ -442,7 +449,7 @@ def return_to_home() -> None:
         tap(HOME_TAB)
 
 
-def tap(needle: str, *, optional: bool = False) -> None:
+def tap(needle: str, *, optional: bool = False, text_only: bool = False) -> None:
     # Retried rather than waited on a fixed delay: a screen that is still composing dumps as an
     # empty ComposeView, and how long that takes depends on the screen, not on the driver. An
     # *optional* tap is not retried — it is asking whether something is there, and four rounds of
@@ -450,7 +457,7 @@ def tap(needle: str, *, optional: bool = False) -> None:
     attempts = 1 if optional else 4
     for attempt in range(attempts):
         nodes = dump_ui()
-        node = find(nodes, needle)
+        node = find(nodes, needle, text_only=text_only)
         if node is not None:
             break
         # Landscape is 1220px tall where portrait is 2712, so the control a portrait screen shows
@@ -722,6 +729,9 @@ def restore_schema_version() -> None:
 STEP_RUNNERS = {
     "tap": lambda arg: tap(arg),
     "tap?": lambda arg: tap(arg, optional=True),
+    # Tap a **label**, never an icon's description — see [find]. The one place it is needed so far
+    # is the sheet behind the "+", whose row and whose FAB deliberately say the same words.
+    "tap_text": lambda arg: tap(arg, text_only=True),
     "back": lambda arg: back(),
     "swipe_up": lambda arg: swipe_up(),
     "swipe_end": lambda arg: swipe_to_end(),
@@ -778,6 +788,13 @@ SELECT_BUNNY = [("tap", "Choose which bunny"), ("tap", "Bijou")]
 # the latest seeded weighing — so the old needle was a coin flip, and the button on the reminder's
 # own screen is always there. Same lesson as MEDICATION_COURSE below: name the thing you mean.
 OPEN_WEIGHT_FORM = [("tap", "Care & Meds"), ("tap", "Weigh-in"), ("tap", "Record a weight")]
+
+# The full observation form, which is **two taps now rather than one**: the "+" opens a chooser
+# (Phase 7.5 §6) and the long form is one row of it, beside the one-tap healthy day. The second tap
+# is `tap_text` because that row and the FAB above it deliberately carry the same words — reusing
+# the string is what keeps this change free in nine languages — and the FAB is the smaller node, so
+# a plain needle would tap it again and dismiss the sheet on its own scrim. See [find].
+OPEN_OBSERVATION_FORM = [("tap", "Record an observation"), ("tap_text", "Record an observation")]
 
 # The medication course is opened **by name**, never by its `Open` button, and that is a fix rather
 # than a style choice. `find` is a case-insensitive substring match, and the Care screen grows a
@@ -870,11 +887,11 @@ SCENES = [
     Scene("bunny-editor", "form", [*SELECT_BUNNY, ("tap", "Edit")]),
     Scene("bunny-editor-scrolled", "form", [*SELECT_BUNNY, ("tap", "Edit"), ("swipe_up", "")]),
     Scene("weight-entry", "form", [*SELECT_BUNNY, *OPEN_WEIGHT_FORM]),
-    Scene("observation-entry", "form", [*SELECT_BUNNY, ("tap", "Record an observation")]),
+    Scene("observation-entry", "form", [*SELECT_BUNNY, *OPEN_OBSERVATION_FORM]),
     Scene(
         "observation-entry-scrolled",
         "form",
-        [*SELECT_BUNNY, ("tap", "Record an observation"), ("swipe_up", "")],
+        [*SELECT_BUNNY, *OPEN_OBSERVATION_FORM, ("swipe_up", "")],
     ),
     Scene(
         "care-reminder-editor",
@@ -906,7 +923,7 @@ SCENES = [
         "ime",
         [
             *SELECT_BUNNY,
-            ("tap", "Record an observation"),
+            *OPEN_OBSERVATION_FORM,
             # `swipe_end`, not one `swipe_up`: the note is the *last* field, so one swipe reaches it
             # only on a screen tall enough — which is why this scene skipped in both landscape cells
             # on 2026-08-12 and passed in both portrait ones. Scrolling to the end asks for the
@@ -952,7 +969,7 @@ SCENES = [
     Scene(
         "observation-entry-bottom",
         "form",
-        [*SELECT_BUNNY, ("tap", "Record an observation"), ("swipe_end", "")],
+        [*SELECT_BUNNY, *OPEN_OBSERVATION_FORM, ("swipe_end", "")],
     ),
     # --- dialogs and sheets, drawn over content with their own inset behaviour -----------------
     # Run this one on its own, before the rest: answering it is what makes it go away.
@@ -968,7 +985,19 @@ SCENES = [
         "overlay",
         [*SELECT_BUNNY, ("tap", "More"), ("tap", "Photos"), ("tap", "Add photos"), ("wait", "1.0")],
     ),
-    # The app's only `ModalBottomSheet`, and the inset case a dialog does not cover: a sheet is
+    # **The one entry point for recording a day** (Phase 7.5 §6). The healthy day used to be a
+    # button inside the Observations timeline while the "+" opened the long form, so the shortcut
+    # was the hard one to find; now both are rows of this sheet. Worth a scene of its own because
+    # `healthy_day_help` has to travel with the label — one tap commits four facts on the owner's
+    # behalf and they are entitled to know which (ADR-0001) — and a subtitle is exactly the part a
+    # translation can push onto a third line.
+    Scene(
+        "record-day-sheet",
+        "overlay",
+        [*SELECT_BUNNY, ("tap", "Record an observation"), ("wait", "1.0")],
+        note="the two ways to record a day, with the healthy day's help line under it",
+    ),
+    # The app's second `ModalBottomSheet`, and the inset case a dialog does not cover: a sheet is
     # anchored to the bottom edge, which is where the navigation bar is. Reached through the debug
     # section of Settings, but it is ADR-0006's point-of-use reminders opt-in — the same composable
     # the wizard's third step hosts, so this and `setup-reminders` are two views of one screen.
@@ -1209,7 +1238,7 @@ def scene_needles() -> set[str]:
     """Every string this driver will look for on screen, across all suites."""
     needles = {TAB_BAR, HOME_TAB, WATCH_CLOSE, *SEED_WALK}
     for scene in SCENES:
-        needles.update(arg for kind, arg in scene.steps if kind in ("tap", "tap?"))
+        needles.update(arg for kind, arg in scene.steps if kind in ("tap", "tap?", "tap_text"))
     return needles
 
 
