@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Debug-only manifest additions. Merged into the debug APK's manifest and into nothing else — the
+    release build never sees this file, so nothing declared here can ship.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+            The seed-variant channel for the capture driver (see SeedVariantReceiver).
+
+            **No intent-filter, and `exported="true"` on purpose.** The two go together: with no
+            filter the receiver is addressable only by component, which is the same convention
+            DoseAlarmReceiver and DoseActionReceiver already use for "the target of something we
+            sent". Exported is what lets `adb shell am broadcast` reach it at all — the shell is a
+            different uid, and a non-exported receiver is unreachable from it.
+
+            What that costs is bounded by which install it is: the debug one, `…tracker.debug`,
+            which every capture run wipes anyway. The Play build is a separate package and does not
+            contain this file, so no phone carrying real bunny history has a receiver here to reach.
+        -->
+        <receiver
+            android:name=".debug.SeedVariantReceiver"
+            android:enabled="true"
+            android:exported="true" />
+    </application>
+
+</manifest>

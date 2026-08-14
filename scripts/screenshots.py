@@ -138,8 +138,12 @@ def run_cell(theme: str, locale: str | None, scenes: list, out: Path, reseed: bo
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if reseed:
-        print("  -- seeding")
-        e2e.reset_to_seeded()
+        # Invalidated first, so a cell always reseeds even when the previous one left the same seed
+        # on the phone — the watch-expiry prompt is the reason (see below), and only a fresh seed
+        # brings it back. `min` picks the seed the *first* scene will want: scenes are sorted by
+        # seed, "" sorts first, so this is "" unless every scene here is a variant one.
+        e2e.invalidate_seed()
+        e2e.ensure_seed(min((scene.seed for scene in scenes if scene.suite == "full"), default=""))
     set_theme(theme)
 
     results = []
@@ -161,12 +165,26 @@ def run_cell(theme: str, locale: str | None, scenes: list, out: Path, reseed: bo
             # action". In SCENES order `home` runs ~20 scenes before `watch-expiry`, so the prompt
             # is long gone by then and `watch-expiry.png` is a plain Home screen wearing the name of
             # a dialog. Sorting is stable, so everything else keeps its declared order.
-            wanted.sort(key=lambda scene: not scene.keeps_watch_prompt)
+            # Seed group first, then the watch prompt inside it — the same order and the same
+            # reasons as `edge-to-edge.py`'s [run_matrix].
+            wanted.sort(key=lambda scene: (scene.seed, not scene.keeps_watch_prompt))
             schema_dirty = schema_dirty or suite == "mismatch"
             # Re-applied per suite because `empty`'s wipe drops it — see [set_locale].
             set_locale(locale)
             print(f"  -- {suite} ({len(wanted)} scenes)")
             for scene in wanted:
+                if suite == "full" and reseed:
+                    e2e.ensure_seed(scene.seed)
+                elif scene.seed:
+                    # **Skipped rather than shot.** `--no-reseed` is the iterate-on-one-screen flag,
+                    # and a scene whose whole point is a state the default fixture hides would come
+                    # back as an ordinary screenshot under a name claiming otherwise. A cell that
+                    # cannot fail is not evidence; a scene that says it did not run is.
+                    results.append(
+                        {"scene": scene.name, "family": scene.family, "error": f"needs seed {scene.seed!r}; --no-reseed"},
+                    )
+                    print(f"     {scene.name:28s} SKIPPED  needs seed {scene.seed!r}")
+                    continue
                 result = capture(scene, out_dir)
                 results.append(result)
                 if "error" in result:

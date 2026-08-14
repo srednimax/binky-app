@@ -508,6 +508,8 @@ def wipe() -> None:
     against seeded sample data and a wipe in the middle of it would quietly capture empty screens
     under populated names.
     """
+    global _SEEDED
+    _SEEDED = None
     shell(f"pm clear {PACKAGE}")
     settle(1.0)
     shell(f"am start -n {ACTIVITY}")
@@ -559,6 +561,61 @@ def reset_to_seeded() -> None:
     # exception and keeps the denied state, because there it is the truth of a first run.
     shell(f"pm grant {PACKAGE} android.permission.POST_NOTIFICATIONS")
     settle(0.5)
+    global _SEEDED
+    _SEEDED = ""
+
+
+# Which seed the phone is currently carrying: "" for the plain sample data, a variant name for one
+# of [SeedVariantReceiver]'s, and None for "unknown" — which is what a wipe leaves and what the
+# start of every cell asserts, so the first scene of a cell always reseeds exactly as it always did.
+_SEEDED: "str | None" = None
+
+SEED_RECEIVER = f"{PACKAGE}/app.binky.tracker.debug.SeedVariantReceiver"
+
+
+def seed_variant(variant: str) -> None:
+    """Add a variant on top of the sample data, through the debug build's own receiver.
+
+    **The default seed is never changed, and that is the constraint rather than a nicety.** Sixty-one
+    scenes, the before/after comparison and the Play listing screenshots all rest on it, so a third
+    bunny or a repurposed series would move evidence that is already banked. A variant is additive
+    and asked for by name.
+
+    `-f 0x00000020` is `FLAG_INCLUDE_STOPPED_PACKAGES`: a package is in the stopped state after
+    `pm clear` until something launches it, and a broadcast to a stopped package is dropped in
+    silence — which would look exactly like a variant that seeded nothing.
+
+    The receiver reports through the broadcast result, so this can fail on what actually happened
+    rather than on a timeout: `result=0` and the data string it set, or a loud failure naming the
+    exception. See [SeedVariantReceiver] for why it is a broadcast at all.
+    """
+    global _SEEDED
+    output = shell(f"am broadcast -n {SEED_RECEIVER} -f 0x00000020 --es variant {variant}")
+    if "result=0" not in output:
+        raise StepFailed(f"seeding variant {variant!r} failed: {output.strip()[:200]}")
+    _SEEDED = variant
+    settle(1.0)
+
+
+def invalidate_seed() -> None:
+    """Forget what the phone is carrying, so the next [ensure_seed] reseeds whatever it asks for."""
+    global _SEEDED
+    _SEEDED = None
+
+
+def ensure_seed(variant: str) -> None:
+    """Put the phone on the seed this scene asked for, reseeding only when it is not already there.
+
+    Reseeding costs a wipe, a wizard and the sample data — the better part of a minute — so scenes
+    are sorted by the seed they want and this is a no-op for every scene but the first of each
+    group. Variant scenes therefore cost one reseed each per cell rather than one per scene.
+    """
+    if _SEEDED == variant:
+        return
+    print(f"  -- seeding{f' + {variant}' if variant else ''}")
+    reset_to_seeded()
+    if variant:
+        seed_variant(variant)
 
 
 DATABASE = f"/data/data/{PACKAGE}/databases/bunny.db"
@@ -634,6 +691,11 @@ class Scene:
     # top of every launch until someone answers it — and answering it is permanent. So the prompt
     # is captured in all four configurations first and dismissed out of the way everywhere else.
     keeps_watch_prompt: bool = False
+    # The seed this scene needs, "" being the plain sample data. Anything else is a variant name the
+    # debug build's SeedVariantReceiver knows, added *on top of* the sample data — the default seed
+    # is never edited, because 61 scenes and the listing screenshots rest on it. Scenes are grouped
+    # by this, so a variant costs one reseed per cell rather than one per scene.
+    seed: str = ""
 
 
 # The app-wide bunny selection is a preference, so it survives the relaunch each scene starts with
@@ -971,6 +1033,44 @@ SCENES = [
         "tab",
         [("tap", "Choose which bunny"), ("tap", "All bunnies")],
     ),
+    # --- the housemates line, which no capture has ever contained (Phase 7.5 §8) ---------------
+    # The seed has exactly two bonded bunnies with short names, so "Lives with …" has never been
+    # long enough to wrap in any screenshot this project holds — and both Home render sites draw it
+    # with no `maxLines` and no `overflow`. These three are the states that defect actually has, one
+    # per site, and they exist because a seed variant can reach them without touching the fixture 61
+    # other scenes rest on.
+    Scene(
+        "home-crowded",
+        "tab",
+        [("tap", "Choose which bunny"), ("tap", "Bijou")],
+        seed="crowded",
+        note="the profile card with four housemates, one of them archived",
+    ),
+    # The case the count cap cannot fix, and the reason §8 asks for both halves: two housemates, so
+    # nothing folds, and the names alone overflow the line. "Pip" is the short-named member of the
+    # long-named trio, so what wraps is plainly the two names and not the subject's own.
+    Scene(
+        "home-long-names",
+        "tab",
+        [("tap", "Choose which bunny"), ("tap", "Pip")],
+        seed="crowded",
+        note="two long housemates, no cap: the profile card's own wrap",
+    ),
+    Scene(
+        "home-crowded-all",
+        "tab",
+        [("tap", "Choose which bunny"), ("tap", "All bunnies")],
+        seed="crowded",
+        note="the row site: four housemates on one card, two long names on another",
+    ),
+    # The third site, and the one where the label is longest by construction: an archived bunny's
+    # own row renders every housemate it kept (ADR-0004) on a list built for one line.
+    Scene(
+        "archived-crowded",
+        "detail",
+        [("tap", "More"), ("tap", "Archived")],
+        seed="crowded",
+    ),
 ]
 
 
@@ -1164,7 +1264,11 @@ def run_matrix(
     # declared order `home` runs ~20 scenes ahead of `watch-expiry`, so the prompt is gone by then
     # and the shot is a plain Home screen under a dialog's name. Sorting is stable, so every other
     # scene keeps the order it is written in — which the inset findings are read against.
-    scenes = sorted(scenes, key=lambda scene: not scene.keeps_watch_prompt)
+    #
+    # Grouped by seed first, so a variant costs one reseed per cell instead of one per scene, and
+    # every default-seed scene runs before any variant touches the install. "" sorts before every
+    # variant name, which is what puts them in that order.
+    scenes = sorted(scenes, key=lambda scene: (scene.seed, not scene.keeps_watch_prompt))
     for config in configs:
         # Seed *before* pinning the config, never after. Sorting fixes the watch prompt in the first
         # cell only — answering it is permanent, so cell 1 eats the one expired watch the seed
@@ -1173,8 +1277,12 @@ def run_matrix(
         # `apply_config` silently unpins every landscape cell. `full` only: `empty` wipes on purpose
         # to reach the wizard, and `mismatch` manages its own database surgery.
         if suite == "full":
-            print("  -- seeding")
-            reset_to_seeded()
+            # Invalidated rather than compared: a cell must reseed even when the last one left the
+            # right variant on the phone, because answering the watch-expiry prompt is permanent and
+            # only a fresh seed brings it back. [ensure_seed] then does the work, and asking for the
+            # first scene's seed rather than the plain one keeps a variant-only run to one reseed.
+            invalidate_seed()
+            ensure_seed(scenes[0].seed if scenes else "")
         apply_config(config)
         out_dir = out / config.name
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -1187,6 +1295,12 @@ def run_matrix(
         print(f"\n=== {config.name}  insets={ {k: v.as_list() for k, v in insets.items()} }")
         results = []
         for scene in scenes:
+            # A no-op for every scene but the first of each seed group — see [ensure_seed]. A wipe
+            # costs the rotation, which is why it may run here at all: [wipe] re-pins what
+            # `apply_config` set, so a mid-cell reseed cannot silently turn a landscape cell into a
+            # second portrait one.
+            if suite == "full":
+                ensure_seed(scene.seed)
             result = run_scene(scene, config, out_dir)
             results.append(result)
             if "error" in result:
