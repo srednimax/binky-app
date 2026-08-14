@@ -19,8 +19,9 @@ below is its summary. **Phase 8 retargets to 1.6** — two phases cannot both cl
 answers to commit subjects rather than to this file.
 
 **So what is actually open is evidence, then one short phase of code**: §1's overnight run and the gate
-items behind it, Play's own count (§4), and Phase 7.5's **four remaining items** — the schema bump, its
-migration and its instrumented run are done and green — and then Phase 8.
+items behind it, Play's own count (§4), and Phase 7.5's **three remaining items** — the two hand items, the
+driver's two long runs, and the licence screen. Everything that touches the app's own code is done and
+device-proven; the schema bump, its migration and its instrumented run are green. Then Phase 8.
 
 ---
 
@@ -310,22 +311,31 @@ three get more expensive with time. **Both ADRs are made** — ADR-0028 and
       note. `INSTALL_FAILED_USER_RESTRICTED` after ~12 s is a *missed prompt*; the same string returned
       instantly is the first-install refusal. The delay tells them apart.
       The question as it stood, and every decision behind it, is phase-7.5.md §7 and ADR-0029.
-- [ ] **The healthy day moves behind the `+`** — reported 2026-08-14. The FAB (`Navigation.kt:365`) opens
-      the *full* form; *Log a healthy day* is a separate action inside the Timeline, so the discoverable
-      entry point is the long one and the shortcut that settles the subject's watch is the hidden one.
-      **Decided: the `+` opens a bottom sheet with both paths and the Timeline button goes.** A sheet and
-      not a menu, because `healthy_day_help` has to travel with the label — one tap commits four facts on
-      the owner's behalf (ADR-0001). No schema and **no new strings**: `healthy_day_action`,
-      `healthy_day_help` and `observation_add_title` are reused verbatim, nicer labels deliberately not.
-- [ ] **The housemates line at five bunnies** — reported 2026-08-14, and a **defect**, not a feature. The
-      grammar is right (`joinNames` builds from the right through string resources); the layout is not —
-      `HomeScreen.kt:210`/`:443` and `ArchivedBunniesScreen.kt:170` draw it as a plain `Text` with **no
-      `maxLines` and no `overflow`**, so five names, or two long ones, grow the card by two lines. Never
-      seen, because the seed has two short-named bunnies — the **second customer for seed variants**. Cap
-      the names *and* bound the line: two named then *"& N others"* **from four housemates up** (never
-      *"& 1 other"*), archived folded first, one `plurals` entry — in **`housematesLabel`, never
-      `joinNames`**, which the healthy-day receipt shares and must not truncate (ADR-0008) — plus
-      `maxLines = 2, overflow = Ellipsis` at the three sites, because a count cap cannot fix two long names.
+- [x] **The healthy day moves behind the `+`** ✅ **built and device-proven 2026-08-14, in both locales.**
+      The "+" opens a `ModalBottomSheet` of two `ListRow`s — the healthy day carrying `healthy_day_help` as
+      its subtitle, because one tap commits four facts on the owner's behalf (ADR-0001) — and the Timeline
+      button is gone, so there is one entry point rather than two. **No schema and no new strings**:
+      `healthy_day_action`, `healthy_day_help` and `observation_add_title` are reused verbatim.
+      The write moved with it into a **shell-scoped `HealthyDayViewModel`** — the "+" is the shell's button
+      and the snackbar host was already the shell's — so the healthy day now writes **from Home**, which it
+      never could before, with the receipt and its Undo unchanged.
+      ⚠️ **Reusing the FAB's string cost the driver a needle.** The FAB's `contentDescription` and one sheet
+      row now say the same words, and `find` takes the *smallest* match — the FAB — so the old one-tap
+      route would have re-tapped the button and dismissed the sheet on its own scrim. Fixed structurally
+      like `tap_field`: a new **`tap_text`** step matches a node's text and ignores content descriptions.
+      Proven in Polish, where both read *"Zapisz obserwację"*. `OPEN_OBSERVATION_FORM` is the two-tap route
+      the four form scenes now share, and `record-day-sheet` is the sheet's own scene.
+- [x] **The housemates line at five bunnies** ✅ **built and device-proven 2026-08-14, in both locales.**
+      Both halves, as decided: `capHousemates` names two and folds the rest into *"& N others"* **from four
+      housemates up**, archived first, through **one `plurals` entry** joined as the last *item* of the list
+      so `joinNames` punctuates it per locale; plus `maxLines = 2, overflow = Ellipsis` at all three sites.
+      The rule lives in `housematesLabel`, never in `joinNames`, which the healthy-day receipt shares and
+      must not truncate (ADR-0008). Bijou reads *"Lives with Clover, Nugget & 2 others"* on one line —
+      *"Mieszka z: Clover, Nugget i 2 inne"* in Polish, the `few` form agreed correctly — and two long
+      names still take exactly two, bounded, which is what the backstop is for.
+      ℹ️ The cap is a **pure function with a JVM table** (`HousematesTest`), which is what pins *"& 1 other"*
+      never rendering across one to nine housemates. The width half is not testable there and is what the
+      `crowded` seed variant photographs.
 - [ ] **§8's licence attribution** last: **`app.cash.licensee`** at build time, rendered by the app's own
       Compose screen. No ADR owed — it adds no runtime dependency, so ADR-0009 is untouched, and it emits
       structured data plus a build failure when a licence changes, which is §8's own stated fear. The Play
