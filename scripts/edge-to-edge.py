@@ -1136,6 +1136,37 @@ SCENES = [
         [("tap", "More"), ("tap", "Archived bunnies")],
         seed="crowded",
     ),
+    # --- the gain flag, which the default seed cannot produce (Phase 7.5 §1, ADR-0028) ----------
+    # `SampleData.kt` has no rising series at all — it pairs the trend flag with the running watch
+    # and the steady series with the expired one — so without a variant this card would be checked
+    # by hand once and then never seen by the harness again. Two scenes because the rule has two
+    # visible states, and they differ by exactly one control.
+    Scene(
+        "home-gain",
+        "tab",
+        [("tap", "Choose which bunny"), ("tap", "Rosemary")],
+        seed="gaining",
+        note="the gain card with a birthday on file: no age question",
+    ),
+    # The load-bearing half. With no birthday the app may not read the absent field as adulthood, so
+    # it fires *and asks* — and that question is the only thing that stops an unknown-age kit raising
+    # a caution dot after every weighing for months.
+    Scene(
+        "home-gain-unknown-age",
+        "tab",
+        [("tap", "Choose which bunny"), ("tap", "Juniper")],
+        seed="gaining",
+        note="the same card asking how old the bunny is",
+    ),
+    # The second host of the same copy. Worth its own cell because the banner sits above the chart
+    # here, and the chart is the one place the rise is visible as a shape rather than as a sentence.
+    Scene(
+        "weight-gain",
+        "tab",
+        [("tap", "Choose which bunny"), ("tap", "Rosemary"), ("tap", "Weight")],
+        seed="gaining",
+        note="the gain banner over six months of chart",
+    ),
 ]
 
 

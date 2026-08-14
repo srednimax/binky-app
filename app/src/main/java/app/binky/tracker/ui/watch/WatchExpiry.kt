@@ -27,6 +27,7 @@ import app.binky.tracker.data.WatchDuration
 import app.binky.tracker.data.WatchState
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.data.evaluateTrend
+import app.binky.tracker.data.growthStageNow
 import app.binky.tracker.data.toAcknowledgment
 import app.binky.tracker.data.toWeighing
 import app.binky.tracker.data.watchState
@@ -46,6 +47,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
 
 /**
  * One expired watch, with the answer to the question the owner is actually being asked.
@@ -88,6 +90,8 @@ class WatchExpiryViewModel(
     private data class Expired(
         val bunnyId: String,
         val bunnyName: String,
+        /** Carried for the gain rule's growth gate alone (ADR-0028), not for anything shown. */
+        val birthDate: LocalDate?,
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -104,7 +108,7 @@ class WatchExpiryViewModel(
             val now = Instant.now()
             rows.firstNotNullOfOrNull { row ->
                 if (watchState(row, now) !is WatchState.Expired) return@firstNotNullOfOrNull null
-                active.firstOrNull { it.id == row.bunnyId }?.let { Expired(it.id, it.name) }
+                active.firstOrNull { it.id == row.bunnyId }?.let { Expired(it.id, it.name, it.birthDate) }
             }
         }.distinctUntilChanged()
             .flatMapLatest { expired ->
@@ -124,6 +128,7 @@ class WatchExpiryViewModel(
                                 evaluateTrend(
                                     series.map { it.toWeighing() },
                                     acknowledgment?.toAcknowledgment(),
+                                    growthStageNow(expired.birthDate),
                                 ).flag,
                             lastGrams = latest?.grams,
                             lastRecordedAt = latest?.recordedAt,

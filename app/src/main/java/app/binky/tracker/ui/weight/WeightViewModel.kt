@@ -16,6 +16,7 @@ import app.binky.tracker.data.WeightEntity
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.data.bunnyId
 import app.binky.tracker.data.evaluateTrend
+import app.binky.tracker.data.growthStageNow
 import app.binky.tracker.data.readOnlyScope
 import app.binky.tracker.data.toAcknowledgment
 import app.binky.tracker.data.toWeighing
@@ -139,13 +140,10 @@ class WeightViewModel(
                         chartRange,
                     ) { series, acknowledgment, watch, range ->
                         val rows = series.toRows()
+                        val bunny = scope.bunnies.firstOrNull { it.id == bunnyId }
                         WeightUiState(
                             selection = scope.selection,
-                            bunnyName =
-                                scope.bunnies
-                                    .firstOrNull { it.id == bunnyId }
-                                    ?.name
-                                    .orEmpty(),
+                            bunnyName = bunny?.name.orEmpty(),
                             unit = scope.unit,
                             rows = rows,
                             // The chart is filtered; the flag below is **not**. Range never reaches
@@ -161,6 +159,7 @@ class WeightViewModel(
                                     evaluateTrend(
                                         series.map { it.toWeighing() },
                                         acknowledgment?.toAcknowledgment(),
+                                        growthStageNow(bunny?.birthDate),
                                     ).flag
                                 },
                             // Resolved against the clock on every emission, never stored — the same

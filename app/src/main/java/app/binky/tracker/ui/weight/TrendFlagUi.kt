@@ -2,6 +2,7 @@ package app.binky.tracker.ui.weight
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
@@ -15,7 +16,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.binky.tracker.R
-import app.binky.tracker.data.TrendDrop
+import app.binky.tracker.data.TrendChange
+import app.binky.tracker.data.TrendDirection
 import app.binky.tracker.data.TrendFlag
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.theme.Spacing
@@ -60,22 +62,27 @@ fun isLongGap(
  * when the gap warrants it; the vet-diet line, which ADR-0001 names as an accepted limitation the
  * copy owns rather than something to engineer around. **No notification** — this signal never
  * interrupts (ADR-0001).
+ *
+ * **Both directions read from here** (ADR-0028), which is the point of one composable: a gain swaps
+ * two sentences and keeps the rest verbatim, so the register cannot drift between them. What it does
+ * *not* swap is the framing — a gain gets no verdict either, only the numbers and their dates.
  */
 @Composable
 private fun TrendFlagBody(
     bunnyName: String,
-    drop: TrendDrop,
+    change: TrendChange,
     unit: WeightUnit,
     acknowledgedAt: Instant?,
 ) {
+    val rose = change.direction == TrendDirection.Gain
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text =
                 stringResource(
-                    R.string.trend_flag_drop,
+                    if (rose) R.string.trend_flag_rise else R.string.trend_flag_drop,
                     bunnyName,
-                    gramsLabel(drop.dropGrams),
-                    instantDateLabel(drop.baselineAt),
+                    gramsLabel(change.changeGrams),
+                    instantDateLabel(change.baselineAt),
                 ),
             style = MaterialTheme.typography.bodyMedium,
         )
@@ -83,13 +90,16 @@ private fun TrendFlagBody(
             text =
                 stringResource(
                     R.string.trend_flag_readings,
-                    weightLabel(drop.baselineGrams, unit),
-                    weightLabel(drop.currentGrams, unit),
+                    weightLabel(change.baselineGrams, unit),
+                    weightLabel(change.currentGrams, unit),
                 ),
             style = MaterialTheme.typography.bodyMedium,
         )
-        if (isLongGap(drop.baselineAt, drop.currentAt)) {
-            gapLabel(drop.baselineAt, drop.currentAt)?.let { gap ->
+        // **Never on a gain** (ADR-0028): the caveat earns its place on a loss because a loss is
+        // usually sudden, whereas a gain is *always* measured over four to eight months — and a
+        // caveat that always fires is wallpaper.
+        if (!rose && isLongGap(change.baselineAt, change.currentAt)) {
+            gapLabel(change.baselineAt, change.currentAt)?.let { gap ->
                 Text(
                     text = stringResource(R.string.trend_flag_long_gap, gap),
                     style = MaterialTheme.typography.bodyMedium,
@@ -102,7 +112,7 @@ private fun TrendFlagBody(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = stringResource(R.string.trend_flag_vet_diet),
+            text = stringResource(if (rose) R.string.trend_flag_vet_gain else R.string.trend_flag_vet_diet),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -162,6 +172,11 @@ fun TrendFlag?.showsBanner(): Boolean = this is TrendFlag.WorthACloserLook || th
  *
  * [secondaryAction] is the slot Phase 4 fills with *Start a watch* (ADR-0001) — built now so that
  * arrives as a caller passing a button, not as a rewrite of the composable every host renders.
+ *
+ * [onAskAge] is ADR-0028's age question, and it draws only when the card is a gain raised with no
+ * usable birthday on file. Null where there is nowhere to send the owner — the watch-expiry prompt
+ * is a dialog over whatever screen they were on, and the same card on Home carries the question a
+ * moment later.
  */
 @Composable
 fun TrendFlagBanner(
@@ -172,11 +187,12 @@ fun TrendFlagBanner(
     modifier: Modifier = Modifier,
     nested: Boolean = false,
     secondaryAction: (@Composable () -> Unit)? = null,
+    onAskAge: (() -> Unit)? = null,
 ) {
-    val drop =
+    val change =
         when (flag) {
-            is TrendFlag.WorthACloserLook -> flag.drop
-            is TrendFlag.Acknowledged -> flag.drop
+            is TrendFlag.WorthACloserLook -> flag.change
+            is TrendFlag.Acknowledged -> flag.change
             else -> return
         }
     val acknowledgedAt = (flag as? TrendFlag.Acknowledged)?.acknowledgedAt
@@ -200,10 +216,15 @@ fun TrendFlagBanner(
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
-            TrendFlagBody(bunnyName, drop, unit, acknowledgedAt)
+            TrendFlagBody(bunnyName, change, unit, acknowledgedAt)
             // Pulled back to the card's text edge: a text button carries its own padding, so a row
             // of them laid out flush looks indented against everything above it.
-            Row(
+            //
+            // **FlowRow and not Row**, which the first capture of the gain card settled: three
+            // actions — acknowledge, the age question, *Start a watch* — do not fit one line on a
+            // phone, and a `Row` does not clip the third, it crushes it to one character wide and
+            // spells it down the card. Every locale after English makes this worse.
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.tight),
                 modifier = Modifier.offset(x = -Spacing.snug),
             ) {
@@ -212,9 +233,30 @@ fun TrendFlagBanner(
                         Text(stringResource(R.string.trend_flag_acknowledge))
                     }
                 }
+                AskAgeAction(bunnyName, change, onAskAge)
                 secondaryAction?.invoke()
             }
         }
+    }
+}
+
+/**
+ * ADR-0028's age question — *"How old is Bijou?"* — and the half of the gain rule that stops an
+ * unknown-age kit re-raising a caution dot after every weighing for months.
+ *
+ * It is **not** the app claiming to know anything: the flag has already fired on what it can see, and
+ * this is the one tap that would let it judge properly. Answering once switches the growth gate on
+ * permanently, which is why it leads to the bunny editor rather than to a prompt of its own.
+ */
+@Composable
+private fun AskAgeAction(
+    bunnyName: String,
+    change: TrendChange,
+    onAskAge: (() -> Unit)?,
+) {
+    if (!change.ageUnknown || onAskAge == null) return
+    TextButton(onClick = onAskAge) {
+        Text(stringResource(R.string.trend_flag_ask_age, bunnyName))
     }
 }
 
@@ -232,25 +274,33 @@ fun TrendFlagBanner(
 @Composable
 fun TrendFlagDialog(
     bunnyName: String,
-    drop: TrendDrop,
+    change: TrendChange,
     unit: WeightUnit,
     onAcknowledge: () -> Unit,
     onDismiss: () -> Unit,
     secondaryAction: (@Composable () -> Unit)? = null,
+    onAskAge: (() -> Unit)? = null,
 ) {
     BinkyDialog(
         title = stringResource(R.string.trend_flag_title),
         onDismiss = onDismiss,
+        // FlowRow inside each slot for the same reason as the banner's: this dialog can carry four
+        // actions at once, and Material's own button row cannot wrap what is inside a slot.
         confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.tight)) {
                 secondaryAction?.invoke()
                 TextButton(onClick = onAcknowledge) { Text(stringResource(R.string.trend_flag_acknowledge)) }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.trend_flag_close)) }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+                // Beside *Close* rather than beside *I have seen this*: it leaves the screen, and
+                // the dismiss side is where this dialog's leaving actions already live.
+                AskAgeAction(bunnyName, change, onAskAge)
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.trend_flag_close)) }
+            }
         },
     ) {
-        TrendFlagBody(bunnyName, drop, unit, acknowledgedAt = null)
+        TrendFlagBody(bunnyName, change, unit, acknowledgedAt = null)
     }
 }

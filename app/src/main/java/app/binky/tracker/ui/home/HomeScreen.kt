@@ -90,6 +90,7 @@ fun HomeScreen(
             AllBunnies(
                 state = state,
                 onSelectBunny = onSelectBunny,
+                onEditBunny = onEditBunny,
                 onAcknowledge = viewModel::acknowledge,
                 onStartWatch = viewModel::startWatch,
                 onCloseWatch = viewModel::closeWatch,
@@ -227,6 +228,10 @@ private fun OneBunny(
                 unit = unit,
                 onAcknowledge = onAcknowledge,
                 secondaryAction = watchAction(profile.name, vitals, readOnly, onStartWatch),
+                // ADR-0028's age question, which draws only on a gain raised with no birthday on
+                // file. It goes to the same editor *Edit* below does — one destination, so
+                // answering it is the field the owner was already able to fill in.
+                onAskAge = onEdit,
             )
         }
         if (hasWatch) {
@@ -364,6 +369,7 @@ private fun watchAction(
 private fun AllBunnies(
     state: HomeUiState,
     onSelectBunny: (String) -> Unit,
+    onEditBunny: (String) -> Unit,
     onAcknowledge: (String) -> Unit,
     onStartWatch: (String, WatchDuration) -> Unit,
     onCloseWatch: (String) -> Unit,
@@ -391,6 +397,7 @@ private fun AllBunnies(
                 unit = state.unit,
                 readOnly = state.readOnly,
                 onOpen = { onSelectBunny(profile.id) },
+                onAskAge = { onEditBunny(profile.id) },
                 onAcknowledge = { onAcknowledge(profile.id) },
                 onStartWatch = { duration -> onStartWatch(profile.id, duration) },
                 onCloseWatch = { onCloseWatch(profile.id) },
@@ -417,6 +424,7 @@ private fun BunnyCard(
     unit: WeightUnit,
     readOnly: Boolean,
     onOpen: () -> Unit,
+    onAskAge: () -> Unit,
     onAcknowledge: () -> Unit,
     onStartWatch: (WatchDuration) -> Unit,
     onCloseWatch: () -> Unit,
@@ -485,6 +493,7 @@ private fun BunnyCard(
                 nested = true,
                 modifier = Modifier.padding(horizontal = Spacing.base),
                 secondaryAction = watchAction(profile.name, vitals, readOnly, onStartWatch),
+                onAskAge = onAskAge,
             )
         }
         if (hasFlag || hasWatch) Spacer(Modifier.height(Spacing.snug))

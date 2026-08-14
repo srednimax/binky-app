@@ -88,6 +88,46 @@ it is merged. **The design lives there, not here** — this section says only wh
 - **One new action wired to the bunny editor** — the age question, which is the half that stops an
   unknown-age kit re-raising a caution dot after every weighing for months.
 
+### Built 2026-08-14 — and the capture found a defect the rule did not have
+
+All of ADR-0028 is in `WeightTrend.kt`, `TrendFlagUi.kt` and their hosts, with the gain cases beside the
+loss ones in `WeightTrendTest` and a **`gaining` seed variant** carrying both card states. What the phone
+added to the plan is one layout fix and one deliberate non-decision.
+
+- **Three actions do not fit a card's action row, and a `Row` does not clip — it crushes.** The very first
+  capture of the unknown-age card put *Start a watch* in a column one character wide, spelled vertically
+  down the card. The flag has carried two actions since Phase 4 and the age question is the third, so
+  nothing before this could have shown it. `FlowRow` is the fix and it is the project's own idiom already
+  (`WatchUi.kt` uses it for exactly this reason: *"three chips fit on one line in English and can want two
+  in Polish"*). **This is the seed variants' second scalp** — like §8's housemates line, the state existed
+  only in a seed the fixture could not produce, and it would have shipped.
+- **The dialog can carry four actions** — *Start a watch*, *I have seen this*, the age question and
+  *Close* — and Material's own button row cannot wrap what is inside a slot, so both slots are `FlowRow`
+  too. Verified on the phone: two rows of two.
+- **"No claim" and "steady" are the same value, and that is a decision rather than a miss.** The tests
+  ask for a case where no reading falls in the 4–8 month window, "distinct from steady". They are distinct
+  *cases* and they are pinned as two, but both evaluate to `TrendFlag.Steady`: nothing in the app renders
+  either as reassurance — `showsBanner()` draws neither — so a third variant would be a distinction with
+  no consumer, and the place a later reader looks for the difference is the test table.
+- **A gain is judged inside the loss window's gate.** Arithmetically the gain rule needs only an anchor and
+  a current reading, so two weighings six months apart *could* fire. They do not: ADR-0021's "two points do
+  not describe a trend" is a statement about how thin a record this app speaks from at all, and it is not
+  weaker for a rise. Pinned, so a refactor cannot quietly relax it.
+- **The watermark's direction is read back off its own grams**, which is what makes ADR-0028's
+  direction-flip discard cost no column: an acknowledged loss sat *below* its baseline and an acknowledged
+  gain sat *above* its anchor, so a watermark on the wrong side of today's reference was taken for the
+  other direction. `WeightRepository.add` now asks `evaluateTrend` whether the row is stale instead of
+  keeping its own copy of the rule — the two definitions cannot drift apart, and it is why the repository
+  reads the bunny's birthday.
+- **The window is measured in days** — 122/183/244 — not calendar months. The window is four months wide,
+  so nothing it decides can turn on the length of February, and days keep `WeightTrend.kt` free of a time
+  zone. The **growth gate is calendar-aware** (`Period.between`), because a first birthday is a date.
+
+**Seen on the phone**, in light and in Polish: the plain gain card, the same card asking the age, the
+banner over the Weight chart (where the 90-day view legitimately shows two points and the flag names a
+date outside it — ADR-0022's composition, not a bug), and the post-write dialog. The age question lands in
+the bunny editor on *Birthday — Not known*, which is the field it asks about.
+
 ### The tester still gets an answer, and it is not the feature
 
 Their words were *"5 kg plus"* — **a number, not a change**. A Flemish Giant is legitimately 6–10 kg, so any
@@ -644,7 +684,9 @@ are written answers.
    a way that costs days, so they go early enough to fail with time left.
 5. **The gain signal**, against a driver that is by now correct, so its new card state is captured the
    first time. **ADR-0028 is already written and merged** (2026-08-14) — there is nothing left to decide
-   here, only to build.
+   here, only to build. ✅ **Done 2026-08-14**: the rule, three strings in both locales, the age question
+   wired to the bunny editor from all three hosts, a `gaining` seed variant and three scenes. The driver
+   paid for itself on the first capture — see §1.
 6. **The two cheap ones together**: §6's entry point and §8's housemates cap. Both change what scenes see,
    so they land after the driver and before the final matrix run.
 7. **Licence attribution**: mechanism decided, then built.

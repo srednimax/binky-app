@@ -13,6 +13,7 @@ import app.binky.tracker.data.WatchDuration
 import app.binky.tracker.data.WatchState
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.data.evaluateTrend
+import app.binky.tracker.data.growthStageNow
 import app.binky.tracker.data.readOnlyScope
 import app.binky.tracker.data.toAcknowledgment
 import app.binky.tracker.data.toWeighing
@@ -118,7 +119,7 @@ class HomeViewModel(
                 unit = unit,
             )
         }.flatMapLatest { shown ->
-            vitals(shown.profiles.map { it.id }, liveState = !shown.selection.readOnlyScope)
+            vitals(shown.profiles, liveState = !shown.selection.readOnlyScope)
                 .map { vitals ->
                     HomeUiState(
                         selection = shown.selection,
@@ -139,15 +140,15 @@ class HomeViewModel(
      * flag, which would reintroduce the stored-event design ADR-0001 rejects.
      */
     private fun vitals(
-        bunnyIds: List<String>,
+        profiles: List<BunnyProfile>,
         liveState: Boolean,
     ): Flow<Map<String, BunnyVitals>> =
-        if (bunnyIds.isEmpty()) {
+        if (profiles.isEmpty()) {
             // combine() over an empty list never emits, which would leave Home stuck on its initial
             // value for an owner with no bunnies.
             flowOf(emptyMap())
         } else {
-            combine(bunnyIds.map { id -> vitalsFor(id, liveState) }) { entries -> entries.toMap() }
+            combine(profiles.map { profile -> vitalsFor(profile, liveState) }) { entries -> entries.toMap() }
         }
 
     /**
@@ -157,10 +158,11 @@ class HomeViewModel(
      * row that should not exist.
      */
     private fun vitalsFor(
-        bunnyId: String,
+        profile: BunnyProfile,
         liveState: Boolean,
-    ): Flow<Pair<String, BunnyVitals>> =
-        combine(
+    ): Flow<Pair<String, BunnyVitals>> {
+        val bunnyId = profile.id
+        return combine(
             weights.series(bunnyId),
             weights.acknowledgment(bunnyId),
             // This bunny's own rows, which for a shared observation is its copy — so "last
@@ -181,6 +183,10 @@ class HomeViewModel(
                             evaluateTrend(
                                 series.map { it.toWeighing() },
                                 acknowledgment?.toAcknowledgment(),
+                                // Read on every emission like the watch below, and for the same
+                                // reason: a bunny crosses its first birthday without anything being
+                                // written to it (ADR-0028).
+                                growthStageNow(profile.birthDate),
                             ).flag
                         },
                     // Resolved against the clock on every emission, never stored — a watch runs out
@@ -188,6 +194,7 @@ class HomeViewModel(
                     watch = if (!liveState) WatchState.None else watchState(watch, Instant.now()),
                 )
         }
+    }
 
     fun acknowledge(bunnyId: String) {
         viewModelScope.launch { weights.acknowledgeTrend(bunnyId) }

@@ -17,6 +17,7 @@ import app.binky.tracker.data.SymptomEntity
 import app.binky.tracker.data.TrendFlag
 import app.binky.tracker.data.bunnyId
 import app.binky.tracker.data.evaluateTrend
+import app.binky.tracker.data.growthStageNow
 import app.binky.tracker.data.healthyDayFacts
 import app.binky.tracker.data.preSelectParticipants
 import app.binky.tracker.data.readOnlyScope
@@ -280,6 +281,7 @@ class ObservationsViewModel(
             evaluateTrend(
                 series = weights.series(bunnyId).first().map { it.toWeighing() },
                 acknowledgment = weights.acknowledgment(bunnyId).first()?.toAcknowledgment(),
+                growth = growthStageNow(bunnies.bunnyNow(bunnyId)?.birthDate),
             )
         return evaluation.flag is TrendFlag.WorthACloserLook
     }

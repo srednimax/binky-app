@@ -15,6 +15,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
@@ -49,6 +50,9 @@ import java.time.temporal.ChronoUnit
  * adb shell am broadcast -n binky.bunny.and.rabbit.tracker.debug/app.binky.tracker.debug.SeedVariantReceiver \
  *     -f 0x00000020 --es variant crowded
  * ```
+ *
+ * **Variants are additive and independent**, so two of them can sit on one install — `crowded` and
+ * `gaining` add different bunnies and neither touches the other's.
  */
 class SeedVariantReceiver : BroadcastReceiver() {
     override fun onReceive(
@@ -85,7 +89,8 @@ private suspend fun seedVariant(
 ): String =
     when (variant) {
         "crowded" -> seedCrowded(container)
-        else -> error("unknown variant '$variant'; known: crowded")
+        "gaining" -> seedGaining(container)
+        else -> error("unknown variant '$variant'; known: crowded, gaining")
     }
 
 /**
@@ -169,3 +174,90 @@ private suspend fun seedCrowded(container: AppContainer): String {
 
 /** Phase 7.5 §8's own example, kept word for word so the evidence matches the argument. */
 private val LONG_NAMES = "Bartholomew-Maximilian" to "Wolfgang-Ferdinand"
+
+/**
+ * **Two bunnies putting on weight: the gain flag's two states** (ADR-0028, Phase 7.5 §1).
+ *
+ * `SampleData.kt` has no rising series — Phase 7 records that it pairs the trend flag with the
+ * running watch and the steady series with the expired one — so without this the gain card would be
+ * verified by hand once and then be invisible to the harness forever: no matrix cell, no screenshot,
+ * no regression coverage for a permanent feature. It is the first customer §4 argued seed variants
+ * for, and the reason they are not a throwaway patch.
+ *
+ * **The states are the two the rule can produce, and they differ by one field.**
+ *
+ * - **Rosemary has a birthday**, three years back, so the card is the plain gain: *up 260 g since*
+ *   the anchor's date, with the vet-advised-gain line where a loss carries the vet-diet one.
+ * - **Juniper has none**, which is the case ADR-0028 calls load-bearing: an absent field may not be
+ *   read as adulthood, so the flag fires **and the card asks how old the bunny is**. That question is the
+ *   only visual difference between the two cards, which is exactly why both are photographed.
+ *
+ * **The dates are chosen against the rule rather than eyeballed.** The anchor is the reading nearest
+ * six months back inside a 4–8 month window, so the 190-day reading is it and the 120-day one is
+ * deliberately *outside* the window — a series where several readings qualify would still capture,
+ * but it would stop proving which one the card names. The three recent readings keep the trailing
+ * median close to today's number, so the loss trigger cannot fire and steal precedence.
+ */
+private suspend fun seedGaining(container: AppContainer): String {
+    val bunnies = container.bunnyRepository
+    val existing = bunnies.activeBunnies.first()
+    // Additive, like `crowded`: it needs the sample data to add to, and failing here is what stops a
+    // scene shooting an ordinary Home under the gain card's name.
+    if (existing.none { it.name == "Bijou" }) error("seed the sample data first")
+    if (existing.any { it.name == RISING.first }) return "already present"
+
+    val today = LocalDate.now()
+
+    suspend fun add(
+        name: String,
+        birthDate: LocalDate?,
+        series: List<Pair<Long, Int>>,
+    ) {
+        val id =
+            bunnies.add(
+                BunnyEntity(
+                    name = name,
+                    sex = Sex.FEMALE,
+                    neutered = NeuterStatus.YES,
+                    birthDate = birthDate,
+                    birthDateApproximate = false,
+                ),
+            )
+        series.forEach { (daysAgo, grams) ->
+            container.weightRepository.add(
+                WeightEntity(
+                    bunnyId = id,
+                    grams = grams,
+                    recordedAt =
+                        Instant
+                            .now()
+                            .atZone(ZoneId.systemDefault())
+                            .minusDays(daysAgo)
+                            .with(LocalTime.of(8, 30))
+                            .toInstant()
+                            .truncatedTo(ChronoUnit.MINUTES),
+                ),
+            )
+        }
+    }
+
+    // 2000 g at the anchor, 2260 g now: +13 %, comfortably over the +10 % step and not so far over
+    // that the number stops looking like a real rabbit's.
+    add(
+        RISING.first,
+        birthDate = today.minusYears(3),
+        series =
+            listOf(
+                190L to 2000,
+                120L to 2080,
+                60L to 2150,
+                2L to 2260,
+            ),
+    )
+    add(RISING.second, birthDate = null, series = listOf(190L to 1800, 120L to 1850, 60L to 1900, 2L to 2030))
+
+    return "seeded"
+}
+
+/** The pair, in the order the states are argued: birthday known, then absent. */
+private val RISING = "Rosemary" to "Juniper"

@@ -157,11 +157,14 @@
          numbers are grams and dated; there is no notification, ever. -->
     <string name="trend_flag_title">Worth a closer look</string>
     <string name="trend_flag_drop">%1$s is down %2$s since %3$s.</string>
+    <string name="trend_flag_rise">%1$s is up %2$s since %3$s.</string>
     <string name="trend_flag_readings">%1$s then, %2$s now.</string>
     <string name="trend_flag_long_gap">Those two weighings are %1$s apart, so this is a change over a long stretch rather than a sudden one.</string>
     <string name="trend_flag_not_advice">This is an observation about the numbers, not a diagnosis. If you are worried, ask a vet.</string>
     <string name="trend_flag_vet_diet">On a vet-directed diet? Then this is the loss you are aiming for, and you can ignore these.</string>
+    <string name="trend_flag_vet_gain">On a vet-directed feeding plan? Then this is the gain you are aiming for, and you can ignore these.</string>
     <string name="trend_flag_acknowledge">I have seen this</string>
+    <string name="trend_flag_ask_age">How old is %1$s?</string>
     <string name="trend_flag_acknowledged">Seen %1$s.</string>
     <string name="trend_flag_close">Close</string>
 

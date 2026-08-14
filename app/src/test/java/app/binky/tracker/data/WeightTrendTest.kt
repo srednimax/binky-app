@@ -39,13 +39,13 @@ class WeightTrendTest {
         // ADR-0021's silent failure: priors of 2500, 250 average to 1375 g, which would put a
         // healthy bunny permanently "above baseline" and suppress every later drop. Higher-of-two
         // gives 2500 and the drop fires.
-        val drop =
+        val change =
             assertFires(
                 "a 250 typed for 2500 must not become a 1375 g baseline",
                 series(0 to 250, 1 to 2500, 2 to 2300),
             )
-        assertEquals(2500, drop.baselineGrams)
-        assertEquals(200, drop.dropGrams)
+        assertEquals(2500, change.baselineGrams)
+        assertEquals(200, change.changeGrams)
     }
 
     // ---- Interval independence (ADR-0001) ---------------------------------------------------
@@ -55,13 +55,13 @@ class WeightTrendTest {
         // Three weeklies, then nothing for a year, then a 300 g fall. The trigger is a level
         // trigger and asks nothing about rate: damping by elapsed time is the one thing ADR-0001
         // says must never silence this signal.
-        val drop =
+        val change =
             assertFires(
                 "a year's gap does not dampen an acute drop",
                 series(0 to 2500, 7 to 2500, 14 to 2500, 400 to 2200),
             )
-        assertEquals(300, drop.dropGrams)
-        assertEquals(day(400), drop.currentAt)
+        assertEquals(300, change.changeGrams)
+        assertEquals(day(400), change.currentAt)
     }
 
     // ---- The stated total order (ADR-0021) --------------------------------------------------
@@ -78,9 +78,9 @@ class WeightTrendTest {
                 weighing(on = 7, grams = 2500),
             )
 
-        val drop = assertFires("the same readings in any order give the same answer", jumbled)
-        assertEquals(300, drop.dropGrams)
-        assertEquals(day(400), drop.currentAt)
+        val change = assertFires("the same readings in any order give the same answer", jumbled)
+        assertEquals(300, change.changeGrams)
+        assertEquals(day(400), change.currentAt)
     }
 
     @Test
@@ -111,7 +111,7 @@ class WeightTrendTest {
         val forwards = assertFires("id ascending makes `a` the current reading", priors + a + b)
         val backwards = assertFires("and input order cannot change that", priors + b + a)
 
-        assertEquals(500, forwards.dropGrams)
+        assertEquals(500, forwards.changeGrams)
         assertEquals(forwards, backwards)
     }
 
@@ -181,20 +181,20 @@ class WeightTrendTest {
         assertTrue("a wobble inside the floor stays quiet — got $flag", flag is TrendFlag.Acknowledged)
         assertEquals(day(3), (flag as TrendFlag.Acknowledged).acknowledgedAt)
         // The drop is still reported, because it is still true. It just is not a fresh signal.
-        assertEquals(220, flag.drop.dropGrams)
+        assertEquals(220, flag.change.changeGrams)
     }
 
     @Test
     fun `acknowledging does not silence a further slide`() {
         // A bunny already flagged *and* acknowledged must not be allowed to slide a further 5 % in
         // silence, which is why the re-raise bar is the floor and not the trigger.
-        val drop =
+        val change =
             assertFires(
                 "100 g below the watermark breaks back through",
                 acknowledgedAt2300 + weighing(4, 2200),
                 acknowledgment = TrendAcknowledgment(grams = 2300, acknowledgedAt = day(3)),
             )
-        assertEquals(2200, drop.currentGrams)
+        assertEquals(2200, change.currentGrams)
     }
 
     @Test
@@ -215,7 +215,7 @@ class WeightTrendTest {
         // Back to 2500 g: the trigger is false, so the episode is over and the row on disk is now
         // stale. The evaluation only reports that — `WeightRepository` does the deleting, because
         // under "All bunnies" every vitals card evaluates the flag and N cards would race.
-        val evaluation = evaluateTrend(recovered, ack)
+        val evaluation = evaluateTrend(recovered, ack, GrowthStage.Grown)
         assertEquals(TrendFlag.Steady, evaluation.flag)
         assertTrue("the watermark is stale once the trigger goes false", evaluation.watermarkIsStale)
 
@@ -240,6 +240,7 @@ class WeightTrendTest {
             evaluateTrend(
                 series(0 to 2500, 1 to 2000),
                 TrendAcknowledgment(grams = 2000, acknowledgedAt = day(1)),
+                GrowthStage.Grown,
             )
 
         assertEquals(TrendFlag.NotEnoughHistory, evaluation.flag)
@@ -257,9 +258,9 @@ class WeightTrendTest {
         // Remembering a 2600 g weighing from day 3 pushes the median baseline up to 2500 g, and the
         // same current reading is now a drop. The flag is a live claim about the latest weighing,
         // so it recomputes rather than being frozen at entry time.
-        val drop = assertFires("the baseline moved beneath it", before + weighing(3, 2600))
-        assertEquals(2500, drop.baselineGrams)
-        assertEquals(day(6), drop.currentAt)
+        val change = assertFires("the baseline moved beneath it", before + weighing(3, 2600))
+        assertEquals(2500, change.baselineGrams)
+        assertEquals(day(6), change.currentAt)
     }
 
     @Test
@@ -295,13 +296,187 @@ class WeightTrendTest {
         // permanent — was not. Do **not** "fix" this by ignoring priors older than N days: that
         // breaks interval-independence, and with all three priors discarded there is no baseline at
         // all, so the app goes silent on an acute drop after a long gap.
-        val drop =
+        val change =
             assertFires(
                 "the third post-gap reading has a live baseline and fires",
                 grewUpUnlogged + weighing(486, 2050) + weighing(516, 1900),
             )
-        assertEquals(2050, drop.baselineGrams)
-        assertEquals(150, drop.dropGrams)
+        assertEquals(2050, change.baselineGrams)
+        assertEquals(150, change.changeGrams)
+    }
+
+    // ---- The gain rule: a six-month anchor, +10 % (ADR-0028) --------------------------------
+
+    @Test
+    fun `a rise of a tenth over six months fires, and a hair under it does not`() {
+        val change = assertFires("2200 g is exactly 10 % above the anchor", risenTo(2200))
+        assertEquals(TrendDirection.Gain, change.direction)
+        // The anchor is a real reading with a real date, which is what lets the card say "up 200 g
+        // since 1 January" rather than claiming a span it never measured.
+        assertEquals(2000, change.baselineGrams)
+        assertEquals(day(0), change.baselineAt)
+        // Always positive, whichever way the number went — the direction is carried by `direction`.
+        assertEquals(200, change.changeGrams)
+
+        assertEquals(
+            "one gram under the trigger is not the trigger",
+            TrendFlag.Steady,
+            flagFor(risenTo(2199)),
+        )
+    }
+
+    @Test
+    fun `no reading in the window makes no claim, which is not the same as steady`() {
+        // +19 % in a hundred days, and the app says nothing: the anchor is defined as a reading 4–8
+        // months back, and there is none. **Not a statement that the bunny is fine** (ADR-0001) —
+        // the rule simply has nothing to judge against, exactly as it has nothing to say about a
+        // bunny nobody weighed.
+        //
+        // `Steady` is the same *value* as the case above it, and deliberately so: nothing in the app
+        // renders either as reassurance (`showsBanner` draws neither), so a third variant would be a
+        // distinction with no consumer. The difference lives in these two cases, which is where a
+        // later reader will look for it.
+        assertEquals(
+            TrendFlag.Steady,
+            flagFor(series(300 to 2000, 330 to 2010, 360 to 2020, 400 to 2400)),
+        )
+    }
+
+    @Test
+    fun `the window is closed at four months and at eight`() {
+        // Three priors bunched at the start, so the whole window opens and shuts on one number.
+        fun risenOn(day: Int) = series(0 to 2000, 1 to 2000, 2 to 2000, day to 2400)
+
+        assertFires("122 days back is inside the window", risenOn(122))
+        assertEquals("121 is outside it", TrendFlag.Steady, flagFor(risenOn(121)))
+
+        assertFires("244 days back is inside the window", risenOn(246))
+        assertEquals("245 is outside it", TrendFlag.Steady, flagFor(risenOn(247)))
+    }
+
+    @Test
+    fun `the anchor is the reading nearest six months, not the oldest one in the window`() {
+        // Three candidates, all inside 4–8 months of the current reading: 122, 183 and 244 days
+        // back. The middle one is the anchor, and the assertion is its *date* — a rule that took the
+        // window's edge would pass a grams-only check by accident here.
+        val change =
+            assertFires(
+                "the nearest reading to six months is the anchor",
+                series(122 to 2300, 183 to 2000, 244 to 2200, 366 to 2400),
+            )
+        assertEquals(2000, change.baselineGrams)
+        assertEquals(day(183), change.baselineAt)
+    }
+
+    @Test
+    fun `a growing kit is silent, and an unknown age fires and asks`() {
+        // 1400 g to 2400 g in six months is a healthy kit growing up, and any gain rule is
+        // arithmetically correct about it every time.
+        val grewUp = series(0 to 1400, 30 to 1600, 60 to 1800, 183 to 2400)
+
+        assertEquals(
+            "a bunny under a year old raises nothing",
+            TrendFlag.Steady,
+            flagFor(grewUp, growth = GrowthStage.Growing),
+        )
+
+        // With no birthday on file the app does **not** read the absent field as adulthood, which is
+        // the move ADR-0001 bans — it fires and the card asks how old the bunny is.
+        val asked = assertFires("an absent birthday is not adulthood", grewUp, growth = GrowthStage.Unknown)
+        assertTrue("the card has to carry the question", asked.ageUnknown)
+
+        val known = assertFires("a grown bunny fires without it", grewUp, growth = GrowthStage.Grown)
+        assertFalse("nothing to ask once the birthday is known", known.ageUnknown)
+    }
+
+    @Test
+    fun `the growth gate turns on the day the bunny turns one`() {
+        val birthday = java.time.LocalDate.of(2025, 2, 28)
+
+        assertEquals(GrowthStage.Growing, growthStageOn(birthday, birthday.plusMonths(12).minusDays(1)))
+        assertEquals(GrowthStage.Grown, growthStageOn(birthday, birthday.plusMonths(12)))
+        assertEquals(GrowthStage.Unknown, growthStageOn(null, birthday))
+        // A birthday in the future is a typo in a date picker, and the app asks rather than reading
+        // it as a newborn it would then be silent about for a year.
+        assertEquals(GrowthStage.Unknown, growthStageOn(birthday, birthday.minusDays(1)))
+    }
+
+    @Test
+    fun `a rise with only one prior stays not enough history`() {
+        // Arithmetically the gain rule needs nothing more than an anchor and a current reading, so
+        // this case *could* fire. It does not: ADR-0021's "two points do not describe a trend" is a
+        // statement about how thin a record this app will speak from at all, and it is not weaker
+        // for a rise than for a fall. Deliberate, and pinned so a refactor cannot quietly relax it.
+        assertEquals(TrendFlag.NotEnoughHistory, flagFor(series(0 to 2000, 183 to 2400)))
+    }
+
+    @Test
+    fun `when both triggers hold the loss is what shows`() {
+        // Gained 800 g over six months and then dropped 200 g last week. Both rules are true and the
+        // card says the most urgent one — which is also what keeps one watermark enough, and the
+        // schema at 6 (ADR-0028).
+        val change = assertFires("loss takes precedence", gainedThenDropped)
+        assertEquals(TrendDirection.Loss, change.direction)
+        assertEquals(2800, change.baselineGrams)
+        assertEquals(200, change.changeGrams)
+    }
+
+    @Test
+    fun `a watermark acknowledged for one direction never judges the other`() {
+        // 2800 g is where the gain was acknowledged. The bunny has since dropped, so the card is now
+        // a loss — judged against a 2800 g baseline the watermark sits *on*, not below. A watermark
+        // on the wrong side of the reference was taken for the other direction, so it is discarded
+        // rather than allowed to silence this one.
+        val forTheGain = TrendAcknowledgment(grams = 2800, acknowledgedAt = day(170))
+        val evaluation = evaluateTrend(gainedThenDropped, forTheGain, GrowthStage.Grown)
+
+        assertTrue("the loss is unacknowledged — got ${evaluation.flag}", evaluation.flag is TrendFlag.WorthACloserLook)
+        assertTrue(
+            "and the row on disk is stale, which is what makes the repository drop it",
+            evaluation.watermarkIsStale,
+        )
+
+        // The contrast, one gram lower: a watermark genuinely taken for *this* loss silences it.
+        val forTheLoss = TrendAcknowledgment(grams = 2600, acknowledgedAt = day(183))
+        assertTrue(flagFor(gainedThenDropped, forTheLoss) is TrendFlag.Acknowledged)
+    }
+
+    @Test
+    fun `an acknowledged gain returns unacknowledged once a loss has interrupted it`() {
+        // **A pinned limitation, not a bug** (ADR-0028). The watermark was discarded on the direction
+        // change above, so when the loss resolves and the gain still holds, the owner is asked to
+        // acknowledge a card they have already seen. The alternative was a second acknowledgment row:
+        // a schema bump, a migration and an instrumented run, for a card that would say two things.
+        val recovered = gainedThenDropped + weighing(190, 2800)
+        val change = assertFires("the gain is back, and unacknowledged", recovered)
+        assertEquals(TrendDirection.Gain, change.direction)
+    }
+
+    @Test
+    fun `an acknowledged gain is silenced until it rises past the bar`() {
+        val ack = TrendAcknowledgment(grams = 2200, acknowledgedAt = day(183))
+        // The anchor is 2000 g, so the floor is 40 g and the bar is 2240 g. Same rule as the loss
+        // side, mirrored: "breaks through by *more than* the floor" is strict on both.
+        assertTrue(flagFor(risenTo(2200), ack) is TrendFlag.Acknowledged)
+        assertTrue(flagFor(risenTo(2200) + weighing(190, 2240), ack) is TrendFlag.Acknowledged)
+        assertTrue(flagFor(risenTo(2200) + weighing(190, 2241), ack) is TrendFlag.WorthACloserLook)
+    }
+
+    @Test
+    fun `one high reading at the anchor suppresses the flag silently`() {
+        // **The other pinned limitation** (ADR-0028). The bunny was 1900 g in January and is 2200 g
+        // now — 15 %, comfortably over — but the January weighing was taken in the carrier and reads
+        // 2100 g, so the rise measures 4.8 % and nothing is said. A median of a bucket around the
+        // anchor would have resisted it; a single reading is the version the card can explain, and
+        // this is what that costs. The app does not report having failed here, which is the part
+        // worth knowing.
+        assertEquals(
+            TrendFlag.Steady,
+            flagFor(series(0 to 2100, 30 to 1900, 60 to 1950, 183 to 2200)),
+        )
+
+        // The same six months with an honest anchor reading fires.
+        assertFires("1900 g at the anchor is a 15 % rise", series(0 to 1900, 30 to 1900, 60 to 1950, 183 to 2200))
     }
 
     // ---- Degenerate input --------------------------------------------------------------------
@@ -309,13 +484,26 @@ class WeightTrendTest {
     @Test
     fun `an empty series makes no claim either way`() {
         // Not "steady": absence of a flag is never evidence of health (ADR-0001).
-        val evaluation = evaluateTrend(emptyList(), acknowledgment = null)
+        val evaluation = evaluateTrend(emptyList(), acknowledgment = null, growth = GrowthStage.Grown)
         assertEquals(TrendFlag.NotEnoughHistory, evaluation.flag)
         assertFalse(evaluation.watermarkIsStale)
     }
 
     /** The shared setup for the watermark cases: fires at 2300 g on day 3 against a 2500 g baseline. */
     private val acknowledgedAt2300 = series(0 to 2500, 1 to 2500, 2 to 2500, 3 to 2300)
+
+    /**
+     * Six months of near-steady weighings and then today's, whatever it says. The day-0 reading is
+     * the anchor — exactly 183 days back — and the three recent priors keep the *loss* baseline
+     * close to the current number, so nothing here can fire in the other direction by accident.
+     */
+    private fun risenTo(grams: Int) = series(0 to 2000, 30 to 2010, 60 to 2020, 183 to grams)
+
+    /**
+     * Both triggers at once: 2000 g in January, 2800 g by summer, and 200 g off in the last fortnight
+     * — a 2800 g trailing baseline for the loss, a 2000 g anchor for the gain.
+     */
+    private val gainedThenDropped = series(0 to 2000, 150 to 2800, 160 to 2800, 170 to 2800, 183 to 2600)
 }
 
 // ---- Case-table helpers ----------------------------------------------------------------------
@@ -339,17 +527,24 @@ private fun weighing(
 private fun series(vararg readings: Pair<Int, Int>): List<Weighing> =
     readings.map { (on, grams) -> weighing(on, grams) }
 
+/**
+ * **[GrowthStage.Grown] by default, and that is the neutral choice rather than a shortcut.** The loss
+ * rule has never asked how old a bunny is, so every case above it reads the same whatever is passed;
+ * the gain cases that care state their own.
+ */
 private fun flagFor(
     series: List<Weighing>,
     acknowledgment: TrendAcknowledgment? = null,
-): TrendFlag = evaluateTrend(series, acknowledgment).flag
+    growth: GrowthStage = GrowthStage.Grown,
+): TrendFlag = evaluateTrend(series, acknowledgment, growth).flag
 
 private fun assertFires(
     message: String,
     series: List<Weighing>,
     acknowledgment: TrendAcknowledgment? = null,
-): TrendDrop {
-    val flag = flagFor(series, acknowledgment)
+    growth: GrowthStage = GrowthStage.Grown,
+): TrendChange {
+    val flag = flagFor(series, acknowledgment, growth)
     assertTrue("$message — got $flag", flag is TrendFlag.WorthACloserLook)
-    return (flag as TrendFlag.WorthACloserLook).drop
+    return (flag as TrendFlag.WorthACloserLook).change
 }

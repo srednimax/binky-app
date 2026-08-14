@@ -61,6 +61,7 @@ fun WeightEntryScreen(
     bunnyId: String,
     weightId: String?,
     onOpenVisit: (String) -> Unit,
+    onEditBunny: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -204,10 +205,10 @@ fun WeightEntryScreen(
         }
     }
 
-    state.flagDrop?.let { drop ->
+    state.flagChange?.let { change ->
         TrendFlagDialog(
             bunnyName = state.bunnyName,
-            drop = drop,
+            change = change,
             unit = state.unit,
             onAcknowledge = viewModel::acknowledge,
             onDismiss = viewModel::dismissFlag,
@@ -215,6 +216,13 @@ fun WeightEntryScreen(
             // here in any way this screen can see — it has no watch flow — so the action is always
             // on offer, and starting one over a running one is an upsert either way.
             secondaryAction = { StartWatchAction(state.bunnyName, viewModel::startWatch) },
+            // ADR-0028's age question. It leaves this screen for the bunny editor, which is why it
+            // dismisses first: the weighing is already written by the time this dialog is up, so
+            // there is nothing here left to lose.
+            onAskAge = {
+                viewModel.dismissFlag()
+                onEditBunny()
+            },
         )
     }
 }
