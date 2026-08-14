@@ -20,6 +20,7 @@ Usage:
     scripts/edge-to-edge.py --out /path/to/dir            # the whole matrix
     scripts/edge-to-edge.py --out DIR --config landscape-threebutton
     scripts/edge-to-edge.py --out DIR --scene home,weight-chart
+    scripts/edge-to-edge.py --out DIR --locale pl         # the same walk, in Polish
     scripts/edge-to-edge.py --restore                     # hand the phone back to auto-rotate
 
 The phone is left in whatever configuration the last cell used; `--restore` puts it back.
@@ -35,6 +36,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from xml.etree import ElementTree
 
 PACKAGE = "binky.bunny.and.rabbit.tracker.debug"
 ACTIVITY = f"{PACKAGE}/app.binky.tracker.MainActivity"
@@ -137,6 +139,30 @@ def set_dnd(on: bool) -> None:
     """
     shell(f"cmd notification set_dnd {'on' if on else 'off'}")
     settle(0.5)
+
+
+# The app language every wipe has to put back, since `pm clear` drops it. None is the device default.
+_LOCALE: "str | None" = None
+
+
+def set_locale(locale: str | None) -> None:
+    """Pin the app's language, or hand it back to the device default.
+
+    Per-app locales are system state keyed by package, which is why this is `cmd locale` and not the
+    in-app Settings picker: the same mechanism the picker drives, reachable without eight taps.
+
+    **It does not survive `pm clear`**, so the chosen locale is remembered here and re-applied by
+    [wipe] — the one place this driver clears the app. Doing it there rather than at the top of each
+    suite is what keeps the `empty` suite honest: its scenes wipe as their *first step*, so a locale
+    applied only once per cell would shoot the setup wizard in English inside a Polish run.
+    """
+    global _LOCALE
+    _LOCALE = locale
+    if locale is None:
+        shell(f"cmd locale set-app-locales {PACKAGE} --locales")
+    else:
+        shell(f"cmd locale set-app-locales {PACKAGE} --locales {locale}")
+    settle(1.5)
 
 
 @dataclass(frozen=True)
@@ -270,13 +296,22 @@ def screen_signature(nodes: list[Node]) -> str:
     return "|".join(f"{n.label}{n.bounds.as_list()}" for n in nodes if n.package == PACKAGE)
 
 
+# What each English needle means in the locale under capture, filled in by [resolve_needles] before
+# the first tap and empty for an English run — where every lookup is the identity.
+_TRANSLATED: dict[str, str] = {}
+
+
 def find(nodes: list[Node], needle: str) -> Node | None:
     """The smallest node whose text or description contains `needle`, case-insensitively.
 
     Smallest, because Compose reports a merged semantics node for a whole row as well as the leaf
     inside it, and the leaf is the one whose centre is unambiguously on the thing named.
+
+    **Every needle is translated here**, which is the one place it can be: `tap`, `return_to_home`
+    and `showing_home` all arrive through this function, so a locale run needs no second table and
+    no scene rewritten. See [resolve_needles].
     """
-    needle = needle.casefold()
+    needle = _TRANSLATED.get(needle, needle).casefold()
     matches = [
         node
         for node in nodes
@@ -496,6 +531,32 @@ def swipe_to_end() -> None:
         previous = current
 
 
+def tap_field(index: str) -> None:
+    """Tap the *n*-th editable field on screen, top to bottom. The IME scenes' way in.
+
+    **A needle cannot name a field that has no text.** The redesign's hero grams field carries no
+    label and no placeholder — the number is the whole control — so the only string containing
+    "Weight in grams" is the help line *underneath* it, which is a plain `Text`. Tapping it focuses
+    nothing, and `weight-entry-ime` has been shooting a form with no keyboard ever since: the same
+    trap `observation-entry-ime` and `course-editor-ime` were caught in, and the one nobody spotted
+    because a scene with no IME still produces a perfectly good screenshot.
+
+    Structure rather than copy is the fix, and it is the right one twice over: an `EditText` is an
+    `EditText` in every language, so this is the one needle a locale run cannot break.
+    """
+    wanted = int(index)
+    fields = sorted(
+        (node for node in dump_ui() if node.package == PACKAGE and node.cls.endswith("EditText")),
+        key=lambda node: (node.bounds.top, node.bounds.left),
+    )
+    if wanted >= len(fields):
+        raise StepFailed(f"asked for editable field {wanted}, found {len(fields)}")
+    node = fields[wanted]
+    shell(f"input touchscreen tap {(node.bounds.left + node.bounds.right) // 2} "
+          f"{(node.bounds.top + node.bounds.bottom) // 2}")
+    settle(1.2)
+
+
 def type_text(value: str) -> None:
     shell(f"input text {value}")
     settle(1.2)
@@ -512,6 +573,10 @@ def wipe() -> None:
     _SEEDED = None
     shell(f"pm clear {PACKAGE}")
     settle(1.0)
+    # Before the launch, not after: `pm clear` drops the per-app locale, and re-applying it to a
+    # package that is not running costs nothing, where doing it afterwards restarts the activity.
+    if _LOCALE is not None:
+        shell(f"cmd locale set-app-locales {PACKAGE} --locales {_LOCALE}")
     shell(f"am start -n {ACTIVITY}")
     wait_for_app()
     # Re-pin the rotation the wipe just cost us. Only the rotation: the navigation mode is a global
@@ -537,14 +602,10 @@ def reset_to_seeded() -> None:
     without this a second capture cell would find it already gone and quietly shoot the wrong screen.
     """
     wipe()
-    for label in ("Skip for now", "Continue", "Finish setup"):
+    for label in SEED_WALK:
+        # `tap` scrolls when it cannot find its target, which is what reaches *Add the sample data*:
+        # the sample-data block is the debug-only tail of a scrolling Settings column.
         tap(label)
-    tap("More")
-    tap("Settings")
-    # `tap` scrolls when it cannot find its target, which is what reaches this one: the sample-data
-    # block is the debug-only tail of a scrolling Settings column.
-    tap("Add the sample data")
-    tap("OK")
     settle(1.0)
 
     # Last, because `pm grant` can kill the process and everything above is a tap sequence that
@@ -664,6 +725,7 @@ STEP_RUNNERS = {
     "back": lambda arg: back(),
     "swipe_up": lambda arg: swipe_up(),
     "swipe_end": lambda arg: swipe_to_end(),
+    "tap_field": tap_field,
     "type": type_text,
     "wait": lambda arg: settle(float(arg)),
     "wipe": lambda arg: wipe(),
@@ -715,7 +777,7 @@ SELECT_BUNNY = [("tap", "Choose which bunny"), ("tap", "Bijou")]
 # carries a chevron instead. Whether the seeded weigh-in is due on the day the matrix runs depends on
 # the latest seeded weighing — so the old needle was a coin flip, and the button on the reminder's
 # own screen is always there. Same lesson as MEDICATION_COURSE below: name the thing you mean.
-OPEN_WEIGHT_FORM = [("tap", "Care"), ("tap", "Weigh-in"), ("tap", "Record a weight")]
+OPEN_WEIGHT_FORM = [("tap", "Care & Meds"), ("tap", "Weigh-in"), ("tap", "Record a weight")]
 
 # The medication course is opened **by name**, never by its `Open` button, and that is a fix rather
 # than a style choice. `find` is a case-insensitive substring match, and the Care screen grows a
@@ -781,24 +843,24 @@ SCENES = [
         "tab",
         [*SELECT_BUNNY, ("tap", "Observations"), ("swipe_up", "")],
     ),
-    Scene("care", "tab", [*SELECT_BUNNY, ("tap", "Care")]),
+    Scene("care", "tab", [*SELECT_BUNNY, ("tap", "Care & Meds")]),
     Scene("more", "tab", [*SELECT_BUNNY, ("tap", "More")]),
     # --- detail routes: own TopAppBar with back, shell chrome hidden --------------------------
     Scene("settings", "detail", [("tap", "More"), ("tap", "Settings")]),
     Scene("settings-scrolled", "detail", [("tap", "More"), ("tap", "Settings"), ("swipe_up", "")]),
-    Scene("backup", "detail", [("tap", "More"), ("tap", "Settings"), ("tap", "Backup")]),
+    Scene("backup", "detail", [("tap", "More"), ("tap", "Settings"), ("tap", "Backup & restore")]),
     Scene(
         "backup-scrolled",
         "detail",
-        [("tap", "More"), ("tap", "Settings"), ("tap", "Backup"), ("swipe_up", "")],
+        [("tap", "More"), ("tap", "Settings"), ("tap", "Backup & restore"), ("swipe_up", "")],
     ),
-    Scene("archived", "detail", [("tap", "More"), ("tap", "Archived")]),
+    Scene("archived", "detail", [("tap", "More"), ("tap", "Archived bunnies")]),
     # By name since Phase 7's `3a`, not by "Every". `find` returns the *smallest* matching node, and
     # a course row and a reminder row are now both exactly 64dp of full-width merged semantics — an
     # exact tie, broken by list order, which puts the course first. "Every" also appears in a course's
     # own schedule line ("…every day"). "Nail trim" is Bijou's first seeded reminder and names only
     # itself.
-    Scene("care-reminder", "detail", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Nail trim")]),
+    Scene("care-reminder", "detail", [*SELECT_BUNNY, ("tap", "Care & Meds"), ("tap", "Nail trim")]),
     # Reached without SELECT_BUNNY on purpose: Support is the one More row that stays live with no
     # bunny in scope, and the scene is worth more exercising that path than the ordinary one.
     Scene("support", "detail", [("tap", "More"), ("tap", "Support")]),
@@ -817,7 +879,7 @@ SCENES = [
     Scene(
         "care-reminder-editor",
         "form",
-        [*SELECT_BUNNY, ("tap", "Care"), ("swipe_up", ""), ("tap", "Add a reminder")],
+        [*SELECT_BUNNY, ("tap", "Care & Meds"), ("swipe_up", ""), ("tap", "Add a reminder")],
     ),
     # Owed, and its absence cost a gate. In landscape the opening frame puts the interval `EditText`
     # 27px under the navigation bar, which reads as a defect until something proves the *end* of the
@@ -827,13 +889,16 @@ SCENES = [
     Scene(
         "care-reminder-editor-bottom",
         "form",
-        [*SELECT_BUNNY, ("tap", "Care"), ("swipe_up", ""), ("tap", "Add a reminder"), ("swipe_end", "")],
+        [*SELECT_BUNNY, ("tap", "Care & Meds"), ("swipe_up", ""), ("tap", "Add a reminder"), ("swipe_end", "")],
     ),
     # --- the IME, which is the case a still screen never shows --------------------------------
     Scene(
         "weight-entry-ime",
         "ime",
-        [*SELECT_BUNNY, *OPEN_WEIGHT_FORM, ("tap", "Weight in grams"), ("wait", "1.5")],
+        # By structure, not by copy — see [tap_field]. The needle used to be "Weight in grams",
+        # which is the *help line* under the field: the tap focused nothing and every shot of this
+        # scene, including Phase 7's banked after set, has no keyboard in it.
+        [*SELECT_BUNNY, *OPEN_WEIGHT_FORM, ("tap_field", "0"), ("wait", "1.5")],
         note="keyboard up; in landscape it eats most of the screen",
     ),
     Scene(
@@ -867,7 +932,7 @@ SCENES = [
     Scene(
         "backup-bottom",
         "detail",
-        [("tap", "More"), ("tap", "Settings"), ("tap", "Backup"), ("swipe_end", "")],
+        [("tap", "More"), ("tap", "Settings"), ("tap", "Backup & restore"), ("swipe_end", "")],
     ),
     # Home is the route FabClearance was written for: Scaffold pads content for the bars it owns but
     # not for the FAB floating over it, so Edit/Archive/Delete sat underneath it. The `home` scene
@@ -881,7 +946,7 @@ SCENES = [
         "tab",
         [*SELECT_BUNNY, ("tap", "Observations"), ("swipe_end", "")],
     ),
-    Scene("care-bottom", "tab", [*SELECT_BUNNY, ("tap", "Care"), ("swipe_end", "")]),
+    Scene("care-bottom", "tab", [*SELECT_BUNNY, ("tap", "Care & Meds"), ("swipe_end", "")]),
     Scene("photos-bottom", "full-bleed", [*SELECT_BUNNY, ("tap", "More"), ("tap", "Photos"), ("swipe_end", "")]),
     Scene("bunny-editor-bottom", "form", [*SELECT_BUNNY, ("tap", "Edit"), ("swipe_end", "")]),
     Scene(
@@ -937,22 +1002,22 @@ SCENES = [
     # The Care tab gained two whole sections above and below the reminders it used to be, so its
     # middle is now content no earlier capture ever saw: `care` shows the medications at the top and
     # `care-bottom` the end of the visits, and this is the reminders that used to be the whole tab.
-    Scene("care-scrolled", "tab", [*SELECT_BUNNY, ("tap", "Care"), ("swipe_up", "")]),
+    Scene("care-scrolled", "tab", [*SELECT_BUNNY, ("tap", "Care & Meds"), ("swipe_up", "")]),
     # The dose history is the longest list the app builds — one row per dose per day — so its end is
     # the scroll most likely to leave a row under the navigation bar.
-    Scene("medication-course", "detail", [*SELECT_BUNNY, ("tap", "Care"), ("tap", MEDICATION_COURSE)]),
+    Scene("medication-course", "detail", [*SELECT_BUNNY, ("tap", "Care & Meds"), ("tap", MEDICATION_COURSE)]),
     Scene(
         "medication-course-bottom",
         "detail",
-        [*SELECT_BUNNY, ("tap", "Care"), ("tap", MEDICATION_COURSE), ("swipe_end", "")],
+        [*SELECT_BUNNY, ("tap", "Care & Meds"), ("tap", MEDICATION_COURSE), ("swipe_end", "")],
     ),
-    Scene("course-editor", "form", [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a course")]),
+    Scene("course-editor", "form", [*SELECT_BUNNY, ("tap", "Care & Meds"), ("tap", "Add a course")]),
     # Phase 7's `3e` moved Save into the app bar, so the bottom edge is now the notes card rather
     # than a button — a text box competing with the navigation bar, which is the worse of the two.
     Scene(
         "course-editor-bottom",
         "form",
-        [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a course"), ("swipe_end", "")],
+        [*SELECT_BUNNY, ("tap", "Care & Meds"), ("tap", "Add a course"), ("swipe_end", "")],
     ),
     Scene(
         "course-editor-ime",
@@ -960,7 +1025,7 @@ SCENES = [
         # Taps the *placeholder*, not "What is it?" — `3e` made that a label above the box rather
         # than the box's own floating label, so the old needle would land on a plain `Text`, focus
         # nothing, and shoot a form with no keyboard. Same trap as `observation-entry-ime`.
-        [*SELECT_BUNNY, ("tap", "Care"), ("tap", "Add a course"), ("tap", "Metacam"), ("wait", "1.5")],
+        [*SELECT_BUNNY, ("tap", "Care & Meds"), ("tap", "Add a course"), ("tap", "Metacam"), ("wait", "1.5")],
         note="the first field of the phase's longest form; in landscape the IME leaves two rows",
     ),
     # `swipe_up` before the button, because *Add a visit* is the last section of Care & Meds and sits
@@ -970,12 +1035,12 @@ SCENES = [
     Scene(
         "visit-editor",
         "form",
-        [*SELECT_BUNNY, ("tap", "Care"), ("swipe_up", ""), ("tap", "Add a visit")],
+        [*SELECT_BUNNY, ("tap", "Care & Meds"), ("swipe_up", ""), ("tap", "Add a visit")],
     ),
     Scene(
         "visit-editor-bottom",
         "form",
-        [*SELECT_BUNNY, ("tap", "Care"), ("swipe_up", ""), ("tap", "Add a visit"), ("swipe_end", "")],
+        [*SELECT_BUNNY, ("tap", "Care & Meds"), ("swipe_up", ""), ("tap", "Add a visit"), ("swipe_end", "")],
     ),
     Scene("vets", "detail", [("tap", "More"), ("tap", "Vets")]),
     Scene("vet-editor", "form", [("tap", "More"), ("tap", "Vets"), ("tap", "Add a vet")]),
@@ -995,7 +1060,7 @@ SCENES = [
         "overlay",
         [
             *SELECT_BUNNY,
-            ("tap", "Care"),
+            ("tap", "Care & Meds"),
             ("tap", MEDICATION_COURSE),
             ("tap", "Record a dose"),
             ("wait", "1.0"),
@@ -1023,7 +1088,7 @@ SCENES = [
             ("tap", "Skip for now"),
             ("tap", "Continue"),
             ("tap", "Finish setup"),
-            ("tap", "Care"),
+            ("tap", "Care & Meds"),
         ],
         suite="empty",
     ),
@@ -1068,10 +1133,119 @@ SCENES = [
     Scene(
         "archived-crowded",
         "detail",
-        [("tap", "More"), ("tap", "Archived")],
+        [("tap", "More"), ("tap", "Archived bunnies")],
         seed="crowded",
     ),
 ]
+
+
+# --------------------------------------------------------------------------------------------
+# Needles in another language
+# --------------------------------------------------------------------------------------------
+
+RES_DIR = Path(__file__).resolve().parent.parent / "app" / "src" / "main" / "res"
+
+# **The needles that belong to the driver rather than to a scene**, and the reason they are named
+# here: [scene_needles] can only see what is in [SCENES], so a literal buried in a function is one a
+# locale run does not translate — and the first Polish run failed on exactly that, in
+# [reset_to_seeded], which is the step every cell starts with.
+WATCH_CLOSE = "Close it"
+
+# The walk from a wiped install to the seeded fixture: past the three wizard steps, into Settings,
+# and through the debug-only sample-data block at the end of it.
+SEED_WALK = ("Skip for now", "Continue", "Finish setup", "More", "Settings", "Add the sample data", "OK")
+
+
+def load_strings(locale: str | None) -> dict[str, str]:
+    """`name -> value` for `values/` or `values-<locale>/`.
+
+    The escapes matter and the markup does not: `uiautomator` reports what is *on screen*, so `\\'`
+    is an apostrophe by the time a node carries it, while `&amp;` has already been resolved by the
+    XML parser. `itertext` rather than `.text` so a value wrapped in inline markup still comes back
+    whole.
+    """
+    values = RES_DIR / ("values" if locale is None else f"values-{locale}")
+    strings: dict[str, str] = {}
+    for element in ElementTree.parse(values / "strings.xml").getroot().findall("string"):
+        name = element.get("name")
+        if name is None:
+            continue
+        strings[name] = "".join(element.itertext()).replace("\\'", "'").replace('\\"', '"')
+    return strings
+
+
+def scene_needles() -> set[str]:
+    """Every string this driver will look for on screen, across all suites."""
+    needles = {TAB_BAR, HOME_TAB, WATCH_CLOSE, *SEED_WALK}
+    for scene in SCENES:
+        needles.update(arg for kind, arg in scene.steps if kind in ("tap", "tap?"))
+    return needles
+
+
+def resolve_needles(locale: str) -> None:
+    """Translate the whole needle table **once, before the first tap** (ADR-0013).
+
+    `--locale` has switched the app for a while; what has never worked is everything after it,
+    because the needles are English string literals and `tap("Choose which bunny")` matches nothing
+    in Polish. ADR-0013 is what makes the fix small — every user-visible string is a resource in
+    every locale, and `PolishTranslationTest` keeps them level — so a needle can resolve *through
+    the resource name*.
+
+    Three cases, in order:
+
+    - **an exact match on an English value** → the locale's value for that resource;
+    - **the unique resource whose value *contains* the needle** → the locale's *whole* value, which
+      still matches because `find` is a substring match against the node's label. That is what
+      carries deliberate fragments like `"What you noticed"`;
+    - **no match at all** → the literal, unchanged. Sample data is identical in every locale, so
+      `Bijou`, `Metacam` and `Nail trim` want exactly this. It is also where a typo lands, which is
+      why they are listed rather than passed over.
+
+    **Resolved up front rather than at tap time**, because a run is ~40 s per scene per cell: the
+    difference between failing early and failing late is the difference between a minute and an
+    evening. An **ambiguous** needle — one whose candidates disagree about the translation — is
+    fatal here for the same reason. Picking one would be a coin flip, and the fix is to lengthen the
+    needle until it names one thing, which improves the English table too.
+    """
+    english = load_strings(None)
+    translated = load_strings(locale)
+
+    resolved: dict[str, str] = {}
+    literals: list[str] = []
+    ambiguous: list[str] = []
+    by_substring = 0
+
+    for needle in sorted(scene_needles()):
+        folded = needle.casefold()
+        names = [name for name, value in english.items() if value.casefold() == folded]
+        exact = bool(names)
+        if not names:
+            names = [name for name, value in english.items() if folded in value.casefold()]
+        # A resource the target locale does not carry is deliberately invariant — `app_name` is
+        # `translatable="false"` on purpose (ADR-0013) — so its English text is already the right
+        # needle and its absence is not a gap.
+        candidates = {translated[name] for name in names if name in translated}
+        if not candidates:
+            literals.append(needle)
+        elif len(candidates) > 1:
+            ambiguous.append(f"    {needle!r} could be any of {sorted(candidates)}")
+        else:
+            resolved[needle] = candidates.pop()
+            by_substring += 0 if exact else 1
+
+    if ambiguous:
+        raise SystemExit(
+            f"{len(ambiguous)} needle(s) do not name one string in {locale!r}:\n"
+            + "\n".join(ambiguous)
+            + "\n  Lengthen the needle until it does — a coin flip here is a scene that shoots the "
+            "wrong screen.",
+        )
+
+    _TRANSLATED.update(resolved)
+    print(
+        f"needles: {len(resolved)} translated to {locale} "
+        f"({by_substring} by substring), {len(literals)} left literal: {', '.join(literals)}",
+    )
 
 
 # --------------------------------------------------------------------------------------------
@@ -1145,7 +1319,7 @@ def reach_scene(scene: Scene) -> str | None:
             # The prompt is hosted above the shell and so composes a beat after it; asking before
             # that is asking too early, and an optional tap does not wait around to be told no.
             settle(1.2)
-            tap("Close it", optional=True)
+            tap(WATCH_CLOSE, optional=True)
             # After the prompt, never before: the prompt sits over whatever route was restored, and
             # closing it first means [return_to_home] reads the screen underneath rather than a
             # dialog's window.
@@ -1205,10 +1379,18 @@ def main() -> int:
             "'mismatch' corrupts the database's version field and puts it back afterwards"
         ),
     )
+    parser.add_argument(
+        "--locale",
+        help=(
+            "BCP-47 tag pinned as the app's language, e.g. pl. The scene needles are translated "
+            "through the resource names before the first tap; default leaves the device alone"
+        ),
+    )
     parser.add_argument("--restore", action="store_true", help="undo the pinned rotation and nav mode")
     args = parser.parse_args()
 
     if args.restore:
+        set_locale(None)
         restore_device()
         print("rotation, navigation mode and Do Not Disturb handed back to the phone")
         return 0
@@ -1225,7 +1407,17 @@ def main() -> int:
         wanted = set(args.scene.split(","))
         scenes = [scene for scene in SCENES if scene.name in wanted]
 
+    # Before anything touches the phone: a needle that names two strings, or none, is worth knowing
+    # about now rather than 40 seconds into a cell (see [resolve_needles]).
+    if args.locale:
+        resolve_needles(args.locale)
+        set_locale(args.locale)
+
     report = {"configs": []}
+    # Before the run rather than with the first cell's screenshots: the report is written in a
+    # `finally`, so a run that dies on its first scene would otherwise lose its own error to a
+    # missing directory.
+    args.out.mkdir(parents=True, exist_ok=True)
     report_path = args.out / f"report-{args.suite}.json"
     set_dnd(True)
     try:
