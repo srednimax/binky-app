@@ -239,7 +239,162 @@ val MIGRATION_5_6 =
     }
 
 /**
+ * **The first migration in this project that rewrites a table full of an owner's history** (ADR-0029,
+ * PLAN 7.5 §7).
+ *
+ * `MIGRATION_4_5` only created tables. `MIGRATION_5_6` added a column to `weights`. This one takes
+ * two columns *off* `observations` — the droppings appearance and size go multi-valued into join
+ * tables — and adds `trayPhotoPath` in their place.
+ *
+ * **Why a rebuild rather than three `ALTER`s.** SQLite gained `ALTER TABLE … DROP COLUMN` in 3.35 and
+ * `minSdk` is 26, so it is not available; and Room validates the migrated database against
+ * `schemas/7.json`, so leaving the two columns behind as vestigial is not available either. That
+ * leaves create-copy-drop-rename.
+ *
+ * **The trap, and it is the reason this migration is written out at length.**
+ * `DROP TABLE observations` performs an implicit delete of every row, which fires
+ * `observation_symptoms`' `ON DELETE CASCADE`. Foreign keys are enforced on the connection and
+ * `PRAGMA foreign_keys = OFF` is a no-op inside the transaction Room has already begun, so the
+ * cascade cannot be switched off — it has to be *survived*. **`runMigrationsAndValidate` would pass
+ * happily on the wreckage**: it compares the schema, and a database whose every symptom tick has been
+ * cascaded away has exactly the right schema. So the instrumented test counts rows, and the recipe
+ * below stages the links and puts them back.
+ *
+ * `observation_symptoms` is **dropped and recreated** rather than merely emptied and refilled, which
+ * is one step more than ADR-0029's recipe asks for and buys the rename a schema with no dangling
+ * reference in it at all: at the moment `observations_new` takes the name `observations`, nothing
+ * anywhere references that name. SQLite 3.25 changed what `ALTER TABLE … RENAME` does to other
+ * objects' definitions and the app spans API 26 to 36; this is the one migration that must not be
+ * clever about it.
+ *
+ * **The two old values migrate as themselves.** `DroppingsForm` was renamed to `DroppingsAppearance`
+ * and gained five values, and `DroppingsSize` gained none — but only value *names* are ever stored
+ * (house rule), and every old name is still a member. So the copy is a copy, with no translation
+ * table to get wrong, and a row that recorded `SOFT` in 1.4 goes on meaning `SOFT`.
+ *
+ * **The SQL is a transcription of `schemas/7.json`, not a paraphrase of the entities** — same rule as
+ * the two migrations above, and re-transcribed rather than patched if the shape churns before Phase
+ * 7.5 closes (ADR-0007's pending-migration rule).
+ */
+val MIGRATION_6_7 =
+    object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // 1. Stage what the rebuild is about to destroy. `CREATE TABLE … AS SELECT` makes a
+            //    constraint-free copy, which is the point: a staged table with the original's foreign
+            //    keys on it would cascade away with the original.
+            db.execSQL(
+                "CREATE TABLE `observation_symptoms_backup` AS " +
+                    "SELECT `observationId`, `symptomId` FROM `observation_symptoms`",
+            )
+            db.execSQL(
+                "CREATE TABLE `droppings_backup` AS " +
+                    "SELECT `id`, `droppingsSize`, `droppingsForm` FROM `observations`",
+            )
+
+            // 2. Take the child table out of the schema entirely, so the rename in step 4 happens
+            //    with nothing referencing the name it is about to claim.
+            db.execSQL("DROP TABLE `observation_symptoms`")
+
+            // 3. The new shape, then the rows, then the old table.
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `observations_new` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`bunnyId` TEXT NOT NULL, " +
+                    "`groupId` TEXT, " +
+                    "`recordedAt` INTEGER NOT NULL, " +
+                    "`createdAt` INTEGER NOT NULL, " +
+                    "`droppingsAmount` TEXT, " +
+                    "`cecotropes` TEXT, " +
+                    "`trayPhotoPath` TEXT, " +
+                    "`appetite` TEXT, " +
+                    "`mood` TEXT, " +
+                    "`activity` TEXT, " +
+                    "`water` TEXT, " +
+                    "`note` TEXT, " +
+                    "`symptomsChecked` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`bunnyId`) REFERENCES `bunnies`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            // Columns named on both sides rather than `SELECT *`: the shapes differ by three columns,
+            // which is exactly the case a positional copy gets silently wrong.
+            db.execSQL(
+                "INSERT INTO `observations_new` (" +
+                    "`id`, `bunnyId`, `groupId`, `recordedAt`, `createdAt`, `droppingsAmount`, " +
+                    "`cecotropes`, `trayPhotoPath`, `appetite`, `mood`, `activity`, `water`, " +
+                    "`note`, `symptomsChecked`) " +
+                    "SELECT `id`, `bunnyId`, `groupId`, `recordedAt`, `createdAt`, `droppingsAmount`, " +
+                    "`cecotropes`, NULL, `appetite`, `mood`, `activity`, `water`, " +
+                    "`note`, `symptomsChecked` FROM `observations`",
+            )
+            db.execSQL("DROP TABLE `observations`")
+
+            // 4. The rename, and the two indices the old table carried.
+            db.execSQL("ALTER TABLE `observations_new` RENAME TO `observations`")
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_observations_bunnyId_recordedAt` " +
+                    "ON `observations` (`bunnyId`, `recordedAt`)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_observations_groupId` ON `observations` (`groupId`)",
+            )
+
+            // 5. Put the symptom links back, exactly as they were. This is the step whose absence
+            //    `runMigrationsAndValidate` cannot see.
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `observation_symptoms` (" +
+                    "`observationId` TEXT NOT NULL, " +
+                    "`symptomId` TEXT NOT NULL, " +
+                    "PRIMARY KEY(`observationId`, `symptomId`), " +
+                    "FOREIGN KEY(`observationId`) REFERENCES `observations`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE , " +
+                    "FOREIGN KEY(`symptomId`) REFERENCES `symptoms`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE NO ACTION )",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_observation_symptoms_symptomId` " +
+                    "ON `observation_symptoms` (`symptomId`)",
+            )
+            db.execSQL(
+                "INSERT INTO `observation_symptoms` (`observationId`, `symptomId`) " +
+                    "SELECT `observationId`, `symptomId` FROM `observation_symptoms_backup`",
+            )
+
+            // 6. The two new tables, created after the rename so their foreign key names a table that
+            //    exists, and filled one row per non-null old value.
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `observation_droppings_appearance` (" +
+                    "`observationId` TEXT NOT NULL, " +
+                    "`value` TEXT NOT NULL, " +
+                    "PRIMARY KEY(`observationId`, `value`), " +
+                    "FOREIGN KEY(`observationId`) REFERENCES `observations`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `observation_droppings_sizes` (" +
+                    "`observationId` TEXT NOT NULL, " +
+                    "`value` TEXT NOT NULL, " +
+                    "PRIMARY KEY(`observationId`, `value`), " +
+                    "FOREIGN KEY(`observationId`) REFERENCES `observations`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "INSERT INTO `observation_droppings_appearance` (`observationId`, `value`) " +
+                    "SELECT `id`, `droppingsForm` FROM `droppings_backup` WHERE `droppingsForm` IS NOT NULL",
+            )
+            db.execSQL(
+                "INSERT INTO `observation_droppings_sizes` (`observationId`, `value`) " +
+                    "SELECT `id`, `droppingsSize` FROM `droppings_backup` WHERE `droppingsSize` IS NOT NULL",
+            )
+
+            // 7. The staging tables are not part of any schema and must not survive the migration.
+            db.execSQL("DROP TABLE `observation_symptoms_backup`")
+            db.execSQL("DROP TABLE `droppings_backup`")
+        }
+    }
+
+/**
  * Every migration this app has, in one array so `buildBunnyDatabase` and the instrumented tests
  * register the same set — a test that listed its own would be proving a configuration nothing ships.
  */
-val BUNNY_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_4_5, MIGRATION_5_6)
+val BUNNY_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)

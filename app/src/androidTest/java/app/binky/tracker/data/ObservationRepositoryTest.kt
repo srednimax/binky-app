@@ -1,17 +1,21 @@
 package app.binky.tracker.data
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.binky.tracker.media.MediaFiles
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 import java.time.Instant
+import java.util.UUID
 
 /**
  * Checkpoint 2e's observation data layer: the shared write, the tray/individual split, and the
@@ -25,6 +29,7 @@ import java.time.Instant
 @RunWith(AndroidJUnit4::class)
 class ObservationRepositoryTest {
     private lateinit var database: BunnyDatabase
+    private lateinit var media: MediaFiles
     private lateinit var observations: ObservationRepository
 
     private val noticed: Instant = Instant.parse("2026-03-04T08:30:00Z")
@@ -32,7 +37,8 @@ class ObservationRepositoryTest {
     @Before
     fun setUp() {
         database = inMemoryDatabase()
-        observations = ObservationRepository(database)
+        media = temporaryMedia()
+        observations = ObservationRepository(database, media)
     }
 
     @After
@@ -47,12 +53,18 @@ class ObservationRepositoryTest {
         return bunny.id
     }
 
-    /** A tray the owner actually looked at, so an assertion on it cannot pass by everything being null. */
+    /**
+     * A tray the owner actually looked at, so an assertion on it cannot pass by everything being null.
+     *
+     * **Two appearance values**, which is the case ADR-0029 exists for and the one that would pass
+     * silently with a single-valued field: round pellets *and* soft ones is the commonest early sign
+     * of a gut going wrong, and before schema 7 the owner had to pick one and file the rest as prose.
+     */
     private val worryingTray =
         TrayFacts(
             droppingsAmount = DroppingsAmount.FEW,
-            droppingsSize = DroppingsSize.SMALL,
-            droppingsForm = DroppingsForm.MISSHAPEN,
+            droppingsSizes = setOf(DroppingsSize.SMALL),
+            droppingsAppearance = setOf(DroppingsAppearance.ROUND, DroppingsAppearance.SOFT),
             cecotropes = Cecotropes.LEFT_UNEATEN,
         )
 
@@ -77,8 +89,10 @@ class ObservationRepositoryTest {
             // One group id, shared by both rows — not one each, which would make every row solo.
             assertEquals(1, rows.mapNotNull { it.groupId }.distinct().size)
             assertEquals(2, rows.count { it.groupId != null })
-            // Identical tray facts by construction: one tray, one real-world fact (ADR-0008).
-            assertEquals(setOf(worryingTray), rows.map { it.trayFacts() }.toSet())
+            // Identical tray facts by construction: one tray, one real-world fact (ADR-0008) —
+            // and since schema 7 that includes the join rows, which are written per participant
+            // rather than carried by a `copy()` (ADR-0029).
+            assertEquals(setOf(worryingTray), rows.map { observations.trayFactsNow(it.id) }.toSet())
             assertEquals(setOf(bijou, nugget), rows.map { it.bunnyId }.toSet())
         }
 
@@ -131,7 +145,7 @@ class ObservationRepositoryTest {
             // The new row inherits the tray facts — the tray was always about both bunnies, which is
             // the reason the correction is being made — and starts with blank individual fields.
             val added = group.single { it.bunnyId == nugget }
-            assertEquals(worryingTray, added.trayFacts())
+            assertEquals(worryingTray, observations.trayFactsNow(added.id))
             assertEquals(IndividualFacts(), added.individualFacts())
         }
 
@@ -214,6 +228,154 @@ class ObservationRepositoryTest {
             // The vocabulary is not history: retiring a symptom hides it and deleting a bunny must not
             // touch it at all (ADR-0010).
             assertEquals(seededSymptoms, database.countRows("symptoms"))
+        }
+
+    /**
+     * A stand-in for a photographed tray. `MediaFiles`' own encoding is proven in its own test; what
+     * matters here is that a real file exists for the delete rules to be right or wrong about.
+     */
+    private fun writeTrayPhoto(): Pair<String, File> {
+        val relativePath = "observations/${UUID.randomUUID()}.jpg"
+        val file = media.resolve(relativePath)
+        file.parentFile?.mkdirs()
+        file.writeBytes(byteArrayOf(1, 2, 3))
+        return relativePath to file
+    }
+
+    @Test
+    fun theMultiValuedDroppingsFieldsRoundTripPerParticipant() =
+        runTest {
+            val bijou = addBunny("Bijou")
+            val nugget = addBunny("Nugget")
+
+            val ids = observations.add(listOf(bijou, nugget), noticed, ObservationFacts(tray = worryingTray))
+
+            // Both values on both rows. A join table keyed on `observationId` (there is no group
+            // table — ADR-0008 forbids a group id on a solo row) means "identical across the group"
+            // is something the repository has to *write* rather than something a column gives free.
+            for (id in ids) {
+                assertEquals(
+                    setOf(DroppingsAppearance.ROUND, DroppingsAppearance.SOFT),
+                    observations.trayFactsNow(id)!!.droppingsAppearance,
+                )
+            }
+            assertEquals(4, database.countRows("observation_droppings_appearance"))
+            assertEquals(2, database.countRows("observation_droppings_sizes"))
+        }
+
+    @Test
+    fun editingTheTrayReplacesTheValuesRatherThanMergingThem() =
+        runTest {
+            val bijou = addBunny("Bijou")
+            val nugget = addBunny("Nugget")
+            val (bijouRow, nuggetRow) =
+                observations.add(listOf(bijou, nugget), noticed, ObservationFacts(tray = worryingTray))
+
+            observations.updateTray(
+                bijouRow,
+                worryingTray.copy(droppingsAppearance = setOf(DroppingsAppearance.DIARRHOEA)),
+            )
+
+            // Replaced, not merged, on the same grounds as the symptom links: the picker's state is
+            // the whole answer, so a value the owner unticked has to disappear — from every
+            // participant's row, because it is one tray.
+            for (id in listOf(bijouRow, nuggetRow)) {
+                assertEquals(
+                    setOf(DroppingsAppearance.DIARRHOEA),
+                    observations.trayFactsNow(id)!!.droppingsAppearance,
+                )
+            }
+            assertEquals(2, database.countRows("observation_droppings_appearance"))
+        }
+
+    @Test
+    fun anUntouchedTrayRecordsNoDroppingsValuesAtAll() =
+        runTest {
+            val bijou = addBunny("Bijou")
+
+            val id = observations.add(listOf(bijou), noticed).single()
+
+            // Zero rows, never a value nobody chose. An empty set is this field's spelling of "not
+            // checked", and the app must never read it as a healthy tray (ADR-0001).
+            assertEquals(0, database.countRows("observation_droppings_appearance"))
+            assertTrue(observations.trayFactsNow(id)!!.droppingsAppearance.isEmpty())
+        }
+
+    @Test
+    fun theDroppingsValuesGoWithTheirObservation() =
+        runTest {
+            val bijou = addBunny("Bijou")
+            val id = observations.add(listOf(bijou), noticed, ObservationFacts(tray = worryingTray)).single()
+
+            observations.delete(id)
+
+            // Through the cascade, which is the whole reason the foreign key is there — asserted
+            // because a cascade the ORM is only *asked* for is not a cascade.
+            assertEquals(0, database.countRows("observation_droppings_appearance"))
+            assertEquals(0, database.countRows("observation_droppings_sizes"))
+        }
+
+    @Test
+    fun aTrayPhotoSurvivesTheCorrectionThatRemovesOneParticipant() =
+        runTest {
+            val bijou = addBunny("Bijou")
+            val nugget = addBunny("Nugget")
+            val (path, file) = writeTrayPhoto()
+            val (bijouRow, _) =
+                observations.add(
+                    listOf(bijou, nugget),
+                    noticed,
+                    ObservationFacts(tray = worryingTray.copy(trayPhotoPath = path)),
+                )
+
+            observations.removeParticipant(bijouRow, nugget)
+
+            // The path is duplicated onto every row, so removing one leaves the survivor pointing at
+            // a file that must still be there. **The file goes only when no other row references
+            // it** — ADR-0029's one new rule, and the reason a duplicated path was acceptable at all
+            // instead of a group table.
+            assertTrue("the survivor's photo must not go with the correction", file.exists())
+            assertEquals(path, observations.observationNow(bijouRow)!!.trayPhotoPath)
+        }
+
+    @Test
+    fun deletingTheWholeObservationTakesTheTrayPhotoWithIt() =
+        runTest {
+            val bijou = addBunny("Bijou")
+            val nugget = addBunny("Nugget")
+            val (path, file) = writeTrayPhoto()
+            val (bijouRow, _) =
+                observations.add(
+                    listOf(bijou, nugget),
+                    noticed,
+                    ObservationFacts(tray = worryingTray.copy(trayPhotoPath = path)),
+                )
+
+            observations.delete(bijouRow)
+
+            // The other half of the same rule: with the last referencing row gone, keeping the file
+            // would leave an orphan nobody can ever reach or delete.
+            assertFalse("the last reference going should take the file", file.exists())
+        }
+
+    @Test
+    fun replacingTheTrayPhotoRemovesTheOneItReplaced() =
+        runTest {
+            val bijou = addBunny("Bijou")
+            val (firstPath, firstFile) = writeTrayPhoto()
+            val (secondPath, secondFile) = writeTrayPhoto()
+            val id =
+                observations
+                    .add(
+                        listOf(bijou),
+                        noticed,
+                        ObservationFacts(tray = worryingTray.copy(trayPhotoPath = firstPath)),
+                    ).single()
+
+            observations.updateTray(id, worryingTray.copy(trayPhotoPath = secondPath))
+
+            assertFalse("the replaced photo is referenced by nothing and should go", firstFile.exists())
+            assertTrue(secondFile.exists())
         }
 
     @Test

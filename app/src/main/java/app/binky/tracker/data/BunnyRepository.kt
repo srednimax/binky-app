@@ -33,6 +33,13 @@ class BunnyRepository(
      */
     private val documentPageDao = database.documentPageDao()
 
+    /**
+     * And for tray photos, which are the one media kind a cascade **cannot** decide about on its own:
+     * the path is duplicated onto every participant's row, so deleting one bonded bunny leaves the
+     * survivor's row still pointing at the file (ADR-0029).
+     */
+    private val observationDao = database.observationDao()
+
     /** Only for the archive path: archiving closes any watch (ADR-0004, ADR-0001). */
     private val watchDao = database.watchDao()
 
@@ -116,6 +123,8 @@ class BunnyRepository(
         var avatarPath: String? = null
         var photoPaths: List<String> = emptyList()
         var documentPaths: List<String> = emptyList()
+        var trayPhotoPaths: List<String> = emptyList()
+        var survivingTrayPhotos: List<String> = emptyList()
         database.withTransaction {
             val bunny = bunnyDao.bunnyNow(id) ?: return@withTransaction
             avatarPath = bunny.avatarPath
@@ -125,8 +134,12 @@ class BunnyRepository(
             // Two cascades deep — documents go with the bunny, pages go with the document — so by
             // the time the delete returns there is nothing left that even names this bunny.
             documentPaths = documentPageDao.pathsOfBunny(id)
+            trayPhotoPaths = observationDao.trayPhotoPathsOf(id)
             bunnyDao.deleteById(id)
             bunny.fluffleId?.let { fluffles.dissolveIfBelowTwo(it) }
+            // Asked after the cascade, so it answers "is anybody still using this file" rather than
+            // "was anybody". A bonded housemate's row keeps the path and keeps the photo (ADR-0029).
+            survivingTrayPhotos = trayPhotoPaths.filter { observationDao.countWithTrayPhoto(it) > 0 }
         }
         // Deliberately after the transaction: a rolled-back delete would otherwise leave a live row
         // pointing at a file that is already gone, which is the failure ADR-0020's file-first rule
@@ -134,6 +147,7 @@ class BunnyRepository(
         avatarPath?.let { media.delete(it) }
         photoPaths.forEach(media::delete)
         documentPaths.forEach(media::delete)
+        (trayPhotoPaths - survivingTrayPhotos.toSet()).forEach(media::delete)
         preferences.clearSelectionIfSet(id)
         // The cascade took this bunny's courses with no medication write happening anywhere, which is
         // the path ADR-0025 says a rebuild hung off the medication tables alone would miss.

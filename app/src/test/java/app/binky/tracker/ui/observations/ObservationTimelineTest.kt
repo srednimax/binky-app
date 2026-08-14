@@ -2,6 +2,8 @@ package app.binky.tracker.ui.observations
 
 import app.binky.tracker.data.Cecotropes
 import app.binky.tracker.data.DroppingsAmount
+import app.binky.tracker.data.DroppingsAppearance
+import app.binky.tracker.data.DroppingsSize
 import app.binky.tracker.data.Mood
 import app.binky.tracker.data.ObservationEntity
 import org.junit.Assert.assertEquals
@@ -89,6 +91,49 @@ class ObservationTimelineTest {
                 .first { it.name == "Nugget" }
                 .facts.mood,
         )
+    }
+
+    @Test
+    fun theMultiValuedTrayFieldsArriveWholeFromTheJoinTables() {
+        // Two appearance values at once is the case ADR-0029 exists for: a tray really can hold round
+        // pellets *and* soft ones, and before schema 7 the owner had to pick one and file the rest as
+        // prose. The links come in keyed by row id, because that is where they hang (there is no
+        // group table), and the entry has to end up holding one copy of the tray either way.
+        val rows = sharedPair(at(20, 18))
+        val days =
+            buildTimeline(
+                rows = rows,
+                names = names,
+                symptomIds = emptyMap(),
+                droppingsSizes = mapOf("row-bijou" to setOf(DroppingsSize.SMALL, DroppingsSize.NORMAL)),
+                droppingsAppearance =
+                    mapOf("row-bijou" to setOf(DroppingsAppearance.ROUND, DroppingsAppearance.SOFT)),
+                zone = zone,
+            )
+
+        val tray =
+            days
+                .single()
+                .entries
+                .single()
+                .tray
+        assertEquals(setOf(DroppingsSize.SMALL, DroppingsSize.NORMAL), tray.droppingsSizes)
+        assertEquals(setOf(DroppingsAppearance.ROUND, DroppingsAppearance.SOFT), tray.droppingsAppearance)
+    }
+
+    @Test
+    fun anObservationWithNoDroppingsLinksReadsAsNothingRecorded() {
+        // Empty rather than absent, and never "normal": zero rows is the join table's spelling of the
+        // nullable columns' null, and the app must not read it as a healthy tray (ADR-0001).
+        val tray =
+            buildTimeline(sharedPair(at(20, 18)), names, emptyMap(), zone = zone)
+                .single()
+                .entries
+                .single()
+                .tray
+
+        assertTrue(tray.droppingsSizes.isEmpty())
+        assertTrue(tray.droppingsAppearance.isEmpty())
     }
 
     @Test

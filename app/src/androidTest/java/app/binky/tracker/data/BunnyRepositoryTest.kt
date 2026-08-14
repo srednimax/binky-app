@@ -12,6 +12,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -58,6 +59,36 @@ class BunnyRepositoryTest {
         }
 
     /** Archiving destroys nothing — including the photograph (ADR-0004). */
+    @Test
+    fun deletingOneBondedBunnyLeavesTheSurvivorsTrayPhotoOnDisk() =
+        runTest {
+            val observations = ObservationRepository(database, media)
+            val bijou = bunnies.add(BunnyEntity(name = "Bijou"))
+            val nugget = bunnies.add(BunnyEntity(name = "Nugget"))
+            val relativePath = "observations/${UUID.randomUUID()}.jpg"
+            val file = media.resolve(relativePath)
+            file.parentFile?.mkdirs()
+            file.writeBytes(byteArrayOf(1, 2, 3))
+            observations.add(
+                listOf(bijou, nugget),
+                Instant.parse("2026-03-04T08:30:00Z"),
+                ObservationFacts(tray = TrayFacts(trayPhotoPath = relativePath)),
+            )
+
+            bunnies.delete(nugget)
+
+            // A tray photo's path is duplicated onto every participant's row (ADR-0029), so the
+            // cascade that takes Nugget's row leaves Bijou's still pointing at this file. Deleting
+            // it here would silently remove a photograph from a bunny nobody touched — which is the
+            // failure the reference count on the delete path exists to prevent.
+            assertTrue("the survivor's tray photo must outlive its housemate", file.exists())
+
+            bunnies.delete(bijou)
+
+            // And the other half: the last row referencing it going takes the file with it.
+            assertFalse("the last reference going should take the file", file.exists())
+        }
+
     @Test
     fun archivingABunnyKeepsItsAvatarFile() =
         runTest {

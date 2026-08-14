@@ -48,7 +48,7 @@ class WatchRepositoryTest {
     fun setUp() {
         database = inMemoryDatabase()
         watches = WatchRepository(database)
-        observations = ObservationRepository(database)
+        observations = ObservationRepository(database, temporaryMedia())
         bunnies =
             BunnyRepository(
                 database = database,

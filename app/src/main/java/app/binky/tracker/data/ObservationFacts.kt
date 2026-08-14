@@ -18,14 +18,21 @@ package app.binky.tracker.data
 /**
  * The facts read off **one litter tray** — the reason a shared observation is shared at all.
  *
- * Every field defaults to `null`, which *is* "not checked" (ADR-0001). An untouched form therefore
- * records nothing rather than a silent "normal".
+ * Every field defaults to empty, and for the single-valued two that means `null`, which *is* "not
+ * checked" (ADR-0001). An untouched form therefore records nothing rather than a silent "normal".
+ *
+ * [droppingsSizes] and [droppingsAppearance] are **sets**, because one tray genuinely holds more than
+ * one kind at once — round pellets *and* soft ones is the commonest early sign of a gut going wrong
+ * (ADR-0029). An empty set is the same absence a `null` is, spelt as zero join rows; the app still
+ * never reads it as *normal*.
  */
 data class TrayFacts(
     val droppingsAmount: DroppingsAmount? = null,
-    val droppingsSize: DroppingsSize? = null,
-    val droppingsForm: DroppingsForm? = null,
+    val droppingsSizes: Set<DroppingsSize> = emptySet(),
+    val droppingsAppearance: Set<DroppingsAppearance> = emptySet(),
     val cecotropes: Cecotropes? = null,
+    /** Relative to `filesDir`, under `observations/`. See [ObservationEntity.trayPhotoPath]. */
+    val trayPhotoPath: String? = null,
 )
 
 /**
@@ -64,14 +71,24 @@ data class ObservationFacts(
     val individual: IndividualFacts = IndividualFacts(),
 )
 
-/** The tray half of a stored row, for the paths that copy it onto a new participant. */
-fun ObservationEntity.trayFacts() =
-    TrayFacts(
-        droppingsAmount = droppingsAmount,
-        droppingsSize = droppingsSize,
-        droppingsForm = droppingsForm,
-        cecotropes = cecotropes,
-    )
+/**
+ * The tray half of a stored row, for the paths that copy it onto a new participant.
+ *
+ * The two sets are **parameters rather than fields**, because they are not on the row: they are join
+ * rows the caller has to have read (ADR-0029). Deliberately without defaults, so a call site cannot
+ * quietly produce a tray fact with the sets silently missing — the same reasoning that keeps the
+ * symptom links off [individualFacts].
+ */
+fun ObservationEntity.trayFacts(
+    droppingsSizes: Set<DroppingsSize>,
+    droppingsAppearance: Set<DroppingsAppearance>,
+) = TrayFacts(
+    droppingsAmount = droppingsAmount,
+    droppingsSizes = droppingsSizes,
+    droppingsAppearance = droppingsAppearance,
+    cecotropes = cecotropes,
+    trayPhotoPath = trayPhotoPath,
+)
 
 /**
  * The individual half of a stored row. Deliberately **without** the symptom links — they live in the
@@ -88,13 +105,20 @@ fun ObservationEntity.individualFacts() =
         symptomsChecked = symptomsChecked,
     )
 
-/** Applies tray facts to a row. Used by both the shared write and the add-a-participant path. */
+/**
+ * Applies the **column half** of the tray facts to a row. Used by both the shared write and the
+ * add-a-participant path.
+ *
+ * It can no longer carry the whole tray fact by itself: the two sets are join rows, written per
+ * participant by [ObservationRepository] inside the same transaction (ADR-0029). That is the cost of
+ * multi-valuing them, and it is stated here because a `copy()` that silently carried four fifths of a
+ * fact would be the easiest possible place to lose one.
+ */
 fun ObservationEntity.withTrayFacts(tray: TrayFacts) =
     copy(
         droppingsAmount = tray.droppingsAmount,
-        droppingsSize = tray.droppingsSize,
-        droppingsForm = tray.droppingsForm,
         cecotropes = tray.cecotropes,
+        trayPhotoPath = tray.trayPhotoPath,
     )
 
 /** Applies individual facts to a row. The symptom links are written separately, by the repository. */

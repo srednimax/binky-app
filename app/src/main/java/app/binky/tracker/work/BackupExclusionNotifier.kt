@@ -32,7 +32,7 @@ import java.io.File
 class BackupExclusionNotifier(
     private val context: Context,
 ) {
-    fun post(excludedDocuments: Int) {
+    fun post(excludedRecords: Int) {
         val resources = context.resources
         context.postReminderNotification(
             channel = ReminderChannel.Backup,
@@ -41,8 +41,8 @@ class BackupExclusionNotifier(
             text =
                 resources.getQuantityString(
                     R.plurals.backup_excluded_notification_text,
-                    excludedDocuments,
-                    excludedDocuments,
+                    excludedRecords,
+                    excludedRecords,
                 ),
             // Backup & restore, where the manual export that *does* carry documents is one tap away.
             // The notice names a gap the owner can close; sending them to the app's front page would
@@ -63,10 +63,10 @@ suspend fun Context.postBackupExclusionNoticeIfDue(
     preferences: AppPreferences,
     filesDir: File = this.filesDir,
 ) {
-    val excluded = readAutoBackupMarker(filesDir)?.excludedDocuments ?: 0
+    val excluded = readAutoBackupMarker(filesDir)?.excludedRecords ?: 0
     // Kotlin note: `first()` takes one value from the Flow and stops collecting — the read-once
     // equivalent of awaiting a promise, where the screens instead subscribe for good.
-    val notified = preferences.excludedDocumentsNotified.first()
+    val notified = preferences.excludedRecordsNotified.first()
 
     when (exclusionNotice(excluded, notified)) {
         ExclusionNotice.Post -> {
@@ -84,10 +84,10 @@ suspend fun Context.postBackupExclusionNoticeIfDue(
             // After the post, not before: a process killed between the two says it again next
             // launch, which is the harmless direction. The other order can lose the notice
             // entirely.
-            preferences.setExcludedDocumentsNotified(true)
+            preferences.setExcludedRecordsNotified(true)
         }
 
-        ExclusionNotice.Clear -> preferences.setExcludedDocumentsNotified(false)
+        ExclusionNotice.Clear -> preferences.setExcludedRecordsNotified(false)
         ExclusionNotice.Nothing -> Unit
     }
 }

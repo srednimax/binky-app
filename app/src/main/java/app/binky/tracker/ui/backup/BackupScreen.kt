@@ -337,7 +337,7 @@ private fun AutomaticBackup(
             // wrote, which is the same number the one-time notification is posted from — so the two
             // cannot disagree about how much is missing. Its own line rather than folded into the
             // sentence above: the date is about the net working, this is about a hole in it.
-            val excluded = (status as? AutoBackupStatus.Recorded)?.excludedDocuments ?: 0
+            val excluded = (status as? AutoBackupStatus.Recorded)?.excludedRecords ?: 0
             if (excluded > 0) {
                 Text(
                     text = pluralStringResource(R.plurals.backup_auto_excluded, excluded, excluded),

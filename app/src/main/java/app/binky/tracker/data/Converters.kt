@@ -86,7 +86,7 @@ class Converters {
     /*
      * The observation vocabularies, every one of them **nullable**, because `null` is a real value
      * there: it means "not checked" (ADR-0001). So an unrecognised name falls back to `null` rather
-     * than to a substitute member — a row written by a future build that added a droppings form reads
+     * than to a substitute member — a row written by a future build that added a droppings amount reads
      * back as *not checked* on this build, which is the honest answer and never a crash. That is the
      * same reasoning as [sexFromName] above, landing on a different answer because absence is
      * representable here and is not for [Sex].
@@ -98,17 +98,34 @@ class Converters {
     @TypeConverter
     fun droppingsAmountFromName(value: String?): DroppingsAmount? = enumByName(value, DroppingsAmount.entries)
 
-    @TypeConverter
-    fun droppingsSizeToName(value: DroppingsSize?): String? = value?.name
+    /*
+     * The two multi-valued droppings fields are **not** nullable, because each is half of a join
+     * table's primary key (ADR-0029) — and their absence is spelt as zero rows rather than as a null,
+     * so there is nothing for a null to mean here.
+     *
+     * The from-name direction below exists because Room requires both directions on an entity field,
+     * and **nothing calls it**: [ObservationDao] reads these tables as *names* and lets
+     * [ObservationRepository] drop the ones this build does not recognise. That is the join table's
+     * spelling of the nullable vocabularies' `null` above — a value added by a later build reads as
+     * *not there* rather than as a guess — and it is the honest answer a non-null converter cannot
+     * give. The fallback is therefore unreachable twice over (ADR-0023's guard refuses to open a file
+     * written by a build this one does not know), and it is still the member that cannot be mistaken
+     * for reassurance: between two wrong answers, never the one that says "fine" (ADR-0001).
+     */
 
     @TypeConverter
-    fun droppingsSizeFromName(value: String?): DroppingsSize? = enumByName(value, DroppingsSize.entries)
+    fun droppingsSizeToName(value: DroppingsSize): String = value.name
 
     @TypeConverter
-    fun droppingsFormToName(value: DroppingsForm?): String? = value?.name
+    fun droppingsSizeFromName(value: String): DroppingsSize =
+        enumByName(value, DroppingsSize.entries) ?: DroppingsSize.SMALL
 
     @TypeConverter
-    fun droppingsFormFromName(value: String?): DroppingsForm? = enumByName(value, DroppingsForm.entries)
+    fun droppingsAppearanceToName(value: DroppingsAppearance): String = value.name
+
+    @TypeConverter
+    fun droppingsAppearanceFromName(value: String): DroppingsAppearance =
+        enumByName(value, DroppingsAppearance.entries) ?: DroppingsAppearance.MISSHAPEN
 
     @TypeConverter
     fun cecotropesToName(value: Cecotropes?): String? = value?.name

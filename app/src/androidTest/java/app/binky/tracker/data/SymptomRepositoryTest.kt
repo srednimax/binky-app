@@ -166,7 +166,7 @@ class SymptomRepositoryTest {
             database.bunnyDao().insert(bunny)
             val symptomId = symptoms.add("Chin rubbing", builtInLabels())
             val observationId =
-                ObservationRepository(database)
+                ObservationRepository(database, temporaryMedia())
                     .add(
                         listOf(bunny.id),
                         Instant.parse("2026-03-04T08:30:00Z"),

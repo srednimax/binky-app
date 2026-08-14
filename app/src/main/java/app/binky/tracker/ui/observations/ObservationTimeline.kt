@@ -1,10 +1,13 @@
 package app.binky.tracker.ui.observations
 
+import app.binky.tracker.data.DroppingsAppearance
+import app.binky.tracker.data.DroppingsSize
 import app.binky.tracker.data.IndividualFacts
 import app.binky.tracker.data.ObservationEntity
 import app.binky.tracker.data.TrayFacts
 import app.binky.tracker.data.individualFacts
 import app.binky.tracker.data.trayFacts
+import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -48,6 +51,14 @@ data class TimelineEntry(
     /** Identical across every participant by construction, so the entry holds one copy. */
     val tray: TrayFacts,
     val participants: List<TimelineParticipant>,
+    /**
+     * [TrayFacts.trayPhotoPath] resolved to a file to draw, or null when there is no photo.
+     *
+     * **Filled in by the ViewModel afterwards, not here.** The path on the row is relative and only
+     * `MediaFiles` knows what it is relative to — and this file deliberately has no Android in it, so
+     * that the collapse rule stays a JVM test rather than an instrumented one.
+     */
+    val trayPhoto: File? = null,
 ) {
     /**
      * **`groupId != null`, never `participants.size > 1`** (ADR-0008).
@@ -78,6 +89,10 @@ data class TimelineDay(
  * @param symptomIds every observation's symptom ticks, by observation id. Absent means no ticks —
  *   which is **not** the same as "nobody looked", a claim only [IndividualFacts.symptomsChecked]
  *   makes (ADR-0010).
+ * @param droppingsSizes every observation's recorded sizes, by observation id — a join table since
+ *   schema 7, so it arrives beside the rows rather than on them (ADR-0029). Absent means nothing was
+ *   recorded, and the timeline prints no line at all rather than "not checked".
+ * @param droppingsAppearance the same, for what the droppings looked like.
  * @param focusBunnyId whose row an entry's [TimelineEntry.id] should point at, under a single-bunny
  *   scope. Null under "All bunnies".
  */
@@ -85,6 +100,8 @@ fun buildTimeline(
     rows: List<ObservationEntity>,
     names: Map<String, String>,
     symptomIds: Map<String, Set<String>>,
+    droppingsSizes: Map<String, Set<DroppingsSize>> = emptyMap(),
+    droppingsAppearance: Map<String, Set<DroppingsAppearance>> = emptyMap(),
     focusBunnyId: String? = null,
     zone: ZoneId = ZoneId.systemDefault(),
 ): List<TimelineDay> {
@@ -123,8 +140,14 @@ fun buildTimeline(
                         ?: participants.first().observationId,
                 groupId = first.groupId,
                 recordedAt = first.recordedAt,
-                // Identical on every row in the group by construction, so any of them will do.
-                tray = first.trayFacts(),
+                // Identical on every row in the group by construction, so any of them will do —
+                // including for the two sets, which are written per participant precisely so this
+                // stays true (ADR-0029).
+                tray =
+                    first.trayFacts(
+                        droppingsSizes = droppingsSizes[first.id].orEmpty(),
+                        droppingsAppearance = droppingsAppearance[first.id].orEmpty(),
+                    ),
                 participants = participants,
             )
         }

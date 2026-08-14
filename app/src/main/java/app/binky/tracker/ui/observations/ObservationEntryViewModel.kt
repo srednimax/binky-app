@@ -1,5 +1,6 @@
 package app.binky.tracker.ui.observations
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -12,7 +13,7 @@ import app.binky.tracker.data.Appetite
 import app.binky.tracker.data.BunnyRepository
 import app.binky.tracker.data.Cecotropes
 import app.binky.tracker.data.DroppingsAmount
-import app.binky.tracker.data.DroppingsForm
+import app.binky.tracker.data.DroppingsAppearance
 import app.binky.tracker.data.DroppingsSize
 import app.binky.tracker.data.ExcludedParticipant
 import app.binky.tracker.data.FluffleRepository
@@ -28,7 +29,8 @@ import app.binky.tracker.data.WatchRepository
 import app.binky.tracker.data.WaterIntake
 import app.binky.tracker.data.individualFacts
 import app.binky.tracker.data.preSelectParticipants
-import app.binky.tracker.data.trayFacts
+import app.binky.tracker.media.MediaFiles
+import app.binky.tracker.media.MediaKind
 import app.binky.tracker.work.WatchNotifier
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,6 +38,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -64,6 +67,16 @@ data class ObservationEntryUiState(
     /** Set when the owner tried to save a timestamp in the future — stated, never silently clamped. */
     val inFuture: Boolean = false,
     val tray: TrayFacts = TrayFacts(),
+    /**
+     * The tray photo as a file to draw, resolved from [TrayFacts.trayPhotoPath] — the path on the row
+     * is relative and only [MediaFiles] knows what it is relative to (house rule).
+     *
+     * A file that has gone missing still resolves; it draws as a placeholder rather than crashing,
+     * which is what a restore lacking its media has to do.
+     */
+    val trayPhoto: File? = null,
+    /** Set when the picked image could not be read. Stated once, and the form keeps whatever it had. */
+    val trayPhotoUnreadable: Boolean = false,
     val individual: IndividualFacts = IndividualFacts(),
     /** Every symptom, retired ones included — the picker filters, so a ticked-then-retired one stays untickable-away. */
     val symptoms: List<SymptomEntity> = emptyList(),
@@ -103,12 +116,24 @@ class ObservationEntryViewModel(
     private val fluffles: FluffleRepository,
     private val watches: WatchRepository,
     private val watchNotifier: WatchNotifier,
+    private val media: MediaFiles,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ObservationEntryUiState(isNew = observationId == null))
     val uiState: StateFlow<ObservationEntryUiState> = _uiState.asStateFlow()
 
     /** Who the observation covered when the form opened — the baseline a correction is diffed against. */
     private var storedParticipants: Set<String> = emptySet()
+
+    /**
+     * The tray photo the observation already had when the form opened, or null.
+     *
+     * It is the line between a file some row still points at and one only this form has ever seen: a
+     * shot the owner takes here and then retakes is referenced by nothing, so it can be deleted on the
+     * spot rather than becoming an orphan nobody will ever find. The *stored* one is never deleted
+     * here — that is [ObservationRepository.updateTray]'s job, after the write commits, and only once
+     * no row references it (ADR-0029).
+     */
+    private var storedTrayPhotoPath: String? = null
 
     init {
         viewModelScope.launch {
@@ -147,6 +172,8 @@ class ObservationEntryViewModel(
                 }
 
             val recordedAt = existing?.recordedAt?.atZone(ZoneId.systemDefault())
+            val storedTray = existing?.let { observations.trayFactsNow(it.id) } ?: TrayFacts()
+            storedTrayPhotoPath = storedTray.trayPhotoPath
             _uiState.update { state ->
                 state.copy(
                     loading = false,
@@ -156,7 +183,10 @@ class ObservationEntryViewModel(
                     selectedParticipants = storedGroup.ifEmpty { preSelection?.bunnyIds.orEmpty().toSet() },
                     date = recordedAt?.toLocalDate() ?: state.date,
                     time = recordedAt?.toLocalTime()?.truncatedTo(ChronoUnit.MINUTES) ?: state.time,
-                    tray = existing?.trayFacts() ?: TrayFacts(),
+                    // The whole tray fact in one read: the two sets are join rows now, and a form
+                    // that assembled them separately could open with one of them silently missing.
+                    tray = storedTray,
+                    trayPhoto = storedTray.trayPhotoPath?.let(media::resolve),
                     individual =
                         existing
                             ?.individualFacts()
@@ -189,11 +219,61 @@ class ObservationEntryViewModel(
     // Tray-level. Every one of these lands identically on every participant (ADR-0008).
     fun onDroppingsAmountChanged(value: DroppingsAmount?) = updateTray { it.copy(droppingsAmount = value) }
 
-    fun onDroppingsSizeChanged(value: DroppingsSize?) = updateTray { it.copy(droppingsSize = value) }
+    /*
+     * The two multi-valued ones toggle rather than select, and an empty set is a legitimate resting
+     * state — it is what "not checked" looks like when the fact is a set (ADR-0029).
+     */
 
-    fun onDroppingsFormChanged(value: DroppingsForm?) = updateTray { it.copy(droppingsForm = value) }
+    fun toggleDroppingsSize(value: DroppingsSize) =
+        updateTray { it.copy(droppingsSizes = it.droppingsSizes.toggle(value)) }
+
+    fun toggleDroppingsAppearance(value: DroppingsAppearance) =
+        updateTray { it.copy(droppingsAppearance = it.droppingsAppearance.toggle(value)) }
 
     fun onCecotropesChanged(value: Cecotropes?) = updateTray { it.copy(cecotropes = value) }
+
+    /**
+     * Stores a tray photo through the media helper and hangs it on the tray facts.
+     *
+     * **Through [MediaKind.Observation], and from the ordinary camera or the photo picker — never the
+     * document scanner** (ADR-0029). ML Kit accepts a tray and then clips the highlights and
+     * edge-enhances it, which destroys pellet outlines exactly where the light was good. The plain
+     * capture path is not a fallback here, it is the correct instrument.
+     *
+     * The file is written now rather than at save, because the form has to draw it. An abandoned form
+     * therefore leaves an unreferenced file, which is ADR-0020's chosen failure: an invisible orphan
+     * beats a row whose photo is missing.
+     */
+    fun onTrayPhotoPicked(source: Uri) {
+        viewModelScope.launch {
+            val stored = runCatching { media.persist(source, MediaKind.Observation) }.getOrNull()
+            if (stored == null) {
+                _uiState.update { it.copy(trayPhotoUnreadable = true) }
+                return@launch
+            }
+            replaceTrayPhoto(stored.path)
+        }
+    }
+
+    fun onTrayPhotoCleared() = replaceTrayPhoto(null)
+
+    fun trayPhotoMessageShown() {
+        _uiState.update { it.copy(trayPhotoUnreadable = false) }
+    }
+
+    private fun replaceTrayPhoto(path: String?) {
+        val previous = _uiState.value.tray.trayPhotoPath
+        // Only ever a file this form minted: see [storedTrayPhotoPath] for why the stored one is
+        // somebody else's to delete.
+        if (previous != null && previous != storedTrayPhotoPath) media.delete(previous)
+        _uiState.update {
+            it.copy(
+                tray = it.tray.copy(trayPhotoPath = path),
+                trayPhoto = path?.let(media::resolve),
+                trayPhotoUnreadable = false,
+            )
+        }
+    }
 
     // Individual. These legitimately differ between two rabbits sharing a tray.
     fun onAppetiteChanged(value: Appetite?) = updateIndividual { it.copy(appetite = value) }
@@ -345,6 +425,13 @@ class ObservationEntryViewModel(
         }
     }
 
+    /**
+     * Kotlin note: `Set` is read-only here, so a toggle returns a **new** set rather than mutating
+     * one — the same reason the UI state is a data class and every change is a `copy()`. Compose
+     * recomposes on a new value, not on a mutation it cannot see.
+     */
+    private fun <T> Set<T>.toggle(value: T): Set<T> = if (value in this) this - value else this + value
+
     private fun updateTray(transform: (TrayFacts) -> TrayFacts) {
         _uiState.update { it.copy(tray = transform(it.tray)) }
     }
@@ -371,6 +458,7 @@ class ObservationEntryViewModel(
                         fluffles = app.container.fluffleRepository,
                         watches = app.container.watchRepository,
                         watchNotifier = app.container.watchNotifier,
+                        media = app.container.mediaFiles,
                     )
                 }
             }

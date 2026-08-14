@@ -54,10 +54,19 @@ const val AUTO_BACKUP_MARKER_FILE = "auto-backup-marker.txt"
 val AUTO_BACKUP_STALE_AFTER: Duration = Duration.ofDays(14)
 
 private const val MARKER_LAST_BACKUP_KEY = "lastBackupAtEpochMilli"
+
+/**
+ * The wire name is **frozen at `excludedDocuments`** even though the count now covers tray photos as
+ * well (ADR-0029). 1.2 through 1.4 wrote markers with this key, and a renamed key would read back as
+ * absent — which this file deliberately treats as *zero excluded*. Renaming it would therefore make
+ * an upgraded phone claim nothing was left behind on the very run where something was, which is the
+ * unverified reassurance ADR-0001 exists to forbid, arriving through a refactor.
+ */
 private const val MARKER_EXCLUDED_DOCUMENTS_KEY = "excludedDocuments"
 
 /**
- * The ceiling documents are admitted under, deliberately **below** the ~25 MB Auto Backup quota.
+ * The ceiling record-grade images are admitted under, deliberately **below** the ~25 MB Auto Backup
+ * quota.
  *
  * The quota is a number Android neither publishes as an API nor promises to keep, and the penalty
  * for crossing it is not a trim but a rejection of the *whole* dataset — the database included. So
@@ -78,44 +87,45 @@ const val AUTO_BACKUP_BUDGET_BYTES: Long = 20L * 1024 * 1024
  */
 data class AutoBackupSet(
     val files: List<File>,
-    val excludedDocuments: Int,
+    val excludedRecords: Int,
 )
 
 /**
- * Which documents fit under [budget] once the core has taken its share — **a pure function over
+ * Which record-grade images fit under [budget] once the core has taken its share — **a pure function over
  * `File`s**, per ADR-0005, because the agent runs in a process where `AppContainer` does not exist
  * and reaching for one would force the `lazy` ADR-0007 guards.
  *
- * The budget is **dynamic**: documents get what is left after the core, so a growing database
- * shrinks the document allowance rather than taking the whole dataset over quota. That ordering is
+ * The budget is **dynamic**: they get what is left after the core, so a growing database shrinks the
+ * image allowance rather than taking the whole dataset over quota. That ordering is
  * the ADR's, and it is not a preference — Android rejects an over-quota dataset entire, so admitting
- * one document too many does not cost that document, it costs the database.
+ * one image too many does not cost that image, it costs the database.
  *
- * **Skips rather than stops.** A document that does not fit is passed over and the walk continues,
- * so one oversized scan cannot exclude the smaller history behind it. What newest-first buys is
- * *priority* — an older document never displaces a newer one that would have fit — and that is the
+ * **Skips rather than stops.** One that does not fit is passed over and the walk continues, so a
+ * single oversized page cannot exclude the smaller history behind it. What newest-first buys is
+ * *priority* — an older image never displaces a newer one that would have fit — and that is the
  * part the order has to be trusted for.
  *
  * @param coreBytes the unconditional part: staged database, preferences, avatars. May already
  *   exceed [budget], in which case nothing is admitted rather than the arithmetic going negative.
- * @param documentsNewestFirst every document page on disk, newest first. The caller orders them —
- *   there is no database in this process to ask, so "newest" is the file's own timestamp.
+ * @param recordsNewestFirst every record-grade image on disk — document pages and tray photos —
+ *   newest first. The caller orders them: there is no database in this process to ask, so "newest"
+ *   is the file's own timestamp.
  */
-fun admitDocuments(
+fun admitRecords(
     coreBytes: Long,
-    documentsNewestFirst: List<File>,
+    recordsNewestFirst: List<File>,
     budget: Long = AUTO_BACKUP_BUDGET_BYTES,
 ): AutoBackupSet {
     var remaining = (budget - coreBytes).coerceAtLeast(0)
     val admitted = mutableListOf<File>()
-    for (document in documentsNewestFirst) {
-        val size = document.length()
+    for (record in recordsNewestFirst) {
+        val size = record.length()
         if (size <= remaining) {
-            admitted += document
+            admitted += record
             remaining -= size
         }
     }
-    return AutoBackupSet(files = admitted, excludedDocuments = documentsNewestFirst.size - admitted.size)
+    return AutoBackupSet(files = admitted, excludedRecords = recordsNewestFirst.size - admitted.size)
 }
 
 /**
@@ -136,15 +146,16 @@ fun admitDocuments(
  * - **the marker itself**, so it cannot travel onto another phone and vouch there for a backup that
  *   phone never made.
  *
- * **`documents/` is the one conditional set** (PLAN 5h): admitted newest-first by [admitDocuments]
+ * **`documents/` and `observations/` are the conditional set** (PLAN 5h, ADR-0029): admitted
+ * newest-first across both by [admitRecords]
  * under what is left of [budget] after the core, and the number left behind is carried out in
- * [AutoBackupSet.excludedDocuments] so it can be said in words rather than discovered at a restore.
+ * [AutoBackupSet.excludedRecords] so it can be said in words rather than discovered at a restore.
  * The gallery's flat exclusion would have been the cheaper rule here too, and it is the wrong one —
  * a scanned prescription is the sort of thing an owner keeps precisely because it is hard to
  * reproduce, and most phones will have few enough of them to fit comfortably.
  *
  * @param deviceToDeviceTransfer a transfer straight to another phone, which has **no cloud account
- *   and no quota** — so neither the gallery's exclusion nor the document ceiling applies, and both
+ *   and no quota** — so neither the gallery's exclusion nor the record ceiling applies, and both
  *   travel whole. Silently dropping half an owner's history on a phone upgrade would be the worse
  *   failure by far. This is the distinction the two template XML files used to draw between
  *   `cloud-backup` and `device-transfer`, kept when they were deleted.
@@ -175,47 +186,52 @@ fun autoBackupFileSet(
             addAll(mediaFilesFor(kinds, filesDir).map { it.file })
         }
 
-    val documents = documentsNewestFirst(filesDir)
+    val records = recordsNewestFirst(filesDir)
     val admission =
         if (deviceToDeviceTransfer) {
-            AutoBackupSet(files = documents, excludedDocuments = 0)
+            AutoBackupSet(files = records, excludedRecords = 0)
         } else {
-            admitDocuments(
+            admitRecords(
                 coreBytes = core.sumOf { it.length() },
-                documentsNewestFirst = documents,
+                recordsNewestFirst = records,
                 budget = budget,
             )
         }
 
-    return AutoBackupSet(files = core + admission.files, excludedDocuments = admission.excludedDocuments)
+    return AutoBackupSet(files = core + admission.files, excludedRecords = admission.excludedRecords)
 }
 
 /**
- * Every document page on disk, newest first.
+ * Every record-grade image on disk, newest first: document pages **and tray photos** (ADR-0029).
  *
- * By **file timestamp**, not by the `documents` table: this runs in a process with no database open
- * and ADR-0005 keeps it that way. The two agree in practice — `MediaFiles` writes the file before
- * the row (ADR-0020), so the page's mtime is within milliseconds of its `createdAt` — and where they
- * could drift, the file's own date is the honest answer for a decision about files.
+ * The two share one queue and one budget because they are the same kind of thing to an owner — a
+ * scanned discharge sheet and a photograph of a symptomatic litter tray are both evidence for a vet,
+ * and neither can be reproduced later. Ordering across the two by date rather than admitting one
+ * kind first is the point: the newest evidence wins, whichever it is.
  *
- * The name is the tie-break, so two pages written in the same millisecond do not reorder between
+ * By **file timestamp**, not by the `documents` or `observations` tables: this runs in a process with
+ * no database open and ADR-0005 keeps it that way. The two agree in practice — `MediaFiles` writes
+ * the file before the row (ADR-0020), so an image's mtime is within milliseconds of its `createdAt` —
+ * and where they could drift, the file's own date is the honest answer for a decision about files.
+ *
+ * The name is the tie-break, so two images written in the same millisecond do not reorder between
  * runs and turn an unchanged phone into a changed backup set.
  */
-private fun documentsNewestFirst(filesDir: File): List<File> =
-    mediaFilesFor(listOf(MediaKind.Document), filesDir)
+private fun recordsNewestFirst(filesDir: File): List<File> =
+    mediaFilesFor(listOf(MediaKind.Document, MediaKind.Observation), filesDir)
         .map { it.file }
         .sortedWith(compareByDescending<File> { it.lastModified() }.thenBy { it.name })
 
 /**
- * When Auto Backup last ran on this phone, and how many documents it could not carry.
+ * When Auto Backup last ran on this phone, and how many records it could not carry.
  *
- * @param excludedDocuments zero on a marker written by 1.0 or 1.1, which had no documents to
+ * @param excludedRecords zero on a marker written by 1.0 or 1.1, which had no documents to
  *   exclude and no key for the count. Absent reads as zero rather than as unknown: the app never
- *   claims documents were dropped on the strength of a field that was not written.
+ *   claims anything was dropped on the strength of a field that was not written.
  */
 data class AutoBackupMarker(
     val lastBackupAt: Instant,
-    val excludedDocuments: Int = 0,
+    val excludedRecords: Int = 0,
 )
 
 /**
@@ -225,7 +241,7 @@ data class AutoBackupMarker(
 fun writeAutoBackupMarker(
     filesDir: File,
     at: Instant,
-    excludedDocuments: Int = 0,
+    excludedRecords: Int = 0,
 ) {
     val marker = File(filesDir, AUTO_BACKUP_MARKER_FILE)
     val part = File(filesDir, "$AUTO_BACKUP_MARKER_FILE.part")
@@ -233,7 +249,7 @@ fun writeAutoBackupMarker(
         filesDir.mkdirs()
         part.writeText(
             "$MARKER_LAST_BACKUP_KEY=${at.toEpochMilli()}\n" +
-                "$MARKER_EXCLUDED_DOCUMENTS_KEY=$excludedDocuments\n",
+                "$MARKER_EXCLUDED_DOCUMENTS_KEY=$excludedRecords\n",
         )
         if (!part.renameTo(marker)) {
             part.copyTo(marker, overwrite = true)
@@ -272,7 +288,7 @@ fun readAutoBackupMarker(filesDir: File): AutoBackupMarker? {
                 lastBackupAt = Instant.ofEpochMilli(millis),
                 // A count that is missing, negative or not a number is no count at all. Zero is the
                 // reading that cannot invent an exclusion nobody recorded.
-                excludedDocuments = values[MARKER_EXCLUDED_DOCUMENTS_KEY]?.trim()?.toIntOrNull()?.coerceAtLeast(0) ?: 0,
+                excludedRecords = values[MARKER_EXCLUDED_DOCUMENTS_KEY]?.trim()?.toIntOrNull()?.coerceAtLeast(0) ?: 0,
             )
         }
     } catch (e: IOException) {
@@ -306,11 +322,11 @@ sealed interface AutoBackupStatus {
         val at: Instant,
         val stale: Boolean,
         /**
-         * How many documents the last run had to leave behind — **said in words on the screen, never
+         * How many documents and tray photos the last run had to leave behind — **said in words on the screen, never
          * dropped silently** (ADR-0005). Read from the marker rather than recomputed, so the status
          * line and the one-time notification are two renderings of one number.
          */
-        val excludedDocuments: Int = 0,
+        val excludedRecords: Int = 0,
     ) : AutoBackupStatus
 }
 
@@ -326,7 +342,7 @@ fun autoBackupStatus(
     return AutoBackupStatus.Recorded(
         at = marker.lastBackupAt,
         stale = age > AUTO_BACKUP_STALE_AFTER,
-        excludedDocuments = marker.excludedDocuments,
+        excludedRecords = marker.excludedRecords,
     )
 }
 
@@ -357,11 +373,11 @@ enum class ExclusionNotice {
 }
 
 fun exclusionNotice(
-    excludedDocuments: Int,
+    excludedRecords: Int,
     alreadyNotified: Boolean,
 ): ExclusionNotice =
     when {
-        excludedDocuments <= 0 -> if (alreadyNotified) ExclusionNotice.Clear else ExclusionNotice.Nothing
+        excludedRecords <= 0 -> if (alreadyNotified) ExclusionNotice.Clear else ExclusionNotice.Nothing
         alreadyNotified -> ExclusionNotice.Nothing
         else -> ExclusionNotice.Post
     }

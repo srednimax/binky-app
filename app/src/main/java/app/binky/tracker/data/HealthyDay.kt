@@ -28,8 +28,12 @@ fun healthyDayFacts(): ObservationFacts =
         tray =
             TrayFacts(
                 droppingsAmount = DroppingsAmount.NORMAL,
-                droppingsSize = DroppingsSize.NORMAL,
-                droppingsForm = DroppingsForm.ROUND,
+                // Exactly one value in each set, and deliberately so (ADR-0029). The fields went
+                // multi-valued; the shortcut's claim did not. Making it assert more because the field
+                // now holds more would be the app inventing observations on the owner's behalf,
+                // which is the opposite of what ADR-0001 grants it.
+                droppingsSizes = setOf(DroppingsSize.NORMAL),
+                droppingsAppearance = setOf(DroppingsAppearance.ROUND),
                 cecotropes = Cecotropes.EATEN,
             ),
         individual = IndividualFacts(symptomsChecked = true),

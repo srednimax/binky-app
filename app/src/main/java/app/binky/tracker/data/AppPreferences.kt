@@ -153,12 +153,12 @@ class AppPreferences(
      * Cleared again when nothing is being excluded, which makes it once per episode rather than once
      * ever — see `ExclusionNotice`.
      */
-    val excludedDocumentsNotified: Flow<Boolean> =
+    val excludedRecordsNotified: Flow<Boolean> =
         dataStore.data
             .catch { cause -> if (cause is IOException) emit(emptyPreferences()) else throw cause }
             .map { preferences -> preferences[EXCLUDED_DOCUMENTS_NOTIFIED] == true }
 
-    suspend fun setExcludedDocumentsNotified(notified: Boolean) {
+    suspend fun setExcludedRecordsNotified(notified: Boolean) {
         dataStore.edit { preferences -> preferences[EXCLUDED_DOCUMENTS_NOTIFIED] = notified }
     }
 

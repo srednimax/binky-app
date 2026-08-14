@@ -12,7 +12,7 @@ import app.binky.tracker.BuildConfig
  * opens it and compares it against this (see `DatabasePreserve.kt`), so the two must stay in step —
  * which is why it is one constant used in both places.
  */
-const val BUNNY_SCHEMA_VERSION = 6
+const val BUNNY_SCHEMA_VERSION = 7
 
 /** The database file name, under the app's standard databases directory. */
 const val BUNNY_DATABASE_FILE = "bunny.db"
@@ -37,9 +37,16 @@ const val BUNNY_DATABASE_FILE = "bunny.db"
  * shipped build ever held. The same rewritten-in-place rule applies across 5b–5g: the version does not
  * climb, `6.json` is regenerated and the migration re-transcribed. It is frozen at 5i.
  *
- * From here the assertion has **two** halves, because 1.1.0 shipped: a release-shaped open of a
- * schema-4 file *and* of a schema-5 file must both succeed. That is the skipped-version upgrade, and
- * it is run per pull request rather than once by hand at the release.
+ * **Version 7 is Phase 7.5's, and it is the first migration that rewrites a table holding an owner's
+ * history** (ADR-0029). The droppings appearance and size fields become join tables and the tray gains
+ * a photo, and SQLite has no `ALTER TABLE … DROP COLUMN` at `minSdk` 26 — so `observations` is rebuilt
+ * create-copy-drop-rename. The drop cascades into `observation_symptoms`, which
+ * `runMigrationsAndValidate` cannot see, so [MIGRATION_6_7] stages those links and puts them back and
+ * the instrumented test counts **rows** rather than comparing shapes.
+ *
+ * From here the assertion has **three** halves, because 1.1.0 and 1.2.0 both shipped: a
+ * release-shaped open of a schema-4, a schema-5 and a schema-6 file must all succeed. That is the
+ * skipped-version upgrade, and it is run per pull request rather than once by hand at the release.
  */
 @Database(
     entities = [
@@ -50,6 +57,10 @@ const val BUNNY_DATABASE_FILE = "bunny.db"
         ObservationEntity::class,
         SymptomEntity::class,
         ObservationSymptomEntity::class,
+        // Schema 7's pair (ADR-0029): the droppings fields that a single tray can genuinely answer
+        // more than one way at a time.
+        ObservationDroppingsAppearanceEntity::class,
+        ObservationDroppingsSizeEntity::class,
         PhotoEntity::class,
         CareReminderEntity::class,
         CareEventEntity::class,

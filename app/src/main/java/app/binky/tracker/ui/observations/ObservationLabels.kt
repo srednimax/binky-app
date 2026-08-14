@@ -8,7 +8,7 @@ import app.binky.tracker.data.ActivityLevel
 import app.binky.tracker.data.Appetite
 import app.binky.tracker.data.Cecotropes
 import app.binky.tracker.data.DroppingsAmount
-import app.binky.tracker.data.DroppingsForm
+import app.binky.tracker.data.DroppingsAppearance
 import app.binky.tracker.data.DroppingsSize
 import app.binky.tracker.data.Mood
 import app.binky.tracker.data.SymptomEntity
@@ -100,13 +100,21 @@ private fun DroppingsSize.labelRes(): Int =
     }
 
 @StringRes
-private fun DroppingsForm.labelRes(): Int =
+private fun DroppingsAppearance.labelRes(): Int =
     when (this) {
-        DroppingsForm.ROUND -> R.string.droppings_form_round
-        DroppingsForm.MISSHAPEN -> R.string.droppings_form_misshapen
-        DroppingsForm.STRUNG_TOGETHER -> R.string.droppings_form_strung_together
-        DroppingsForm.SOFT -> R.string.droppings_form_soft
-        DroppingsForm.DIARRHOEA -> R.string.droppings_form_diarrhoea
+        DroppingsAppearance.ROUND -> R.string.droppings_appearance_round
+        DroppingsAppearance.MISSHAPEN -> R.string.droppings_appearance_misshapen
+        DroppingsAppearance.DOUBLED -> R.string.droppings_appearance_doubled
+        DroppingsAppearance.DRY -> R.string.droppings_appearance_dry
+        // "…with fur" is load-bearing rather than descriptive: mucus presents identically, so an
+        // unqualified "Strung together" is the chip an owner seeing gut irritation would tap
+        // (ADR-0029). The value's own name is unchanged; only the copy names the fur.
+        DroppingsAppearance.STRUNG_TOGETHER -> R.string.droppings_appearance_strung_together
+        DroppingsAppearance.MUCUS -> R.string.droppings_appearance_mucus
+        DroppingsAppearance.SOFT -> R.string.droppings_appearance_soft
+        DroppingsAppearance.DIARRHOEA -> R.string.droppings_appearance_diarrhoea
+        DroppingsAppearance.VERY_DARK -> R.string.droppings_appearance_very_dark
+        DroppingsAppearance.BLOOD -> R.string.droppings_appearance_blood
     }
 
 @StringRes
@@ -114,6 +122,7 @@ private fun Cecotropes.labelRes(): Int =
     when (this) {
         Cecotropes.EATEN -> R.string.cecotropes_eaten
         Cecotropes.LEFT_UNEATEN -> R.string.cecotropes_left_uneaten
+        Cecotropes.EXCESS -> R.string.cecotropes_excess
     }
 
 @StringRes
@@ -167,9 +176,16 @@ private fun WaterIntake.labelRes(): Int =
         )
     } ?: notCheckedLabel()
 
-@Composable fun label(value: DroppingsSize?): String = value?.let { stringResource(it.labelRes()) } ?: notCheckedLabel()
+/*
+ * The two multi-valued fields take **non-nullable** overloads, because there is no null to render:
+ * absence is an empty set, and an empty set draws no chip and prints no line rather than the words
+ * "not checked" (ADR-0029). A `null` here would be a second spelling of that absence, which is
+ * exactly what the single-valued fields above use `null` to avoid having.
+ */
 
-@Composable fun label(value: DroppingsForm?): String = value?.let { stringResource(it.labelRes()) } ?: notCheckedLabel()
+@Composable fun label(value: DroppingsSize): String = stringResource(value.labelRes())
+
+@Composable fun label(value: DroppingsAppearance): String = stringResource(value.labelRes())
 
 @Composable fun label(value: Cecotropes?): String = value?.let { stringResource(it.labelRes()) } ?: notCheckedLabel()
 
