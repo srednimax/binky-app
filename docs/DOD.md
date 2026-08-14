@@ -19,7 +19,8 @@ below is its summary. **Phase 8 retargets to 1.6** — two phases cannot both cl
 answers to commit subjects rather than to this file.
 
 **So what is actually open is evidence, then one short phase of code**: §1's overnight run and the gate
-items behind it, Play's own count (§4), and Phase 7.5's five items — and then Phase 8.
+items behind it, Play's own count (§4), and Phase 7.5's **four remaining items** — the schema bump, its
+migration and its instrumented run are done and green — and then Phase 8.
 
 ---
 
@@ -283,40 +284,32 @@ three get more expensive with time. **Both ADRs are made** — ADR-0028 and
       distinction with no consumer. Reasoning in phase-7.5.md §1.
       The rule itself is **not restated here** — it is ADR-0028's, tested in `WeightTrendTest` and
       summarised in §9 below, which stays for the question it started as.
-- [ ] **Droppings are several things at once, and worth a photo** 🔴 **this is the schema bump** — reported
-      2026-08-14. `droppingsForm` is one nullable column, so a tray holding round *and* soft pellets forces
-      the owner to pick one and file the rest as prose, on the field whose own doc says a countable form
-      beats prose. **Decided in ADR-0029: appearance and size go multi-valued, amount stays
-      single** (`FEW` *and* `MANY` is a contradiction about one tray). **Both hang off `observationId`** —
-      there is no group *table*, and ADR-0008 forbids stamping a `groupId` on a solo observation, so the
-      join table is keyed on the row and the photo is a path column on it, riding the `TrayFacts`
-      propagation that already exists. The duplicated path buys one new rule: **the file goes only when no
-      other row references it**, or deleting one bonded bunny takes the survivor's photo.
-      ⚠️ **The vocabulary is also incomplete, and `STRUNG_TOGETHER` is a trap** (checked 2026-08-14). It
-      means strung *with fur*; **mucus presents identically** — pale goop strung between or enclosing the
-      pellets — so an owner seeing gut irritation would reasonably record moulting. And **blood in droppings
-      is recordable nowhere**, while `symptom_blood_in_urine` is seeded — the app has a field for the false
-      alarm (red urine is usually porphyrins) and none for the always-serious one. **Decided: close the gaps
-      with values, add no field.** The field gains `MUCUS`, `BLOOD`, `VERY_DARK` (melena), `DOUBLED`
-      (fused = slowing motility, not general misshapenness) and `DRY` (dehydration); `Cecotropes` gains
-      `EXCESS`. **`DroppingsForm` is renamed with them** — five of the six are contents, colour or
-      moisture, not shapes; `DroppingsAppearance` is **confirmed** in ADR-0029, and the rename is free
-      because only value names are stored — the column itself disappears in the rebuild. **The existing
-      label is reworded to *"Strung together with fur"***, because a new `MUCUS` value closes nothing while
-      the screen still offers one plausible chip for pale goop. *Pale* and *greenish* stay out on **triage** — they are the weakest
-      signals in the set — not on form length, which cannot tell the values kept from the values dropped.
-      **Blood cannot be a symptom**: symptoms are individual, a shared tray is not attributable (ADR-0008).
-      Values are stored **by name**, so additions cannot rewrite history. **No per-value urgency copy** —
-      the app records `BLOOD` and says nothing about it (ADR-0026).
-      Its `MediaKind` is **new — `Observation`, writing to `observations/`**, record-grade so `Records`,
-      `Everything` and the cloud queue carry it. **Added 2026-08-14 at `LongEdge(2048, quality = 88)`**,
-      already in `Records` and `Everything`; **the cloud queue is still owed** — it is named for documents
-      throughout, so it renames a field its copy and tests read. The tray photo takes the **photo capture
-      path, never the scanner**: ML Kit's filter clips highlights and destroys pellet outlines (§7).
-      Cost: two join tables + media link, one `MIGRATION_6_7` that **rebuilds `observations`** (no
-      `DROP COLUMN` at `minSdk` 26, and the drop cascades into `observation_symptoms` — stage the links and
-      put them back), **schema 7**, a fixture and the `connectedAndroidTest` run nothing else here owes. Accepted knowingly 2026-08-14. **If the phase runs
-      long the photo is the cut** — it does not cut the migration, and the multiselect is not cuttable.
+- [x] **Droppings are several things at once, and worth a photo** ✅ **built and device-proven 2026-08-14**,
+      per **[ADR-0029](adr/0029-droppings-are-multi-valued-and-the-tray-is-worth-a-photo.md)**. Nothing was
+      cut — the multiselect, the six new values, the `DroppingsAppearance` rename **and** the tray photo all
+      ship, so the release valve is unspent. **Schema 7 is frozen and tagged** (`schema-7` → `ddb430a`);
+      `MIGRATION_6_7` rebuilds `observations` create-copy-drop-rename with the symptom links staged across
+      the cascade, pinned by `Migration6To7Test` in five cases. **`connectedAndroidTest` green on the
+      Xiaomi at 215/215** — the gate item nothing else in this phase owed.
+      ⚠️ **The first run after a schema bump fails 13 `DoseAlarmTest` cases, and it is not a regression** —
+      expect it again at schema 8. `rescheduleDoseAlarm` opens with `schemaWipePending()`, which reads the
+      header of the **real** `bunny.db` rather than the test's in-memory database, so a phone still carrying
+      the previous schema's debug database disarms every alarm the suite tries to arm. The tell is that
+      every failure is an `assertTrue(armed())` and the three `assertFalse` cases pass. Clearing the debug
+      database through the app's own consent screen made the same run 215/215 with no code changed.
+      ℹ️ **The debug build wipes 6 → 7 rather than migrating, by design** (`BunnyDatabase.kt`: a build takes
+      the fallback **or** the migrations, never both). It preserved
+      `files/preserved/bunny-20260814T163225Z.db` — the replaced database's size to the byte — before
+      wiping, which is ADR-0007's promise watched for real for the first time. So the phone is **not** where
+      `MIGRATION_6_7` is proven; `aReleaseShapedOpenOfASchemaSixFileSucceeds` is.
+      ⚠️ **Still owed: `bunny-schema-6-fixture.zip`**, a device chore against `v1.4.0` — the fixtures are
+      real artifacts, not synthesised. Softened by the schema-4 fixture already restoring
+      4 → 5 → 6 → **7** and counting `observation_symptoms` afterwards; what it does not yet assert is that
+      the droppings landed in the join tables, which is a two-line addition needing no new fixture.
+      ℹ️ **HyperOS's ADB install prompt is drivable** with `input touchscreen tap`, contrary to the standing
+      note. `INSTALL_FAILED_USER_RESTRICTED` after ~12 s is a *missed prompt*; the same string returned
+      instantly is the first-install refusal. The delay tells them apart.
+      The question as it stood, and every decision behind it, is phase-7.5.md §7 and ADR-0029.
 - [ ] **The healthy day moves behind the `+`** — reported 2026-08-14. The FAB (`Navigation.kt:365`) opens
       the *full* form; *Log a healthy day* is a separate action inside the Timeline, so the discoverable
       entry point is the long one and the shortcut that settles the subject's watch is the hidden one.

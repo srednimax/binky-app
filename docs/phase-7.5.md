@@ -536,6 +536,52 @@ either way. The valve saves UI and media plumbing, not the risky part. **The mul
 — the new values on a *single*-select would put `BLOOD` and `SOFT` in competition for one slot, with the
 loser going to prose, which is worse than either endpoint.
 
+### Built 2026-08-14 — the valve was not used, and the schema bump has a trap the next one will hit too
+
+**Nothing was cut.** The multiselect, the six new values, the rename to `DroppingsAppearance` and the tray
+photo all ship, so the release valve above stands unspent for a later phase. Schema **7 is frozen and
+tagged** (`schema-7` → `ddb430a`), `MIGRATION_6_7` rebuilds `observations` create-copy-drop-rename with the
+symptom links staged across the cascade, and `Migration6To7Test` pins it in five cases — including the two
+`runMigrationsAndValidate` structurally cannot make, the surviving symptom ticks and the release-shaped
+open. **`connectedAndroidTest` is green on the Xiaomi at 215/215**, which is the gate item nothing else in
+this phase owed.
+
+**The trap, which cost the first run and will cost the next bump too.** That run came back **13 failures,
+every one of them `DoseAlarmTest`** — the whole class except its three `assertFalse` cases. Nothing in step
+4 goes near alarms, and the shape of the failure is the tell: every failing case asserts `assertTrue(armed())`,
+so no alarm was ever armed. `rescheduleDoseAlarm` opens with `schemaWipePending()`, and **that reads the
+header of the real `bunny.db`, not the test's in-memory database** — so a phone still carrying the
+*previous* schema's debug database disarms every alarm the test tries to arm, and does it correctly. The
+suite is coupled to the phone's own database state through one guard. Clearing it through the app's own
+consent screen turned the same run into 215/215 with no code changed. **Expect this at schema 8**: the
+first instrumented run after any bump fails those thirteen until the debug database is dealt with, and it
+looks exactly like a broken rebuild.
+
+**ADR-0007's promise, watched for real for the first time — and on a bump that *has* a migration.** The
+debug build does not migrate 6 → 7; it wipes through the consent screen, deliberately, because
+`BunnyDatabase.kt` gives a build the fallback **or** the migrations and never both — an in-flight migration
+is rewritten in place as the shape churns, and a debug database already at the old shape of version 7 could
+not be migrated twice. So the screen came up naming both formats, and it left
+`files/preserved/bunny-20260814T163225Z.db` behind first: 262 144 bytes, the size of the database it
+replaced, to the byte. That is the guard doing exactly what it says. **It also means the phone is not where
+`MIGRATION_6_7` is proven** — `aReleaseShapedOpenOfASchemaSixFileSucceeds` is, because it is the only path
+that opens a schema-6 file the way a release build would.
+
+**Still owed, and it is a judgement rather than a task.** There is no `bunny-schema-6-fixture.zip` — the
+gate's "beside the schema-4 and schema-5 fixtures" implies one, and those are *real artifacts* exported by
+the tagged builds that wrote them, so a schema-6 one is a device chore against `v1.4.0` rather than
+something that can be synthesised. What softens it: the schema-4 fixture's restore already runs
+4 → 5 → 6 → **7** through the staged path and already counts `observation_symptoms` afterwards, so the
+cascade is proven against a real artifact for free. What it does *not* yet assert is that the droppings
+landed in the join tables, which is a two-line addition to a test that already exists and needs no new
+fixture.
+
+ℹ️ **The ADB install prompt is drivable after all.** HyperOS's `AdbInstallActivity` — *"Install this app via
+USB?"*, with an auto-denying countdown — takes `input touchscreen tap` like any other window, which is what
+the standing note said it did not. `INSTALL_FAILED_USER_RESTRICTED` after ~12 s is a **missed prompt**;
+the same string returned instantly is the first-install refusal `CLAUDE.md` describes. The delay is how to
+tell them apart.
+
 ## 8 — A fluffle of five, or two long names
 
 Reported 2026-08-14, and it is the one item here that is a **defect rather than a feature**.
@@ -681,7 +727,11 @@ are written answers.
    photo is the one part of the phase that may not ship.
 4. **The droppings work**, against the ADR written in step 1 — the long pole, and deliberately not last.
    Schema 7, the migration, the fixture and the instrumented run are the only things here that can fail in
-   a way that costs days, so they go early enough to fail with time left.
+   a way that costs days, so they go early enough to fail with time left. ✅ **Done 2026-08-14**: nothing
+   cut, `schema-7` tagged at `ddb430a`, and **215/215 instrumented green on the Xiaomi**. The one thing
+   that did cost time was not the migration — see §7: the first run's thirteen `DoseAlarmTest` failures
+   were the phone's stale debug database, not the code. **A `bunny-schema-6-fixture.zip` is still owed**,
+   and it is a device chore rather than a build one.
 5. **The gain signal**, against a driver that is by now correct, so its new card state is captured the
    first time. **ADR-0028 is already written and merged** (2026-08-14) — there is nothing left to decide
    here, only to build. ✅ **Done 2026-08-14**: the rule, three strings in both locales, the age question
