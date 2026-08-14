@@ -17,8 +17,21 @@ phases are in [`PLAN.md`](PLAN.md) and are not needed to build this one.
   here is what lets Phase 8 start with a canary rather than build one. It also pays two older debts —
   Phase 7's deferred Polish after set, and the Polish half of `DOD.md` §4's listing screenshots.
 
-**What it is not.** It is not a redesign follow-up. Phase 7 closed with no confirmed defect in the redesign,
-and nothing here is a repair of it.
+- **Four owner-facing findings** arrived on 2026-08-14, after the phase was drafted: the healthy day is hard
+  to find, droppings are several things at once, a tray is worth photographing, and a fluffle of five
+  overflows a label nobody has ever seen it in. Three of the four add copy, so the same argument applies to
+  them; the fourth is the one that pays for the schema bump they need.
+
+**What it is not.** It is not a redesign follow-up in the sense of repairing something Phase 7 drew wrongly —
+that phase closed with no confirmed defect. §8 is the near miss: the housemates line is a **state the
+redesign never saw**, because the seed has exactly two bonded bunnies, which is the same blind spot §4's
+seed variants exist to remove.
+
+**This phase bumps the schema to 7.** That was not true when it was drafted, and it is the single biggest
+change to its shape: §7 needs a join table and a media link, so a hand-written migration, a schema fixture
+and a `connectedAndroidTest` run come with it. Every other item still costs nothing on that axis —
+**ADR-0028's "the schema stays at 6" is a claim about the gain rule, and it remains true**; the release
+around it simply carries a bump for unrelated reasons.
 
 **Decisions it leans on:** ADR-0001 (never infer from missing data; the flag's shape and constants),
 ADR-0021 (the trailing-median baseline), ADR-0026 (the app observes, it never advises), ADR-0009 (what a
@@ -34,6 +47,9 @@ second Play-services dependency would cost), ADR-0020 (the media pipeline's kind
 | Document downsample answer | A judgement, possibly two numbers | `MediaFiles.kt` | maybe — only if it retunes |
 | Capture driver: isolation, seed variants, locale | Tooling | `scripts/edge-to-edge.py` | no |
 | Play contact email, received support mail | Two hand items | Play Console, an inbox | no |
+| The healthy day behind the `+` | Reworked entry point | `Navigation.kt`, `ui/observations/` | yes |
+| Droppings: multi-valued, photographable | New functionality, **schema 7** | `ObservationEntity.kt`, `media/` | yes |
+| The housemates line at five bunnies | Layout + one plurals entry | `ui/bunny/BunnyLabels.kt` | yes |
 
 ## 1 — The tester's question: a gain raises nothing
 
@@ -225,17 +241,110 @@ they are the oldest open boxes in the project and cost an hour between them.
   that the diagnostics block is **visible**, not collapsed behind Gmail's signature `…`. Everything up to
   the send is already verified in both locales; only a delivered message can prove the last step.
 
+## 6 — The healthy day belongs behind the `+`
+
+Reported 2026-08-14: *logging a healthy day is not intuitive; the owner should just go by the `+` button.*
+
+**The code says the same thing.** The `+` is a single app-level FAB (`Navigation.kt:365`) that opens the
+**full** observation form. *Log a healthy day* is a separate action rendered **inside the Timeline** on the
+Observations screen. So the app has two ways to record that you looked at your rabbit, they have no visual
+relationship, and **the discoverable one is the long one** — which is backwards, because the healthy day is
+the path meant to be taken most often.
+
+It matters more than a misplaced button, because of what the healthy day is *for*: ADR-0001's whole
+position is that silence means nobody looked, and the one-tap shortcut is how an ordinary day stops being
+silence. A shortcut nobody finds does not do that job. It is also what settles a running watch — `Each
+morning Binky asks whether you have checked on them… a healthy day counts` — so the least discoverable
+action in the app is the one that answers its most repeated question.
+
+**The recommendation, to grill:** the `+` becomes the single entry point and offers the two paths as
+siblings — *"Everything was normal"* and *"Record what you saw"*. It costs the healthy day one tap, and
+that is the trade being made deliberately: one tap is cheap, and being unfindable is not. The alternative
+worth arguing for is putting the shortcut **at the top of the observation form** instead, so there is one
+button and one screen, and the fast path is the first thing on it.
+
+Whichever wins, **the two entry points collapse into one**. No schema, and no new strings if the existing
+`healthy_day_action` copy moves rather than being rewritten.
+
+## 7 — Droppings are several things at once, and worth a photo 🔴 this is the schema bump
+
+Two reports, one shape. **ADR-0029 is owed before either is built**, and it should be grilled the way
+ADR-0028 was.
+
+**Multiselect.** `droppingsForm` is a single nullable column over `ROUND, MISSHAPEN, STRUNG_TOGETHER, SOFT,
+DIARRHOEA`. A tray genuinely holds more than one kind at once — round pellets *and* soft ones is the
+commonest early sign of a gut going wrong — and today the owner must pick one and file the rest as prose,
+which is precisely what the enum exists to prevent: *"a form that can be counted over time is worth more
+than prose."* **The current model forces a lie on the exact field it was built to make countable.**
+
+**Multiselect fits the existing model rather than straining it.** The droppings fields are already
+*tray-level* — `single per group, identical across every row, edited group-wide` — so nothing has to
+attribute which bunny produced which pellet, which is ADR-0008's premise and the reason a shared tray is
+modelled the way it is.
+
+**The recommendation: form and size become multi-valued, amount stays single.** `FEW` *and* `MANY` is a
+contradiction about one tray; *small and normal* and *round and soft* are both things an owner can actually
+see. Splitting the three fields by whether they describe a quantity or a mixture is the distinction the ADR
+has to make, and getting it wrong in the other direction — multiselecting amount — would make the field
+meaningless rather than merely awkward.
+
+**The photo.** Observations carry no media today. A dropping photo is tray-level like the rest, so it
+belongs to the observation *group*, not to a bunny, and it goes through `MediaFiles` per the house rule —
+which raises a genuine spec question this phase is already equipped to answer: **pellet shape is closer to
+`Document`'s "small detail matters" than to `Photo`'s gallery spec.** Answer it beside §2's downsample
+judgement; it is the same kind of judgement made on the same phone in the same sitting.
+
+The justification is ADR-0026's line read forwards: a photo of what you saw is **observation, not advice**,
+and it is the single most useful thing an owner can hand a vet about a gut problem that has already changed
+by the time of the appointment.
+
+**Cost, stated plainly.** A join table for the multi-valued fields and a link for the photo — one migration
+covering both, **schema 7**, a schema-7 fixture, and the `connectedAndroidTest` run every other item in this
+phase avoids. That is the price of the two, and it was accepted knowingly on 2026-08-14.
+
+## 8 — A fluffle of five, or two long names
+
+Reported 2026-08-14, and it is the one item here that is a **defect rather than a feature**.
+
+**The grammar is already right.** `joinNames` (`BunnyLabels.kt`) builds from the right through string
+resources — `"Thumper, Clover & Hazel"` — precisely so other languages can punctuate lists their own way,
+so five names come out correctly in every locale.
+
+**The layout is not.** Both Home render sites (`HomeScreen.kt:210` and `:443`) and the archived list
+(`ArchivedBunniesScreen.kt:170`) draw the label as a plain `Text` with **no `maxLines` and no `overflow`**.
+A five-bunny fluffle therefore produces a two- or three-line subtitle on every profile card and every
+switcher row, and two long names do it with just two. Nothing clips — the card simply grows, and the row
+rhythm the redesign spent a phase establishing goes with it.
+
+**Nobody has ever seen it, and that is the interesting part.** The seed has exactly two bonded bunnies with
+short names, so no capture, no matrix cell and no before/after shot has ever contained this state. It is the
+same blind spot as §1's gain card, which makes the five-bunny fluffle the **second customer for §4's seed
+variants** — and the argument that they belong in the driver rather than in a throwaway patch.
+
+**The recommendation: cap the names, not the pixels** — *"Lives with Thumper, Clover & 3 others"*. An
+ellipsis through a name is unreadable, and `maxLines` alone would truncate mid-word in a label whose whole
+job is naming individuals. Costs one `plurals` entry in both locales, which is exactly the sort of thing
+worth spending before nine languages rather than after.
+
+**It gets worse in Phase 8, which is the other reason it is here.** Every locale's *"Lives with"* is longer
+than English's, so this label is a copy-length canary — and §4's locale-aware driver plus a five-bunny seed
+variant is the pair that would photograph it.
+
 ## Decisions
 
 - **This ships as 1.5, and Phase 8 becomes 1.6.** `release-please` derives the version from commit subjects,
   and both the gain signal and the attribution screen are honestly `feat:`. Two phases cannot both claim
   1.5, and the alternative — writing everything as `fix:` to hold 1.4.1 — would be lying to the changelog
   about work that adds functionality. `PLAN.md` and `phase-8.md` are retargeted with this file.
-- **The `feat!:` ban carries over from Phase 7 and is not spent.** Nothing here breaks a schema, a backup
-  format or an install. One `!` cuts 2.0 no matter what these files say.
-- **No schema change**, bought by ADR-0028's loss-precedence rule rather than assumed. Schema 7 would mean
-  a hand-written migration, a fixture and a `connectedAndroidTest` run; if the build finds it unavoidable
-  after all, that is a reason to re-examine the design, not to absorb it quietly.
+- **The `feat!:` ban carries over from Phase 7 and is not spent — and the schema bump does not spend it.**
+  A migrated schema is not a breaking change: ADR-0023 is why the migration is hand-written, an existing
+  install upgrades in place, and a restored backup still restores. Nothing downstream of these commits has
+  to change, which is the test. One `!` cuts 2.0 no matter what these files say.
+- **Schema 7, for §7 alone.** The multi-valued droppings fields need a join table and the tray photo needs
+  a link; one hand-written migration covers both, per ADR-0007. Every other item in this phase is
+  schema-neutral, and **ADR-0028's "the schema stays at 6" stays true as a statement about the gain rule** —
+  it was never a promise about the release. The bump is what buys the `connectedAndroidTest` run back into
+  the gate.
 
 ## Tests
 
@@ -250,10 +359,22 @@ JVM, and mostly a table. `WeightTrendTest` gains gain cases beside its loss ones
   acknowledged gain returning unacknowledged after a loss episode. **These are tests that assert the app
   does the wrong-looking thing**, so that a later reader finds a decision rather than a bug.
 
-`PolishTranslationTest` keeps both locales level over the three new strings — the one test that has to pass
-before Phase 8 rather than during it.
+**Instrumented, owed by §7's schema bump alone.** `MIGRATION_6_7` from a schema-6 fixture at API 26/34/36,
+asserting that **an existing single droppings value survives as one row in the join table** — a migration
+that silently drops it would erase exactly the history ADR-0023 stopped the database being disposable for.
+Plus the DAO round-trip for a multi-valued field and for an observation carrying a tray photo.
 
-What no test holds is the downsample judgement and the delivered mail. Both are written answers.
+**JVM, for the rest.** The multi-valued fields keep their `TypeConverter` discipline — stored **by name,
+never ordinal** — and a test pins that adding a sixth `DroppingsForm` value cannot rewrite history.
+`housematesLabel` gets a table: one, two, three, five and nine housemates, an archived one among them, and
+a name long enough to prove the cap fires on width as well as on count.
+
+`PolishTranslationTest` keeps both locales level over every new string — three for the gain signal, the
+droppings additions, and the `plurals` entry §8's cap needs. It is the one test that has to pass before
+Phase 8 rather than during it.
+
+What no test holds is the downsample judgement, the droppings media spec and the delivered mail. All three
+are written answers.
 
 ## Gate
 
@@ -261,28 +382,45 @@ What no test holds is the downsample judgement and the delivered mail. Both are 
   line — no verdict about the rabbit, only a fact about the numbers, in grams.
 - The gain flag on the device in all its states, reached through a **seed variant** rather than a throwaway
   patch (§4), so the card has a permanent scene and the default seed is untouched.
-- **Schema still 6**, and `app/schemas/` unchanged. If that is false, the phase re-opens its own design.
+- **Schema 7 frozen and tagged**, with `MIGRATION_6_7` hand-written and the schema-6 fixture migrating to 7
+  in CI at API 26/34/36, beside the schema-4 and schema-5 fixtures that already do. **A restored schema-6
+  backup opens with its droppings intact** — the single-value column becomes one row in the join table, and
+  a migration that quietly drops the old value would erase history ADR-0023 exists to protect.
+- `connectedAndroidTest` green on the Xiaomi — owed this phase, unlike every other item in it. Note the
+  HyperOS split-install trap in `CLAUDE.md` before assuming a failed run means broken code.
+- **The housemates label at five bunnies and at two long names**, seen on the device through a seed variant
+  — the state that has never been photographed.
 - The downsample answer written into `MediaFiles.kt` — numbers retuned **or** the "unverified" comment
   deleted and the observed file size recorded in its place.
 - Attribution reachable from Support, listing **every bundled dependency** rather than a remembered subset,
   in both locales.
 - **A full English matrix run clean with the 20:00 dose live** — the case the 244-scene run never faced —
   and a Polish run reaching every scene, which is the Polish after set.
+- **One entry point to record a day**, not two — the healthy day reachable from the `+` and nowhere else,
+  checked in both locales.
 - `spotlessApply`, `assembleDebug`, `test` at each checkpoint; `lint` at the gate, holding at **0 errors and
-  0 warnings**. No `connectedAndroidTest` is owed unless the schema decision above goes the other way.
+  0 warnings**.
 
 ## Order of work
 
 1. **The two hand items.** Oldest, cheapest, block nothing and are blocked by nothing.
 2. **The capture driver** — isolation step first, proven in English against the live 20:00 dose, then the
    locale needles proven on `pl`, the one complete locale. Shoot the Polish after set with it.
-3. **The document downsample**, while the phone is already in hand and before the code churn starts.
-4. **ADR-0028** — grill it, write it, merge it — then build the gain signal against a driver that is by now
-   correct, so its new card state can be captured the first time.
-5. **Licence attribution**: mechanism decided, then built.
+3. **The two spec judgements in one sitting**, while the phone is already in hand and before the code churn
+   starts: §2's document downsample and §7's `MediaKind` for a tray photo. Same question, same page, same
+   pinch-zoom.
+4. **ADR-0029, then the droppings work** — the long pole, and deliberately not last. Schema 7, the
+   migration, the fixture and the instrumented run are the only things here that can fail in a way that
+   costs days, so they go early enough to fail with time left.
+5. **ADR-0028** — grill it, write it, merge it — then build the gain signal against a driver that is by now
+   correct, so its new card state is captured the first time.
+6. **The two cheap ones together**: §6's entry point and §8's housemates cap. Both change what scenes see,
+   so they land after the driver and before the final matrix run.
+7. **Licence attribution**: mechanism decided, then built.
 
-The two device items sit before the two code items on purpose: they want the phone and no rebuild churn,
-and the driver has to be right *before* it photographs a screen that did not exist last phase.
+The device items sit before the code items on purpose: they want the phone and no rebuild churn, and the
+driver has to be right *before* it photographs states that did not exist last phase — of which this phase
+now has three (the gain card, a five-bunny fluffle, a tray photo).
 
 ## When it closes
 
