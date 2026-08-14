@@ -881,6 +881,29 @@ SCENES = [
     # Reached without SELECT_BUNNY on purpose: Support is the one More row that stays live with no
     # bunny in scope, and the scene is worth more exercising that path than the ordinary one.
     Scene("support", "detail", [("tap", "More"), ("tap", "Support")]),
+    # Attribution (Phase 7.5 §3). "Open-source licences" is deliberately two resources with one
+    # value — the Support row and the screen it opens — which the resolver reports as a needle
+    # naming several strings and then resolves anyway, because both translate to the same words.
+    # That is the benign half of the ambiguity check working as designed.
+    Scene(
+        "licences",
+        "detail",
+        [("tap", "More"), ("tap", "Support"), ("tap", "Open-source licences")],
+    ),
+    # "Read the licence" labels every group whose text ships in the APK — Apache-2.0 and
+    # BSD-3-Clause both — but only Apache's is on screen at the top of the list, with 195 artifacts
+    # between it and the next one. The needle is unambiguous *where the tap happens*, which is the
+    # only place it has to be.
+    Scene(
+        "licence-text",
+        "detail",
+        [
+            ("tap", "More"),
+            ("tap", "Support"),
+            ("tap", "Open-source licences"),
+            ("tap", "Read the licence"),
+        ],
+    ),
     # --- full-bleed content, which has no inner padding of its own to hide behind -------------
     Scene("photos", "full-bleed", [*SELECT_BUNNY, ("tap", "More"), ("tap", "Photos")]),
     # --- forms: a TopAppBar with a save action, fields down to the bottom edge -----------------

@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.licensee)
 }
 
 // Whether this invocation is producing a release artifact. Two configuration-time guards depend on
@@ -207,17 +208,94 @@ ksp {
     arg("room.generateKotlin", "true")
 }
 
-// The exported schemas, shipped inside the *instrumented test* APK as assets.
+// Attribution, generated rather than remembered (Phase 7.5 §3).
 //
-// `MigrationTestHelper` builds a database at an old version by reading that version's JSON at
-// runtime, so `4.json` has to be readable on the device — it is not enough for it to exist in the
-// repository. This is the one line that turns a committed schema file into a testable one.
+// The obligation is over the **resolved runtime classpath**, not the 13 entries in
+// `libs.versions.toml`: Compose alone pulls dozens of transitive artifacts and Apache-2.0 §4 travels
+// with each. Licensee resolves that classpath, so the list cannot go stale behind a dependency bump.
+//
+// Every licence the app ships has to be named here, and that is the point rather than a chore: an
+// artifact whose licence is not on this list **fails the build**, which is the failure a hand-typed
+// list has no way to produce. When it fires, the fix is two things — allow the licence here, and put
+// its text in `src/main/assets/licences/<spdx-id>.txt` so it still travels with the binary.
+//
+// Test dependencies are out of scope automatically: Licensee reads the runtime classpath, so junit,
+// espresso and androidx.test never appear.
+licensee {
+    // 195 of the 201 artifacts, as expected — androidx, Kotlin, Coroutines, Coil, Vico, Room.
+    allow("Apache-2.0")
+    // Exactly one: `androidx.datastore:datastore-preferences-external-protobuf`, androidx's
+    // repackaging of protobuf-javalite. Nobody knew it was here before this plugin was run, which is
+    // the whole argument for generating the list.
+    allow("BSD-3-Clause")
+    // The two that are **not** open-source licences and cannot be bundled: they are Google's terms
+    // of service, hosted by Google, and their text is not ours to ship. Their rows link out instead
+    // — see `LicencesScreen`. `play-services-base`/`-basement`/`-tasks` come in behind ML Kit
+    // (ADR-0009), which is one more thing that leaves with it if the scanner is ever dropped.
+    allowUrl("https://developer.android.com/studio/terms.html") {
+        because("Android Software Development Kit License — Google's own terms, not redistributable")
+    }
+    allowUrl("https://developers.google.com/ml-kit/terms") {
+        because("ML Kit Terms of Service — the same, and it arrives with ADR-0009's scanner")
+    }
+}
+
+/**
+ * Licensee's report, copied into the variant's assets as the one file the app reads.
+ *
+ * A copy rather than pointing the asset source directory straight at the report folder, because that
+ * folder also holds `validation.txt` — a build artifact with no business in an APK.
+ *
+ * Kotlin/Gradle note: `abstract class` with `@get:` annotated abstract properties is Gradle's own
+ * lazy-property idiom — it generates the implementation, and the `Property` types are what let the
+ * value be wired before the task ever runs (roughly a promise that Gradle resolves at execution).
+ */
+abstract class BundleLicences : DefaultTask() {
+    @get:InputFile
+    abstract val artifacts: RegularFileProperty
+
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    @TaskAction
+    fun bundle() {
+        val destination = outputDirectory.get().asFile.resolve(ASSET_NAME)
+        destination.parentFile.mkdirs()
+        artifacts.get().asFile.copyTo(destination, overwrite = true)
+    }
+
+    companion object {
+        const val ASSET_NAME = "licences.json"
+    }
+}
+
 androidComponents {
     onVariants { variant ->
+        // The exported schemas, shipped inside the *instrumented test* APK as assets.
+        //
+        // `MigrationTestHelper` builds a database at an old version by reading that version's JSON at
+        // runtime, so `4.json` has to be readable on the device — it is not enough for it to exist in
+        // the repository. This is the one line that turns a committed schema file into a testable one.
         variant.androidTest
             ?.sources
             ?.assets
             ?.addStaticSourceDirectory("$projectDir/schemas")
+
+        // Per variant on purpose: the debug build genuinely ships `ui-tooling` and the release build
+        // does not, so one shared list would be wrong for whichever variant it was not generated
+        // from. The screen therefore names what *this* binary contains, which is what the obligation
+        // is about.
+        val suffix = variant.name.replaceFirstChar(Char::uppercase)
+        val licenseeTask = "licenseeAndroid$suffix"
+        val bundleTask =
+            tasks.register<BundleLicences>("bundle${suffix}Licences") {
+                artifacts.set(layout.buildDirectory.file("reports/licensee/android$suffix/artifacts.json"))
+                // The report path is Licensee's own convention rather than something it exposes, so
+                // the dependency is declared by name. Wrong here and the build fails on a missing
+                // input file — loudly, not silently with a stale list.
+                dependsOn(licenseeTask)
+            }
+        variant.sources.assets?.addGeneratedSourceDirectory(bundleTask, BundleLicences::outputDirectory)
     }
 }
 

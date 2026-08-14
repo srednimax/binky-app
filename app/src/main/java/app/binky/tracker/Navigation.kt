@@ -74,6 +74,8 @@ import app.binky.tracker.ui.setup.SetupRemindersStep
 import app.binky.tracker.ui.shell.AppShellViewModel
 import app.binky.tracker.ui.shell.BunnySwitcher
 import app.binky.tracker.ui.shell.ShellUiState
+import app.binky.tracker.ui.support.LicenceTextScreen
+import app.binky.tracker.ui.support.LicencesScreen
 import app.binky.tracker.ui.support.SupportScreen
 import app.binky.tracker.ui.vet.VetEditorScreen
 import app.binky.tracker.ui.vet.VetsScreen
@@ -560,7 +562,27 @@ private fun AppShell(
                         )
                     }
                     entry<Backup> { BackupScreen(onBack = { backStack.removeLastOrNull() }) }
-                    entry<Support> { SupportScreen(onBack = { backStack.removeLastOrNull() }) }
+                    entry<Support> {
+                        SupportScreen(
+                            onBack = { backStack.removeLastOrNull() },
+                            onOpenLicences = { backStack.add(Licences) },
+                        )
+                    }
+                    entry<Licences> {
+                        LicencesScreen(
+                            onBack = { backStack.removeLastOrNull() },
+                            onOpenLicenceText = { spdxId, title ->
+                                backStack.add(LicenceText(spdxId, title))
+                            },
+                        )
+                    }
+                    entry<LicenceText> { key ->
+                        LicenceTextScreen(
+                            spdxId = key.spdxId,
+                            title = key.title,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
                     entry<WeightEntry> { key ->
                         WeightEntryScreen(
                             bunnyId = key.bunnyId,

@@ -900,7 +900,21 @@
     <string name="support_no_store_app">Google Play could not be opened on this phone.</string>
     <string name="support_privacy_button">Privacy policy</string>
     <string name="support_no_browser">No browser on this phone to open the page.</string>
+    <string name="support_licences_button">Open-source licences</string>
     <string name="support_version_label">Version</string>
+
+    <!-- Open-source licence attribution, reached from Support. The list itself is generated at build
+         time by app.cash.licensee and is NOT translatable content: dependency names, versions,
+         licence names and licence texts are all English by definition — a translated Apache-2.0 is
+         not Apache-2.0. What the locales get is these seven strings -->
+    <string name="licences_title">Open-source licences</string>
+    <string name="licences_intro">Binky is built on the libraries below. The list comes from the build itself, so it names everything this copy of the app really contains.</string>
+    <string name="licences_read">Read the licence</string>
+    <string name="licences_open_terms">Open the terms</string>
+    <!-- Both of these describe a broken build rather than anything an owner did, so they say what is
+         missing and stop — there is no action to offer -->
+    <string name="licences_unavailable">The licence list could not be read from this build.</string>
+    <string name="licences_text_missing">This licence\'s text is not bundled with the app.</string>
 
     <!-- The photo gallery: one bunny's pictures, reached from More -->
     <string name="photo_which_bunny">Whose photos?</string>

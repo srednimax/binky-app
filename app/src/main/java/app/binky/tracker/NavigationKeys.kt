@@ -139,6 +139,32 @@ data class MedicationCourseEditor(
 @Serializable data object Support : NavKey
 
 /**
+ * Open-source licence attribution, reached from Support — a detail route off a detail route, which
+ * is the first of those in the app and is what the obligation's shape asks for: it belongs *under*
+ * About, not beside it.
+ *
+ * The **third and fourth** routes this file has gained after Phase 1, after [WeightEntry] and
+ * [Support]. The note on [WeightEntry] said a third would be worth writing down, so: the rule that
+ * still holds is that a route is decided before its screen exists, and the rule that plainly does not
+ * is that every route was decided in Phase 1.
+ */
+@Serializable data object Licences : NavKey
+
+/**
+ * One licence's full text, as it ships inside the APK (Phase 7.5 §3).
+ *
+ * [spdxId] names the asset — `licences/Apache-2.0.txt`. [title] is carried rather than looked up, and
+ * this is the one place in the file where a duplicated fact is right: a licence's English name is
+ * fixed by the licence itself, so unlike a bunny's name it has nothing to go stale against, and
+ * deriving it would mean re-parsing the whole generated list to draw one app bar.
+ */
+@Serializable
+data class LicenceText(
+    val spdxId: String,
+    val title: String,
+) : NavKey
+
+/**
  * Backup and restore, reached from Settings (ADR-0005).
  *
  * Its own screen rather than a Settings section: it holds the export scope, the restore flow and
