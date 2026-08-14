@@ -114,6 +114,29 @@ def apply_config(config: Config) -> None:
 def restore_device() -> None:
     shell("settings put global force_fsg_nav_bar 1")
     shell("settings put system accelerometer_rotation 1")
+    set_dnd(False)
+
+
+def set_dnd(on: bool) -> None:
+    """Silence heads-up notifications for the run, and hand them back afterwards.
+
+    **Setup and teardown, not a note in a document.** [reset_to_seeded] recreates the Metacam course
+    whose 20:00 dose is minutes in the past, so a heads-up banner posts a minute or so after *every*
+    seed — over Home, exactly where `SELECT_BUNNY` taps. The tap opens the course instead, and
+    `AUTO_CANCEL` clears the banner on the way, so the evidence afterwards looks impossible: a scene
+    that walked somewhere nobody asked it to, and no notification anywhere to explain it. Two runs
+    were wrecked and a third crippled before it was pinned.
+
+    `set_dnd` and not a revoked `POST_NOTIFICATIONS`: the scenes photograph reminder copy, and an
+    app that cannot post notifications draws a blocked-state banner instead — which would make the
+    screenshots lie about a different thing. Zen suppresses the *presentation* and leaves the app's
+    own state alone (verified: `zen_mode` reads 2 with it on and 0 with it off).
+
+    It is **phone-wide**, which is why every caller's `off` belongs in a `finally`. A crashed run
+    must not leave somebody's phone silent.
+    """
+    shell(f"cmd notification set_dnd {'on' if on else 'off'}")
+    settle(0.5)
 
 
 @dataclass(frozen=True)
@@ -190,6 +213,12 @@ class Node:
     cls: str
     package: str
     clickable: bool
+    # Compose publishes `Modifier.selectable`'s state as the accessibility node's `isSelected`, and
+    # the navigation bar is the only place this app uses it — so exactly one node in a top-level
+    # dump carries it, and it is the current tab. Verified in a dump rather than assumed: the item
+    # itself carries no text (the label is a child `TextView`), which is why [showing_home] compares
+    # rectangles instead of reading it off the labelled node.
+    selected: bool = False
 
     @property
     def label(self) -> str:
@@ -230,6 +259,7 @@ def dump_ui() -> list[Node]:
                 cls=attrs.get("class", ""),
                 package=attrs.get("package", ""),
                 clickable=attrs.get("clickable") == "true",
+                selected=attrs.get("selected") == "true",
             )
         )
     return nodes
@@ -294,9 +324,87 @@ def relaunch() -> None:
     never wrong. `-S` force-stops, and `0x10008000` is `FLAG_ACTIVITY_CLEAR_TASK | NEW_TASK`, which
     drops the record the restore reads from. **A scene must not be able to inherit the last one's
     screen** — that is what makes 61 scenes independent rather than a sequence.
+
+    **Everything above is what the intent *asks* for; [return_to_home] is what checks it.** Measured
+    on 2026-08-14, from a detail route (More → Settings) and from a top-level tab that is not Home
+    (Weight): both relaunches landed on Home with the tab bar up, so on this phone the flags do
+    clear the restored Nav3 stack. That makes the step after this one a verification rather than a
+    repair — which is worth one dump per scene, because the alternative is trusting an argument.
     """
     shell(f"am start -S -n {ACTIVITY} -f 0x10008000")
     wait_for_app()
+
+
+# The two needles the isolation step is built on, both from the shell rather than from any screen.
+# `switcher_open` is drawn inside the TopAppBar the shell shows only while `onDetailScreen` is false
+# (Navigation.kt), so it is exactly the question "is a top-level tab on screen?" — and `Home` is the
+# navigation bar's first item. Naming them here rather than inline is what lets the locale work
+# translate them with the rest of the table.
+TAB_BAR = "Choose which bunny to show"
+HOME_TAB = "Home"
+
+# How many times [return_to_home] may press back before it gives up. Six covers the deepest route in
+# the app (More → Settings → Backup, plus a dialog and an IME) with room to spare; it is a bound
+# rather than a target, and hitting it is a failure and not a retry budget.
+BACK_BOUND = 6
+
+
+def showing_home(nodes: list[Node]) -> bool:
+    """Is the *Home* tab the selected one, rather than merely some top-level tab?
+
+    The distinction is the whole reason this exists. A restored back stack does not have to be a
+    detail route — it can be the Observations tab, which has the tab bar, passes every "are we at
+    the shell?" check, and is still the wrong screen for `home`, `home-bottom` and every scene that
+    taps *Edit* on a profile card.
+
+    The selected navigation item carries no text of its own, so this is geometry: the one node in
+    the dump with `selected="true"` is the current tab, and the *Home* label is inside it exactly
+    when Home is that tab.
+    """
+    label = find(nodes, HOME_TAB)
+    if label is None:
+        return False
+    selected = next((node for node in nodes if node.package == PACKAGE and node.selected), None)
+    return selected is not None and selected.bounds.intersects(label.bounds)
+
+
+def return_to_home() -> None:
+    """Put the app on the Home tab, or fail the scene saying so.
+
+    **What it found, which is not what it was written to fix.** Phase 7 left this owed on the
+    reading that `am start -S -f 0x10008000` does not clear a restored Nav3 back stack. Checked
+    directly on 2026-08-14 — walk to More → Settings, relaunch; walk to the Weight tab, relaunch —
+    and **both came back on Home**. So the flags do their job on this phone, and the 2026-08-12 cell
+    that relaunched into the record-dose screen over and over is better explained by the banner than
+    by the stack: the missed 20:00 dose re-arms at process start (ADR-0025's self-heal), fires
+    immediately because it is already past, and posts a fresh heads-up over *every* scene rather
+    than poisoning one. [set_dnd] is the fix for that, and this is the check that says so — it
+    prints when it has to correct anything, so a run that never prints is evidence about the
+    relaunch and not merely the absence of a complaint.
+
+    **`KEYCODE_BACK` alone is not the fix**, which is why this is bounded and checks first. Backing
+    past Home exits to the launcher and makes every following scene worse, so the loop presses back
+    only while the shell is *not* on screen, and stops the moment it is.
+
+    Failing loudly is the other half. A driver that cannot find Home must not tap into whatever is
+    open — that produces a screenshot of the wrong screen under the right name, which is worse than
+    a skipped scene because it is evidence that looks like evidence.
+    """
+    for _ in range(BACK_BOUND + 1):
+        nodes = dump_ui()
+        if find(nodes, TAB_BAR) is not None:
+            break
+        back()
+    else:
+        visible = ", ".join(sorted({n.label for n in dump_ui() if n.package == PACKAGE and n.label})[:20])
+        raise StepFailed(f"never reached a top-level tab in {BACK_BOUND} backs; on screen: {visible}")
+
+    if not showing_home(nodes):
+        # Only paid when it is actually owed. `tap` verifies by asking the screen whether anything
+        # moved, and on the common path — already at Home — that is three taps and three dumps for
+        # nothing, which is minutes across a four-cell matrix.
+        print("     (restored off Home; corrected)")
+        tap(HOME_TAB)
 
 
 def tap(needle: str, *, optional: bool = False) -> None:
@@ -938,6 +1046,23 @@ def reach_scene(scene: Scene) -> str | None:
             # that is asking too early, and an optional tap does not wait around to be told no.
             settle(1.2)
             tap("Close it", optional=True)
+            # After the prompt, never before: the prompt sits over whatever route was restored, and
+            # closing it first means [return_to_home] reads the screen underneath rather than a
+            # dialog's window.
+            #
+            # **`full` only, and that is a rule about which suites can be lost rather than a
+            # shortcut.** Every `empty` scene opens with its own `wipe`, which clears saved state
+            # outright and lands on the wizard — where there is no tab bar and this would fail every
+            # scene in the suite. `mismatch` replaces the whole screen with a chrome-free one before
+            # anything is captured. Both isolate themselves; only `full` inherits.
+            if scene.suite == "full":
+                return_to_home()
+        # `keeps_watch_prompt` scenes get neither step, deliberately. Back **is** an answer to the
+        # expiry prompt — `BinkyDialog`'s `onDismiss` is `onClose`, and closing deletes the row
+        # (WatchExpiry.kt: "close, dismiss and swipe-away are one action") — so a driver that backed
+        # its way to Home here would destroy the one expired watch the seed leaves, for this cell
+        # and every cell after it. They are safe without it: they run first in each cell, directly
+        # after the `pm clear` inside [reset_to_seeded], which leaves no saved state to restore.
         for kind, arg in scene.steps:
             STEP_RUNNERS[kind](arg)
     except StepFailed as error:
@@ -985,7 +1110,7 @@ def main() -> int:
 
     if args.restore:
         restore_device()
-        print("rotation and navigation mode handed back to the phone")
+        print("rotation, navigation mode and Do Not Disturb handed back to the phone")
         return 0
 
     if not args.out:
@@ -1002,9 +1127,13 @@ def main() -> int:
 
     report = {"configs": []}
     report_path = args.out / f"report-{args.suite}.json"
+    set_dnd(True)
     try:
         run_matrix(report, configs, scenes, args.out, args.suite, report_path)
     finally:
+        # First in the block, because it is the one piece of cleanup that is about the *phone*
+        # rather than about this run's output.
+        set_dnd(False)
         # The mismatch suite leaves a deliberately corrupted database behind, so putting it back is
         # the one piece of cleanup that must happen even when a scene throws — a run that crashed
         # halfway is exactly when an app left unopenable is hardest to explain.
