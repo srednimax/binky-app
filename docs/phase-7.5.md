@@ -288,6 +288,43 @@ see. Splitting the three fields by whether they describe a quantity or a mixture
 has to make, and getting it wrong in the other direction — multiselecting amount — would make the field
 meaningless rather than merely awkward.
 
+### The vocabulary is incomplete, and one value is a trap
+
+Checked 2026-08-14 against veterinary guidance and against the app's *other* vocabulary. What is covered is
+covered well — `NONE` amount is the stasis emergency, and **`SOFT` and `DIARRHOEA` are separate values**,
+which matches the sources and avoids the classic owner error of filing uneaten caecotrophs as diarrhoea.
+`symptom_dirty_bottom` already covers the smeared-caecotroph presentation, so that is not a gap.
+
+**`STRUNG_TOGETHER` silently absorbs a different sign, and that is worse than a gap.** The value means
+strung *with fur* — moulting. Mucus presents identically: thick pale goop strung between the pellets, often
+enclosing them. An owner seeing mucus would reasonably pick the fur value, and the app would record moulting
+where the sign was gut irritation. **Mucus needs its own value because the existing one is a trap for it**,
+which is the same argument the entity doc already makes for `STRUNG_TOGETHER` existing at all.
+
+**Blood is absent, and the absence is asymmetric.** The seeded symptom list carries
+`symptom_blood_in_urine` — and red rabbit urine is usually harmless porphyrins. **There is nowhere in the
+app to record blood in droppings**, which is the one that is always serious. The app has a field for the
+false alarm and none for the real one.
+
+**Decided 2026-08-14: close the gaps with values, add no new field.** `DroppingsForm` gains **`MUCUS`,
+`BLOOD`, `VERY_DARK`** (melena reads fine as a form value — *"very dark, tarry"*), **`DOUBLED`** (fused
+pellets are specifically a slowing-motility sign, not general misshapenness) and **`DRY`** (dehydration,
+today only inferrable from `SMALL`). `Cecotropes` gains **`EXCESS`**, which its own doc already anticipates.
+
+**A colour field was rejected on cost, not on tidiness.** The observation form already carries droppings ×3,
+caecotropes, appetite, mood, activity, water, note and symptoms — and §6's one-tap healthy day exists
+*because* a long form deters logging, which is ADR-0001's silence problem wearing a UI costume. Values on a
+multiselect cost nothing on screen when unused; a colour row costs height on every observation forever, to
+carry *pale* and *greenish* — the two weakest and most ambiguous signals in the set. They stay out.
+
+Adding values is safe on the data axis: enums are stored **by name, never ordinal**, so a sixth
+`DroppingsForm` value cannot rewrite history — and §7 is already opening this field.
+
+**The line ADR-0029 has to hold:** several of these values are alarming by nature, and **the app records them
+without commenting**. No per-value urgency copy, no "see a vet now" attached to `BLOOD` — that is advice, and
+ADR-0026 forbids it. The register is the trend flag's: state the fact, and let the existing *"not a
+diagnosis; if you are worried, ask a vet"* do the rest.
+
 **The photo.** Observations carry no media today. A dropping photo is tray-level like the rest, so it
 belongs to the observation *group*, not to a bunny, and it goes through `MediaFiles` per the house rule —
 which raises a genuine spec question this phase is already equipped to answer: **pellet shape is closer to
