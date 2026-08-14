@@ -61,8 +61,11 @@ import app.binky.tracker.ui.documents.DocumentsScreen
 import app.binky.tracker.ui.home.HomeScreen
 import app.binky.tracker.ui.more.MoreScreen
 import app.binky.tracker.ui.observations.ChooseBunnyDialog
+import app.binky.tracker.ui.observations.HealthyDaySnackbar
+import app.binky.tracker.ui.observations.HealthyDayViewModel
 import app.binky.tracker.ui.observations.ObservationEntryScreen
 import app.binky.tracker.ui.observations.ObservationsScreen
+import app.binky.tracker.ui.observations.RecordDaySheet
 import app.binky.tracker.ui.photos.PhotoGalleryScreen
 import app.binky.tracker.ui.settings.SettingsScreen
 import app.binky.tracker.ui.setup.SetupBackupStep
@@ -242,10 +245,26 @@ private fun AppShell(
     val current = backStack.lastOrNull { it.asTopLevelDestination() != null }?.asTopLevelDestination()
     val onDetailScreen = backStack.lastOrNull()?.asTopLevelDestination() == null
 
+    // **The "+" opens a chooser, not the form** (Phase 7.5 §6). Both ways to record a day are behind
+    // it now — the one-tap healthy day and the full observation — because the app used to offer them
+    // in two unrelated places with the *longer* one on the discoverable button. See [RecordDaySheet].
+    var recordingDay by rememberSaveable { mutableStateOf(false) }
+
     // The "which bunny?" step the global "+" takes under "All bunnies" (ADR-0008). Lives here rather
     // than in a screen because the FAB does, and the FAB is in the shell precisely so it is the same
     // button on Home and on Observations.
     var choosingBunny by rememberSaveable { mutableStateOf(false) }
+
+    // The same question for the healthy day, kept as its own flag for the reason the three below
+    // are: two dialogs sharing one would answer each other's question. Under "All bunnies" there is
+    // no fluffle to pre-select from, so the one-tap write asks who it is about rather than sweeping
+    // a tray fact across bunnies that share no tray (ADR-0008).
+    var choosingForHealthyDay by rememberSaveable { mutableStateOf(false) }
+
+    // Shell-scoped, because the button that starts it is: the "+" is the same button on Home and on
+    // Observations, and the receipt's snackbar belongs to the Scaffold below for the same reason.
+    val healthyDayViewModel: HealthyDayViewModel = viewModel(factory = HealthyDayViewModel.Factory)
+    val receipt by healthyDayViewModel.receipt.collectAsStateWithLifecycle()
 
     // The same step for More's photo gallery, which is per-bunny for the same reason: "All bunnies"
     // is not a gallery, it is several. Kept as its own flag rather than shared with the "+" so the
@@ -261,6 +280,13 @@ private fun AppShell(
     // Undo the owner can see and cannot press. Material3's Scaffold lifts the FAB above whatever its
     // own snackbar host is showing; that only works if it owns both.
     val snackbarHostState = remember { SnackbarHostState() }
+
+    HealthyDaySnackbar(
+        receipt = receipt,
+        hostState = snackbarHostState,
+        onUndo = healthyDayViewModel::undoHealthyDay,
+        onDismiss = healthyDayViewModel::dismissReceipt,
+    )
 
     // **Where a reminder notification lands** (PLAN 4c, 4d). A tap writes the app-wide selection
     // through the same path the switcher uses and *then* hands the back stack a destination,
@@ -362,15 +388,7 @@ private fun AppShell(
         },
         floatingActionButton = {
             if (!onDetailScreen && current.offersLogObservation && state.canLogObservation) {
-                FloatingActionButton(
-                    onClick = {
-                        // Under "All bunnies" there is no fluffle to pre-select from, so the scope
-                        // asks which bunny before opening the form (ADR-0008). One bunny in scope
-                        // goes straight there.
-                        val bunnyId = state.selection.bunnyId
-                        if (bunnyId != null) backStack.add(LogObservation(bunnyId)) else choosingBunny = true
-                    },
-                ) {
+                FloatingActionButton(onClick = { recordingDay = true }) {
                     Icon(
                         imageVector = Icons.Filled.Add,
                         contentDescription = stringResource(R.string.observation_add_title),
@@ -433,8 +451,6 @@ private fun AppShell(
                     }
                     entry<Observations> {
                         ObservationsScreen(
-                            shell = state,
-                            snackbarHostState = snackbarHostState,
                             onEditObservation = { bunnyId, observationId ->
                                 backStack.add(LogObservation(bunnyId, observationId))
                             },
@@ -642,6 +658,37 @@ private fun AppShell(
                         )
                     }
                 },
+        )
+    }
+
+    if (recordingDay) {
+        RecordDaySheet(
+            // Under "All bunnies" there is no fluffle to pre-select from, so either path asks which
+            // bunny before it writes anything (ADR-0008). One bunny in scope goes straight through
+            // — the healthy day stays a *tap* rather than becoming a form.
+            onHealthyDay = {
+                recordingDay = false
+                val bunnyId = state.selection.bunnyId
+                if (bunnyId != null) healthyDayViewModel.logHealthyDay(bunnyId) else choosingForHealthyDay = true
+            },
+            onObservation = {
+                recordingDay = false
+                val bunnyId = state.selection.bunnyId
+                if (bunnyId != null) backStack.add(LogObservation(bunnyId)) else choosingBunny = true
+            },
+            onDismiss = { recordingDay = false },
+        )
+    }
+
+    if (choosingForHealthyDay) {
+        ChooseBunnyDialog(
+            title = stringResource(R.string.healthy_day_which_bunny),
+            bunnies = state.activeBunnies,
+            onPick = { bunnyId ->
+                choosingForHealthyDay = false
+                healthyDayViewModel.logHealthyDay(bunnyId)
+            },
+            onDismiss = { choosingForHealthyDay = false },
         )
     }
 

@@ -19,20 +19,13 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,57 +52,37 @@ import app.binky.tracker.ui.common.ChipRow
 import app.binky.tracker.ui.common.DenseFactRow
 import app.binky.tracker.ui.common.FabClearance
 import app.binky.tracker.ui.common.GroupedCard
-import app.binky.tracker.ui.common.HelpText
-import app.binky.tracker.ui.common.RecordButtonHeight
-import app.binky.tracker.ui.common.RecordButtonRadius
 import app.binky.tracker.ui.common.SectionHeader
 import app.binky.tracker.ui.common.TagChip
-import app.binky.tracker.ui.shell.ShellUiState
 import app.binky.tracker.ui.weight.timeLabel
 import coil3.compose.AsyncImage
 import java.io.File
 import java.time.ZoneId
 
 /**
- * Observations — the day-grouped timeline, and the one-tap healthy day.
+ * Observations — the day-grouped timeline.
  *
  * Under "All bunnies" this is the **combined** timeline across every active bunny, with rows sharing
  * a group id collapsed into one entry; selecting a bunny *filters* it. Because an observation can
  * cover several bunnies at once (ADR-0008), the single-bunny view is the special case here — the
  * opposite way round from Weight (ADR-0015).
  *
- * In the archived scope it renders read-only: no "+", no healthy day, no per-row edit or delete
- * (ADR-0004).
+ * In the archived scope it renders read-only: no "+", no per-row edit or delete (ADR-0004).
+ *
+ * **The healthy day is no longer a button on this screen.** Both ways to record a day are behind the
+ * shell's "+" now — see [RecordDaySheet] for why one entry point rather than two (Phase 7.5 §6).
  *
  * No Compose UI tests (ADR-0012, as in 1c); the collapse and the day grouping beneath are covered by
  * `ObservationTimelineTest`.
  */
 @Composable
 fun ObservationsScreen(
-    shell: ShellUiState,
-    /**
-     * The **shell's** host, not one of this screen's own: it has to be the same Scaffold that owns
-     * the "+" FAB, or the FAB lands on top of the Undo action. See `Navigation.kt`.
-     */
-    snackbarHostState: SnackbarHostState,
     onEditObservation: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: ObservationsViewModel =
         viewModel(factory = ObservationsViewModel.Factory, extras = appViewModelExtras())
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-
-    // Under "All bunnies" there is no bunny to pre-select a fluffle from, so both write paths ask
-    // which bunny first rather than sweeping one tray fact across bunnies that share no tray
-    // (ADR-0008). The single-bunny path is untouched and stays one tap.
-    var choosingForHealthyDay by rememberSaveable { mutableStateOf(false) }
-
-    HealthyDaySnackbar(
-        receipt = state.receipt,
-        hostState = snackbarHostState,
-        onUndo = viewModel::undoHealthyDay,
-        onDismiss = viewModel::dismissReceipt,
-    )
 
     Box(modifier = modifier.fillMaxSize()) {
         when (state.selection) {
@@ -124,10 +97,6 @@ fun ObservationsScreen(
             else ->
                 Timeline(
                     state = state,
-                    onHealthyDay = {
-                        val bunnyId = state.bunnyId
-                        if (bunnyId != null) viewModel.logHealthyDay(bunnyId) else choosingForHealthyDay = true
-                    },
                     onEdit = { entry ->
                         val participant = entry.participants.first { it.observationId == entry.id }
                         onEditObservation(participant.bunnyId, entry.id)
@@ -135,18 +104,6 @@ fun ObservationsScreen(
                     onDelete = viewModel::requestDelete,
                 )
         }
-    }
-
-    if (choosingForHealthyDay) {
-        ChooseBunnyDialog(
-            title = stringResource(R.string.healthy_day_which_bunny),
-            bunnies = shell.activeBunnies,
-            onPick = { bunnyId ->
-                choosingForHealthyDay = false
-                viewModel.logHealthyDay(bunnyId)
-            },
-            onDismiss = { choosingForHealthyDay = false },
-        )
     }
 
     state.pendingDelete?.let { entry ->
@@ -158,61 +115,9 @@ fun ObservationsScreen(
     }
 }
 
-/**
- * The snackbar that names who the healthy day covered, with **Undo** (ADR-0008).
- *
- * A `LaunchedEffect` keyed on the receipt, because `showSnackbar` suspends until the snackbar is
- * dismissed or its action is tapped — the Compose way of saying "show this, then tell me what
- * happened". There is no promise equivalent; the nearest is an effect that awaits a user event.
- */
-@Composable
-private fun HealthyDaySnackbar(
-    receipt: HealthyDayReceipt?,
-    hostState: SnackbarHostState,
-    onUndo: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val resources = LocalResources.current
-    val message =
-        receipt?.let {
-            // The flag is named beside the bunny it belongs to rather than in a trailing clause, so
-            // "Bijou (weight flag) & Nugget" cannot be misread as covering both.
-            val names =
-                it.names.map { name ->
-                    if (name in it.flaggedNames) resources.getString(R.string.healthy_day_name_flagged, name) else name
-                }
-            val logged = resources.getString(R.string.healthy_day_logged, joinNames(resources, names))
-            // ADR-0008 wants the exclusion *and* its reason, and this is the only surface the
-            // one-tap path has to put the reason on. Appended rather than shown as a second
-            // snackbar: two in a row would make the owner wait to reach Undo, and the whole point
-            // of the receipt is that a wrong attribution is reversible immediately.
-            if (it.watchedOutNames.isEmpty()) {
-                logged
-            } else {
-                logged + " " +
-                    resources.getQuantityString(
-                        R.plurals.healthy_day_excluded_watch,
-                        it.watchedOutNames.size,
-                        joinNames(resources, it.watchedOutNames),
-                    )
-            }
-        }
-    val undoLabel = stringResource(R.string.action_undo)
-
-    LaunchedEffect(receipt) {
-        if (message == null) return@LaunchedEffect
-        val result = hostState.showSnackbar(message = message, actionLabel = undoLabel)
-        when (result) {
-            SnackbarResult.ActionPerformed -> onUndo()
-            SnackbarResult.Dismissed -> onDismiss()
-        }
-    }
-}
-
 @Composable
 private fun Timeline(
     state: ObservationsUiState,
-    onHealthyDay: () -> Unit,
     onEdit: (TimelineEntry) -> Unit,
     onDelete: (TimelineEntry) -> Unit,
     modifier: Modifier = Modifier,
@@ -232,26 +137,6 @@ private fun Timeline(
                 bottom = FabClearance,
             ),
     ) {
-        if (!state.readOnly) {
-            item {
-                Button(
-                    onClick = onHealthyDay,
-                    modifier = Modifier.fillMaxWidth().height(RecordButtonHeight),
-                    shape = RoundedCornerShape(RecordButtonRadius),
-                ) {
-                    Text(stringResource(R.string.healthy_day_action))
-                }
-                Spacer(Modifier.height(Spacing.hair))
-                // The button names what it records, because one tap commits facts on the owner's
-                // behalf and they are entitled to know which (ADR-0001). Spacing.hair from the
-                // button, so it reads as that button's footnote and not as the next thing down.
-                HelpText(
-                    text = stringResource(R.string.healthy_day_help),
-                    modifier = Modifier.padding(horizontal = Spacing.hair),
-                )
-            }
-        }
-
         if (state.isEmpty) {
             item {
                 Spacer(Modifier.height(Spacing.section))
@@ -267,9 +152,11 @@ private fun Timeline(
 
         state.days.forEachIndexed { dayIndex, day ->
             item(key = "day-${day.date}") {
-                // Nothing above the very first header in the archived scope, where there is no
-                // button — a section gap against the top of the screen is a hole, not a rhythm.
-                if (dayIndex > 0 || !state.readOnly) Spacer(Modifier.height(Spacing.section))
+                // Nothing above the very first header: the timeline now starts at the top of the
+                // screen in every scope — the healthy-day button that used to sit above it moved to
+                // the "+" (Phase 7.5 §6) — and a section gap against the top is a hole, not a
+                // rhythm.
+                if (dayIndex > 0) Spacer(Modifier.height(Spacing.section))
                 SectionHeader(dateLabel(day.date))
                 Spacer(Modifier.height(Spacing.tight))
             }
