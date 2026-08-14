@@ -319,18 +319,20 @@
     <string name="backup_auto_stale">The last automatic backup was on %1$s — more than two weeks ago. Something may have turned it off.</string>
     <string name="backup_auto_photos">It covers your records, your settings and your bunny avatars. Your photo gallery is not in it.</string>
     <!-- Said out loud rather than left to be discovered at a restore: Android's automatic backup has
-         a size limit, and documents are the first thing to go over it. The manual export has no
-         limit, which is why the sentence ends with the way out rather than with the problem. -->
+         a size limit, and the record-grade images are the first thing to go over it. Both kinds are
+         named, because "photos" alone would be read as the gallery — which is never in an automatic
+         backup at all, and is a different sentence. The manual export has no limit, which is why this
+         one ends with the way out rather than with the problem. -->
     <plurals name="backup_auto_excluded">
-        <item quantity="one">%d document was too large to include. Use manual export to keep it.</item>
-        <item quantity="other">%d documents were too large to include. Use manual export to keep them.</item>
+        <item quantity="one">%d document or tray photo was too large to include. Use manual export to keep it.</item>
+        <item quantity="other">%d documents and tray photos were too large to include. Use manual export to keep them.</item>
     </plurals>
     <string name="backup_auto_settings_action">Open Android backup settings</string>
 
-    <string name="backup_excluded_notification_title">Some documents are not backed up</string>
+    <string name="backup_excluded_notification_title">Some documents and tray photos are not backed up</string>
     <plurals name="backup_excluded_notification_text">
-        <item quantity="one">Android\'s automatic backup could not fit %d document. Export manually to keep a copy of it.</item>
-        <item quantity="other">Android\'s automatic backup could not fit %d documents. Export manually to keep a copy of them.</item>
+        <item quantity="one">Android\'s automatic backup could not fit %d document or tray photo. Export manually to keep a copy of it.</item>
+        <item quantity="other">Android\'s automatic backup could not fit %d documents and tray photos. Export manually to keep a copy of them.</item>
     </plurals>
 
     <string name="backup_scope_title">What an export includes</string>
@@ -338,7 +340,7 @@
     <string name="backup_scope_records">Records</string>
     <string name="backup_scope_everything">Everything</string>
     <string name="backup_scope_essential_help">Your records, your settings, and bunny avatars. The smallest useful backup.</string>
-    <string name="backup_scope_records_help">Everything in Essential, plus scanned documents — everything you might need again.</string>
+    <string name="backup_scope_records_help">Everything in Essential, plus scanned documents and tray photos — everything you might need again.</string>
     <string name="backup_scope_everything_help">Everything in Records, plus your photo gallery. Much larger, and the only backup your photos ever get.</string>
     <string name="backup_photos_warning">Your photos are the least protected thing in Binky. Android\'s automatic backup leaves the gallery out, and so do Essential and Records. An “Everything” export is the only copy your photos will ever have.</string>
     <string name="backup_export_action">Export a backup</string>
@@ -445,14 +447,24 @@
     <string name="droppings_size_normal">Normal</string>
     <string name="droppings_size_large">Large</string>
 
-    <string name="droppings_form_round">Round</string>
-    <string name="droppings_form_misshapen">Misshapen</string>
-    <string name="droppings_form_strung_together">Strung together</string>
-    <string name="droppings_form_soft">Soft</string>
-    <string name="droppings_form_diarrhoea">Diarrhoea</string>
+    <!-- What the droppings looked like. Several can be true of one tray at once, and the app records
+         every one of them without saying a word about what it means: no "see a vet" on Blood, because
+         that is advice (ADR-0026). "with fur" is load-bearing — mucus looks the same, and an
+         unqualified "Strung together" is the chip an owner seeing gut irritation would tap. -->
+    <string name="droppings_appearance_round">Round</string>
+    <string name="droppings_appearance_misshapen">Misshapen</string>
+    <string name="droppings_appearance_doubled">Doubled or fused</string>
+    <string name="droppings_appearance_dry">Dry or hard</string>
+    <string name="droppings_appearance_strung_together">Strung together with fur</string>
+    <string name="droppings_appearance_mucus">Mucus or slime</string>
+    <string name="droppings_appearance_soft">Soft</string>
+    <string name="droppings_appearance_diarrhoea">Diarrhoea</string>
+    <string name="droppings_appearance_very_dark">Very dark or tarry</string>
+    <string name="droppings_appearance_blood">Blood</string>
 
     <string name="cecotropes_eaten">Eaten</string>
     <string name="cecotropes_left_uneaten">Left uneaten</string>
+    <string name="cecotropes_excess">Many left uneaten</string>
 
     <string name="appetite_none">Not eating</string>
     <string name="appetite_reduced">Eating less</string>
@@ -511,8 +523,14 @@
     <string name="observation_tray_shared_help">Recorded once, for everyone this covers — a shared tray cannot be told apart per bunny.</string>
     <string name="observation_droppings_amount_label">How many droppings</string>
     <string name="observation_droppings_size_label">Size</string>
-    <string name="observation_droppings_form_label">Shape</string>
+    <string name="observation_droppings_appearance_label">Appearance</string>
     <string name="observation_cecotropes_label">Cecotropes</string>
+    <string name="observation_tray_photo_label">Photo of the tray</string>
+    <!-- About the light, not about the camera: on a tray half in sun and half in shade, shape is
+         already hard to read in the shadow at any quality, and no file size fixes that. -->
+    <string name="observation_tray_photo_help">Even, indirect light shows shape best — pellets in shadow are hard to read later.</string>
+    <string name="observation_tray_photo_description">The litter tray</string>
+    <string name="observation_tray_photo_unreadable">Binky could not read that image, so nothing was attached.</string>
 
     <string name="observation_individual_heading">This bunny</string>
     <string name="observation_individual_heading_named">%1$s</string>

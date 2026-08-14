@@ -9,6 +9,8 @@ import app.binky.tracker.AppContainer
 import app.binky.tracker.BinkyApplication
 import app.binky.tracker.data.BunnyEntity
 import app.binky.tracker.data.BunnySelection
+import app.binky.tracker.data.DroppingsAppearance
+import app.binky.tracker.data.DroppingsSize
 import app.binky.tracker.data.ObservationEntity
 import app.binky.tracker.data.ParticipantExclusion
 import app.binky.tracker.data.SymptomEntity
@@ -98,6 +100,23 @@ class ObservationsViewModel(
     private val fluffles = container.fluffleRepository
     private val weights = container.weightRepository
     private val watches = container.watchRepository
+    private val media = container.mediaFiles
+
+    /**
+     * Turns each entry's relative tray-photo path into a file to draw.
+     *
+     * Here rather than in [buildTimeline], because that function has no Android in it on purpose —
+     * the collapse rule is a JVM test, and only `MediaFiles` knows what a stored path is relative to.
+     */
+    private fun List<TimelineDay>.withResolvedTrayPhotos(): List<TimelineDay> =
+        map { day ->
+            day.copy(
+                entries =
+                    day.entries.map { entry ->
+                        entry.copy(trayPhoto = entry.tray.trayPhotoPath?.let(media::resolve))
+                    },
+            )
+        }
 
     private val pendingDelete = MutableStateFlow<TimelineEntry?>(null)
     private val receipt = MutableStateFlow<HealthyDayReceipt?>(null)
@@ -107,6 +126,36 @@ class ObservationsViewModel(
         val active: List<BunnyEntity>,
         val archived: List<BunnyEntity>,
     )
+
+    /**
+     * The three join-table reads the timeline needs, folded into one flow.
+     *
+     * Kotlin note: `combine` is typed only up to five flows — past that it degrades to
+     * `Array<Any?>` and every field needs a cast. Two of these arrived with schema 7 (ADR-0029),
+     * which would have taken the outer combine to seven, so they are combined here instead. Nothing
+     * clever: it is the same fan-in, one level down, with the types kept.
+     */
+    private data class ObservationLinks(
+        val symptomIds: Map<String, Set<String>> = emptyMap(),
+        val droppingsAppearance: Map<String, Set<DroppingsAppearance>> = emptyMap(),
+        val droppingsSizes: Map<String, Set<DroppingsSize>> = emptyMap(),
+    )
+
+    private val links: kotlinx.coroutines.flow.Flow<ObservationLinks> =
+        combine(
+            observations.symptomLinks,
+            observations.droppingsAppearance,
+            observations.droppingsSizes,
+        ) { symptomLinks, appearance, sizes ->
+            ObservationLinks(
+                symptomIds =
+                    symptomLinks.groupBy { it.observationId }.mapValues { (_, l) ->
+                        l.map { it.symptomId }.toSet()
+                    },
+                droppingsAppearance = appearance,
+                droppingsSizes = sizes,
+            )
+        }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<ObservationsUiState> =
@@ -134,23 +183,22 @@ class ObservationsViewModel(
 
                 combine(
                     rows,
-                    observations.symptomLinks,
+                    links,
                     container.symptomRepository.allSymptoms,
                     pendingDelete,
                     receipt,
-                ) { observationRows, links, symptoms, pending, healthyDay ->
+                ) { observationRows, joins, symptoms, pending, healthyDay ->
                     ObservationsUiState(
                         selection = scope.selection,
                         days =
                             buildTimeline(
                                 rows = observationRows,
                                 names = names,
-                                symptomIds =
-                                    links.groupBy { it.observationId }.mapValues { (_, l) ->
-                                        l.map { it.symptomId }.toSet()
-                                    },
+                                symptomIds = joins.symptomIds,
+                                droppingsSizes = joins.droppingsSizes,
+                                droppingsAppearance = joins.droppingsAppearance,
                                 focusBunnyId = bunnyId,
-                            ),
+                            ).withResolvedTrayPhotos(),
                         symptoms = symptoms,
                         pendingDelete = pending,
                         receipt = healthyDay,

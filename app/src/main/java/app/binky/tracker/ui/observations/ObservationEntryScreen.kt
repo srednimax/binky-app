@@ -1,5 +1,9 @@
 package app.binky.tracker.ui.observations
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -7,14 +11,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChipDefaults
@@ -28,10 +35,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -42,7 +54,7 @@ import app.binky.tracker.data.ActivityLevel
 import app.binky.tracker.data.Appetite
 import app.binky.tracker.data.Cecotropes
 import app.binky.tracker.data.DroppingsAmount
-import app.binky.tracker.data.DroppingsForm
+import app.binky.tracker.data.DroppingsAppearance
 import app.binky.tracker.data.DroppingsSize
 import app.binky.tracker.data.Mood
 import app.binky.tracker.data.ParticipantExclusion
@@ -59,6 +71,8 @@ import app.binky.tracker.ui.common.NoteField
 import app.binky.tracker.ui.common.PickerOption
 import app.binky.tracker.ui.common.RecordedAtField
 import app.binky.tracker.ui.common.SearchablePickerDialog
+import app.binky.tracker.ui.common.newCameraTarget
+import coil3.compose.AsyncImage
 
 /**
  * Add or edit one observation — the screen behind the global "+" (ADR-0015), and the durable review
@@ -234,19 +248,19 @@ private fun TraySection(
             optionLabel = { label(it) },
             onSelect = viewModel::onDroppingsAmountChanged,
         )
-        NullableChoiceField(
+        MultiChoiceField(
             label = stringResource(R.string.observation_droppings_size_label),
             options = DroppingsSize.entries,
-            selected = state.tray.droppingsSize,
+            selected = state.tray.droppingsSizes,
             optionLabel = { label(it) },
-            onSelect = viewModel::onDroppingsSizeChanged,
+            onToggle = viewModel::toggleDroppingsSize,
         )
-        NullableChoiceField(
-            label = stringResource(R.string.observation_droppings_form_label),
-            options = DroppingsForm.entries,
-            selected = state.tray.droppingsForm,
+        MultiChoiceField(
+            label = stringResource(R.string.observation_droppings_appearance_label),
+            options = DroppingsAppearance.entries,
+            selected = state.tray.droppingsAppearance,
             optionLabel = { label(it) },
-            onSelect = viewModel::onDroppingsFormChanged,
+            onToggle = viewModel::toggleDroppingsAppearance,
         )
         NullableChoiceField(
             label = stringResource(R.string.observation_cecotropes_label),
@@ -255,6 +269,120 @@ private fun TraySection(
             optionLabel = { label(it) },
             onSelect = viewModel::onCecotropesChanged,
         )
+        TrayPhotoField(state = state, viewModel = viewModel)
+    }
+}
+
+/**
+ * One photo of the tray — tray-level like everything above it, so it lands on every participant's row
+ * and one file serves the whole group (ADR-0029).
+ *
+ * **Both entry points are the ordinary photo path**, camera or picker, and the document scanner is
+ * deliberately not offered: ML Kit clips the highlights and edge-enhances, which destroys pellet
+ * outlines exactly where the light was good.
+ *
+ * The help line is about **lighting rather than the camera**, and it is the one thing the device
+ * judgement found that no downsample spec can fix: on a tray half in sun and half in shade, shape is
+ * already marginal in the shadow at any quality. It is a note about how to look, which is the only
+ * kind of advice this app gives (ADR-0026).
+ */
+@Composable
+private fun TrayPhotoField(
+    state: ObservationEntryUiState,
+    viewModel: ObservationEntryViewModel,
+) {
+    val context = LocalContext.current
+    // Saveable because the camera app is in front of us when a low-memory kill lands.
+    var cameraTarget by rememberSaveable { mutableStateOf<Uri?>(null) }
+    val takePhoto =
+        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
+            if (taken) cameraTarget?.let(viewModel::onTrayPhotoPicked)
+        }
+    val pickPhoto =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            // Photo Picker: no storage permission, and only the picture the owner tapped is exposed.
+            uri?.let(viewModel::onTrayPhotoPicked)
+        }
+
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+        FieldLabel(stringResource(R.string.observation_tray_photo_label))
+
+        state.trayPhoto?.let { file ->
+            val missing = rememberVectorPainter(Icons.Filled.Info)
+            AsyncImage(
+                model = remember(file) { Uri.fromFile(file) },
+                contentDescription = stringResource(R.string.observation_tray_photo_description),
+                contentScale = ContentScale.Crop,
+                // A restore may legitimately lack its media, so a missing file is a placeholder and
+                // never a crash (house rule).
+                error = missing,
+                fallback = missing,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(TrayPhotoHeight)
+                        .clip(RoundedCornerShape(Spacing.tight)),
+            )
+        }
+
+        ChipRow {
+            TextButton(
+                onClick = {
+                    val target = newCameraTarget(context)
+                    cameraTarget = target
+                    takePhoto.launch(target)
+                },
+            ) { Text(stringResource(R.string.photo_add_take)) }
+            TextButton(
+                onClick = {
+                    pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+            ) { Text(stringResource(R.string.photo_add_choose)) }
+            if (state.trayPhoto != null) {
+                TextButton(onClick = viewModel::onTrayPhotoCleared) {
+                    Text(stringResource(R.string.action_clear))
+                }
+            }
+        }
+        HelpText(stringResource(R.string.observation_tray_photo_help))
+        if (state.trayPhotoUnreadable) {
+            ErrorText(stringResource(R.string.observation_tray_photo_unreadable))
+        }
+    }
+}
+
+/** Tall enough to read a tray at a glance, short enough not to push the rest of the card off screen. */
+private val TrayPhotoHeight = 180.dp
+
+/**
+ * A closed vocabulary where **more than one answer can be true at once** — one tray really does hold
+ * round pellets and soft ones (ADR-0029).
+ *
+ * **No "Not checked" chip, and that is the difference from [NullableChoiceField] rather than an
+ * omission.** There, `null` is a value the column stores and a chip is how the owner sets it back.
+ * Here absence is *no chips lit*, which the owner reaches by unticking — so a "Not checked" chip
+ * would be a toggle that clears the others, and a second way to say the same thing. The field still
+ * never reads as "normal" when nothing is lit: an empty set prints no line in the timeline at all.
+ */
+@Composable
+private fun <T> MultiChoiceField(
+    label: String,
+    options: List<T>,
+    selected: Set<T>,
+    optionLabel: @Composable (T) -> String,
+    onToggle: (T) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
+        FieldLabel(label)
+        ChipRow {
+            options.forEach { option ->
+                FormChip(
+                    selected = option in selected,
+                    onClick = { onToggle(option) },
+                    label = optionLabel(option),
+                )
+            }
+        }
     }
 }
 

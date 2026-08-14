@@ -311,20 +311,22 @@
     <string name="backup_auto_recorded">Ostatnia automatyczna kopia zapasowa: %1$s.</string>
     <string name="backup_auto_stale">Ostatnia automatyczna kopia zapasowa powstała %1$s — ponad dwa tygodnie temu. Coś mogło ją wyłączyć.</string>
     <string name="backup_auto_photos">Obejmuje zapisy, ustawienia i zdjęcia profilowe królików. Galerii zdjęć w niej nie ma.</string>
+    <!-- Bezosobowo i z liczbą na początku, bo "dokument lub zdjęcie" ma dwa rodzaje i żadna forma
+         czasownika nie zgadza się z obydwoma. -->
     <plurals name="backup_auto_excluded">
-        <item quantity="one">%d dokument był zbyt duży, żeby się zmieścić. Zrób ręczny eksport, żeby go zachować.</item>
-        <item quantity="few">%d dokumenty były zbyt duże, żeby się zmieściły. Zrób ręczny eksport, żeby je zachować.</item>
-        <item quantity="many">%d dokumentów było zbyt dużych, żeby się zmieściły. Zrób ręczny eksport, żeby je zachować.</item>
-        <item quantity="other">%d dokumentów było zbyt dużych, żeby się zmieściły. Zrób ręczny eksport, żeby je zachować.</item>
+        <item quantity="one">Nie zmieścił się %d dokument lub zdjęcie kuwety. Zrób ręczny eksport, żeby go zachować.</item>
+        <item quantity="few">Nie zmieściły się %d dokumenty i zdjęcia kuwety. Zrób ręczny eksport, żeby je zachować.</item>
+        <item quantity="many">Nie zmieściło się %d dokumentów i zdjęć kuwety. Zrób ręczny eksport, żeby je zachować.</item>
+        <item quantity="other">Nie zmieściło się %d dokumentów i zdjęć kuwety. Zrób ręczny eksport, żeby je zachować.</item>
     </plurals>
     <string name="backup_auto_settings_action">Otwórz ustawienia kopii zapasowej Androida</string>
 
-    <string name="backup_excluded_notification_title">Część dokumentów nie ma kopii zapasowej</string>
+    <string name="backup_excluded_notification_title">Część dokumentów i zdjęć kuwety nie ma kopii zapasowej</string>
     <plurals name="backup_excluded_notification_text">
-        <item quantity="one">Automatyczna kopia zapasowa Androida nie zmieściła %d dokumentu. Zrób ręczny eksport, żeby zachować jego kopię.</item>
-        <item quantity="few">Automatyczna kopia zapasowa Androida nie zmieściła %d dokumentów. Zrób ręczny eksport, żeby zachować ich kopię.</item>
-        <item quantity="many">Automatyczna kopia zapasowa Androida nie zmieściła %d dokumentów. Zrób ręczny eksport, żeby zachować ich kopię.</item>
-        <item quantity="other">Automatyczna kopia zapasowa Androida nie zmieściła %d dokumentów. Zrób ręczny eksport, żeby zachować ich kopię.</item>
+        <item quantity="one">Automatyczna kopia zapasowa Androida nie zmieściła %d dokumentu ani zdjęcia kuwety. Zrób ręczny eksport, żeby zachować kopię.</item>
+        <item quantity="few">Automatyczna kopia zapasowa Androida nie zmieściła %d dokumentów i zdjęć kuwety. Zrób ręczny eksport, żeby zachować ich kopię.</item>
+        <item quantity="many">Automatyczna kopia zapasowa Androida nie zmieściła %d dokumentów i zdjęć kuwety. Zrób ręczny eksport, żeby zachować ich kopię.</item>
+        <item quantity="other">Automatyczna kopia zapasowa Androida nie zmieściła %d dokumentów i zdjęć kuwety. Zrób ręczny eksport, żeby zachować ich kopię.</item>
     </plurals>
 
     <!-- The scope names are quoted wherever they appear inside a sentence below, so that a name
@@ -334,7 +336,7 @@
     <string name="backup_scope_records">Zapisy</string>
     <string name="backup_scope_everything">Wszystko</string>
     <string name="backup_scope_essential_help">Zapisy, ustawienia i zdjęcia profilowe królików. Najmniejsza użyteczna kopia.</string>
-    <string name="backup_scope_records_help">Wszystko z „Podstawy”, plus zeskanowane dokumenty — wszystko, co może się jeszcze przydać.</string>
+    <string name="backup_scope_records_help">Wszystko z „Podstawy”, plus zeskanowane dokumenty i zdjęcia kuwety — wszystko, co może się jeszcze przydać.</string>
     <string name="backup_scope_everything_help">Wszystko z „Zapisów”, plus galeria zdjęć. Dużo większa i jedyna kopia, jaką kiedykolwiek dostaną zdjęcia.</string>
     <string name="backup_photos_warning">Zdjęcia są najsłabiej chronioną rzeczą w Binky. Automatyczna kopia Androida pomija galerię, tak samo jak „Podstawa” i „Zapisy”. Eksport „Wszystko” to jedyna kopia, jaką Twoje zdjęcia kiedykolwiek dostaną.</string>
     <string name="backup_export_action">Wyeksportuj kopię zapasową</string>
@@ -441,14 +443,21 @@
     <string name="droppings_size_normal">Normalne</string>
     <string name="droppings_size_large">Duże</string>
 
-    <string name="droppings_form_round">Okrągłe</string>
-    <string name="droppings_form_misshapen">Zniekształcone</string>
-    <string name="droppings_form_strung_together">Połączone sierścią</string>
-    <string name="droppings_form_soft">Miękkie</string>
-    <string name="droppings_form_diarrhoea">Biegunka</string>
+    <string name="droppings_appearance_round">Okrągłe</string>
+    <string name="droppings_appearance_misshapen">Zniekształcone</string>
+    <string name="droppings_appearance_doubled">Podwójne lub zlepione</string>
+    <string name="droppings_appearance_dry">Suche i twarde</string>
+    <!-- Polish already named the fur before English did, which is the reading the reword follows. -->
+    <string name="droppings_appearance_strung_together">Połączone sierścią</string>
+    <string name="droppings_appearance_mucus">Śluz</string>
+    <string name="droppings_appearance_soft">Miękkie</string>
+    <string name="droppings_appearance_diarrhoea">Biegunka</string>
+    <string name="droppings_appearance_very_dark">Bardzo ciemne</string>
+    <string name="droppings_appearance_blood">Krew</string>
 
     <string name="cecotropes_eaten">Zjedzone</string>
     <string name="cecotropes_left_uneaten">Zostawione</string>
+    <string name="cecotropes_excess">Dużo zostawionych</string>
 
     <string name="appetite_none">Nie je</string>
     <string name="appetite_reduced">Je mniej</string>
@@ -509,8 +518,12 @@
     <string name="observation_tray_shared_help">Zapisywane raz, dla wszystkich, których to dotyczy — wspólnej kuwety nie da się rozdzielić między króliki.</string>
     <string name="observation_droppings_amount_label">Ile bobków</string>
     <string name="observation_droppings_size_label">Wielkość</string>
-    <string name="observation_droppings_form_label">Kształt</string>
+    <string name="observation_droppings_appearance_label">Wygląd</string>
     <string name="observation_cecotropes_label">Cekotrofy</string>
+    <string name="observation_tray_photo_label">Zdjęcie kuwety</string>
+    <string name="observation_tray_photo_help">Równomierne, rozproszone światło najlepiej pokazuje kształt — bobki w cieniu trudno później ocenić.</string>
+    <string name="observation_tray_photo_description">Kuweta</string>
+    <string name="observation_tray_photo_unreadable">Binky nie mógł odczytać tego zdjęcia, więc nic nie zostało dołączone.</string>
 
     <string name="observation_individual_heading">Ten królik</string>
     <string name="observation_individual_heading_named">%1$s</string>

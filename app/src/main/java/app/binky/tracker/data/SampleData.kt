@@ -681,11 +681,15 @@ private suspend fun seedObservations(
             facts =
                 ObservationFacts(
                     // One tray, one real-world fact — and a worrying one, matching the weight drop.
+                    // One value in each set, deliberately: the two fields went multi-valued in
+                    // ADR-0029 and this seed did **not** change with them — 61 matrix scenes, the
+                    // before/after comparison and the Play listing screenshots all rest on it. A
+                    // tray with two appearance values is reached through a seed variant instead.
                     tray =
                         TrayFacts(
                             droppingsAmount = DroppingsAmount.FEW,
-                            droppingsSize = DroppingsSize.SMALL,
-                            droppingsForm = DroppingsForm.ROUND,
+                            droppingsSizes = setOf(DroppingsSize.SMALL),
+                            droppingsAppearance = setOf(DroppingsAppearance.ROUND),
                             cecotropes = Cecotropes.LEFT_UNEATEN,
                         ),
                 ),

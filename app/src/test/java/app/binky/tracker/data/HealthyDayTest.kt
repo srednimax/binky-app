@@ -21,9 +21,25 @@ class HealthyDayTest {
         // the tray is empty can see the pellets are small. Recording only the amount would make the
         // shortcut claim less than the glance it stands for.
         assertEquals(DroppingsAmount.NORMAL, facts.tray.droppingsAmount)
-        assertEquals(DroppingsSize.NORMAL, facts.tray.droppingsSize)
-        assertEquals(DroppingsForm.ROUND, facts.tray.droppingsForm)
+        assertEquals(setOf(DroppingsSize.NORMAL), facts.tray.droppingsSizes)
+        assertEquals(setOf(DroppingsAppearance.ROUND), facts.tray.droppingsAppearance)
         assertEquals(Cecotropes.EATEN, facts.tray.cecotropes)
+    }
+
+    @Test
+    fun claimsExactlyOneValueInEachMultiValuedField() {
+        // The fields went multi-valued in ADR-0029; the shortcut's claim did not. One tap saying
+        // "round *and* misshapen" would be the app inventing an observation on the owner's behalf,
+        // which is the opposite of what ADR-0001 grants it — so this asserts the size of the sets,
+        // not merely their contents.
+        assertEquals(1, facts.tray.droppingsSizes.size)
+        assertEquals(1, facts.tray.droppingsAppearance.size)
+    }
+
+    @Test
+    fun claimsNothingAboutTheTrayPhoto() {
+        // One tap is a claim about what was seen, never a photograph of it.
+        assertNull(facts.tray.trayPhotoPath)
     }
 
     @Test

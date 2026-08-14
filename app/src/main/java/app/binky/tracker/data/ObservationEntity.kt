@@ -20,6 +20,13 @@ import java.util.UUID
  * droppings field records nothing rather than a silent "normal" — a "fine" nobody verified is a
  * false reassurance.
  *
+ * **Two of them are multi-valued and live in join tables instead** (ADR-0029): a tray genuinely holds
+ * round pellets *and* soft ones, which is the commonest early sign of a gut going wrong. There,
+ * absence is **zero rows** — and no `droppingsChecked` flag is owed to disambiguate it, unlike
+ * symptoms, because there is no affirmative "I looked and the pellets had no appearance": if the
+ * owner looked, at least one value is true. The one real edge, an empty tray, is already
+ * [DroppingsAmount.NONE].
+ *
  * Kotlin note: these read like TypeScript string-literal unions in use, but they are real types —
  * `when` over one is exhaustive without a default branch, which is what makes adding a value show
  * up as a compile error at every place that renders it.
@@ -28,24 +35,62 @@ import java.util.UUID
 /** How much was in the tray. `NONE` is a real, alarming observation — an empty tray, not a blank field. */
 enum class DroppingsAmount { NONE, FEW, NORMAL, MANY }
 
-/** Pellet size. Small pellets are one of the earliest signs of a slowing gut. */
+/**
+ * Pellet size. Small pellets are one of the earliest signs of a slowing gut.
+ *
+ * **Multi-valued** (ADR-0029): *small and normal* is a thing an owner can actually see in one tray,
+ * where `FEW` and `MANY` would be a contradiction about it — which is why [DroppingsAmount] stayed
+ * single. Stored in [ObservationDroppingsSizeEntity].
+ */
 enum class DroppingsSize { SMALL, NORMAL, LARGE }
 
 /**
- * Pellet form. `STRUNG_TOGETHER` is its own value rather than a note: pellets strung on fur is a
- * distinct, recognisable sign, and a form that can be counted over time is worth more than prose.
+ * What the droppings **looked like** — also multi-valued, and also its own table
+ * ([ObservationDroppingsAppearanceEntity]).
+ *
+ * Named for appearance rather than shape, because only [DOUBLED] is a shape: [BLOOD] and [MUCUS] are
+ * contents, [VERY_DARK] is colour and [DRY] is moisture (ADR-0029). `DroppingsForm.BLOOD` would read
+ * as a claim that blood is a shape, at every call site, forever.
+ *
+ * Three of the values close gaps that mattered:
+ *
+ * - [MUCUS] exists because [STRUNG_TOGETHER] was a **trap for it**, not merely missing. That value
+ *   means strung *with fur* — moulting — and mucus presents identically: thick pale goop strung
+ *   between the pellets. An owner seeing gut irritation would reasonably have recorded moulting, so
+ *   the fur label was reworded to name the fur at the same time.
+ * - [BLOOD], because the app seeded `symptom_blood_in_urine` — usually harmless porphyrins — and had
+ *   nowhere at all to record the one that is always serious. It cannot be a symptom: symptoms are
+ *   individual and a shared tray is not attributable to a bunny (ADR-0008).
+ * - [DOUBLED] rather than folding fused pellets into [MISSHAPEN], because they specifically mean
+ *   motility is slowing.
+ *
+ * *Pale* and *greenish* were considered and left out on triage: they are the weakest signals in the
+ * set, and a vocabulary that records everything nameable trains the owner to record nothing
+ * carefully. **The app records every one of these without commenting on it** — no "see a vet now"
+ * attached to [BLOOD], because that is advice (ADR-0026).
  */
-enum class DroppingsForm { ROUND, MISSHAPEN, STRUNG_TOGETHER, SOFT, DIARRHOEA }
+enum class DroppingsAppearance {
+    ROUND,
+    MISSHAPEN,
+    DOUBLED,
+    DRY,
+    STRUNG_TOGETHER,
+    MUCUS,
+    SOFT,
+    DIARRHOEA,
+    VERY_DARK,
+    BLOOD,
+}
 
 /**
  * Cecotropes — the soft nutrient-rich droppings a bunny normally eats directly, and **not the same
  * thing as ordinary droppings** (CONTEXT.md), which is why they are their own field.
  *
- * Two values, because the observable fact is binary: either none are lying about (they were eaten)
- * or some are. Being an enum rather than a `Boolean?` leaves room to distinguish an *excess* later
- * without rewriting history, which is exactly what storing by name buys.
+ * Single-valued: like [DroppingsAmount] this describes a quantity rather than a mixture. [EXCESS] is
+ * the value the two-value version's own doc anticipated — being an enum rather than a `Boolean?` is
+ * exactly what let it arrive without rewriting history, because only names are ever stored.
  */
-enum class Cecotropes { EATEN, LEFT_UNEATEN }
+enum class Cecotropes { EATEN, LEFT_UNEATEN, EXCESS }
 
 /** Appetite. A graded field: the one-tap healthy day deliberately leaves it "not checked". */
 enum class Appetite { NONE, REDUCED, NORMAL, EAGER }
@@ -79,9 +124,11 @@ enum class WaterIntake { NONE, LESS, NORMAL, MORE }
  * The fields fall into two classes and the edit paths must respect the split (see
  * [ObservationRepository]):
  *
- * - **Tray-level** — the droppings fields and [cecotropes]. One tray, one real-world fact: identical
- *   across every row in a group by construction, and editing one propagates to all of them. Letting
- *   them drift would reintroduce the false attribution through editing rather than tapping.
+ * - **Tray-level** — the droppings fields, [cecotropes] and [trayPhotoPath]. One tray, one real-world
+ *   fact: identical across every row in a group by construction, and editing one propagates to all of
+ *   them. Letting them drift would reintroduce the false attribution through editing rather than
+ *   tapping. Two of these facts are now sets rather than columns, so "identical across every row"
+ *   costs join rows written per participant rather than a `copy()` — see [ObservationRepository].
  * - **Individual** — [appetite], [mood], [activity], [water], [note], the symptom links and
  *   [symptomsChecked]. These legitimately differ per bunny (one hunched and lethargic while the
  *   other is bouncing around), so editing one bunny's mood never touches another's.
@@ -116,11 +163,23 @@ data class ObservationEntity(
     val groupId: String? = null,
     val recordedAt: Instant,
     val createdAt: Instant = Instant.now(),
-    // Tray-level: single per group, identical across every row, edited group-wide.
+    // Tray-level: single per group, identical across every row, edited group-wide. The multi-valued
+    // two live in the join tables below, keyed on this row's id and written for every participant.
     val droppingsAmount: DroppingsAmount? = null,
-    val droppingsSize: DroppingsSize? = null,
-    val droppingsForm: DroppingsForm? = null,
     val cecotropes: Cecotropes? = null,
+    /**
+     * One photo of the tray, relative to `filesDir` under `observations/` (house rule, ADR-0029).
+     *
+     * **Duplicated across every row in the group**, like every other tray fact, which buys one rule
+     * the app did not need before: deleting one bonded bunny cascades a row that still references the
+     * survivor's file, so the file goes only when **no other row references the path**. That check
+     * lives on the delete path in [ObservationRepository], and it is the whole reason a duplicated
+     * path was acceptable instead of a group table.
+     *
+     * It takes the ordinary photo capture path and never the document scanner: ML Kit's filter clips
+     * highlights and edge-enhances, which destroys pellet outlines exactly where the light was good.
+     */
+    val trayPhotoPath: String? = null,
     // Individual: per row, edited one row at a time.
     val appetite: Appetite? = null,
     val mood: Mood? = null,
@@ -178,4 +237,56 @@ data class ObservationEntity(
 data class ObservationSymptomEntity(
     val observationId: String,
     val symptomId: String,
+)
+
+/*
+ * The two multi-valued droppings fields (ADR-0029).
+ *
+ * **Keyed on `observationId`, not on a group**, because there is no group *table* — `groupId` is a
+ * bare nullable column and ADR-0008 forbids stamping one on a solo observation. So a tray-level set
+ * is denormalised onto every participant's row exactly as the tray columns already are, and
+ * [ObservationRepository] writes them inside the transaction that writes the rows.
+ *
+ * **Two typed tables rather than one with a `kind` discriminator.** The generic table saves one
+ * `CREATE TABLE` and buys a database that can hold `kind = SIZE, value = ROUND`; a representable
+ * nonsense state is worse than a duplicated table definition, and the Kotlin side loses with it —
+ * two typed tables stay exhaustive under `when` where a discriminator means casting at every read.
+ *
+ * Each mirrors `observation_symptoms`: the composite primary key makes a double-tick impossible and
+ * gives the foreign key its index for free. Neither needs a second index, because neither value is
+ * ever looked up on its own.
+ */
+
+@Entity(
+    tableName = "observation_droppings_appearance",
+    primaryKeys = ["observationId", "value"],
+    foreignKeys = [
+        ForeignKey(
+            entity = ObservationEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["observationId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class ObservationDroppingsAppearanceEntity(
+    val observationId: String,
+    val value: DroppingsAppearance,
+)
+
+@Entity(
+    tableName = "observation_droppings_sizes",
+    primaryKeys = ["observationId", "value"],
+    foreignKeys = [
+        ForeignKey(
+            entity = ObservationEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["observationId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class ObservationDroppingsSizeEntity(
+    val observationId: String,
+    val value: DroppingsSize,
 )

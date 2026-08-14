@@ -64,7 +64,7 @@ class BinkyBackupAgent : BackupAgent() {
             // The excluded count rides along because this process cannot say it any other way: the
             // app's DataStore is unreachable from here and its writes are `suspend` inside these
             // blocking callbacks. The marker is the message, and the app reads it on next launch.
-            writeAutoBackupMarker(filesDir, Instant.now(), excludedDocuments = set.excludedDocuments)
+            writeAutoBackupMarker(filesDir, Instant.now(), excludedRecords = set.excludedRecords)
         } finally {
             staged.delete()
             staged.parentFile?.delete()

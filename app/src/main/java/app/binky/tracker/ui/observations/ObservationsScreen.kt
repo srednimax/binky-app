@@ -1,6 +1,7 @@
 package app.binky.tracker.ui.observations
 
 import android.content.res.Resources
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -32,12 +35,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
 import app.binky.tracker.data.BunnySelection
+import app.binky.tracker.data.DroppingsAppearance
+import app.binky.tracker.data.DroppingsSize
 import app.binky.tracker.data.IndividualFacts
 import app.binky.tracker.data.SymptomEntity
 import app.binky.tracker.data.TrayFacts
@@ -57,6 +66,8 @@ import app.binky.tracker.ui.common.SectionHeader
 import app.binky.tracker.ui.common.TagChip
 import app.binky.tracker.ui.shell.ShellUiState
 import app.binky.tracker.ui.weight.timeLabel
+import coil3.compose.AsyncImage
+import java.io.File
 import java.time.ZoneId
 
 /**
@@ -327,6 +338,10 @@ private fun EntryCard(
             )
             Spacer(Modifier.height(Spacing.hair))
             TrayFactLines(entry.tray)
+            entry.trayPhoto?.let { file ->
+                Spacer(Modifier.height(Spacing.tight))
+                TrayPhoto(file)
+            }
         }
 
         spoken.forEachIndexed { index, participant ->
@@ -421,11 +436,64 @@ private fun TrayFactLines(tray: TrayFacts) {
                 label(it),
             )
         }
-        tray.droppingsSize?.let { DenseFactRow(stringResource(R.string.observation_droppings_size_label), label(it)) }
-        tray.droppingsForm?.let { DenseFactRow(stringResource(R.string.observation_droppings_form_label), label(it)) }
+        // One row per field still, with the values joined — a tray that was small *and* normal is one
+        // fact about one tray, and a row each would read as two contradictory observations.
+        if (tray.droppingsSizes.isNotEmpty()) {
+            DenseFactRow(
+                stringResource(R.string.observation_droppings_size_label),
+                joinedLabel(DroppingsSize.entries.filter { it in tray.droppingsSizes }.map { label(it) }),
+            )
+        }
+        if (tray.droppingsAppearance.isNotEmpty()) {
+            DenseFactRow(
+                stringResource(R.string.observation_droppings_appearance_label),
+                // Rendered in **enum order**, not set order: a `Set` has no order worth showing, and
+                // the declaration order runs ordinary-to-alarming, so two trays with the same values
+                // always read the same way.
+                joinedLabel(
+                    DroppingsAppearance.entries.filter { it in tray.droppingsAppearance }.map { label(it) },
+                ),
+            )
+        }
         tray.cecotropes?.let { DenseFactRow(stringResource(R.string.observation_cecotropes_label), label(it)) }
     }
 }
+
+/**
+ * The tray photo on a timeline card — one image, under the facts it illustrates.
+ *
+ * Sits with the tray block rather than with a participant, because that is what it is a photo of: a
+ * shared tray belongs to nobody in particular (ADR-0008). It draws as a placeholder when the file is
+ * gone, which a restore lacking its media legitimately produces (house rule).
+ */
+@Composable
+private fun TrayPhoto(file: File) {
+    val missing = rememberVectorPainter(Icons.Filled.Info)
+    AsyncImage(
+        model = remember(file) { Uri.fromFile(file) },
+        contentDescription = stringResource(R.string.observation_tray_photo_description),
+        contentScale = ContentScale.Crop,
+        error = missing,
+        fallback = missing,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(TrayPhotoHeight)
+                .clip(RoundedCornerShape(Spacing.tight)),
+    )
+}
+
+private val TrayPhotoHeight = 160.dp
+
+/**
+ * Joins a multi-valued field's labels for display.
+ *
+ * Through [joinNames] rather than a hardcoded `", "`, because that is the app's one list-punctuation
+ * rule and other languages do not all punctuate a list the way English does (ADR-0013). It is named
+ * for names because names were its first customer; the joining has nothing to do with them.
+ */
+@Composable
+private fun joinedLabel(values: List<String>): String = joinNames(LocalResources.current, values)
 
 /** True when this bunny's half of an entry has something to show. Never assume the answer is no. */
 private fun IndividualFacts.hasAnything(): Boolean =
@@ -439,7 +507,11 @@ private fun IndividualFacts.hasAnything(): Boolean =
 
 /** The tray half, same question. */
 private fun TrayFacts.hasAnything(): Boolean =
-    droppingsAmount != null || droppingsSize != null || droppingsForm != null || cecotropes != null
+    droppingsAmount != null ||
+        droppingsSizes.isNotEmpty() ||
+        droppingsAppearance.isNotEmpty() ||
+        cecotropes != null ||
+        trayPhotoPath != null
 
 @Composable
 private fun IndividualFactLines(

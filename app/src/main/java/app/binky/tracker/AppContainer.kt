@@ -172,7 +172,7 @@ class AppContainer(
 
     val weightRepository = WeightRepository(database)
 
-    val observationRepository = ObservationRepository(database)
+    val observationRepository = ObservationRepository(database, mediaFiles)
 
     val symptomRepository = SymptomRepository(database)
 

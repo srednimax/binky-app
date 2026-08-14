@@ -54,7 +54,7 @@ class AutoBackupTest {
             setOf("bunny.db", "bunny_preferences.preferences_pb", avatar, document),
             set.files.map { it.name }.toSet(),
         )
-        assertEquals(0, set.excludedDocuments)
+        assertEquals(0, set.excludedRecords)
     }
 
     @Test
@@ -84,7 +84,7 @@ class AutoBackupTest {
 
         val set = autoBackupFileSet(filesDir, staged, deviceToDeviceTransfer = false, budget = coreBytes)
 
-        assertEquals(2, set.excludedDocuments)
+        assertEquals(2, set.excludedRecords)
         assertTrue(set.files.none { it.path.contains("/${MediaKind.Document.directory}/") })
         // Every unconditional file is still there: the ceiling takes documents, never the core.
         assertTrue(set.files.map { it.name }.containsAll(listOf("bunny.db", avatar)))
@@ -99,7 +99,7 @@ class AutoBackupTest {
 
         assertTrue(set.files.map { it.name }.contains(photo))
         assertTrue(set.files.map { it.name }.containsAll(listOf(document, secondDocument)))
-        assertEquals(0, set.excludedDocuments)
+        assertEquals(0, set.excludedRecords)
         // No cloud account and no quota there, but preserved/ is still not something to carry onto
         // a new phone unasked.
         assertTrue(set.files.none { it.path.contains("/preserved/") })
@@ -128,30 +128,30 @@ class AutoBackupTest {
     fun `everything fits, and nothing is reported as excluded`() {
         val documents = listOf(sized("a", 100), sized("b", 100))
 
-        val admission = admitDocuments(coreBytes = 100, documentsNewestFirst = documents, budget = 1_000)
+        val admission = admitRecords(coreBytes = 100, recordsNewestFirst = documents, budget = 1_000)
 
         assertEquals(documents, admission.files)
-        assertEquals(0, admission.excludedDocuments)
+        assertEquals(0, admission.excludedRecords)
     }
 
     @Test
     fun `nothing fits, and every document is counted`() {
         val documents = listOf(sized("a", 100), sized("b", 100))
 
-        val admission = admitDocuments(coreBytes = 950, documentsNewestFirst = documents, budget = 1_000)
+        val admission = admitRecords(coreBytes = 950, recordsNewestFirst = documents, budget = 1_000)
 
         assertTrue(admission.files.isEmpty())
-        assertEquals(2, admission.excludedDocuments)
+        assertEquals(2, admission.excludedRecords)
     }
 
     @Test
     fun `a core already over budget admits nothing rather than going negative`() {
         // The evidential core is the first duty (ADR-0005). A database that has outgrown the ceiling
         // on its own is a real state, and the arithmetic must not wrap into admitting documents.
-        val admission = admitDocuments(coreBytes = 5_000, documentsNewestFirst = listOf(sized("a", 1)), budget = 1_000)
+        val admission = admitRecords(coreBytes = 5_000, recordsNewestFirst = listOf(sized("a", 1)), budget = 1_000)
 
         assertTrue(admission.files.isEmpty())
-        assertEquals(1, admission.excludedDocuments)
+        assertEquals(1, admission.excludedRecords)
     }
 
     @Test
@@ -161,10 +161,10 @@ class AutoBackupTest {
         val newest = sized("newest", 500)
         val older = sized("older", 500)
 
-        val admission = admitDocuments(coreBytes = 0, documentsNewestFirst = listOf(newest, older), budget = 500)
+        val admission = admitRecords(coreBytes = 0, recordsNewestFirst = listOf(newest, older), budget = 500)
 
         assertEquals(listOf(newest), admission.files)
-        assertEquals(1, admission.excludedDocuments)
+        assertEquals(1, admission.excludedRecords)
     }
 
     @Test
@@ -174,33 +174,33 @@ class AutoBackupTest {
         val huge = sized("huge", 900)
         val small = sized("small", 100)
 
-        val admission = admitDocuments(coreBytes = 0, documentsNewestFirst = listOf(huge, small), budget = 500)
+        val admission = admitRecords(coreBytes = 0, recordsNewestFirst = listOf(huge, small), budget = 500)
 
         assertEquals(listOf(small), admission.files)
-        assertEquals(1, admission.excludedDocuments)
+        assertEquals(1, admission.excludedRecords)
     }
 
     @Test
     fun `an exclusion is announced once, and again only after it has cleared`() {
         // The agent runs roughly daily and cannot remember anything, so this is what keeps a
         // one-time notice from becoming a nightly one.
-        assertEquals(ExclusionNotice.Post, exclusionNotice(excludedDocuments = 12, alreadyNotified = false))
-        assertEquals(ExclusionNotice.Nothing, exclusionNotice(excludedDocuments = 12, alreadyNotified = true))
+        assertEquals(ExclusionNotice.Post, exclusionNotice(excludedRecords = 12, alreadyNotified = false))
+        assertEquals(ExclusionNotice.Nothing, exclusionNotice(excludedRecords = 12, alreadyNotified = true))
         // Still excluding, just fewer: already said, and a second notice would add nothing the
         // status line does not already carry.
-        assertEquals(ExclusionNotice.Nothing, exclusionNotice(excludedDocuments = 3, alreadyNotified = true))
+        assertEquals(ExclusionNotice.Nothing, exclusionNotice(excludedRecords = 3, alreadyNotified = true))
         // Resolved — forget it happened, so a future episode is allowed to speak up.
-        assertEquals(ExclusionNotice.Clear, exclusionNotice(excludedDocuments = 0, alreadyNotified = true))
-        assertEquals(ExclusionNotice.Nothing, exclusionNotice(excludedDocuments = 0, alreadyNotified = false))
+        assertEquals(ExclusionNotice.Clear, exclusionNotice(excludedRecords = 0, alreadyNotified = true))
+        assertEquals(ExclusionNotice.Nothing, exclusionNotice(excludedRecords = 0, alreadyNotified = false))
     }
 
     @Test
     fun `the marker survives a round trip and leaves no half-written file behind`() {
         val at = Instant.parse("2026-07-28T06:15:00Z")
 
-        writeAutoBackupMarker(filesDir, at, excludedDocuments = 12)
+        writeAutoBackupMarker(filesDir, at, excludedRecords = 12)
 
-        assertEquals(AutoBackupMarker(at, excludedDocuments = 12), readAutoBackupMarker(filesDir))
+        assertEquals(AutoBackupMarker(at, excludedRecords = 12), readAutoBackupMarker(filesDir))
         assertFalse(File(filesDir, "$AUTO_BACKUP_MARKER_FILE.part").exists())
     }
 
@@ -226,7 +226,7 @@ class AutoBackupTest {
         )
 
         assertEquals(
-            AutoBackupMarker(Instant.ofEpochMilli(1785000000000L), excludedDocuments = 12),
+            AutoBackupMarker(Instant.ofEpochMilli(1785000000000L), excludedRecords = 12),
             readAutoBackupMarker(filesDir),
         )
 
@@ -236,7 +236,7 @@ class AutoBackupTest {
         write(File(filesDir, AUTO_BACKUP_MARKER_FILE), "lastBackupAtEpochMilli=1785000000000\n")
 
         assertEquals(
-            AutoBackupMarker(Instant.ofEpochMilli(1785000000000L), excludedDocuments = 0),
+            AutoBackupMarker(Instant.ofEpochMilli(1785000000000L), excludedRecords = 0),
             readAutoBackupMarker(filesDir),
         )
     }
@@ -245,11 +245,11 @@ class AutoBackupTest {
     fun `the status line carries the excluded count through to the screen`() {
         val now = Instant.parse("2026-07-28T06:15:00Z")
 
-        val status = autoBackupStatus(AutoBackupMarker(now, excludedDocuments = 12), now)
+        val status = autoBackupStatus(AutoBackupMarker(now, excludedRecords = 12), now)
 
         // One number behind both the sentence on the Backup screen and the one-time notification,
         // so the two cannot disagree about how much is missing.
-        assertEquals(12, (status as AutoBackupStatus.Recorded).excludedDocuments)
+        assertEquals(12, (status as AutoBackupStatus.Recorded).excludedRecords)
     }
 
     @Test

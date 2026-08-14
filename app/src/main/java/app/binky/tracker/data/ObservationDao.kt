@@ -105,18 +105,16 @@ interface ObservationDao {
         """
         UPDATE observations SET
             droppingsAmount = :droppingsAmount,
-            droppingsSize = :droppingsSize,
-            droppingsForm = :droppingsForm,
-            cecotropes = :cecotropes
+            cecotropes = :cecotropes,
+            trayPhotoPath = :trayPhotoPath
         WHERE groupId = :groupId
         """,
     )
     suspend fun updateTrayForGroup(
         groupId: String,
         droppingsAmount: DroppingsAmount?,
-        droppingsSize: DroppingsSize?,
-        droppingsForm: DroppingsForm?,
         cecotropes: Cecotropes?,
+        trayPhotoPath: String?,
     )
 
     /**
@@ -141,19 +139,35 @@ interface ObservationDao {
         """
         UPDATE observations SET
             droppingsAmount = :droppingsAmount,
-            droppingsSize = :droppingsSize,
-            droppingsForm = :droppingsForm,
-            cecotropes = :cecotropes
+            cecotropes = :cecotropes,
+            trayPhotoPath = :trayPhotoPath
         WHERE id = :id
         """,
     )
     suspend fun updateTrayForObservation(
         id: String,
         droppingsAmount: DroppingsAmount?,
-        droppingsSize: DroppingsSize?,
-        droppingsForm: DroppingsForm?,
         cecotropes: Cecotropes?,
+        trayPhotoPath: String?,
     )
+
+    /**
+     * How many rows still point at a tray photo — the whole of ADR-0029's one new rule.
+     *
+     * The path is duplicated onto every participant, so deleting one bonded bunny cascades a row that
+     * still references the survivor's file. [ObservationRepository] deletes the rows first and asks
+     * this afterwards, so a non-zero answer means somebody else is still using the file.
+     */
+    @Query("SELECT COUNT(*) FROM observations WHERE trayPhotoPath = :path")
+    suspend fun countWithTrayPhoto(path: String): Int
+
+    /**
+     * The tray photos this bunny's observations point at, read **before** a delete takes the rows —
+     * the same "ask while the rows still exist" step `BunnyRepository.delete` already makes for
+     * avatars, photos and document pages. `DISTINCT` because a bonded pair's two rows carry one path.
+     */
+    @Query("SELECT DISTINCT trayPhotoPath FROM observations WHERE bunnyId = :bunnyId AND trayPhotoPath IS NOT NULL")
+    suspend fun trayPhotoPathsOf(bunnyId: String): List<String>
 
     @Query("SELECT symptomId FROM observation_symptoms WHERE observationId = :observationId")
     suspend fun symptomIdsNow(observationId: String): List<String>
@@ -178,4 +192,54 @@ interface ObservationDao {
 
     @Query("DELETE FROM observation_symptoms WHERE observationId = :observationId")
     suspend fun clearSymptoms(observationId: String)
+
+    /*
+     * The two multi-valued droppings fields (ADR-0029).
+     *
+     * **Reads come back as stored names, never as enums**, and that is the point rather than an
+     * oversight. A join row is either there or it is not, so a value written by a later build has an
+     * honest reading this app can act on — *drop it* — where a non-null converter would have to
+     * invent a member instead. [ObservationRepository] does the mapping, in one place, and the
+     * converters exist only because Room requires both directions on an entity field.
+     *
+     * The whole-table `Flow`s are the same trade `allSymptomLinks` makes: the timeline renders many
+     * observations at once, and one subscription per visible row would be a storm on scrolling.
+     */
+
+    @Query("SELECT observationId, value FROM observation_droppings_appearance")
+    fun allDroppingsAppearance(): Flow<List<DroppingsValueLink>>
+
+    @Query("SELECT observationId, value FROM observation_droppings_sizes")
+    fun allDroppingsSizes(): Flow<List<DroppingsValueLink>>
+
+    @Query("SELECT value FROM observation_droppings_appearance WHERE observationId = :observationId")
+    suspend fun droppingsAppearanceNamesNow(observationId: String): List<String>
+
+    @Query("SELECT value FROM observation_droppings_sizes WHERE observationId = :observationId")
+    suspend fun droppingsSizeNamesNow(observationId: String): List<String>
+
+    /** `IGNORE` for the same reason [linkSymptoms] takes it: the composite key already forbids a double-tick. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun linkDroppingsAppearance(links: List<ObservationDroppingsAppearanceEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun linkDroppingsSizes(links: List<ObservationDroppingsSizeEntity>)
+
+    @Query("DELETE FROM observation_droppings_appearance WHERE observationId = :observationId")
+    suspend fun clearDroppingsAppearance(observationId: String)
+
+    @Query("DELETE FROM observation_droppings_sizes WHERE observationId = :observationId")
+    suspend fun clearDroppingsSizes(observationId: String)
 }
+
+/**
+ * One join row as stored — the value as its **name**, so a name this build does not know can be
+ * dropped rather than guessed. See the comment above [ObservationDao.allDroppingsAppearance].
+ *
+ * One type for both tables, because both are `(observationId, value)` and a second identical class
+ * would only be a chance for the two to drift.
+ */
+data class DroppingsValueLink(
+    val observationId: String,
+    val value: String,
+)
