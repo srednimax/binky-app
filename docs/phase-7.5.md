@@ -230,6 +230,51 @@ copying it, so one fix serves both.
 **What it unblocks, all at once:** Phase 7's deferred **Polish after set**, the **Polish listing
 screenshots** in `DOD.md` §4 (the English set is already shot), and Phase 8's copy-length canary.
 
+### Built 2026-08-14 — and three of its four premises turned out to be wrong
+
+All three halves are in `scripts/`, each proven on the Xiaomi against a handful of scenes. What is
+still owed is the two long runs: a **full English matrix with the 20:00 dose live**, and a **Polish
+run reaching every scene**.
+
+- **The relaunch already lands on Home, so the isolation step is a check rather than a repair.**
+  Measured directly — walk to More → Settings, relaunch; walk to the Weight tab, relaunch — and both
+  came back at Home with the tab bar up. `am start -S -f 0x10008000` does clear the restored Nav3
+  stack on this phone, so the reading this section was written from is not what happened on
+  2026-08-12. **The banner explains that cell better than the stack does**: the missed 20:00 dose
+  re-arms at process start (ADR-0025's self-heal), fires immediately because it is already past, and
+  posts a fresh heads-up over *every* scene rather than poisoning one. So DND is the fix and
+  `return_to_home` is the instrument that says so — it prints when it corrects anything, which makes
+  a silent run evidence rather than the absence of a complaint. It is skipped for
+  `keeps_watch_prompt` scenes, because Back **is** an answer to the expiry prompt.
+- **Seed variants are a debug-source-set broadcast receiver, not a patch.** It writes through the
+  repositories exactly as `SampleData.kt` does — which is what survives this phase's own schema
+  bump — and costs no strings, no pixels and no taps, where a debug row in Settings would have
+  changed three captured screenshots to make a fourth possible. `ensure_seed` groups scenes by the
+  seed they want, so a variant costs one reseed per *cell*, and `--no-reseed` skips variant scenes
+  loudly rather than shooting the default fixture under their name.
+- **§8's first capture corrected §8.** The `crowded` variant photographed both states at once, and a
+  single long housemate turned out to **fit** the row site on one line — so the case is a *pair* of
+  long names, which is why *Pip* lives with Bartholomew-Maximilian and Wolfgang-Ferdinand. Its card
+  now reads §8's own sentence over two lines, and Bijou's reads *"Lives with Clover, Nugget, Thistle
+  & Pumpkin (archived)"* over two. Neither state exists in any screenshot this project held.
+- **The needle table resolves, and the ambiguity check paid for itself before the first run.** 37
+  needles translate to `pl` (3 by substring), 3 stay literal — `Bijou`, `Pip`, `Vaccination record`,
+  which is exactly the sample-data fall-through this section predicted. Four needles named several
+  strings at once; three were lengthened to name one thing (`"Care & Meds"`, `"Backup & restore"`,
+  `"Archived bunnies"`), which sharpens the English table too. A needle buried in a driver *function*
+  is invisible to the resolver, which is how the first Polish run died in `reset_to_seeded`; those
+  are named constants now.
+- **The fourth ambiguity was a defect, and it invalidates banked evidence.** The hero grams field
+  carries no label and no placeholder, so the only string containing *"Weight in grams"* is the help
+  line **underneath** it: `weight-entry-ime` has been tapping a plain `Text`, focusing nothing, and
+  shooting a form with no keyboard — including in **Phase 7's after set**, which is where it was
+  confirmed. That is the third IME scene caught by the same trap, and the only one nobody spotted,
+  because a scene with no IME still produces a perfectly good screenshot. The needle is now
+  `tap_field`, which taps the *n*-th `EditText`: structure rather than copy, and the one needle a
+  locale run cannot break. Proven with the keyboard up, in Polish.
+  ℹ️ **An unlabelled text field also has no accessible name**, which TalkBack reads as a bare edit
+  box. Noted rather than fixed: it is app copy, and copy is what this phase is pre-paying for.
+
 ## 5 — Phase 6's two hand items
 
 Neither is work a build can do, and neither is blocked by Play's testing count. They go **first** because
