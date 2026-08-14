@@ -11,7 +11,10 @@ waiting on a release PR. **Phase 7** (the redesign — ships as 1.4) **closed 20
 closing note, and the one thing it carried out is §7's first box.
 
 **Phase 7.5** (the interlude — ships as **1.5**, opened 2026-08-14) collects what was scattered here and
-**owns §3, §5, §8, §9 and §7's capture-driver box**. Its reasoning is [`phase-7.5.md`](phase-7.5.md); §6.5
+**owns §3, §5, §8, §9 and §7's capture-driver box**, plus three owner-facing findings from 2026-08-14 that
+live only in §6.5. **It bumps the schema to 7** — added 2026-08-14 with the droppings work, so it is no
+longer the migration-free interlude it was drafted as.
+Its reasoning is [`phase-7.5.md`](phase-7.5.md); §6.5
 below is its summary. **Phase 8 retargets to 1.6** — two phases cannot both claim 1.5, and `release-please`
 answers to commit subjects rather than to this file.
 
@@ -257,6 +260,24 @@ and written 2026-08-14.
       reading an absent field as adulthood is the move ADR-0001 bans. **Loss takes precedence** when both
       hold, which is what keeps the schema at **6** — one watermark, discarded on a direction change.
       Three new strings. Two limitations pinned by test, not engineered around.
+- [ ] **Droppings are several things at once, and worth a photo** 🔴 **this is the schema bump** — reported
+      2026-08-14. `droppingsForm` is one nullable column, so a tray holding round *and* soft pellets forces
+      the owner to pick one and file the rest as prose, on the field whose own doc says a countable form
+      beats prose. Recommendation to grill in **ADR-0029**: **form and size go multi-valued, amount stays
+      single** (`FEW` *and* `MANY` is a contradiction about one tray). The photo is tray-level too, so it
+      belongs to the group, and its `MediaKind` is judged beside §3 — pellet shape is closer to `Document`
+      than to `Photo`. Cost: join table + media link, one `MIGRATION_6_7`, **schema 7**, a fixture and the
+      `connectedAndroidTest` run nothing else here owes. Accepted knowingly 2026-08-14.
+- [ ] **The healthy day moves behind the `+`** — reported 2026-08-14. The FAB (`Navigation.kt:365`) opens
+      the *full* form; *Log a healthy day* is a separate action inside the Timeline, so the discoverable
+      entry point is the long one and the shortcut that settles a watch is the hidden one. The two collapse
+      into one. No schema, and no new strings if the existing copy moves rather than being rewritten.
+- [ ] **The housemates line at five bunnies** — reported 2026-08-14, and a **defect**, not a feature. The
+      grammar is right (`joinNames` builds from the right through string resources); the layout is not —
+      `HomeScreen.kt:210`/`:443` and `ArchivedBunniesScreen.kt:170` draw it as a plain `Text` with **no
+      `maxLines` and no `overflow`**, so five names, or two long ones, grow the card by two lines. Never
+      seen, because the seed has two short-named bunnies — the **second customer for seed variants**. Cap
+      the names, not the pixels: *"Lives with Thumper, Clover & 3 others"*, one `plurals` entry.
 - [ ] **§8's licence attribution** last: **`app.cash.licensee`** at build time, rendered by the app's own
       Compose screen. No ADR owed — it adds no runtime dependency, so ADR-0009 is untouched, and it emits
       structured data plus a build failure when a licence changes, which is §8's own stated fear. The Play

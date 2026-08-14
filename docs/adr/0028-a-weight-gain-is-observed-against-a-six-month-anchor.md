@@ -106,6 +106,10 @@ One clause makes the single watermark safe: **when the displayed direction chang
 discarded.** Otherwise a loss would be judged against grams acknowledged for a gain. Direction is always
 re-derivable from the series, so this costs no stored column and the schema stays at **6**.
 
+**This is a claim about the gain rule, not a promise about the release.** Phase 7.5 went on to take a
+separate schema bump for multi-valued droppings; that migration owes nothing to this decision, and the point
+stands — a second acknowledgment row would have been *this feature's* cost, and it was not paid.
+
 ## Considered and rejected
 
 **A quieter treatment than the flag** — a plain informational line with no dot, so the caution mark keeps one

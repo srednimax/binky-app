@@ -31,10 +31,12 @@ and 8 are in [`phase-7.5.md`](phase-7.5.md) and [`phase-8.md`](phase-8.md)**.
   *(closed 2026-08-13 on the sweep, the 244-scene matrix, lint at 0/0 and the before/after comparison; the
   **Polish capture moved to Phase 8**, which owns the locale-aware driver it needs — see
   [`DOD.md`](DOD.md) §7)*
-- [ ] **Phase 7.5** — The interlude: the gain signal, licence attribution, the downsample answer and the
-  locale-aware capture driver — **ships as 1.5** — planned in [`phase-7.5.md`](phase-7.5.md), not here
-  *(opened 2026-08-14; it is an ordering over items already open in [`DOD.md`](DOD.md), collected because
-  each is cheaper before nine languages than after)*
+- [ ] **Phase 7.5** — The interlude: the gain signal, droppings, licence attribution, the downsample answer
+  and the locale-aware capture driver — **ships as 1.5**, at **schema 7** — planned in
+  [`phase-7.5.md`](phase-7.5.md), not here
+  *(opened 2026-08-14 as an ordering over items already open in [`DOD.md`](DOD.md), each cheaper before nine
+  languages than after; four owner-facing findings arrived the same day and one of them, multi-valued
+  droppings, is what takes it from migration-free to `MIGRATION_6_7`)*
 - [ ] **Phase 8** — Nine languages — **ships as 1.6** — planned in [`phase-8.md`](phase-8.md), not here
   *(retargeted from 1.5 on 2026-08-14: Phase 7.5 adds functionality, so `release-please` cuts 1.5 there)*
 
