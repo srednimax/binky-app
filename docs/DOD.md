@@ -264,7 +264,19 @@ and written 2026-08-14.
       2026-08-14. `droppingsForm` is one nullable column, so a tray holding round *and* soft pellets forces
       the owner to pick one and file the rest as prose, on the field whose own doc says a countable form
       beats prose. Recommendation to grill in **ADR-0029**: **form and size go multi-valued, amount stays
-      single** (`FEW` *and* `MANY` is a contradiction about one tray). The photo is tray-level too, so it
+      single** (`FEW` *and* `MANY` is a contradiction about one tray).
+      ⚠️ **The vocabulary is also incomplete, and `STRUNG_TOGETHER` is a trap** (checked 2026-08-14). It
+      means strung *with fur*; **mucus presents identically** — pale goop strung between or enclosing the
+      pellets — so an owner seeing gut irritation would reasonably record moulting. And **blood in droppings
+      is recordable nowhere**, while `symptom_blood_in_urine` is seeded — the app has a field for the false
+      alarm (red urine is usually porphyrins) and none for the always-serious one. **Decided: close the gaps
+      with values, add no field.** `DroppingsForm` gains `MUCUS`, `BLOOD`, `VERY_DARK` (melena), `DOUBLED`
+      (fused = slowing motility, not general misshapenness) and `DRY` (dehydration); `Cecotropes` gains
+      `EXCESS`. A colour field was rejected on **form length**, not tidiness — §6's healthy day exists
+      because a long form deters logging, and *pale*/*greenish* are the weakest signals in the set. Values
+      are stored **by name**, so additions cannot rewrite history. **No per-value urgency copy** — the app
+      records `BLOOD` and says nothing about it (ADR-0026).
+      The photo is tray-level too, so it
       belongs to the group, and its `MediaKind` is judged beside §3 — pellet shape is closer to `Document`
       than to `Photo`. Cost: join table + media link, one `MIGRATION_6_7`, **schema 7**, a fixture and the
       `connectedAndroidTest` run nothing else here owes. Accepted knowingly 2026-08-14.
