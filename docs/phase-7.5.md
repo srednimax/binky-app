@@ -128,6 +128,27 @@ against white, which is exactly what 8 pt small print is, and no amount of zoom 
 
 This is a written answer produced on the device, not a passing test.
 
+### Answered 2026-08-14 — both numbers kept, and the risk was somewhere else
+
+Scanned in the app on the Xiaomi: an A4 page of dense **9 pt two-column body text**, harder than a discharge
+sheet. Stored **2129×3000, 1.29 MiB** — the long edge hit the cap, so the reduction genuinely ran. At 1:1 the
+strokes land 4–6 px wide and read cleanly, superscripts included; there is no ringing, no mosquito noise and
+no blocking. **The "unverified" comment is deleted and the measurement is in its place.**
+
+**Both numbers were re-derived rather than merely kept.** On a text block, quality 92 leaves 0.4% of pixels
+more than 8 levels off; 85 leaves 5.2% — fourteen times the damage to save 18% of the file — and 95 costs a
+third of a megabyte for damage already under the eye's floor. 92 sits just above the knee, which is the
+number to be at.
+
+**Two things the section did not predict.**
+
+- **The optics bind before the codec does.** The page's soft corners are the lens and the paper's curl —
+  uniformly soft rather than fringed, which is the optical signature and not the compressor's. On an
+  ordinary phone scan there is nothing to buy by spending more here.
+- **Android writes 4:2:0 chroma even at quality 92**, so §2's stated suspicion was aimed correctly and lands
+  harmlessly: full-resolution luma carries black-on-white strokes. It is **thin coloured print** that would
+  show it first — the red out-of-range flags on a lab sheet. Recorded, not acted on.
+
 ## 3 — Licence attribution
 
 The app ships Room, Compose, Coil 3, Vico and ML Kit and carries **no attribution of any kind** — no string,
@@ -425,6 +446,39 @@ be changed later — a **new `MediaKind.Observation`** writing to `observations/
 new kind is in no backup until it is put in one. **The numbers stay open** and are answered beside §2's
 downsample judgement; a spec change only ever affects later writes, so it is the same judgement made on the
 same phone in the same sitting.
+
+**Answered 2026-08-14, and the hypothesis above is wrong — `Observation` is
+`LongEdge(2048, quality = 88)`.** Judged on a real tray of droppings in hay, photographed both ways on the
+Xiaomi. Three things came out of it:
+
+- **Nothing a dropping photo carries is fine detail.** Round against misshapen, strung together, size
+  against its neighbours — that is gross morphology. With a tray across the frame a 10 mm pellet is ~50 px
+  at 2048, and a ~1080 px-wide phone still leaves most of a doubling to pinch into. `Document`'s cap buys
+  nothing the vocabulary asks for.
+- **Texture hides what text exposes.** On the same tray, quality 85 disturbs 1.2% of the pixels in a
+  *shadowed* patch, against 5.2% for a text block at that quality. 88 rather than `Photo`'s 85 is bought for
+  the one place this subject is harder than a gallery shot — the pellets that matter are dark brown and
+  often in shade, and shadow is where quantisation shows. It stays well under 92.
+- **Frequency is the half no other kind has.** A vet document arrives a few times a year; an observation can
+  be daily. ~545 KiB is ~190 MiB a year for an owner who photographs every tray, and `Document`'s numbers
+  would be roughly double that for no legibility gained.
+
+**The scanner's filter is actively wrong for a tray, which is the finding worth keeping.** ML Kit accepted
+the tray and perspective-cropped it, then clipped the highlights and edge-enhanced — destroying pellet
+outlines *exactly where the light was good*, and shifting the colour. So "closer to `Document`" was wrong
+about the route as well as the numbers: the tray photo must come through the ordinary photo capture path,
+never the document scanner. The plain camera is not a fallback here, it is the correct instrument.
+
+**What no spec can fix, so it is not mistaken for one:** on a tray half in sun and half in shade, shape is
+already marginal in the shadow at *any* quality. The limit is the exposure. If anything is owed the owner
+here it is a word about lighting, not a larger file.
+
+**Half the backup wiring rode along with the kind, and half is still owed.** Adding the entry puts it in
+`MediaKind.entries`, so it was added to **`Records` and `Everything`** in the same change — two lines, and
+the failure ADR-0029 exists to prevent. **The cloud admission queue is not done**: `documentsNewestFirst`
+and `AutoBackupSet.excludedDocuments` are named for documents throughout, so admitting tray photos beside
+them renames a field its UI copy and tests both read. That is feature work, and it belongs in step 4 with
+the rest of the droppings build. Nothing writes `observations/` until then, so nothing is at risk meanwhile.
 
 The justification is ADR-0026's line read forwards: a photo of what you saw is **observation, not advice**,
 and it is the single most useful thing an owner can hand a vet about a gut problem that has already changed

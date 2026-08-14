@@ -25,10 +25,14 @@ enum class BackupScope(
     Essential(listOf(MediaKind.Avatar)),
 
     /**
-     * The default. [Essential] plus scanned documents: everything the owner may need *again*, which
-     * is the distinction ADR-0017 draws between a record and a memory.
+     * The default. [Essential] plus scanned documents and tray photos: everything the owner may need
+     * *again*, which is the distinction ADR-0017 draws between a record and a memory.
+     *
+     * A tray photo sits here rather than in [Everything] because it is evidence rather than a
+     * snapshot (ADR-0029) — the thing an owner hands a vet about a gut problem that has already
+     * resolved by the appointment, and the gallery tier is the one an owner may never pick.
      */
-    Records(listOf(MediaKind.Avatar, MediaKind.Document)),
+    Records(listOf(MediaKind.Avatar, MediaKind.Document, MediaKind.Observation)),
 
     /**
      * [Records] plus the photo gallery — large, occasional, and **the only place photos are
@@ -36,7 +40,7 @@ enum class BackupScope(
      * so an owner who never picks this scope has no copy of their gallery anywhere. That gap is
      * accepted, and the app says so in words rather than leaving it to be discovered.
      */
-    Everything(listOf(MediaKind.Avatar, MediaKind.Document, MediaKind.Photo)),
+    Everything(listOf(MediaKind.Avatar, MediaKind.Document, MediaKind.Observation, MediaKind.Photo)),
     ;
 
     /** Whether this scope's archive is authoritative about [kind] — see `planMediaMerge`. */

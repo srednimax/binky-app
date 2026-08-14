@@ -56,9 +56,8 @@ sealed interface DownsampleSpec {
  * The directory doubles as the export scope: ADR-0005's backup scopes are a list of [MediaKind],
  * not a list of magic strings.
  *
- * Phase 1 exercises [Avatar] only. [Photo] and [Document] have their spec here so Phase 3 and
- * Phase 5 extend this table rather than fork the pipeline, but their numbers are unverified until
- * the phase that ships them.
+ * Every spec here has now been judged against a real capture on a real phone, not assumed — see the
+ * per-kind comments for what was measured and what it weighed.
  *
  * Kotlin note: enum entries can carry constructor arguments, so this is a small lookup table rather
  * than the bare string constants a JS enum would give you.
@@ -73,8 +72,49 @@ enum class MediaKind(
     /** Phase 3. Large enough to fill a phone screen in the full-screen pager. */
     Photo("photos", DownsampleSpec.LongEdge(maxEdge = 2048, quality = 85)),
 
-    /** Phase 5. Kept big and near-lossless: a vet may need to read small print off it (ADR-0017). */
+    /**
+     * Kept big and near-lossless: a vet may need to read small print off it (ADR-0017).
+     *
+     * **Checked 2026-08-14 on a scanned A4 page of 9 pt two-column body text: 2129×3000, 1.29 MiB.**
+     * 3000 px on A4's long edge is ≈256 dpi, and at 1:1 the strokes land 4–6 px wide and read
+     * cleanly — no ringing and no blocking. Both numbers were re-derived rather than kept: quality
+     * sits just above the knee, where 92 leaves 0.4% of pixels in a text block more than 8 levels
+     * off and 85 leaves 5.2% — fourteen times the damage to save 18% of the file. Going the other
+     * way, 95 costs a third of a megabyte for damage already below what the eye finds.
+     *
+     * Two things this measurement does *not* cover. The page's soft corners were the lens and the
+     * paper's curl, uniformly soft rather than fringed, so on an ordinary phone scan the optics bind
+     * before the codec does — which is the argument against spending more here. And Android's
+     * encoder writes 4:2:0 chroma even at 92: harmless for black on white, where full-resolution
+     * luma carries the strokes, but it is what would show first on **thin coloured print**, the red
+     * out-of-range flags on a lab sheet being the case worth remembering.
+     */
     Document("documents", DownsampleSpec.LongEdge(maxEdge = 3000, quality = 92)),
+
+    /**
+     * A photo of a litter tray, attached to an observation (ADR-0029).
+     *
+     * **Deliberately not [Document]'s numbers**, though the phase that asked for this kind expected
+     * them: what a dropping photo has to carry is gross morphology — round against misshapen,
+     * strung together, the size against the ones beside it — and none of that is fine detail. With a
+     * tray across the frame a 10 mm pellet is ~50 px at 2048, and the full-screen pager on a
+     * ~1080 px-wide phone still leaves most of a doubling to pinch into.
+     *
+     * Quality 88 rather than [Photo]'s 85 buys the one place this subject is genuinely harder than a
+     * gallery shot: the pellets that matter are dark brown and frequently in shade, and shadow is
+     * where quantisation shows. It stays well under [Document]'s 92 because texture hides what text
+     * exposes — measured on the same tray, 85 disturbs 1.2% of the pixels in a shadowed patch where
+     * a text block at the same quality loses 5.2%.
+     *
+     * The other half of the reasoning is frequency, which no other kind has: a vet document arrives
+     * a few times a year and an observation can be daily. At ~545 KiB this is ~190 MiB a year for an
+     * owner who photographs every tray, and that is the number a backup has to carry.
+     *
+     * What no spec can fix, recorded here so it is not mistaken for one: on a tray half in sunlight
+     * and half in shade, shape is already marginal in the shadow at *any* quality. The limit there
+     * is the exposure, not the encoding.
+     */
+    Observation("observations", DownsampleSpec.LongEdge(maxEdge = 2048, quality = 88)),
 }
 
 /**
