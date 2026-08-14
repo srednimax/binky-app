@@ -242,8 +242,9 @@ taken twice. The screens they photograph are now final.
 
 Design in **[`phase-7.5.md`](phase-7.5.md)**. It owns no boxes of its own — it is the *order* over five
 that are already written down elsewhere in this file. Each is cheaper before nine languages than after, and
-three get more expensive with time. **The one decision they were waiting on is made** — ADR-0028, grilled
-and written 2026-08-14.
+three get more expensive with time. **ADR-0028 is made** — grilled and written 2026-08-14. **ADR-0029 is
+not, and it goes first**: it needs no phone and gates the largest piece of work here, so it is written
+beside the two hand items rather than immediately before the build.
 
 - [ ] **§5's two hand items first** — Play's per-app contact email, and a delivered support mail read.
       Oldest open boxes in the project, blocked by nothing, an hour between them.
@@ -263,33 +264,46 @@ and written 2026-08-14.
 - [ ] **Droppings are several things at once, and worth a photo** 🔴 **this is the schema bump** — reported
       2026-08-14. `droppingsForm` is one nullable column, so a tray holding round *and* soft pellets forces
       the owner to pick one and file the rest as prose, on the field whose own doc says a countable form
-      beats prose. Recommendation to grill in **ADR-0029**: **form and size go multi-valued, amount stays
-      single** (`FEW` *and* `MANY` is a contradiction about one tray).
+      beats prose. **Decided, for ADR-0029 to write up: form and size go multi-valued, amount stays
+      single** (`FEW` *and* `MANY` is a contradiction about one tray). **Both hang off `observationId`** —
+      there is no group *table*, and ADR-0008 forbids stamping a `groupId` on a solo observation, so the
+      join table is keyed on the row and the photo is a path column on it, riding the `TrayFacts`
+      propagation that already exists. The duplicated path buys one new rule: **the file goes only when no
+      other row references it**, or deleting one bonded bunny takes the survivor's photo.
       ⚠️ **The vocabulary is also incomplete, and `STRUNG_TOGETHER` is a trap** (checked 2026-08-14). It
       means strung *with fur*; **mucus presents identically** — pale goop strung between or enclosing the
       pellets — so an owner seeing gut irritation would reasonably record moulting. And **blood in droppings
       is recordable nowhere**, while `symptom_blood_in_urine` is seeded — the app has a field for the false
       alarm (red urine is usually porphyrins) and none for the always-serious one. **Decided: close the gaps
-      with values, add no field.** `DroppingsForm` gains `MUCUS`, `BLOOD`, `VERY_DARK` (melena), `DOUBLED`
+      with values, add no field.** The field gains `MUCUS`, `BLOOD`, `VERY_DARK` (melena), `DOUBLED`
       (fused = slowing motility, not general misshapenness) and `DRY` (dehydration); `Cecotropes` gains
-      `EXCESS`. A colour field was rejected on **form length**, not tidiness — §6's healthy day exists
-      because a long form deters logging, and *pale*/*greenish* are the weakest signals in the set. Values
-      are stored **by name**, so additions cannot rewrite history. **No per-value urgency copy** — the app
-      records `BLOOD` and says nothing about it (ADR-0026).
-      The photo is tray-level too, so it
-      belongs to the group, and its `MediaKind` is judged beside §3 — pellet shape is closer to `Document`
+      `EXCESS`. **`DroppingsForm` is renamed with them** — five of the six are contents, colour or
+      moisture, not shapes; `DroppingsAppearance` for ADR-0029 to confirm, and the rename is free because
+      only value names are stored. *Pale* and *greenish* stay out on **triage** — they are the weakest
+      signals in the set — not on form length, which cannot tell the values kept from the values dropped.
+      **Blood cannot be a symptom**: symptoms are individual, a shared tray is not attributable (ADR-0008).
+      Values are stored **by name**, so additions cannot rewrite history. **No per-value urgency copy** —
+      the app records `BLOOD` and says nothing about it (ADR-0026).
+      Its `MediaKind` is judged beside §3 — pellet shape is closer to `Document`
       than to `Photo`. Cost: join table + media link, one `MIGRATION_6_7`, **schema 7**, a fixture and the
-      `connectedAndroidTest` run nothing else here owes. Accepted knowingly 2026-08-14.
+      `connectedAndroidTest` run nothing else here owes. Accepted knowingly 2026-08-14. **If the phase runs
+      long the photo is the cut** — it does not cut the migration, and the multiselect is not cuttable.
 - [ ] **The healthy day moves behind the `+`** — reported 2026-08-14. The FAB (`Navigation.kt:365`) opens
       the *full* form; *Log a healthy day* is a separate action inside the Timeline, so the discoverable
-      entry point is the long one and the shortcut that settles a watch is the hidden one. The two collapse
-      into one. No schema, and no new strings if the existing copy moves rather than being rewritten.
+      entry point is the long one and the shortcut that settles the subject's watch is the hidden one.
+      **Decided: the `+` opens a bottom sheet with both paths and the Timeline button goes.** A sheet and
+      not a menu, because `healthy_day_help` has to travel with the label — one tap commits four facts on
+      the owner's behalf (ADR-0001). No schema and **no new strings**: `healthy_day_action`,
+      `healthy_day_help` and `observation_add_title` are reused verbatim, nicer labels deliberately not.
 - [ ] **The housemates line at five bunnies** — reported 2026-08-14, and a **defect**, not a feature. The
       grammar is right (`joinNames` builds from the right through string resources); the layout is not —
       `HomeScreen.kt:210`/`:443` and `ArchivedBunniesScreen.kt:170` draw it as a plain `Text` with **no
       `maxLines` and no `overflow`**, so five names, or two long ones, grow the card by two lines. Never
       seen, because the seed has two short-named bunnies — the **second customer for seed variants**. Cap
-      the names, not the pixels: *"Lives with Thumper, Clover & 3 others"*, one `plurals` entry.
+      the names *and* bound the line: two named then *"& N others"* **from four housemates up** (never
+      *"& 1 other"*), archived folded first, one `plurals` entry — in **`housematesLabel`, never
+      `joinNames`**, which the healthy-day receipt shares and must not truncate (ADR-0008) — plus
+      `maxLines = 2, overflow = Ellipsis` at the three sites, because a count cap cannot fix two long names.
 - [ ] **§8's licence attribution** last: **`app.cash.licensee`** at build time, rendered by the app's own
       Compose screen. No ADR owed — it adds no runtime dependency, so ADR-0009 is untouched, and it emits
       structured data plus a build failure when a licence changes, which is §8's own stated fear. The Play
