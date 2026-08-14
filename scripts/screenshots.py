@@ -207,7 +207,7 @@ def main() -> int:
         e2e.restore_device()
         set_locale(None)
         e2e.shell("cmd uimode night auto")
-        print("rotation, navigation mode, locale and theme handed back to the phone")
+        print("rotation, navigation mode, locale, theme and Do Not Disturb handed back to the phone")
         return 0
 
     if not args.out:
@@ -244,15 +244,22 @@ def main() -> int:
         # on hue, where the before half is not a fixed target.
         "dynamic_color": "off — Binky's own scheme (ADR-0027); the before set was wallpaper-derived",
     }
-    for theme in themes:
-        print(f"\n=== {theme}")
-        manifest["themes"].append(run_cell(theme, args.locale, scenes, args.out, not args.no_reseed))
+    # Do Not Disturb for the length of the run, off again whatever happens — the seed's 20:00 dose
+    # posts a heads-up banner over Home a minute after every reseed, and this script reseeds once
+    # per cell. See [e2e.set_dnd]; the `finally` is because it is a phone-wide setting.
+    e2e.set_dnd(True)
+    try:
+        for theme in themes:
+            print(f"\n=== {theme}")
+            manifest["themes"].append(run_cell(theme, args.locale, scenes, args.out, not args.no_reseed))
 
-    # The `empty` suite ends with the install wiped, so without this the phone is handed back blank
-    # — which is how the 5 Aug matrix run left it (DOD §1). Only owed when a wipe actually happened.
-    if any(scene.suite == "empty" for scene in scenes) and not args.no_reseed:
-        print("\n-- reseeding, so the phone is left usable")
-        e2e.reset_to_seeded()
+        # The `empty` suite ends with the install wiped, so without this the phone is handed back
+        # blank — which is how the 5 Aug matrix run left it (DOD §1). Only owed when a wipe happened.
+        if any(scene.suite == "empty" for scene in scenes) and not args.no_reseed:
+            print("\n-- reseeding, so the phone is left usable")
+            e2e.reset_to_seeded()
+    finally:
+        e2e.set_dnd(False)
 
     manifest["seconds"] = round(time.time() - started)
     manifest_path = args.out / "manifest.json"
