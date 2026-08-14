@@ -3,7 +3,9 @@
     Debug-only manifest additions. Merged into the debug APK's manifest and into nothing else — the
     release build never sees this file, so nothing declared here can ship.
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application>
         <!--
@@ -19,10 +21,17 @@
             which every capture run wipes anyway. The Play build is a separate package and does not
             contain this file, so no phone carrying real bunny history has a receiver here to reach.
         -->
+        <!--
+            `ExportedReceiver` is the warning the comment above is the answer to: lint asks for a
+            permission, and a permission is precisely what would put `am broadcast` back outside.
+            Suppressed here rather than left to explain itself, because the phase gate holds lint at
+            0 errors and 0 warnings — a standing warning teaches the next run to skim the list.
+        -->
         <receiver
             android:name=".debug.SeedVariantReceiver"
             android:enabled="true"
-            android:exported="true" />
+            android:exported="true"
+            tools:ignore="ExportedReceiver" />
     </application>
 
 </manifest>
