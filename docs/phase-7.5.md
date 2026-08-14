@@ -1,6 +1,7 @@
 # Phase 7.5 — The interlude — ships as 1.5
 
-**Status: planned, not started.** Boxes in [`DOD.md`](DOD.md) §6.5; this file is the reasoning. Finished
+**Status: in progress.** Opened 2026-08-14; ADR-0028 and ADR-0029 both written that day, so step 1's
+decision half is done and only its two hand items are outstanding. Boxes in [`DOD.md`](DOD.md) §6.5; this file is the reasoning. Finished
 phases are in [`PLAN.md`](PLAN.md) and are not needed to build this one.
 
 **Why a phase and not a pile of chores.** Four unrelated-looking items share one property: each is cheaper
@@ -280,8 +281,9 @@ nine languages in Phase 8, which is the tax this phase exists to pre-pay.
 
 ## 7 — Droppings are several things at once, and worth a photo 🔴 this is the schema bump
 
-Two reports, one shape. **ADR-0029 is owed before either is built**, and it should be grilled the way
-ADR-0028 was.
+Two reports, one shape. **[ADR-0029](adr/0029-droppings-are-multi-valued-and-the-tray-is-worth-a-photo.md)
+is written** — grilled and settled 2026-08-14, before anything is built, as ADR-0028 was. **The design lives
+there**; what follows is what it costs, corrected where the grilling proved this section wrong.
 
 **Multiselect.** `droppingsForm` is a single nullable column over `ROUND, MISSHAPEN, STRUNG_TOGETHER, SOFT,
 DIARRHOEA`. A tray genuinely holds more than one kind at once — round pellets *and* soft ones is the
@@ -306,8 +308,11 @@ table, and ADR-0008 forbids stamping one on a solo observation — *"it would ma
 a model this app does not have. **Tray-level here means denormalised onto every row and propagated on
 edit** (`updateTray`, group-wide or to the one row when solo). The multi-valued fields therefore become a
 join table keyed on **`observationId`**, the photo becomes a **path column on the row**, and both ride the
-`TrayFacts` propagation that already exists. ADR-0008 is untouched, and the migration is mechanical: one
-row per non-null value.
+`TrayFacts` propagation that already exists. ADR-0008 is untouched. **The migration is not mechanical, which is
+this section's one confirmed error**: dropping the two columns needs a full table rebuild (SQLite gained
+`DROP COLUMN` in 3.35 and `minSdk` is 26), and `DROP TABLE observations` fires `observation_symptoms`'
+`ON DELETE CASCADE` — so a careless rebuild passes `runMigrationsAndValidate` with every symptom tick in the
+database deleted. ADR-0029 carries the recipe that stages the links and puts them back.
 
 **The one new rule that buys.** A duplicated path means deleting one bonded bunny cascades a row that still
 references the survivor's file, and `MediaFiles.delete` is a plain `File.delete()` (`MediaFiles.kt:176`).
@@ -369,16 +374,21 @@ diagnosis; if you are worried, ask a vet"* do the rest.
 **The photo.** Observations carry no media today. A dropping photo is tray-level like the rest — one path,
 written to every row in the group and propagated on edit, per the paragraph above — and it goes through
 `MediaFiles` per the house rule, which raises a genuine spec question this phase is already equipped to answer: **pellet shape is closer to
-`Document`'s "small detail matters" than to `Photo`'s gallery spec.** Answer it beside §2's downsample
-judgement; it is the same kind of judgement made on the same phone in the same sitting.
+`Document`'s "small detail matters" than to `Photo`'s gallery spec.** ADR-0029 settles the half that cannot
+be changed later — a **new `MediaKind.Observation`** writing to `observations/`, carried by `Records` and
+`Everything` and by the cloud admission queue, because a directory is permanent once paths are stored and a
+new kind is in no backup until it is put in one. **The numbers stay open** and are answered beside §2's
+downsample judgement; a spec change only ever affects later writes, so it is the same judgement made on the
+same phone in the same sitting.
 
 The justification is ADR-0026's line read forwards: a photo of what you saw is **observation, not advice**,
 and it is the single most useful thing an owner can hand a vet about a gut problem that has already changed
 by the time of the appointment.
 
-**Cost, stated plainly.** A join table for the multi-valued fields and a link for the photo — one migration
-covering both, **schema 7**, a schema-7 fixture, and the `connectedAndroidTest` run every other item in this
-phase avoids. That is the price of the two, and it was accepted knowingly on 2026-08-14.
+**Cost, stated plainly**, and higher than this section first said. Two join tables for the multi-valued
+fields and a link for the photo — one migration covering both, **schema 7**, a schema-7 fixture, and the
+`connectedAndroidTest` run every other item in this phase avoids. The migration **rebuilds `observations`**,
+which is the first time this project rewrites a table holding an owner's history rather than adding to one. That is the price of the two, and it was accepted knowingly on 2026-08-14.
 
 **If the phase runs long, the tray photo is the cut** — decided now rather than under pressure, because it
 is the only part of §7 whose removal makes nothing worse. **It does not cut the migration**: the join table
@@ -465,6 +475,8 @@ JVM, and mostly a table. `WeightTrendTest` gains gain cases beside its loss ones
 **Instrumented, owed by §7's schema bump alone.** `MIGRATION_6_7` from a schema-6 fixture at API 26/34/36,
 asserting that **an existing single droppings value survives as one row in the join table** — a migration
 that silently drops it would erase exactly the history ADR-0023 stopped the database being disposable for.
+**And that the symptom links are still there afterwards**, which is the assertion `runMigrationsAndValidate`
+cannot make: it compares the schema and passes on a database the rebuild's cascade has emptied.
 Plus the DAO round-trip for a multi-valued field and for an observation carrying a tray photo, and the
 **delete case the duplicated path creates**: removing one bonded bunny leaves the survivor's row *and its
 file* intact, while removing the last row that references it takes the file with it.
@@ -493,6 +505,9 @@ are written answers.
   in CI at API 26/34/36, beside the schema-4 and schema-5 fixtures that already do. **A restored schema-6
   backup opens with its droppings intact** — the single-value column becomes one row in the join table, and
   a migration that quietly drops the old value would erase history ADR-0023 exists to protect.
+- **Every symptom tick still in the database after `MIGRATION_6_7`.** The rebuild drops `observations`,
+  which cascades into `observation_symptoms`; the schema validation cannot see it, so the row count is the
+  gate.
 - `connectedAndroidTest` green on the Xiaomi — owed this phase, unlike every other item in it. Note the
   HyperOS split-install trap in `CLAUDE.md` before assuming a failed run means broken code.
 - **A tray photo survives the loss of one bonded bunny.** Deleting one participant leaves the survivor's
@@ -515,9 +530,10 @@ are written answers.
 
 1. **The two hand items, and ADR-0029 beside them.** The hand items are the oldest and cheapest, block
    nothing and are blocked by nothing. **ADR-0029 needs no phone and gates the largest piece of work in the
-   phase**, so it is written here rather than immediately before the build: the parent key, the renamed
-   vocabulary and whether the tray photo survives are settled before anything is built, and step 3 then
-   knows whether it is judging a live feature or a cut one.
+   phase**, so it was written here rather than immediately before the build. ✅ **Done 2026-08-14**: two
+   typed join tables keyed on `observationId`, `DroppingsAppearance` confirmed, the tray photo **ships** as
+   a new record-grade `MediaKind`, and the migration recipe pinned — so step 3 is judging a live feature.
+   The two hand items remain.
 2. **The capture driver** — isolation step first, proven in English against the live 20:00 dose, then the
    locale needles proven on `pl`, the one complete locale. Shoot the Polish after set with it.
 3. **The two spec judgements in one sitting**, while the phone is already in hand and before the code churn

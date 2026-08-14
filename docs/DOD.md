@@ -242,9 +242,9 @@ taken twice. The screens they photograph are now final.
 
 Design in **[`phase-7.5.md`](phase-7.5.md)**. It owns no boxes of its own — it is the *order* over five
 that are already written down elsewhere in this file. Each is cheaper before nine languages than after, and
-three get more expensive with time. **ADR-0028 is made** — grilled and written 2026-08-14. **ADR-0029 is
-not, and it goes first**: it needs no phone and gates the largest piece of work here, so it is written
-beside the two hand items rather than immediately before the build.
+three get more expensive with time. **Both ADRs are made** — ADR-0028 and
+[ADR-0029](adr/0029-droppings-are-multi-valued-and-the-tray-is-worth-a-photo.md), grilled and written
+2026-08-14, so nothing here is waiting on a decision. What is left of step 1 is the two hand items.
 
 - [ ] **§5's two hand items first** — Play's per-app contact email, and a delivered support mail read.
       Oldest open boxes in the project, blocked by nothing, an hour between them.
@@ -264,7 +264,7 @@ beside the two hand items rather than immediately before the build.
 - [ ] **Droppings are several things at once, and worth a photo** 🔴 **this is the schema bump** — reported
       2026-08-14. `droppingsForm` is one nullable column, so a tray holding round *and* soft pellets forces
       the owner to pick one and file the rest as prose, on the field whose own doc says a countable form
-      beats prose. **Decided, for ADR-0029 to write up: form and size go multi-valued, amount stays
+      beats prose. **Decided in ADR-0029: appearance and size go multi-valued, amount stays
       single** (`FEW` *and* `MANY` is a contradiction about one tray). **Both hang off `observationId`** —
       there is no group *table*, and ADR-0008 forbids stamping a `groupId` on a solo observation, so the
       join table is keyed on the row and the photo is a path column on it, riding the `TrayFacts`
@@ -278,15 +278,19 @@ beside the two hand items rather than immediately before the build.
       with values, add no field.** The field gains `MUCUS`, `BLOOD`, `VERY_DARK` (melena), `DOUBLED`
       (fused = slowing motility, not general misshapenness) and `DRY` (dehydration); `Cecotropes` gains
       `EXCESS`. **`DroppingsForm` is renamed with them** — five of the six are contents, colour or
-      moisture, not shapes; `DroppingsAppearance` for ADR-0029 to confirm, and the rename is free because
-      only value names are stored. *Pale* and *greenish* stay out on **triage** — they are the weakest
+      moisture, not shapes; `DroppingsAppearance` is **confirmed** in ADR-0029, and the rename is free
+      because only value names are stored — the column itself disappears in the rebuild. **The existing
+      label is reworded to *"Strung together with fur"***, because a new `MUCUS` value closes nothing while
+      the screen still offers one plausible chip for pale goop. *Pale* and *greenish* stay out on **triage** — they are the weakest
       signals in the set — not on form length, which cannot tell the values kept from the values dropped.
       **Blood cannot be a symptom**: symptoms are individual, a shared tray is not attributable (ADR-0008).
       Values are stored **by name**, so additions cannot rewrite history. **No per-value urgency copy** —
       the app records `BLOOD` and says nothing about it (ADR-0026).
-      Its `MediaKind` is judged beside §3 — pellet shape is closer to `Document`
-      than to `Photo`. Cost: join table + media link, one `MIGRATION_6_7`, **schema 7**, a fixture and the
-      `connectedAndroidTest` run nothing else here owes. Accepted knowingly 2026-08-14. **If the phase runs
+      Its `MediaKind` is **new — `Observation`, writing to `observations/`**, record-grade so `Records`,
+      `Everything` and the cloud queue carry it; only its downsample numbers wait for §3's phone judgement.
+      Cost: two join tables + media link, one `MIGRATION_6_7` that **rebuilds `observations`** (no
+      `DROP COLUMN` at `minSdk` 26, and the drop cascades into `observation_symptoms` — stage the links and
+      put them back), **schema 7**, a fixture and the `connectedAndroidTest` run nothing else here owes. Accepted knowingly 2026-08-14. **If the phase runs
       long the photo is the cut** — it does not cut the migration, and the multiselect is not cuttable.
 - [ ] **The healthy day moves behind the `+`** — reported 2026-08-14. The FAB (`Navigation.kt:365`) opens
       the *full* form; *Log a healthy day* is a separate action inside the Timeline, so the discoverable
