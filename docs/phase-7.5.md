@@ -335,6 +335,12 @@ run reaching every scene**.
   locale run cannot break. Proven with the keyboard up, in Polish.
   ℹ️ **An unlabelled text field also has no accessible name**, which TalkBack reads as a bare edit
   box. Noted rather than fixed: it is app copy, and copy is what this phase is pre-paying for.
+- **A third structural needle arrived with §6, for the opposite reason.** `tap_field` exists because a
+  control had *no* words; `tap_text` exists because two controls have the *same* ones — the "+" describes
+  itself as *Record an observation* and so does a row of the sheet it opens, deliberately, so that the
+  change costs nothing in nine languages. `find` takes the smallest match and the FAB is smaller than a
+  row, so the plain needle would have re-tapped the button and dismissed the sheet. `tap_text` matches on
+  a node's **text** and ignores content descriptions, which is exactly the difference between the two.
 
 ## 5 — Phase 6's two hand items
 
@@ -384,6 +390,30 @@ four facts plus `symptomsChecked` on the owner's behalf, and *"they are entitled
 `observation_add_title` (already the FAB's `contentDescription`) verbatim. Nicer labels — *"Everything was
 normal"* / *"Record what you saw"* — were considered and **not taken**: two rewrites are two strings across
 nine languages in Phase 8, which is the tax this phase exists to pre-pay.
+
+### Built 2026-08-14 — and reusing the string cost the driver a needle
+
+Two `ListRow`s in a `ModalBottomSheet`, the Timeline button gone, and the healthy day now **writes from
+Home**, which it never could before. Seen in both locales, and the receipt tested by hand: *"Healthy day
+recorded for Bijou (weight flag), Clover, Nugget & Thistle"* over the `crowded` fluffle, Undo restoring the
+previous last-observation date.
+
+- **The write moved with the button, into a shell-scoped `HealthyDayViewModel`.** The "+" is the shell's —
+  the same button on Home and on Observations — so a ViewModel belonging to either screen was the wrong
+  owner for it, and the snackbar host was already the shell's for exactly that reason (the FAB has to be
+  lifted above Undo). `ObservationsViewModel` loses the receipt, three repositories and a combine argument;
+  `ObservationsScreen` loses two parameters, including the `snackbarHostState` it only held for this.
+- **Reusing `observation_add_title` made the FAB and one sheet row say the same words, and `find` takes the
+  *smallest* match — which is the FAB.** So the scene that used to reach the form in one tap would have
+  tapped the button again and dismissed the sheet on its own scrim. The fix is structural, like
+  `tap_field`'s: the row has **text** and the FAB has only a **content description**, so a new `tap_text`
+  step matches on text alone. Proven in Polish, where both strings are *"Zapisz obserwację"* — the case that
+  would have been indistinguishable from a broken sheet. **Copy decisions have driver consequences**, and
+  this is the second time this phase that the answer was to name a node by structure rather than by words.
+- **One new scene, `record-day-sheet`**, because `healthy_day_help` is a *subtitle* and a subtitle is
+  exactly what a translation pushes onto a third line. The Polish help line already takes two.
+- The timeline's first day header lost its leading gap along with the button: the section spacer above
+  `dayIndex == 0` existed to separate the list from that button, and with nothing above it, it was a hole.
 
 ## 7 — Droppings are several things at once, and worth a photo 🔴 this is the schema bump
 
@@ -622,6 +652,25 @@ still wraps.
 than English's, so this label is a copy-length canary — and §4's locale-aware driver plus a five-bunny seed
 variant is the pair that would photograph it.
 
+### Built 2026-08-14 — both halves, and the canary already reads
+
+`capHousemates` is the rule, `housematesLabel` renders it, and all three sites carry
+`maxLines = 2, overflow = Ellipsis`. Seen on the phone through the `crowded` variant, in both locales.
+
+- **Bijou reads *"Lives with Clover, Nugget & 2 others"* on one line** where it wrapped to two, and
+  *Pumpkin (archived)* is one of the two folded away — the archived-first preference doing its job on the
+  first real case. Polish is *"Mieszka z: Clover, Nugget i 2 inne"*: the `few` form, agreed correctly,
+  which is the half a `plurals` entry exists for and the half concatenation would have got wrong.
+- **The count is the last *item* of the list, not a suffix on it**, so it goes through `joinNames` with the
+  names and every locale punctuates it its own way. That is why the cap costs one `plurals` entry and no
+  new sentence.
+- **The rule is a pure function so it can be a JVM table**, and the table is what pins *"& 1 other"* never
+  rendering — asserted across one to nine housemates rather than at the one size it could go wrong, because
+  what prevents it is the fold starting at four rather than any check for the number one.
+- **Two long names still take two lines, and that is the design.** No cap fires at two, so the backstop is
+  all there is; `home-long-names` shows *Pip* living with Bartholomew-Maximilian & Wolfgang-Ferdinand over
+  exactly two lines, bounded, nothing ellipsised. The ellipsis is for names past pathological.
+
 ## Decisions
 
 - **This ships as 1.5, and Phase 8 becomes 1.6.** `release-please` derives the version from commit subjects,
@@ -738,7 +787,12 @@ are written answers.
    wired to the bunny editor from all three hosts, a `gaining` seed variant and three scenes. The driver
    paid for itself on the first capture — see §1.
 6. **The two cheap ones together**: §6's entry point and §8's housemates cap. Both change what scenes see,
-   so they land after the driver and before the final matrix run.
+   so they land after the driver and before the final matrix run. ✅ **Done 2026-08-14**: the sheet behind
+   the "+", the Timeline button gone, the count cap and the bounded line at all three sites, one new
+   `plurals` entry in both locales and a JVM table for the rule. Seen in English and Polish, and the
+   healthy day written **from Home** for the first time. The one thing that cost anything was not the UI —
+   see §6: reusing the FAB's string made two nodes say the same words, and the driver needed a `tap_text`
+   step to tell the label from the icon.
 7. **Licence attribution**: mechanism decided, then built.
 
 The device items sit before the code items on purpose: they want the phone and no rebuild churn, and the
