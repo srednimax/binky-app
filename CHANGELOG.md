@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.4.0](https://github.com/srednimax/binky-app/compare/v1.3.0...v1.4.0) (2026-08-14)
+
+
+### Features
+
+* **art:** redraw the launcher mark and move the identity onto the Phase 7 palette ([ad721e0](https://github.com/srednimax/binky-app/commit/ad721e0d035ef53d44474e831a1070f72111a4fd))
+* convert the last eleven dialogs to the BinkyDialog idiom ([91f524b](https://github.com/srednimax/binky-app/commit/91f524bd5648370b14f7420541bddb52a2e12456))
+* give Binky its own palette, type scale and spacing rhythm ([61abe63](https://github.com/srednimax/binky-app/commit/61abe63ef2cb5f61e42e2ca748c5dc4095495656))
+* let Material You be switched back on in Settings ([a7ca363](https://github.com/srednimax/binky-app/commit/a7ca363e9d03b05b390081566de6f8dd4c1f195e))
+* redraw Archived bunnies against 4f/4g/4h ([957ec73](https://github.com/srednimax/binky-app/commit/957ec730d60c23c6617dd4d32edc3418ffa8b441))
+* redraw Backup & restore against 6c/6d ([c4d3764](https://github.com/srednimax/binky-app/commit/c4d376426374a619460426c05781cd4f7a51af22))
+* redraw Care & Meds against 3a/3b and 3c/3d ([de9445d](https://github.com/srednimax/binky-app/commit/de9445db7217357cae82a72a288f6f81032a51c1))
+* redraw Documents and Photos against 10a-10d ([0ba20d9](https://github.com/srednimax/binky-app/commit/0ba20d92af943fc724d24ef98021360bc1082a44))
+* redraw Home against its mockups ([fbbec31](https://github.com/srednimax/binky-app/commit/fbbec3125ab18bf8b5062b51868c165206522910))
+* redraw More against 6a/6b ([834db70](https://github.com/srednimax/binky-app/commit/834db70ff670b62bf10b113c16e82d87b30aefee))
+* redraw New course against 3e and Record a dose against 3f/3g ([72019eb](https://github.com/srednimax/binky-app/commit/72019eb073eb4a4eaa6e031f12e7b8e544ac0301))
+* redraw Observations against 2a/2b ([13340b7](https://github.com/srednimax/binky-app/commit/13340b73700f2b91b4b733547b1466491c452cc6))
+* redraw Record a weighing against 6e/6f and adopt the last-five line ([d0e0c14](https://github.com/srednimax/binky-app/commit/d0e0c146ae6b98ad53ecdcd5d6a95eb7d3a3308b))
+* redraw Record an observation against 2c ([e50c37e](https://github.com/srednimax/binky-app/commit/e50c37e4bf8c0e260d56529ea7d3d018174240de))
+* redraw Settings, the first route with no drawing ([b734332](https://github.com/srednimax/binky-app/commit/b734332c833f1bfaa4c0e8d3d25bfde995a0b164))
+* redraw Support against 9c/9d ([3d4ec76](https://github.com/srednimax/binky-app/commit/3d4ec766d3c99df6098d79f45ad5bf4d3b667e9e))
+* redraw the bunny editor against 4e ([fe1f958](https://github.com/srednimax/binky-app/commit/fe1f9581c508ad3749caa08c1e443c51fc81ee00))
+* redraw the bunny switcher against its mockup ([9a18cc6](https://github.com/srednimax/binky-app/commit/9a18cc676b9265578b2e33bea6cbe5314e74878c))
+* redraw the Care detail screens against 10k-10n ([909cfd9](https://github.com/srednimax/binky-app/commit/909cfd9bfa760fbc3a68a5c9ce5ab0d0d08653c2))
+* redraw the chart empty states and watch expiry against 8a-8e ([c7d2e76](https://github.com/srednimax/binky-app/commit/c7d2e7616581663bd1137854b8319ae5183ef94f))
+* redraw the setup wizard and schema mismatch against 10e-10j ([ea35c2e](https://github.com/srednimax/binky-app/commit/ea35c2e53db37e1a979c373cf23aef7256bf452b))
+* redraw Vets against 5a/5b and move deleting a vet to the editor ([d854a9a](https://github.com/srednimax/binky-app/commit/d854a9a4e0bffbecdf7277e127bc90cb1c05304f))
+* redraw Weight against its mockups ([28cda95](https://github.com/srednimax/binky-app/commit/28cda959ceff8bfc7e7116c79a95094bd01238ab))
+
+
+### Bug Fixes
+
+* correct Settings against 9a, which arrived after it shipped ([9a8bdb6](https://github.com/srednimax/binky-app/commit/9a8bdb670ed6970dcdee82f97414beaf58228ded))
+* paint the trend flag apricot rather than error red ([e825017](https://github.com/srednimax/binky-app/commit/e82501711a449411e8850a458b5c32366cd25697))
+* **scripts:** make the edge-to-edge matrix produce honest evidence ([011a07d](https://github.com/srednimax/binky-app/commit/011a07d865be6291562422e7d23865fc27f94eee))
+* stop the weigh-in reminder opening both completion dialogs by itself ([f6aa148](https://github.com/srednimax/binky-app/commit/f6aa148a68721f5983cf8279c293a505e567ae26))
+* three device-pass corrections on the redrawn Backup screen ([f736e4d](https://github.com/srednimax/binky-app/commit/f736e4df95684e87eba832f3b685ff968707f7dc))
+
 ## [1.3.0](https://github.com/srednimax/binky-app/compare/v1.2.0...v1.3.0) (2026-08-06)
 
 
