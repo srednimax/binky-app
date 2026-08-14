@@ -36,6 +36,9 @@ ktlint = "1.5.0"
 mlkitDocumentScanner = "16.0.0"
 nav3Core = "1.0.1"
 lifecycleViewmodelNav3 = "2.10.0"
+# Build-time only (Phase 7.5 §3): resolves the runtime classpath and emits the attribution list the
+# app renders itself. Nothing of it ships except the JSON it writes into assets.
+licensee = "1.14.1"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidxAppCompat" }
@@ -94,3 +97,4 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+licensee = { id = "app.cash.licensee", version.ref = "licensee" }

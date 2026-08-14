@@ -44,7 +44,7 @@ second Play-services dependency would cost), ADR-0020 (the media pipeline's kind
 | Item | Kind | Lands in | In the binary? |
 | --- | --- | --- | --- |
 | The gain signal | New functionality, per ADR-0028 | `WeightTrend.kt`, the trend flag card | yes |
-| Licence attribution | New screen or section | `ui/more/` (Support is the only About-shaped screen) | yes |
+| Licence attribution | Two new screens | `ui/support/`, generated into assets at build time | yes |
 | Document downsample answer | A judgement, possibly two numbers | `MediaFiles.kt` | maybe — only if it retunes |
 | Capture driver: isolation, seed variants, locale | Tooling | `scripts/edge-to-edge.py` | no |
 | Play contact email, received support mail | Two hand items | Play Console, an inbox | no |
@@ -145,7 +145,7 @@ next to their question rather than inside it, and saying so is better than letti
 - **The gain card gets a permanent scene, via seed variants in the driver** — see §4. `SampleData.kt` has
   no rising series (Phase 7 records that it pairs the trend flag with the running watch and the steady
   series with the expired one), so without a mechanism the card would be verified once by hand and then
-  never seen by the harness again. The default seed is **not** changed: it is load-bearing for 61 scenes
+  never seen by the harness again. The default seed is **not** changed: it is load-bearing for 58 scenes
   and for the Play listing screenshots.
 
 ## 2 — The document downsample, finally calibrated
@@ -226,6 +226,51 @@ It lands on **Support**, the app's only About-shaped screen. String cost is smal
 the licence text itself is **not translatable** — a licence is its English text — so what the nine languages
 get is a screen title and a row label.
 
+### Built 2026-08-14 — and the generator found a licence nobody knew was in the build
+
+`licensee` resolves **201 artifacts** in the release variant against the 13 runtime entries in
+`libs.versions.toml`, which is the ratio §3 was written about, now measured rather than argued. Two screens
+(`Licences` → `LicenceText`), seven strings in both locales, and a JVM table over the grouping. **Nothing
+new ships but the generated JSON, two licence texts and the screens that read them** — 113 KiB of assets,
+and the plugin itself is build-time only exactly as claimed.
+
+- **The list is four licences, not one, and the fourth was a surprise.** Apache-2.0 covers 195; the Android
+  SDK terms cover 3 and the ML Kit terms 2, both of which §3 predicted. **`BSD-3-Clause` covers exactly one**
+  — `androidx.datastore:datastore-preferences-external-protobuf`, androidx's repackaging of
+  protobuf-javalite — and nothing in the project knew it was there. That is the argument for generating the
+  list, arriving on the first run: a hand-typed list would have been wrong on the day it was typed, not one
+  bump later.
+- **The obligation is the licence *text*, so the text ships.** DOD §8's words are "the licence and NOTICE to
+  travel with the binary", and a URL does not travel — a phone with no signal, or a page that moves, leaves
+  the app carrying 195 Apache-licensed artifacts and no licence. So `assets/licences/<spdx-id>.txt` holds
+  the real thing, and `LicenceTextScreen` is that half of §4 of the licence rather than a nicety. The two
+  Google ones **cannot** be bundled — they are Google's terms of service, not ours to redistribute — so
+  their rows link out, and the type carries that distinction rather than the screen inferring it.
+- **The mechanism has a second step with nothing behind it, so a test stands there.** Licensee fails the
+  build on a licence nobody allowed; it has no opinion at all about whether that licence's *text* was added.
+  So `allow("X")` without `assets/licences/X.txt` would quietly downgrade the screen from shipping the
+  licence to pointing at it — the exact obligation, lost silently. `LicencesTest` reads the build file and
+  the asset directory and asserts they agree. It is the only test in the project that reads
+  `build.gradle.kts`, and it is there because the build cannot check itself here.
+- **A duplicated string was right this time, and the driver agreed.** *Open-source licences* is two
+  resources with one value — the Support row and the screen it opens — which is precisely §6's collision.
+  It is benign here for a reason worth stating: the two never appear on one screen, and both translate to
+  the same Polish, so `resolve_needles` reports the needle as naming several strings and then **resolves it
+  anyway**, because the candidates agree. The ambiguity check is about disagreement, not about duplication.
+- **The phone corrected the sort, which no test would have.** Ordering by the joined coordinate string put
+  `androidx.activity:activity` *third*, underneath `activity-compose` and `activity-ktx`, because `-` sorts
+  before `:`. Correct as a string sort and wrong as a list of libraries; it is now sorted by the three
+  fields, and pinned.
+- **ADR-0009's quarantine is visible on the screen.** Every one of the five artifacts under the two
+  link-only headings arrives behind the document scanner — `play-services-base`, `-basement`, `-tasks`,
+  `-mlkit-document-scanner` and `com.google.mlkit:common`. Dropping the scanner takes both non-open-source
+  headings off this screen with it, which is the clearest statement of that ADR's cost anyone has had.
+
+**One thing is accepted rather than fixed.** The published licence text is hard-wrapped at about 72 columns
+and a phone is narrower, so every line wraps once and the page reads ragged. Re-flowing it would look better
+and would mean editing a legal document's line breaks with a heuristic that has to get the numbered clauses
+and the appendix right. Verbatim is what "a copy of this License" means, so verbatim is what it renders.
+
 ## 4 — The capture driver: isolation first, then locale
 
 Two halves, both carried out of Phase 7, and the order matters — the isolation bug is provable in English
@@ -261,7 +306,7 @@ mechanism the card is verified by hand once and then invisible to the harness fo
 screenshot, no regression coverage for a permanent feature.
 
 **A scene may request an alternate seed; the default is untouched.** That last clause is the constraint, not
-a nicety: the default seed is load-bearing for 61 scenes, for the before/after comparison and for the Play
+a nicety: the default seed is load-bearing for 58 scenes, for the before/after comparison and for the Play
 listing screenshots, so changing it — a third bunny, or a repurposed series — moves evidence that is already
 banked. This is the third rewrite of the same throwaway patch, which is the project's own signal that it
 belongs in `scripts/` rather than the scratchpad.
@@ -793,7 +838,12 @@ are written answers.
    healthy day written **from Home** for the first time. The one thing that cost anything was not the UI —
    see §6: reusing the FAB's string made two nodes say the same words, and the driver needed a `tap_text`
    step to tell the label from the icon.
-7. **Licence attribution**: mechanism decided, then built.
+7. **Licence attribution**: mechanism decided, then built. ✅ **Done 2026-08-14**: `app.cash.licensee`
+   generating the list per variant into assets, two screens off Support, the Apache-2.0 and BSD-3-Clause
+   texts bundled so the licence itself travels with the binary, seven strings in both locales, ten JVM
+   tests and two capture scenes. Seen in English and Polish. The generator's first run found a
+   **BSD-3-Clause** dependency nobody knew about — see §3, which is also where the one thing it could not
+   check about itself is written down.
 
 The device items sit before the code items on purpose: they want the phone and no rebuild churn, and the
 driver has to be right *before* it photographs states that did not exist last phase — of which this phase

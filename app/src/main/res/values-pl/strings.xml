@@ -857,7 +857,16 @@
     <string name="support_no_store_app">Nie udało się otworzyć Google Play na tym telefonie.</string>
     <string name="support_privacy_button">Polityka prywatności</string>
     <string name="support_no_browser">Brak przeglądarki na tym telefonie, aby otworzyć stronę.</string>
+    <string name="support_licences_button">Licencje open source</string>
     <string name="support_version_label">Wersja</string>
+
+    <!-- Open-source licences. The list, the licence names and the licence texts stay English -->
+    <string name="licences_title">Licencje open source</string>
+    <string name="licences_intro">Binky korzysta z bibliotek wymienionych poniżej. Lista powstaje podczas kompilacji, więc wymienia wszystko, co ta wersja aplikacji naprawdę zawiera.</string>
+    <string name="licences_read">Przeczytaj licencję</string>
+    <string name="licences_open_terms">Otwórz warunki</string>
+    <string name="licences_unavailable">Nie udało się odczytać listy licencji z tej wersji aplikacji.</string>
+    <string name="licences_text_missing">Tekst tej licencji nie jest dołączony do aplikacji.</string>
 
     <!-- The photo gallery: one bunny's pictures, reached from More -->
     <string name="photo_which_bunny">Czyje zdjęcia?</string>

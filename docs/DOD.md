@@ -19,8 +19,8 @@ below is its summary. **Phase 8 retargets to 1.6** — two phases cannot both cl
 answers to commit subjects rather than to this file.
 
 **So what is actually open is evidence, then one short phase of code**: §1's overnight run and the gate
-items behind it, Play's own count (§4), and Phase 7.5's **three remaining items** — the two hand items, the
-driver's two long runs, and the licence screen. Everything that touches the app's own code is done and
+items behind it, Play's own count (§4), and Phase 7.5's **two remaining items** — the two hand items and the
+driver's two long runs. Everything that touches the app's own code is done and
 device-proven; the schema bump, its migration and its instrumented run are green. Then Phase 8.
 
 ---
@@ -87,7 +87,8 @@ All deliberately after it, because each would disturb the armed course.
 - [ ] **Reboot twice — autostart granted and autostart denied.** Whatever the denied run says is what
       ADR-0025's self-heal consequence gets reworded to.
 - [ ] Timezone change: today's answered doses stay answered, no alarm re-armed for a dose already given.
-- [ ] Edge-to-edge matrix re-run (`scripts/edge-to-edge.py`, **61 scenes** — Support added two).
+- [ ] Edge-to-edge matrix re-run (`scripts/edge-to-edge.py`, **73 scenes** — Phase 7.5 added twelve,
+      seven of them on the two seed variants).
       ⚠️ **A wipe costs the rotation, so every wiping scene in a landscape cell has been shot in
       portrait — in this run and in 4f's** (found 2026-08-12). `pm clear` kills the app, the
       portrait-locked launcher takes the foreground, and HyperOS writes `user_rotation` back to **0**;
@@ -248,14 +249,15 @@ Design in **[`phase-7.5.md`](phase-7.5.md)**. It owns no boxes of its own — it
 that are already written down elsewhere in this file. Each is cheaper before nine languages than after, and
 three get more expensive with time. **Both ADRs are made** — ADR-0028 and
 [ADR-0029](adr/0029-droppings-are-multi-valued-and-the-tray-is-worth-a-photo.md), grilled and written
-2026-08-14, so nothing here is waiting on a decision. What is left of step 1 is the two hand items.
+2026-08-14, so nothing here is waiting on a decision. What is left of step 1 is the two hand items,
+and they are now the only code-free work between this phase and its gate.
 
 - [ ] **§5's two hand items first** — Play's per-app contact email, and a delivered support mail read.
       Oldest open boxes in the project, blocked by nothing, an hour between them.
 - [ ] **§7's capture-driver box**, moved here. ✅ **The code is done and device-proven (2026-08-14)** —
       `return_to_home` + DND as setup/teardown, seed variants through a debug-only broadcast receiver
       (`crowded` is the first), and needles resolved through the string resources before the first tap.
-      The default seed is **not** changed: 61 scenes rest on it. **Two long runs are still owed** — a
+      The default seed is **not** changed: **58** scenes rest on it. **Two long runs are still owed** — a
       full **English matrix with the 20:00 dose live**, and a **Polish run reaching every scene**, which
       is the Polish after set and unblocks §4's Polish listing screenshots.
       ℹ️ **The relaunch was already landing on Home** — measured from a detail route and from a non-Home
@@ -336,10 +338,32 @@ three get more expensive with time. **Both ADRs are made** — ADR-0028 and
       ℹ️ The cap is a **pure function with a JVM table** (`HousematesTest`), which is what pins *"& 1 other"*
       never rendering across one to nine housemates. The width half is not testable there and is what the
       `crowded` seed variant photographs.
-- [ ] **§8's licence attribution** last: **`app.cash.licensee`** at build time, rendered by the app's own
-      Compose screen. No ADR owed — it adds no runtime dependency, so ADR-0009 is untouched, and it emits
-      structured data plus a build failure when a licence changes, which is §8's own stated fear. The Play
-      plugin was rejected for a second Play-services library *and* a stock Activity in a redesigned app.
+- [x] **§8's licence attribution** ✅ **built and device-proven 2026-08-14, in both locales.**
+      **`app.cash.licensee`** at build time, rendered by the app's own Compose screens. No ADR owed — it
+      adds no runtime dependency, so ADR-0009 is untouched, and it emits structured data plus a build
+      failure when a licence changes, which is §8's own stated fear. The Play plugin was rejected for a
+      second Play-services library *and* a stock Activity in a redesigned app.
+      A row on Support's last card opens *Open-source licences*: **201 artifacts** in the release variant,
+      grouped under four licences, one section each, with the artifact's coordinates under its name. The
+      list is generated **per variant**, so the debug build's 206 include `ui-tooling` and the release
+      build's do not — the screen names what *this* binary contains.
+      ⚠️ **The generator found a licence nobody knew about on its first run**: `BSD-3-Clause`, covering
+      exactly one artifact (`androidx.datastore:datastore-preferences-external-protobuf`, androidx's
+      repackaging of protobuf-javalite). A hand-typed list would have been wrong the day it was typed.
+      ℹ️ **The licence *text* ships, not a link to it** — §8's words are "travel with the binary", and a URL
+      does not travel. `assets/licences/<spdx-id>.txt` holds Apache-2.0 and BSD-3-Clause, rendered verbatim
+      on their own screen. The Android SDK and ML Kit terms are Google's and are **not** ours to
+      redistribute, so those two groups link out instead — a distinction the model carries rather than the
+      screen guessing.
+      ⚠️ **`allow("X")` in the build file has a build failure behind it; `assets/licences/X.txt` has
+      nothing.** Forgetting the second silently downgrades the screen from shipping a licence to pointing
+      at one, so `LicencesTest` reads `build.gradle.kts` and the asset directory and asserts they agree.
+      It is the only test in the project that reads the build file, and that is why.
+      ℹ️ *Open-source licences* is deliberately two resources with one value — the row and the screen it
+      opens — which is §6's collision and **benign here**: the two never share a screen and both translate
+      the same, so `resolve_needles` reports the duplicate and resolves it anyway. The ambiguity check is
+      about candidates *disagreeing*.
+      Two scenes, `licences` and `licence-text`. Everything else is phase-7.5.md §3.
 
 **Commit rule carries over from Phase 7: `feat:`/`fix:`, never `feat!:`.**
 
@@ -408,18 +432,23 @@ in nine languages and having it read twice by nine native speakers.
 
 ---
 
-## 8 — Open-source licence attribution 🟠 ⤷ Phase 7.5
+## 8 — Open-source licence attribution 🟢 built 2026-08-14, ships in 1.5
 
 Raised while grilling Phase 6 and deliberately **not** folded into it. The app ships Room, Compose,
 Coil 3, Vico and ML Kit and carries **no attribution of any kind** — no string, no asset, no screen.
 Apache-2.0 §4 asks for the licence and NOTICE to travel with the binary.
 
-- [ ] **Decide the mechanism**, which is a dependency question wearing a UI costume: Google's
+- [x] **Decide the mechanism**, which is a dependency question wearing a UI costume: Google's
       `play-services-oss-licenses` plugin (off the shelf, but a **second** Play-services-dependent
       library in a project that quarantines its first one behind an interface — ADR-0009), or a Gradle
       task generating an asset the app renders itself (no dependency, more code, ours to keep working).
       A hand-typed list is neither — it is wrong one dependency bump later and nobody notices.
-- [ ] Then build it where the answer says it belongs. Support is the app's only About-shaped screen.
+      **Decided 2026-08-14**: `app.cash.licensee` at build time, rendered by our own Compose screen —
+      see [`phase-7.5.md`](phase-7.5.md) §3. Build-time only, so ADR-0009 is untouched.
+- [x] Then build it where the answer says it belongs. Support is the app's only About-shaped screen.
+      **Built 2026-08-14**: a row on Support's last card, a generated list of **201 artifacts** under
+      four licences, and the Apache-2.0 and BSD-3-Clause **texts bundled** so the licence travels with
+      the binary rather than being linked. Seen in both locales.
 
 **Before production launch**, which is when the exposure stops being theoretical — not before 1.3.
 

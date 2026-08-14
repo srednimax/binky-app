@@ -81,6 +81,10 @@ import kotlinx.coroutines.launch
  *   so it gets a chevron; Version does not, so it does not. That is the row grammar, and this card
  *   is the first in the app to draw both halves of it side by side ([SingleLineRowHeight]).
  *
+ * Phase 7.5 §3 adds a third row to that card — *Open-source licences* — and it needed no new
+ * grammar, which is the argument for putting attribution here rather than on a screen of its own:
+ * it is a link, it goes with the other link, and the card was already the shape for it.
+ *
  * **Two of the drawing's measurements are declined**, both for the reason `2b`'s surface level was:
  * they have no home in the system and adopting them here alone would make this screen the odd one
  * out. Card interiors are drawn at 20px and built at [Spacing.base]; the outlined buttons are drawn
@@ -91,6 +95,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SupportScreen(
     onBack: () -> Unit,
+    onOpenLicences: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -193,6 +198,15 @@ fun SupportScreen(
                 ListRow(
                     title = stringResource(R.string.support_privacy_button),
                     onClick = { if (!context.openUrl(PRIVACY_POLICY_URL)) say(noBrowser) },
+                    trailing = { Chevron() },
+                )
+                RowDivider()
+                // Attribution's home, because Support is the app's only About-shaped screen and
+                // this is the row grammar it already draws: it opens something, so it gets a
+                // chevron (Phase 7.5 §3).
+                ListRow(
+                    title = stringResource(R.string.support_licences_button),
+                    onClick = onOpenLicences,
                     trailing = { Chevron() },
                 )
                 RowDivider()
