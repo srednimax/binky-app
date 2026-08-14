@@ -10,8 +10,13 @@ built, device-tested and documented as of 2026-08-06; only §5's two hand items 
 waiting on a release PR. **Phase 7** (the redesign — ships as 1.4) **closed 2026-08-13**; §6 is its
 closing note, and the one thing it carried out is §7's first box.
 
-**So what is actually open is evidence, not code**: §1's overnight run and the gate items behind it, one
-calibration (§3), Play's own count (§4), two hand items (§5), and then Phase 8.
+**Phase 7.5** (the interlude — ships as **1.5**, opened 2026-08-14) collects what was scattered here and
+**owns §3, §5, §8, §9 and §7's capture-driver box**. Its reasoning is [`phase-7.5.md`](phase-7.5.md); §6.5
+below is its summary. **Phase 8 retargets to 1.6** — two phases cannot both claim 1.5, and `release-please`
+answers to commit subjects rather than to this file.
+
+**So what is actually open is evidence, then one short phase of code**: §1's overnight run and the gate
+items behind it, Play's own count (§4), and Phase 7.5's five items — and then Phase 8.
 
 ---
 
@@ -152,7 +157,7 @@ All deliberately after it, because each would disturb the armed course.
 
 ---
 
-## 3 — The document downsample spec, still uncalibrated 🟠 the only open item that can change code
+## 3 — The document downsample spec, still uncalibrated 🟠 ⤷ Phase 7.5
 
 Phase 5's intro calls this *"a deliverable and not an assumption"*, and `MediaFiles.kt:60` still carries
 the **unverified** comment on `MediaKind.Document` = `LongEdge(maxEdge = 3000, quality = 92)`. The
@@ -190,7 +195,7 @@ All three land in **one sitting** once the count clears, in this order:
 
 ---
 
-## 5 — Phase 6: the support contact 🟡 built and documented, two hand items left
+## 5 — Phase 6: the support contact 🟡 two hand items left ⤷ Phase 7.5
 
 Built, driven on the device and written up — **6a, 6b, 6c and 6d are all done**. The record is
 [`phase-6.md`](phase-6.md), and `PLAN.md`'s status list ticks Phase 6 on the build and the documents.
@@ -230,6 +235,37 @@ taken twice. The screens they photograph are now final.
 
 ---
 
+## 6.5 — Phase 7.5: the interlude 🟢 planned, ships as 1.5
+
+Design in **[`phase-7.5.md`](phase-7.5.md)**. It owns no boxes of its own — it is the *order* over five
+that are already written down elsewhere in this file. Each is cheaper before nine languages than after, and
+three get more expensive with time. **The one decision they were waiting on is made** — ADR-0028, grilled
+and written 2026-08-14.
+
+- [ ] **§5's two hand items first** — Play's per-app contact email, and a delivered support mail read.
+      Oldest open boxes in the project, blocked by nothing, an hour between them.
+- [ ] **§7's capture-driver box**, moved here: the scene-isolation step proven in English against the live
+      20:00 dose, **seed variants** so a scene can reach a state the default seed hides (the gain card is
+      the first, and Phase 7 wrote the same throwaway patch three times), then locale-aware needles proven
+      on `pl`. Shoots the **Polish after set** in passing — Phase 7's one carried-out item — and unblocks
+      §4's Polish listing screenshots. The default seed is **not** changed: 61 scenes rest on it.
+- [ ] **§3's downsample answer**, taken while the phone is already in hand.
+- [ ] **§9's gain signal**, per **[ADR-0028](adr/0028-a-weight-gain-is-observed-against-a-six-month-anchor.md)**
+      — grilled and written 2026-08-14; merge it before any trend code. Same flag, anchored on the weighing
+      nearest **six months** back (4–8 month window), at **+10 %** — one body-condition step on the
+      PFMA/RWAF scale. Silent under 12 months; a null `birthDate` fires **and asks the age**, because
+      reading an absent field as adulthood is the move ADR-0001 bans. **Loss takes precedence** when both
+      hold, which is what keeps the schema at **6** — one watermark, discarded on a direction change.
+      Three new strings. Two limitations pinned by test, not engineered around.
+- [ ] **§8's licence attribution** last: **`app.cash.licensee`** at build time, rendered by the app's own
+      Compose screen. No ADR owed — it adds no runtime dependency, so ADR-0009 is untouched, and it emits
+      structured data plus a build failure when a licence changes, which is §8's own stated fear. The Play
+      plugin was rejected for a second Play-services library *and* a stock Activity in a redesigned app.
+
+**Commit rule carries over from Phase 7: `feat:`/`fix:`, never `feat!:`.**
+
+---
+
 ## 7 — Phase 8: nine languages 🟢 planned, not started
 
 Design in **[`phase-8.md`](phase-8.md)**. **Runs after Phases 6 and 7** — translating a string set about
@@ -239,7 +275,10 @@ in nine languages and having it read twice by nine native speakers.
 - [ ] Generalise `PolishTranslationTest` → `TranslationTest`, parameterised over the locale table, with
       **per-language plural categories from CLDR** (not a hardcoded set of four). Do this **first**, on
       `en` + `pl`, so it can fail before there is anything to check.
-- [ ] **Make the capture driver locale-aware — needles that resolve through resource names**, carried
+- [ ] ⤷ **Phase 7.5 owns this box as of 2026-08-14** — the tool is built there, on `en` + `pl`, so this
+      phase starts with it in hand and the Polish after set is shot in passing. Everything below stays
+      here as the record of *why*; the work is §6.5's.
+      **Make the capture driver locale-aware — needles that resolve through resource names**, carried
       from Phase 7 (§6) on 2026-08-13, where it was the one box that phase did not close. `--locale`
       already exists on `screenshots.py` and already switches the app; what does not work is everything
       after it, because **the scene needles in `edge-to-edge.py`'s table are English string literals**
@@ -290,7 +329,7 @@ in nine languages and having it read twice by nine native speakers.
 
 ---
 
-## 8 — Open-source licence attribution 🟠 owed, unscheduled
+## 8 — Open-source licence attribution 🟠 ⤷ Phase 7.5
 
 Raised while grilling Phase 6 and deliberately **not** folded into it. The app ships Room, Compose,
 Coil 3, Vico and ML Kit and carries **no attribution of any kind** — no string, no asset, no screen.
@@ -307,10 +346,11 @@ Apache-2.0 §4 asks for the licence and NOTICE to travel with the binary.
 
 ---
 
-## 9 — A weight *gain* raises nothing 🟠 reported by a tester, needs a decision first
+## 9 — A weight *gain* raises nothing 🟠 ⤷ Phase 7.5, decision first
 
-Found by a tester, 2026-08-09, and written down here so it does not get lost. **Not scheduled, and not a
-bug to fix blind** — the question it asks is a real one and the answer is an ADR-shaped decision.
+Found by a tester, 2026-08-09, and written down here so it does not get lost. **Decided 2026-08-14 in
+[ADR-0028](adr/0028-a-weight-gain-is-observed-against-a-six-month-anchor.md)** and scheduled into Phase 7.5;
+everything below is the question as it stood, kept because the ADR answers it point by point.
 
 **What they saw.** A bunny putting on a lot of weight — their words were "5 kg plus" — produces no flag,
 no notification, nothing. Only losses are ever raised.
@@ -335,8 +375,9 @@ losing weight is the acute, hours-matter signal.
 - **Which surface?** The trend flag card already exists and already says "worth a closer look" without
   diagnosing. Reusing it is cheaper than a second mechanism — but then the dot means two things.
 
-**Do not fold this into Phase 7.** That phase is *same functionality, new looks*, and a new trigger is
-new functionality by definition. Grill the decision first, write it as an ADR, then schedule the build.
+**Do not fold this into Phase 7.** That phase was *same functionality, new looks*, and a new trigger is new
+functionality by definition — which is why it went to 7.5 and ships as 1.5. The decision was grilled first
+and written as ADR-0028; the build is §6.5's fourth box.
 
 ---
 

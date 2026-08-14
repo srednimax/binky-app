@@ -1,13 +1,17 @@
-# Phase 8 — Nine languages — ships as 1.5
+# Phase 8 — Nine languages — ships as 1.6
 
 **Status: planned, not started.** Boxes in [`DOD.md`](DOD.md) §7; this file is the reasoning. Finished
 phases are in [`PLAN.md`](PLAN.md) and are not needed to build this one.
 
-**Prerequisite: Phases 6 and 7 ship first**, for one reason applied twice — translating a string set
-that is about to change means translating it twice, in nine languages. Phase 6 adds a Support screen;
-Phase 7's redesign rewrites copy wherever the old wording was the thing that confused people. Seven
-languages of re-translation *and* seven native re-reads is the most expensive way to discover that
-ordering, so it is fixed here rather than left to judgement.
+**Prerequisite: Phases 6, 7 and 7.5 ship first**, for one reason applied three times — translating a
+string set that is about to change means translating it twice, in nine languages. Phase 6 adds a Support
+screen; Phase 7's redesign rewrites copy wherever the old wording was the thing that confused people;
+[Phase 7.5](phase-7.5.md) adds the gain signal's health copy and an attribution screen. Seven languages of
+re-translation *and* seven native re-reads is the most expensive way to discover that ordering, so it is
+fixed here rather than left to judgement.
+
+**Retargeted from 1.5 to 1.6 on 2026-08-14**, because Phase 7.5 adds functionality and `release-please`
+answers to commit subjects rather than to a phase file.
 
 **Decisions it leans on:** ADR-0013 (English base, in-app switcher, endonym labels), ADR-0001 and
 ADR-0026 (what the copy may never say — the reason this phase is not a mechanical job), ADR-0009 (the
@@ -82,6 +86,9 @@ it is declared anyway for the same reason Polish declares `other`.
   installs once there are installs to count. They wait on the locale-aware driver below — **not** on a
   `--locale` flag, which is what this line used to say was missing and which already exists.
 - **The capture driver has to be locale-aware, and that is a translation job rather than a capture one.**
+  **Built in [Phase 7.5](phase-7.5.md) as of 2026-08-14**, on `en` + `pl`, so this phase inherits the tool
+  and owes only its re-proof as the needle table grows. The reasoning below is why it exists and stays
+  here; the isolation half and the Polish after set go with it.
   Carried in from Phase 7 on 2026-08-13, where it was the single box that phase did not close. `--locale`
   already exists on `screenshots.py` and already switches the app — the dump comes back `14 dni, 3 dni,
   7 dni` — and then **every scene fails at its first tap**, because the scene needles in
@@ -144,8 +151,9 @@ hold is tone — that is the native read-through, and it is why a language ships
   plurals.
 - Edge-to-edge unaffected: longest-string languages (German compounds, Ukrainian) do not clip or wrap
   wrongly on the narrowest supported screen — the one visual risk a translation genuinely carries.
-  **Polish is checked here too, not assumed**: Phase 7 deferred its capture, so it is the one shipped
-  language whose copy length has never been seen against the redrawn layouts.
+  **Polish is re-checked here rather than assumed**: Phase 7 deferred its capture and Phase 7.5 shot it,
+  so what this phase owes is the same check against copy the seven drafts have since changed nothing of —
+  cheap, and the only shipped language with a before to compare against.
 
 `spotlessApply`, `assembleDebug`, `test` and `lint` at the gate. No `connectedAndroidTest` is owed —
 there is no schema change and no media path.
@@ -155,9 +163,9 @@ there is no schema change and no media path.
 1. Generalise the test and the locale table **first**, on `en` + `pl` alone. It must be able to fail
    before there is anything to check.
 2. Endonym labels to `translatable="false"`; the brief and the banned-word lists written.
-3. **The locale-aware capture driver**, proven on `pl` — the one locale that is already complete, so it
-   is the only one that can prove the mechanism before there is anything to draft. It also clears Phase
-   7's deferred Polish pass in passing.
+3. **Re-prove the locale-aware capture driver** — built in Phase 7.5 and proven there on `pl`, so what is
+   owed here is only that its needle table still resolves once seven locales exist. Every new needle is a
+   claim that some resource still says what the table thinks it says.
 4. Draft all seven into `translations/`, validated by the test in place.
 5. Promote one language at a time as its native read completes — four edits, one commit, one language.
 6. Listing text for the promoted set; screenshots later, driven by install data.
