@@ -20,9 +20,11 @@ W, H = 1024, 500
 S = 4  # supersample factor; everything below is in final pixels, scaled by S at draw time
 
 # Shared with the launcher icon, so the two read as one identity.
-GREEN, GREEN_DARK, CREAM = rabbit.GREEN, rabbit.GREEN_DARK, rabbit.CREAM
-TAGLINE = (0xC8, 0xDD, 0xCD)
-SUBTLE = (0x9D, 0xC0, 0xA8)
+ROSE, ROSE_DARK, CREAM = rabbit.ROSE, rabbit.ROSE_DARK, rabbit.CREAM
+# Two steps down from CREAM towards the ground, so the three text weights read as one family
+# against rose. Tinted rather than grey: a neutral grey on a warm ground looks like a mistake.
+TAGLINE = (0xE4, 0xC6, 0xC9)
+SUBTLE = (0xC0, 0x99, 0x9E)
 
 FONT_DIR = Path("/usr/share/fonts/truetype/noto")
 FONT_BOLD = FONT_DIR / "NotoSans-Bold.ttf"
@@ -75,7 +77,7 @@ def draw_trend(base, points, colour, width):
 
 
 def main():
-    base = gradient((W, H), GREEN, GREEN_DARK).convert("RGBA")
+    base = gradient((W, H), ROSE, ROSE_DARK).convert("RGBA")
     base = base.resize((W * S, H * S), Image.BICUBIC)
 
     # Background trend line, low contrast so it reads as texture rather than a chart.
