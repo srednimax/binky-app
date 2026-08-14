@@ -48,7 +48,7 @@ second Play-services dependency would cost), ADR-0020 (the media pipeline's kind
 | Capture driver: isolation, seed variants, locale | Tooling | `scripts/edge-to-edge.py` | no |
 | Play contact email, received support mail | Two hand items | Play Console, an inbox | no |
 | The healthy day behind the `+` | Reworked entry point | `Navigation.kt`, `ui/observations/` | yes |
-| Droppings: multi-valued, photographable | New functionality, **schema 7** | `ObservationEntity.kt`, `media/` | yes |
+| Droppings: multi-valued, photographable | New functionality, **schema 7** (photo is the release valve) | `ObservationEntity.kt`, `media/` | yes |
 | The housemates line at five bunnies | Layout + one plurals entry | `ui/bunny/BunnyLabels.kt` | yes |
 
 ## 1 — The tester's question: a gain raises nothing
@@ -253,18 +253,30 @@ the path meant to be taken most often.
 
 It matters more than a misplaced button, because of what the healthy day is *for*: ADR-0001's whole
 position is that silence means nobody looked, and the one-tap shortcut is how an ordinary day stops being
-silence. A shortcut nobody finds does not do that job. It is also what settles a running watch — `Each
-morning Binky asks whether you have checked on them… a healthy day counts` — so the least discoverable
-action in the app is the one that answers its most repeated question.
+silence. A shortcut nobody finds does not do that job. It is also what settles the **subject's** running
+watch — `logHealthyDay` cancels the morning question for everyone the tap covered
+(`ObservationsViewModel.kt:182`) — while a *housemate* under a watch is deliberately excluded and named in
+the receipt instead (ADR-0008, *"log for them separately"*). So the least discoverable action in the app is
+the one that answers its most repeated question.
 
-**The recommendation, to grill:** the `+` becomes the single entry point and offers the two paths as
-siblings — *"Everything was normal"* and *"Record what you saw"*. It costs the healthy day one tap, and
-that is the trade being made deliberately: one tap is cheap, and being unfindable is not. The alternative
-worth arguing for is putting the shortcut **at the top of the observation form** instead, so there is one
-button and one screen, and the fast path is the first thing on it.
+**Decided 2026-08-14, after grilling.** The `+` opens a **bottom sheet** offering the two paths as
+siblings, and the Timeline button **goes**. The report was that the owner *"should just go by the `+`"*,
+and a full-width primary button sitting under a FAB that does a superset of its job is exactly that
+ambiguity — keeping both would halve the fix and leave neither reading as *the* way. It costs the healthy
+day one tap, taken deliberately: one tap is cheap, being unfindable is not. The alternative — the shortcut
+at the top of the observation form — was rejected because it puts the one-tap write inside the long form
+that write exists to avoid.
 
-Whichever wins, **the two entry points collapse into one**. No schema, and no new strings if the existing
-`healthy_day_action` copy moves rather than being rewritten.
+**A sheet rather than a menu, because of what has to travel with the label.** The Timeline button ships
+`healthy_day_help` beneath it — *"Records the ordinary day: droppings normal, eating and drinking as usual,
+bright and active"* — and that is an **ADR-0001 obligation, not decoration**: `healthyDayFacts()` commits
+four facts plus `symptomsChecked` on the owner's behalf, and *"they are entitled to know which"*
+(`ObservationsScreen.kt:236`). A menu item is a label with nowhere to put that; a sheet has supporting text.
+
+**No schema, and genuinely no new strings** — the sheet reuses `healthy_day_action`, `healthy_day_help` and
+`observation_add_title` (already the FAB's `contentDescription`) verbatim. Nicer labels — *"Everything was
+normal"* / *"Record what you saw"* — were considered and **not taken**: two rewrites are two strings across
+nine languages in Phase 8, which is the tax this phase exists to pre-pay.
 
 ## 7 — Droppings are several things at once, and worth a photo 🔴 this is the schema bump
 
@@ -282,11 +294,27 @@ than prose."* **The current model forces a lie on the exact field it was built t
 attribute which bunny produced which pellet, which is ADR-0008's premise and the reason a shared tray is
 modelled the way it is.
 
-**The recommendation: form and size become multi-valued, amount stays single.** `FEW` *and* `MANY` is a
+**Decided: form and size become multi-valued, amount stays single.** `FEW` *and* `MANY` is a
 contradiction about one tray; *small and normal* and *round and soft* are both things an owner can actually
 see. Splitting the three fields by whether they describe a quantity or a mixture is the distinction the ADR
 has to make, and getting it wrong in the other direction — multiselecting amount — would make the field
 meaningless rather than merely awkward.
+
+**What it hangs off, since there is nothing called a group.** `groupId` is a bare nullable column, not a
+table, and ADR-0008 forbids stamping one on a solo observation — *"it would make it read [as shared]"*
+(`ObservationRepository.kt:52`). So neither the join table nor the photo can belong to "the group": that is
+a model this app does not have. **Tray-level here means denormalised onto every row and propagated on
+edit** (`updateTray`, group-wide or to the one row when solo). The multi-valued fields therefore become a
+join table keyed on **`observationId`**, the photo becomes a **path column on the row**, and both ride the
+`TrayFacts` propagation that already exists. ADR-0008 is untouched, and the migration is mechanical: one
+row per non-null value.
+
+**The one new rule that buys.** A duplicated path means deleting one bonded bunny cascades a row that still
+references the survivor's file, and `MediaFiles.delete` is a plain `File.delete()` (`MediaFiles.kt:176`).
+**The file goes only when no other row references the path** — one query on the observation-delete path,
+and a gate item that says so. The alternative, a real `observation_groups` table, is the model you would
+draw from scratch and is a phase's worth of work inside a section of one: four columns moved, a group row
+needed for every solo observation (which ADR-0008 reads as *shared*), and every timeline query rewritten.
 
 ### The vocabulary is incomplete, and one value is a trap
 
@@ -306,16 +334,29 @@ which is the same argument the entity doc already makes for `STRUNG_TOGETHER` ex
 app to record blood in droppings**, which is the one that is always serious. The app has a field for the
 false alarm and none for the real one.
 
-**Decided 2026-08-14: close the gaps with values, add no new field.** `DroppingsForm` gains **`MUCUS`,
-`BLOOD`, `VERY_DARK`** (melena reads fine as a form value — *"very dark, tarry"*), **`DOUBLED`** (fused
-pellets are specifically a slowing-motility sign, not general misshapenness) and **`DRY`** (dehydration,
-today only inferrable from `SMALL`). `Cecotropes` gains **`EXCESS`**, which its own doc already anticipates.
+**Decided 2026-08-14: close the gaps with values, add no new field.** The field gains **`MUCUS`, `BLOOD`,
+`VERY_DARK`** (melena — *"very dark, tarry"*), **`DOUBLED`** (fused pellets are specifically a
+slowing-motility sign, not general misshapenness) and **`DRY`** (dehydration, today only inferrable from
+`SMALL`). `Cecotropes` gains **`EXCESS`**, which its own doc already anticipates.
 
-**A colour field was rejected on cost, not on tidiness.** The observation form already carries droppings ×3,
-caecotropes, appetite, mood, activity, water, note and symptoms — and §6's one-tap healthy day exists
-*because* a long form deters logging, which is ADR-0001's silence problem wearing a UI costume. Values on a
-multiselect cost nothing on screen when unused; a colour row costs height on every observation forever, to
-carry *pale* and *greenish* — the two weakest and most ambiguous signals in the set. They stay out.
+**The enum is renamed with them, because five of the six are not shapes.** `DroppingsForm`'s own doc
+defines it as shape — *"pellets strung on fur is a distinct, recognisable sign"* — and `CONTEXT.md` puts
+*amount, size, form* in the ubiquitous language. But `BLOOD` and `MUCUS` are contents, `VERY_DARK` is
+colour and `DRY` is moisture; only `DOUBLED` is a shape. `DroppingsAppearance` is the proposal for ADR-0029
+to confirm. **The rename is free**: only value names are stored, never the type name, so it is a Kotlin
+refactor plus one `CONTEXT.md` line — and this phase is opening the field anyway.
+
+**Why blood belongs on a tray field rather than in the symptoms table**, which is the first question a
+reviewer will ask. Symptoms are the obvious home — owner-extensible, zero schema, and
+`symptom_blood_in_urine` already lives there — and they fail for exactly one reason: **symptoms are
+individual and droppings are tray-level.** Blood in a shared tray cannot be attributed to a bunny, so
+recording it through ADR-0010's table would force precisely the lie ADR-0008 exists to prevent.
+
+**Pale and greenish stay out on triage, not on cost.** The earlier draft argued form length, and that
+argument refutes itself: values on a multiselect cost no height when unused, so it cannot tell the values
+kept from the values dropped. The real line is whether a sign changes what an owner does — blood, mucus and
+melena do; *pale* and *greenish* are the two weakest and most ambiguous signals in the set, and a
+vocabulary that records everything nameable trains the owner to record nothing carefully.
 
 Adding values is safe on the data axis: enums are stored **by name, never ordinal**, so a sixth
 `DroppingsForm` value cannot rewrite history — and §7 is already opening this field.
@@ -325,9 +366,9 @@ without commenting**. No per-value urgency copy, no "see a vet now" attached to 
 ADR-0026 forbids it. The register is the trend flag's: state the fact, and let the existing *"not a
 diagnosis; if you are worried, ask a vet"* do the rest.
 
-**The photo.** Observations carry no media today. A dropping photo is tray-level like the rest, so it
-belongs to the observation *group*, not to a bunny, and it goes through `MediaFiles` per the house rule —
-which raises a genuine spec question this phase is already equipped to answer: **pellet shape is closer to
+**The photo.** Observations carry no media today. A dropping photo is tray-level like the rest — one path,
+written to every row in the group and propagated on edit, per the paragraph above — and it goes through
+`MediaFiles` per the house rule, which raises a genuine spec question this phase is already equipped to answer: **pellet shape is closer to
 `Document`'s "small detail matters" than to `Photo`'s gallery spec.** Answer it beside §2's downsample
 judgement; it is the same kind of judgement made on the same phone in the same sitting.
 
@@ -338,6 +379,13 @@ by the time of the appointment.
 **Cost, stated plainly.** A join table for the multi-valued fields and a link for the photo — one migration
 covering both, **schema 7**, a schema-7 fixture, and the `connectedAndroidTest` run every other item in this
 phase avoids. That is the price of the two, and it was accepted knowingly on 2026-08-14.
+
+**If the phase runs long, the tray photo is the cut** — decided now rather than under pressure, because it
+is the only part of §7 whose removal makes nothing worse. **It does not cut the migration**: the join table
+is schema 7 on its own, so `MIGRATION_6_7`, the schema-7 fixture and the `connectedAndroidTest` run stand
+either way. The valve saves UI and media plumbing, not the risky part. **The multiselect is not cuttable**
+— the new values on a *single*-select would put `BLOOD` and `SOFT` in competition for one slot, with the
+loser going to prose, which is worse than either endpoint.
 
 ## 8 — A fluffle of five, or two long names
 
@@ -358,10 +406,22 @@ short names, so no capture, no matrix cell and no before/after shot has ever con
 same blind spot as §1's gain card, which makes the five-bunny fluffle the **second customer for §4's seed
 variants** — and the argument that they belong in the driver rather than in a throwaway patch.
 
-**The recommendation: cap the names, not the pixels** — *"Lives with Thumper, Clover & 3 others"*. An
-ellipsis through a name is unreadable, and `maxLines` alone would truncate mid-word in a label whose whole
-job is naming individuals. Costs one `plurals` entry in both locales, which is exactly the sort of thing
-worth spending before nine languages rather than after.
+**Decided: cap the names *and* bound the line.** Capping names alone cannot fix the case in this section's
+own title — *"Lives with Bartholomew-Maximilian & Wolfgang-Ferdinand"* is two names, no cap fires, and it
+still wraps.
+
+- **Two named, then *"& N others"*, from four housemates up** — *"Lives with Thumper, Clover & 3 others"*.
+  Never *"& 1 other"*: at three housemates *"A, B & C"* is the shorter string as well as the better one.
+  **Archived housemates fold first** — they already render longer as *"Hazel (archived)"*
+  (`bunny_archived_name`) and are the least relevant names on the line. One `plurals` entry in both locales,
+  which is exactly the sort of thing worth spending before nine languages rather than after.
+- **It goes in `housematesLabel`, never in `joinNames`.** That function is shared with the healthy-day
+  snackbar (`ObservationsScreen.kt:173`), where ADR-0008 requires the receipt to name **everyone** it
+  covered — capping there would quietly make the app's most reversible write stop saying what it did.
+- **`maxLines = 2, overflow = Ellipsis` at all three sites**, as the backstop. An ellipsis through a name is
+  unreadable, which is why it is second and not first: after the count cap, the only strings that can still
+  overflow are pathological names, so it fires where no layout would have helped, and card growth is bounded
+  at one extra line instead of unbounded.
 
 **It gets worse in Phase 8, which is the other reason it is here.** Every locale's *"Lives with"* is longer
 than English's, so this label is a copy-length canary — and §4's locale-aware driver plus a five-bunny seed
@@ -382,6 +442,12 @@ variant is the pair that would photograph it.
   schema-neutral, and **ADR-0028's "the schema stays at 6" stays true as a statement about the gain rule** —
   it was never a promise about the release. The bump is what buys the `connectedAndroidTest` run back into
   the gate.
+- **1.5 is the first schema bump with testers on the tracks, and a 1.5 backup will not restore on 1.4.**
+  `BackupRestorer` refuses an archive whose schema is newer than the build's, read from the **file's own
+  header** rather than the manifest's claim about it, and reports it as `MadeByANewerBinky` naming both
+  numbers (`BackupRestorer.kt:193-200`). That is correct — no migration runs backwards — and it is already
+  tested. It is recorded here because it has never happened to anybody yet, and the closed track is where
+  it will.
 
 ## Tests
 
@@ -399,12 +465,16 @@ JVM, and mostly a table. `WeightTrendTest` gains gain cases beside its loss ones
 **Instrumented, owed by §7's schema bump alone.** `MIGRATION_6_7` from a schema-6 fixture at API 26/34/36,
 asserting that **an existing single droppings value survives as one row in the join table** — a migration
 that silently drops it would erase exactly the history ADR-0023 stopped the database being disposable for.
-Plus the DAO round-trip for a multi-valued field and for an observation carrying a tray photo.
+Plus the DAO round-trip for a multi-valued field and for an observation carrying a tray photo, and the
+**delete case the duplicated path creates**: removing one bonded bunny leaves the survivor's row *and its
+file* intact, while removing the last row that references it takes the file with it.
 
 **JVM, for the rest.** The multi-valued fields keep their `TypeConverter` discipline — stored **by name,
-never ordinal** — and a test pins that adding a sixth `DroppingsForm` value cannot rewrite history.
-`housematesLabel` gets a table: one, two, three, five and nine housemates, an archived one among them, and
-a name long enough to prove the cap fires on width as well as on count.
+never ordinal** — and a test pins that adding a value cannot rewrite history. `housematesLabel` gets a
+table: one, two, three, five and nine housemates, an archived one among them, asserting the cap fires from
+**four** and that *"& 1 other"* never renders. **The width half is not a JVM test** — a string function
+cannot know how wide anything is — so it is seen on the device through §4's seed variant, which is what the
+seed variants are for.
 
 `PolishTranslationTest` keeps both locales level over every new string — three for the gain signal, the
 droppings additions, and the `plurals` entry §8's cap needs. It is the one test that has to pass before
@@ -425,6 +495,8 @@ are written answers.
   a migration that quietly drops the old value would erase history ADR-0023 exists to protect.
 - `connectedAndroidTest` green on the Xiaomi — owed this phase, unlike every other item in it. Note the
   HyperOS split-install trap in `CLAUDE.md` before assuming a failed run means broken code.
+- **A tray photo survives the loss of one bonded bunny.** Deleting one participant leaves the survivor's
+  row pointing at a file that is still on disk; deleting the last row that references it removes the file.
 - **The housemates label at five bunnies and at two long names**, seen on the device through a seed variant
   — the state that has never been photographed.
 - The downsample answer written into `MediaFiles.kt` — numbers retuned **or** the "unverified" comment
@@ -434,23 +506,30 @@ are written answers.
 - **A full English matrix run clean with the 20:00 dose live** — the case the 244-scene run never faced —
   and a Polish run reaching every scene, which is the Polish after set.
 - **One entry point to record a day**, not two — the healthy day reachable from the `+` and nowhere else,
-  checked in both locales.
+  **with `healthy_day_help` on the sheet**, because one tap must never commit four facts silently
+  (ADR-0001). Checked in both locales.
 - `spotlessApply`, `assembleDebug`, `test` at each checkpoint; `lint` at the gate, holding at **0 errors and
   0 warnings**.
 
 ## Order of work
 
-1. **The two hand items.** Oldest, cheapest, block nothing and are blocked by nothing.
+1. **The two hand items, and ADR-0029 beside them.** The hand items are the oldest and cheapest, block
+   nothing and are blocked by nothing. **ADR-0029 needs no phone and gates the largest piece of work in the
+   phase**, so it is written here rather than immediately before the build: the parent key, the renamed
+   vocabulary and whether the tray photo survives are settled before anything is built, and step 3 then
+   knows whether it is judging a live feature or a cut one.
 2. **The capture driver** — isolation step first, proven in English against the live 20:00 dose, then the
    locale needles proven on `pl`, the one complete locale. Shoot the Polish after set with it.
 3. **The two spec judgements in one sitting**, while the phone is already in hand and before the code churn
    starts: §2's document downsample and §7's `MediaKind` for a tray photo. Same question, same page, same
-   pinch-zoom.
-4. **ADR-0029, then the droppings work** — the long pole, and deliberately not last. Schema 7, the
-   migration, the fixture and the instrumented run are the only things here that can fail in a way that
-   costs days, so they go early enough to fail with time left.
-5. **ADR-0028** — grill it, write it, merge it — then build the gain signal against a driver that is by now
-   correct, so its new card state is captured the first time.
+   pinch-zoom — and the marginal cost of the second answer is near zero, so it is taken even though the
+   photo is the one part of the phase that may not ship.
+4. **The droppings work**, against the ADR written in step 1 — the long pole, and deliberately not last.
+   Schema 7, the migration, the fixture and the instrumented run are the only things here that can fail in
+   a way that costs days, so they go early enough to fail with time left.
+5. **The gain signal**, against a driver that is by now correct, so its new card state is captured the
+   first time. **ADR-0028 is already written and merged** (2026-08-14) — there is nothing left to decide
+   here, only to build.
 6. **The two cheap ones together**: §6's entry point and §8's housemates cap. Both change what scenes see,
    so they land after the driver and before the final matrix run.
 7. **Licence attribution**: mechanism decided, then built.
