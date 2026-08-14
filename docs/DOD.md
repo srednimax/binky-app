@@ -248,11 +248,20 @@ three get more expensive with time. **Both ADRs are made** — ADR-0028 and
 
 - [ ] **§5's two hand items first** — Play's per-app contact email, and a delivered support mail read.
       Oldest open boxes in the project, blocked by nothing, an hour between them.
-- [ ] **§7's capture-driver box**, moved here: the scene-isolation step proven in English against the live
-      20:00 dose, **seed variants** so a scene can reach a state the default seed hides (the gain card is
-      the first, and Phase 7 wrote the same throwaway patch three times), then locale-aware needles proven
-      on `pl`. Shoots the **Polish after set** in passing — Phase 7's one carried-out item — and unblocks
-      §4's Polish listing screenshots. The default seed is **not** changed: 61 scenes rest on it.
+- [ ] **§7's capture-driver box**, moved here. ✅ **The code is done and device-proven (2026-08-14)** —
+      `return_to_home` + DND as setup/teardown, seed variants through a debug-only broadcast receiver
+      (`crowded` is the first), and needles resolved through the string resources before the first tap.
+      The default seed is **not** changed: 61 scenes rest on it. **Two long runs are still owed** — a
+      full **English matrix with the 20:00 dose live**, and a **Polish run reaching every scene**, which
+      is the Polish after set and unblocks §4's Polish listing screenshots.
+      ℹ️ **The relaunch was already landing on Home** — measured from a detail route and from a non-Home
+      tab — so the isolation step is a *check*, and the 2026-08-12 cell is better explained by the dose
+      banner re-posting on every relaunch. See phase-7.5.md §4 for the rest of what the build found.
+      ⚠️ **`weight-entry-ime` has never had a keyboard in it, Phase 7's after set included** (found
+      2026-08-14). The grams field has no label and no placeholder, so the needle *"Weight in grams"*
+      matched the **help line underneath it** — a plain `Text` that focuses nothing. Third IME scene
+      caught by that trap and the only silent one. Fixed by tapping the *n*-th `EditText` instead;
+      **assume the existing `weight-entry-ime` evidence is wrong** rather than re-reading it.
 - [ ] **§3's downsample answer**, taken while the phone is already in hand.
 - [ ] **§9's gain signal**, per **[ADR-0028](adr/0028-a-weight-gain-is-observed-against-a-six-month-anchor.md)**
       — grilled and written 2026-08-14; merge it before any trend code. Same flag, anchored on the weighing
