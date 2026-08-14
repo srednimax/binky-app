@@ -986,6 +986,15 @@
     <string name="bunny_lives_with_help">Króliki dzielące kuwetę mieszkają razem, więc jedna obserwacja może objąć je wszystkie.</string>
     <string name="bunny_lives_with_value">Mieszka z: %1$s</string>
     <string name="bunny_archived_name">%1$s (w archiwum)</string>
+    <!-- "Mieszka z: Thumper, Clover i 3 inne". The colon makes the tail an enumeration, so the
+         count stays in the nominative and only the numeral's own agreement has to be right:
+         "3 inne" (few), "5 innych" (many). -->
+    <plurals name="bunny_lives_with_others">
+        <item quantity="one">%1$d inny</item>
+        <item quantity="few">%1$d inne</item>
+        <item quantity="many">%1$d innych</item>
+        <item quantity="other">%1$d innych</item>
+    </plurals>
 
     <!-- ADR-0007's consent half. One forward button, no cancel. -->
     <string name="wipe_title">Ta aktualizacja musi wyczyścić zapisy na tym telefonie</string>

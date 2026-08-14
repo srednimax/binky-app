@@ -49,20 +49,64 @@ fun dateLabel(date: LocalDate): String {
     return remember(date, formatter) { date.format(formatter) }
 }
 
-/** "Lives with Thumper &amp; Clover", or null for a solo bunny. */
+/**
+ * "Lives with Thumper &amp; Clover", "Lives with Thumper, Clover &amp; 3 others", or null for a solo
+ * bunny.
+ *
+ * The count is the **last item of the list** rather than a suffix glued to it, so it goes through
+ * [joinNames] with the names and every locale punctuates it its own way.
+ */
 @Composable
 fun housematesLabel(housemates: List<Housemate>): String? {
     if (housemates.isEmpty()) return null
     val resources = LocalResources.current
+    val capped = capHousemates(housemates)
     val names =
-        housemates.map { housemate ->
+        capped.named.map { housemate ->
             if (housemate.archived) {
                 stringResource(R.string.bunny_archived_name, housemate.name)
             } else {
                 housemate.name
             }
         }
-    return stringResource(R.string.bunny_lives_with_value, joinNames(resources, names))
+    val parts =
+        if (capped.others == 0) {
+            names
+        } else {
+            names + pluralStringResource(R.plurals.bunny_lives_with_others, capped.others, capped.others)
+        }
+    return stringResource(R.string.bunny_lives_with_value, joinNames(resources, parts))
+}
+
+/** How many housemates [housematesLabel] names before the rest become a count. */
+private const val NAMED_HOUSEMATES = 2
+
+/** [capHousemates]' answer: who the line names, and how many it folds into "&amp; N others". */
+internal data class CappedHousemates(
+    val named: List<Housemate>,
+    /** Zero when everyone is named, and **never one** — see [capHousemates]. */
+    val others: Int,
+)
+
+/**
+ * Which housemates the line names, and how many it counts instead.
+ *
+ * **Two named, then "&amp; N others", from four housemates up.** At three, "A, B &amp; C" is the
+ * shorter string as well as the better one, so the fold would only trade a name for the word
+ * "other" — which is why [CappedHousemates.others] is never 1.
+ *
+ * **Archived housemates fold first**: they render longer ("Hazel (archived)") and are the least
+ * relevant names on a line about who a bunny lives with *now*.
+ *
+ * Kept out of the composable so it can be a JVM table — a string function is the half a test can
+ * hold, and how wide the result draws is the half only the device can (Phase 7.5 §8).
+ */
+internal fun capHousemates(housemates: List<Housemate>): CappedHousemates {
+    if (housemates.size <= NAMED_HOUSEMATES + 1) return CappedHousemates(housemates, others = 0)
+    // Kotlin note: `sortedBy` is stable and `false` sorts before `true`, so this is "active ones
+    // first, each group in the order it arrived" — not a reordering of the line in general.
+    val named = housemates.sortedBy { it.archived }.take(NAMED_HOUSEMATES)
+    return CappedHousemates(named, others = housemates.size - NAMED_HOUSEMATES)
 }
 
 /**
