@@ -22,6 +22,9 @@ class WeightRepository(
 ) {
     private val weightDao = database.weightDao()
 
+    /** Only ever read from, and only for the birthday: the gain rule's growth gate (ADR-0028). */
+    private val bunnyDao = database.bunnyDao()
+
     /** In ADR-0021's stated total order, newest first. */
     fun series(bunnyId: String): Flow<List<WeightEntity>> = weightDao.series(bunnyId)
 
@@ -42,13 +45,19 @@ class WeightRepository(
     /**
      * Adds a weighing and returns its id.
      *
-     * An insert **re-reads the series and discards the acknowledgment only if the raw trigger has
-     * gone false** — because the flag clears exactly when the trigger does, "discard on first
-     * non-trip" *is* "the episode ended". Without it a months-old acknowledgment of a since-recovered
-     * episode silences a genuinely new drop: `2500, 2500, 2500` establishes a baseline, `2300` fires
-     * and is acknowledged, `2500` takes the trigger false, and the next `2300` is not below the 2300
+     * An insert **re-reads the series and discards the acknowledgment only if it has gone stale** —
+     * because the flag clears exactly when the trigger does, "discard on first non-trip" *is* "the
+     * episode ended". Without it a months-old acknowledgment of a since-recovered episode silences a
+     * genuinely new drop: `2500, 2500, 2500` establishes a baseline, `2300` fires and is
+     * acknowledged, `2500` takes the trigger false, and the next `2300` is not below the 2300
      * watermark by more than the floor. Inserts do not discard unconditionally — a new reading either
      * trips or does not, which the trigger and 2b's re-raise bar already handle (ADR-0001).
+     *
+     * **Staleness is [evaluateTrend]'s own judgement, not a second copy of it here.** Since ADR-0028
+     * the flag has two directions, and a watermark can be stale in a second way: taken for a gain and
+     * now facing a loss, or the reverse. Asking the evaluation is what stops the two definitions
+     * drifting apart — and it is why this reads the bunny's birthday, which is the gain rule's growth
+     * gate.
      *
      * One transaction, so no reader can observe the row inserted and the watermark not yet judged.
      */
@@ -56,8 +65,13 @@ class WeightRepository(
         require(weight.grams > 0) { "A weighing is a positive number of grams" }
         database.withTransaction {
             weightDao.insert(weight)
-            val series = weightDao.seriesNow(weight.bunnyId).map { it.toWeighing() }
-            if (!trendTriggerHolds(series)) weightDao.deleteAcknowledgment(weight.bunnyId)
+            val evaluation =
+                evaluateTrend(
+                    series = weightDao.seriesNow(weight.bunnyId).map { it.toWeighing() },
+                    acknowledgment = weightDao.acknowledgmentNow(weight.bunnyId)?.toAcknowledgment(),
+                    growth = growthStageNow(bunnyDao.bunnyNow(weight.bunnyId)?.birthDate),
+                )
+            if (evaluation.watermarkIsStale) weightDao.deleteAcknowledgment(weight.bunnyId)
         }
         return weight.id
     }

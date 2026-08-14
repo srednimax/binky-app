@@ -1,6 +1,10 @@
 package app.binky.tracker.data
 
 import java.time.Instant
+import java.time.LocalDate
+import java.time.Period
+import java.time.temporal.ChronoUnit
+import kotlin.math.abs
 
 /**
  * One weighing as the trend math sees it — deliberately **not** [WeightEntity]. Keeping Room out of
@@ -41,6 +45,83 @@ private const val NOISE_FLOOR_FRACTION = 0.02
  */
 private const val BASELINE_PRIORS = 3
 private const val MINIMUM_PRIORS = 2
+
+/**
+ * **The gain trigger: 10 % above the anchor** (ADR-0028). Unlike the 5 % above, this figure is not
+ * borrowed — there is no published equivalent for gain — but derived: the PFMA/RWAF five-point body
+ * condition scale states its bands in percentages (*thin* is 10–20 % below ideal), so **one
+ * condition step is about 10 % of body weight**. Ten per cent over six months is one condition step
+ * in half a year, which is a unit a vet would recognise.
+ */
+private const val GAIN_TRIGGER_FRACTION = 0.10
+
+/**
+ * **The anchor: the weighing nearest six months back, accepted only inside 4–8 months** (ADR-0028).
+ * No reading in that window is **no claim**, which is not the same as saying the bunny is fine
+ * (ADR-0001).
+ *
+ * In days rather than calendar months, deliberately: the window is four months wide, so nothing it
+ * decides can turn on a leap year or on the length of February, and days keep this whole file free
+ * of a time zone — an `Instant` cannot be given a calendar month without one. 183 is half of 366.
+ */
+private const val ANCHOR_TARGET_DAYS = 183L
+private const val ANCHOR_MIN_DAYS = 122L
+private const val ANCHOR_MAX_DAYS = 244L
+
+/**
+ * **The growth gate: a bunny under a year old is silent** (ADR-0028). A kit at four months might be
+ * 1.8 kg and at ten months 2.6 kg — **+44 % over six months, entirely healthy** — so any gain rule
+ * fires continuously on a growing rabbit and is arithmetically correct every time.
+ */
+private const val GROWTH_GATE_MONTHS = 12L
+
+/**
+ * Whether a bunny is old enough for a gain to mean what ADR-0028 says it means.
+ *
+ * **Three states rather than a `Boolean`, and [Unknown] is the load-bearing one.** `birthDate` is
+ * nullable and commonly absent — rescues arrive with no known age, and the app's own sample bunny
+ * has none — so the guard is unavailable exactly where it is most needed. Reading "no birthday" as
+ * "adult" would raise a health signal on the strength of an absent field, which is the move ADR-0001
+ * exists to ban; staying silent for every rescue would delete the feature for a large share of the
+ * app's users. So the app does neither: on [Unknown] the flag fires **and the card asks how old the
+ * bunny is**.
+ *
+ * Kotlin note: an `enum class` here rather than a `sealed interface` because no case carries data —
+ * the same distinction `TrendFlag` draws below, where the variants do.
+ */
+enum class GrowthStage {
+    /** Under [GROWTH_GATE_MONTHS] months old, so a gain is growth and raises nothing. */
+    Growing,
+
+    /** Old enough that a gain is not growth. */
+    Grown,
+
+    /** No usable birthday. The flag fires and the card asks — see the class doc. */
+    Unknown,
+}
+
+/**
+ * The growth gate for a birthday, on a given day. Pure and JVM-testable, like `ageOn`'s arithmetic
+ * over in `ui/bunny`: the part that is easy to get subtly wrong is the day before a birthday, and
+ * none of it needs Android.
+ *
+ * A birthday **in the future** is a typo in a date picker, and it resolves to [GrowthStage.Unknown]
+ * rather than to a silently growing bunny — the app asks, which is also how a typo gets corrected.
+ */
+fun growthStageOn(
+    birthDate: LocalDate?,
+    on: LocalDate,
+): GrowthStage =
+    when {
+        birthDate == null || birthDate.isAfter(on) -> GrowthStage.Unknown
+        // Calendar-aware, so a bunny born 29 February turns one on 28 February in a non-leap year
+        // rather than drifting by a day — the same reason `ageOn` uses `Period`.
+        Period.between(birthDate, on).toTotalMonths() < GROWTH_GATE_MONTHS -> GrowthStage.Growing
+        else -> GrowthStage.Grown
+    }
+
+/** [growthStageOn] against today, which is what every caller outside the tests wants. */
+fun growthStageNow(birthDate: LocalDate?): GrowthStage = growthStageOn(birthDate, LocalDate.now())
 
 /** Named rather than inlined because [evaluateTrend]'s re-raise bar reuses it — see there. */
 fun noiseFloorGrams(baselineGrams: Int): Double =
@@ -115,32 +196,32 @@ internal fun baselineWeighing(priors: List<Weighing>): Weighing? {
 private data class TrendWindow(
     val current: Weighing,
     val baseline: Weighing,
+    /**
+     * Everything before [current], in the stated total order. The loss baseline reads the first
+     * three; the gain anchor reaches much further back, which is why the whole tail is carried.
+     */
+    val priors: List<Weighing>,
 )
 
 private fun trendWindow(series: List<Weighing>): TrendWindow? {
     val ordered = series.inTrendOrder()
     val current = ordered.firstOrNull() ?: return null
-    val baseline = baselineWeighing(ordered.drop(1)) ?: return null
-    return TrendWindow(current, baseline)
+    val priors = ordered.drop(1)
+    val baseline = baselineWeighing(priors) ?: return null
+    return TrendWindow(current, baseline, priors)
 }
 
 /**
- * Is the raw drop trigger true for [series] right now?
+ * **The loss trigger, and it is a level one** — it compares the latest reading against its trailing
+ * baseline and asks nothing about rate, so it is **interval-independent**: an acute drop after a
+ * long gap fires exactly as an acute drop between weekly weighings does. Damping by elapsed time is
+ * the one thing ADR-0001 says must never silence this signal.
  *
- * This is the **level** trigger — it compares the latest reading against its trailing baseline and
- * asks nothing about rate, so it is **interval-independent**: an acute drop after a long gap fires
- * exactly as an acute drop between weekly weighings does. Damping by elapsed time is the one thing
- * ADR-0001 says must never silence this signal.
- *
- * "Raw" means it knows nothing of acknowledgment. That is what `WeightRepository`'s write paths
- * need: *a stored acknowledgment row implies the raw trigger was true as of the last weight write*
- * is the invariant that lets the read path stay a pure function with no history walk (ADR-0001).
- * [evaluateTrend] wraps this predicate with what the owner actually sees — the re-raise bar, the
- * auto-clear and the drop's numbers.
+ * The gain trigger below is the deliberate opposite — **time-anchored where this one is
+ * count-anchored** — because a gain only means anything per unit time (ADR-0028 makes that argument
+ * at length, and scopes ADR-0001's interval-independence to loss rather than contradicting it).
  */
-fun trendTriggerHolds(series: List<Weighing>): Boolean = trendWindow(series)?.triggerHolds() ?: false
-
-private fun TrendWindow.triggerHolds(): Boolean {
+private fun TrendWindow.dropTriggerHolds(): Boolean {
     // Written as ADR-0001 writes it, `max(5 % of baseline, noise floor)`, and **the max stays**.
     // 2 % is always less than 5 %, so the floor's inner max can only ever resolve to the 20 g
     // absolute — and 20 g exceeds 5 % of baseline only below a 400 g baseline, i.e. a four-week-old
@@ -152,6 +233,63 @@ private fun TrendWindow.triggerHolds(): Boolean {
 
     // No rounding, so the boundary is exactly where the arithmetic puts it and the tests can pin it.
     return current.grams <= baseline.grams - threshold
+}
+
+/**
+ * **The anchor: the single weighing nearest six months before the current reading**, or null when
+ * there is none inside the 4–8 month window — which is *no claim*, not a clean bill of health.
+ *
+ * A single reading rather than a median of a bucket around the anchor, which ADR-0028 considered and
+ * rejected: this is the version a person can hold in their head and the card can explain by naming
+ * its date. **The cost is a real silent failure** — one high reading at the anchor, the bunny weighed
+ * in its carrier or straight after a big meal, suppresses the flag entirely and says nothing about
+ * having done so. A unit test pins that case rather than engineering around it, in ADR-0021's own
+ * tradition.
+ *
+ * Kotlin note: `minByOrNull` is stable, so two readings exactly equidistant from the target resolve
+ * to whichever comes first in the total order — the more recent one. Arbitrary but deterministic,
+ * which is the property that matters here as it does in [baselineWeighing].
+ */
+private fun TrendWindow.anchorWeighing(): Weighing? =
+    priors
+        .filter { daysBefore(it) in ANCHOR_MIN_DAYS..ANCHOR_MAX_DAYS }
+        .minByOrNull { abs(daysBefore(it) - ANCHOR_TARGET_DAYS) }
+
+private fun TrendWindow.daysBefore(prior: Weighing): Long =
+    ChronoUnit.DAYS.between(prior.recordedAt, current.recordedAt)
+
+/** The gain trigger: at least [GAIN_TRIGGER_FRACTION] above the anchor, unrounded as the loss one is. */
+private fun TrendWindow.riseTriggerHolds(anchor: Weighing): Boolean =
+    current.grams >= anchor.grams + anchor.grams * GAIN_TRIGGER_FRACTION
+
+/**
+ * What the series says right now, or null for no claim at all.
+ *
+ * **Loss takes precedence** (ADR-0028): both triggers can hold at once — a bunny that gained 800 g
+ * over five months and then dropped 150 g last week trips both — and the card should say the most
+ * urgent true thing. Nothing is lost, only deferred: when the drop resolves, the gain appears if it
+ * still holds. That precedence is also what keeps one acknowledgment row enough, and the schema at 6.
+ */
+private fun TrendWindow.change(growth: GrowthStage): TrendChange? {
+    if (dropTriggerHolds()) {
+        return TrendChange(
+            direction = TrendDirection.Loss,
+            currentGrams = current.grams,
+            currentAt = current.recordedAt,
+            baselineGrams = baseline.grams,
+            baselineAt = baseline.recordedAt,
+        )
+    }
+    if (growth == GrowthStage.Growing) return null
+    val anchor = anchorWeighing()?.takeIf { riseTriggerHolds(it) } ?: return null
+    return TrendChange(
+        direction = TrendDirection.Gain,
+        currentGrams = current.grams,
+        currentAt = current.recordedAt,
+        baselineGrams = anchor.grams,
+        baselineAt = anchor.recordedAt,
+        ageUnknown = growth == GrowthStage.Unknown,
+    )
 }
 
 /**
@@ -169,16 +307,45 @@ data class TrendAcknowledgment(
 fun TrendAcknowledgmentEntity.toAcknowledgment() = TrendAcknowledgment(grams, acknowledgedAt)
 
 /**
- * A drop, in the terms the flag's copy uses. Framed "worth a closer look" and **never** as a
- * diagnosis; [dropGrams] is always grams, because `−0.04 kg` hides the signal `−40 g` makes obvious.
+ * Which way the number moved. **One flag, two rules** (ADR-0028): the card, the dot and the
+ * acknowledgment are the same either way, because a second visual vocabulary for the same fact would
+ * be a second thing for the owner to learn about one number.
  */
-data class TrendDrop(
+enum class TrendDirection {
+    Loss,
+    Gain,
+}
+
+/**
+ * A change, in the terms the flag's copy uses. Framed "worth a closer look" and **never** as a
+ * diagnosis; [changeGrams] is always grams, because `−0.04 kg` hides the signal `−40 g` makes
+ * obvious.
+ *
+ * [baselineGrams] and [baselineAt] are **what the current reading is judged against**, and which
+ * reading that is depends on the direction: the trailing median of three priors for a loss
+ * (ADR-0021), the single weighing nearest six months back for a gain (ADR-0028). Both are real
+ * readings with real dates, which is what lets the card say *"up 500 g since 12 February"* rather
+ * than claiming a span it never measured.
+ */
+data class TrendChange(
+    val direction: TrendDirection,
     val currentGrams: Int,
     val currentAt: Instant,
     val baselineGrams: Int,
     val baselineAt: Instant,
+    /**
+     * A gain judged with no usable birthday on file, so the card asks how old the bunny is. Never
+     * true for a loss: the loss rule has never cared how old the bunny is.
+     *
+     * It matters more than it looks. The watermark re-raises when a later reading breaks through it
+     * by more than the noise floor, and a growing kit clears 20 g between almost any two weighings —
+     * so without the question an unknown-age kit would raise a caution dot after **every** weighing
+     * for months, with no way to silence it. The action is what ends that loop (ADR-0028).
+     */
+    val ageUnknown: Boolean = false,
 ) {
-    val dropGrams: Int get() = baselineGrams - currentGrams
+    /** Always positive: the direction is carried by [direction], never by the sign of the number. */
+    val changeGrams: Int get() = abs(currentGrams - baselineGrams)
 }
 
 /**
@@ -203,18 +370,18 @@ sealed interface TrendFlag {
     /** History enough to judge, and the trigger is false. */
     data object Steady : TrendFlag
 
-    /** The trigger holds and nothing is silencing it. This is the flag the owner sees. */
+    /** A trigger holds and nothing is silencing it. This is the flag the owner sees. */
     data class WorthACloserLook(
-        val drop: TrendDrop,
+        val change: TrendChange,
     ) : TrendFlag
 
     /**
-     * The trigger still holds, but the owner has seen this episode and it has not deepened past the
-     * re-raise bar. The drop is still real, so it is still reported — quietly, as standing
+     * The trigger still holds, but the owner has seen this episode and it has not moved past the
+     * re-raise bar. The change is still real, so it is still reported — quietly, as standing
      * information rather than as a fresh signal.
      */
     data class Acknowledged(
-        val drop: TrendDrop,
+        val change: TrendChange,
         val acknowledgedAt: Instant,
     ) : TrendFlag
 }
@@ -225,9 +392,10 @@ sealed interface TrendFlag {
  * [watermarkIsStale] is a **report, not an action**: this function is pure and *derived on read*
  * must not come to mean *writes on read* — under "All bunnies" every vitals card evaluates the flag,
  * and N cards would race to delete the same row (ADR-0001). `WeightRepository`'s write paths own the
- * discard, and they already do it with [trendTriggerHolds], which is the same predicate this field
- * is computed from. So on a database written only through the repository this is always `false`; it
- * is here so that an inconsistency is *stated* rather than silently absorbed into the flag.
+ * discard, and they act on exactly this field, so the two cannot disagree about what a stale
+ * watermark is. On a database written only through the repository it is `false` by the time anything
+ * reads it; it is here so that an inconsistency is *stated* rather than silently absorbed into the
+ * flag.
  */
 data class TrendEvaluation(
     val flag: TrendFlag,
@@ -253,42 +421,60 @@ data class TrendEvaluation(
 fun evaluateTrend(
     series: List<Weighing>,
     acknowledgment: TrendAcknowledgment?,
+    growth: GrowthStage,
 ): TrendEvaluation {
     val window =
         trendWindow(series)
             ?: return TrendEvaluation(TrendFlag.NotEnoughHistory, watermarkIsStale = acknowledgment != null)
 
-    if (!window.triggerHolds()) {
-        // The trigger is false, so the episode is over. Because the flag clears exactly when the
-        // trigger does, "the trigger is false" *is* "the episode ended" — any watermark still on
-        // disk is stale, and keeping it would let a months-old acknowledgment silence a genuinely
-        // new drop later.
-        return TrendEvaluation(TrendFlag.Steady, watermarkIsStale = acknowledgment != null)
+    // **A gain is judged inside the loss window's gate, not beside it.** Two readings six months
+    // apart are arithmetically enough for the gain rule, which needs only an anchor and a current
+    // reading — but ADR-0021's "two points do not describe a trend" is a statement about how thin a
+    // record the app is willing to speak from at all, and it is not weaker for a rise. So a bunny
+    // with one prior stays `NotEnoughHistory` in both directions. Pinned by a test.
+    val change =
+        window.change(growth)
+            // No trigger holds, so the episode is over. Because the flag clears exactly when the
+            // trigger does, "no trigger is true" *is* "the episode ended" — any watermark still on
+            // disk is stale, and keeping it would let a months-old acknowledgment silence a
+            // genuinely new drop later.
+            ?: return TrendEvaluation(TrendFlag.Steady, watermarkIsStale = acknowledgment != null)
+
+    if (acknowledgment == null) return TrendEvaluation(TrendFlag.WorthACloserLook(change), watermarkIsStale = false)
+
+    // **The direction-flip discard** (ADR-0028). The watermark stores grams and no direction, so the
+    // direction it was taken for is read back off the number itself: an acknowledged loss sat below
+    // its baseline, an acknowledged gain sat above its anchor. A watermark on the wrong side of what
+    // this reading is judged against was taken for the other direction, and it is discarded rather
+    // than allowed to judge this one — otherwise a loss would be silenced by grams acknowledged for
+    // a gain. Direction is re-derivable like this on every read, which is why it costs no column.
+    val watermarkFitsDirection =
+        when (change.direction) {
+            TrendDirection.Loss -> acknowledgment.grams < change.baselineGrams
+            TrendDirection.Gain -> acknowledgment.grams > change.baselineGrams
+        }
+    if (!watermarkFitsDirection) {
+        return TrendEvaluation(TrendFlag.WorthACloserLook(change), watermarkIsStale = true)
     }
 
-    val drop =
-        TrendDrop(
-            currentGrams = window.current.grams,
-            currentAt = window.current.recordedAt,
-            baselineGrams = window.baseline.grams,
-            baselineAt = window.baseline.recordedAt,
-        )
-
-    if (acknowledgment == null) return TrendEvaluation(TrendFlag.WorthACloserLook(drop), watermarkIsStale = false)
-
-    // **The re-raise bar** (ADR-0001): a later reading breaks back through when it falls below the
+    // **The re-raise bar** (ADR-0001): a later reading breaks back through when it moves past the
     // watermark by *more than* the gram noise floor — strictly more, as "by more than" says. This is
-    // a tighter bar than the 5 % trigger on purpose, because a bunny already flagged *and*
+    // a tighter bar than either trigger on purpose, because a bunny already flagged *and*
     // acknowledged must not be allowed to slide a further 5 % in silence. This is the floor's
-    // genuinely load-bearing role; in the trigger above it is almost always inert.
-    val reRaises = window.current.grams < acknowledgment.grams - noiseFloorGrams(window.baseline.grams)
+    // genuinely load-bearing role; in the triggers above it is almost always inert.
+    val floor = noiseFloorGrams(change.baselineGrams)
+    val reRaises =
+        when (change.direction) {
+            TrendDirection.Loss -> window.current.grams < acknowledgment.grams - floor
+            TrendDirection.Gain -> window.current.grams > acknowledgment.grams + floor
+        }
 
     return TrendEvaluation(
         flag =
             if (reRaises) {
-                TrendFlag.WorthACloserLook(drop)
+                TrendFlag.WorthACloserLook(change)
             } else {
-                TrendFlag.Acknowledged(drop, acknowledgment.acknowledgedAt)
+                TrendFlag.Acknowledged(change, acknowledgment.acknowledgedAt)
             },
         watermarkIsStale = false,
     )

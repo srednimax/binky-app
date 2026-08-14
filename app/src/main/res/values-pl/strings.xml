@@ -164,11 +164,14 @@
          "%1$s: spadek o …" rather than "%1$s schudł o …", because the verb would be gendered. -->
     <string name="trend_flag_title">Warto się przyjrzeć</string>
     <string name="trend_flag_drop">%1$s: spadek o %2$s od %3$s.</string>
+    <string name="trend_flag_rise">%1$s: wzrost o %2$s od %3$s.</string>
     <string name="trend_flag_readings">Wtedy %1$s, teraz %2$s.</string>
     <string name="trend_flag_long_gap">Te dwa ważenia dzieli %1$s, więc jest to zmiana rozłożona na dłuższy czas, a nie nagła.</string>
     <string name="trend_flag_not_advice">To spostrzeżenie o liczbach, nie diagnoza. Jeśli się martwisz, zapytaj weterynarza.</string>
     <string name="trend_flag_vet_diet">Dieta zalecona przez weterynarza? Wtedy właśnie o taki spadek chodzi i można to pominąć.</string>
+    <string name="trend_flag_vet_gain">Plan żywieniowy zalecony przez weterynarza? Wtedy właśnie o taki wzrost chodzi i można to pominąć.</string>
     <string name="trend_flag_acknowledge">Widzę to</string>
+    <string name="trend_flag_ask_age">Ile lat ma %1$s?</string>
     <string name="trend_flag_acknowledged">Odnotowano %1$s.</string>
     <string name="trend_flag_close">Zamknij</string>
 

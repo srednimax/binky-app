@@ -266,13 +266,23 @@ three get more expensive with time. **Both ADRs are made** — ADR-0028 and
       **assume the existing `weight-entry-ime` evidence is wrong** rather than re-reading it.
 - [x] **§3's downsample answer**, taken while the phone was already in hand — **both** specs, `Document`
       kept and `Observation` set, on one tray and one printout. 2026-08-14.
-- [ ] **§9's gain signal**, per **[ADR-0028](adr/0028-a-weight-gain-is-observed-against-a-six-month-anchor.md)**
-      — grilled and written 2026-08-14; merge it before any trend code. Same flag, anchored on the weighing
-      nearest **six months** back (4–8 month window), at **+10 %** — one body-condition step on the
-      PFMA/RWAF scale. Silent under 12 months; a null `birthDate` fires **and asks the age**, because
-      reading an absent field as adulthood is the move ADR-0001 bans. **Loss takes precedence** when both
-      hold, which is what keeps the schema at **6** — one watermark, discarded on a direction change.
-      Three new strings. Two limitations pinned by test, not engineered around.
+- [x] **§9's gain signal** ✅ **built and device-proven 2026-08-14**, per
+      **[ADR-0028](adr/0028-a-weight-gain-is-observed-against-a-six-month-anchor.md)** — the rule in
+      `WeightTrend.kt`, three strings in **both** locales, the age question wired to the bunny editor from
+      all three of the flag's hosts, a **`gaining` seed variant** and three scenes so the card has a
+      permanent home in the harness. `TrendDrop` is now `TrendChange` and carries a direction; the
+      watermark's own direction is read back off its grams, so ADR-0028's flip discard still costs no
+      column, and `WeightRepository.add` asks `evaluateTrend` whether the row is stale rather than keeping
+      a second copy of the rule.
+      ⚠️ **The first capture found a defect the rule did not have**: the flag's action row is a `Row`, and
+      a third action does not clip there — it crushes *Start a watch* to one character wide and spells it
+      down the card. `FlowRow` now, in the banner **and** in both of the dialog's button slots. Seen in
+      English and Polish. **Second time seed variants have caught a state no screenshot held.**
+      ℹ️ **"No reading in the 4–8 month window" evaluates to `Steady`, deliberately** — it is a distinct
+      *case* and pinned as one, but nothing renders either as reassurance, so a third variant would be a
+      distinction with no consumer. Reasoning in phase-7.5.md §1.
+      The rule itself is **not restated here** — it is ADR-0028's, tested in `WeightTrendTest` and
+      summarised in §9 below, which stays for the question it started as.
 - [ ] **Droppings are several things at once, and worth a photo** 🔴 **this is the schema bump** — reported
       2026-08-14. `droppingsForm` is one nullable column, so a tray holding round *and* soft pellets forces
       the owner to pick one and file the rest as prose, on the field whose own doc says a countable form
@@ -412,11 +422,14 @@ Apache-2.0 §4 asks for the licence and NOTICE to travel with the binary.
 
 ---
 
-## 9 — A weight *gain* raises nothing 🟠 ⤷ Phase 7.5, decision first
+## 9 — A weight *gain* raises nothing 🟢 built 2026-08-14, ships in 1.5
 
 Found by a tester, 2026-08-09, and written down here so it does not get lost. **Decided 2026-08-14 in
-[ADR-0028](adr/0028-a-weight-gain-is-observed-against-a-six-month-anchor.md)** and scheduled into Phase 7.5;
-everything below is the question as it stood, kept because the ADR answers it point by point.
+[ADR-0028](adr/0028-a-weight-gain-is-observed-against-a-six-month-anchor.md)** and **built the same day**
+(§6.5's fourth box, now ticked); everything below is the question as it stood, kept because the ADR answers
+it point by point. **The tester's own reply is still owed** — their *"5 kg plus"* was a number rather than
+a change, and the honest answer is that Binky will never call a weight too high, only say that it moved
+(phase-7.5.md §1).
 
 **What they saw.** A bunny putting on a lot of weight — their words were "5 kg plus" — produces no flag,
 no notification, nothing. Only losses are ever raised.

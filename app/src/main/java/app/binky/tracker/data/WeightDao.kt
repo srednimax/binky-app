@@ -77,6 +77,14 @@ interface WeightDao {
     fun acknowledgment(bunnyId: String): Flow<TrendAcknowledgmentEntity?>
 
     /**
+     * The same row read once, for a write path that has to judge the watermark inside the same
+     * transaction as the weighing it just wrote — a `Flow` there would be a subscription nobody
+     * cancels.
+     */
+    @Query("SELECT * FROM trend_acknowledgments WHERE bunnyId = :bunnyId")
+    suspend fun acknowledgmentNow(bunnyId: String): TrendAcknowledgmentEntity?
+
+    /**
      * At most one row per bunny — `bunnyId` is the primary key — so acknowledging a second time
      * replaces the watermark rather than failing on the constraint.
      */

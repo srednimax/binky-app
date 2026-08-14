@@ -60,6 +60,7 @@ fun WeightScreen(
     onAddWeight: (String) -> Unit,
     onEditWeight: (String, String) -> Unit,
     onOpenVisit: (String, String) -> Unit,
+    onEditBunny: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: WeightViewModel = viewModel(factory = WeightViewModel.Factory, extras = appViewModelExtras())
@@ -80,6 +81,7 @@ fun WeightScreen(
                     if (bunnyId != null && row.visitId != null) onOpenVisit(bunnyId, row.visitId)
                 },
                 onAcknowledge = viewModel::acknowledge,
+                onAskAge = { state.bunnyId?.let(onEditBunny) },
                 onStartWatch = viewModel::startWatch,
                 onRangeChange = viewModel::setChartRange,
                 modifier = modifier,
@@ -122,6 +124,7 @@ private fun History(
     onEdit: (WeightRow) -> Unit,
     onOpenVisit: (WeightRow) -> Unit,
     onAcknowledge: () -> Unit,
+    onAskAge: () -> Unit,
     onStartWatch: (WatchDuration) -> Unit,
     onRangeChange: (WeightChartRange) -> Unit,
     modifier: Modifier = Modifier,
@@ -151,6 +154,10 @@ private fun History(
                     flag = state.flag,
                     unit = state.unit,
                     onAcknowledge = onAcknowledge,
+                    // ADR-0028's age question, on a gain raised with no birthday on file. It leads
+                    // to the bunny editor, which is not on this tab — the one place in the app
+                    // where the flag's own action leaves the screen it is drawn on.
+                    onAskAge = onAskAge,
                     // Absent while a watch is already running. **Home is where a running watch is
                     // shown and closed** (ADR-0001) — one place for that, so the owner learns where
                     // it lives rather than finding it wherever they happen to be.

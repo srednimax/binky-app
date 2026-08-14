@@ -9,7 +9,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import app.binky.tracker.BinkyApplication
 import app.binky.tracker.data.AppPreferences
 import app.binky.tracker.data.BunnyRepository
-import app.binky.tracker.data.TrendDrop
+import app.binky.tracker.data.TrendChange
 import app.binky.tracker.data.TrendFlag
 import app.binky.tracker.data.WatchDuration
 import app.binky.tracker.data.WatchRepository
@@ -17,6 +17,7 @@ import app.binky.tracker.data.WeightEntity
 import app.binky.tracker.data.WeightRepository
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.data.evaluateTrend
+import app.binky.tracker.data.growthStageNow
 import app.binky.tracker.data.replaceable
 import app.binky.tracker.data.toAcknowledgment
 import app.binky.tracker.data.toWeighing
@@ -59,7 +60,7 @@ data class WeightEntryUiState(
      */
     val visitId: String? = null,
     /** Set after the write when the flag is visible and unacknowledged: the dialog host. */
-    val flagDrop: TrendDrop? = null,
+    val flagChange: TrendChange? = null,
     /** True while the delete confirmation is up. **One** confirmation, not ADR-0004's two. */
     val confirmingDelete: Boolean = false,
     /**
@@ -258,13 +259,13 @@ class WeightEntryViewModel(
     }
 
     fun acknowledge() {
-        _uiState.update { it.copy(flagDrop = null, saved = true) }
+        _uiState.update { it.copy(flagChange = null, saved = true) }
         viewModelScope.launch { weights.acknowledgeTrend(bunnyId) }
     }
 
     /** Dismissing is explicitly **not** acknowledging (ADR-0001). The screen still closes. */
     fun dismissFlag() {
-        _uiState.update { it.copy(flagDrop = null, saved = true) }
+        _uiState.update { it.copy(flagChange = null, saved = true) }
     }
 
     /**
@@ -273,7 +274,7 @@ class WeightEntryViewModel(
      * deciding to look harder, which is the opposite of saying they have seen enough.
      */
     fun startWatch(duration: WatchDuration) {
-        _uiState.update { it.copy(flagDrop = null, saved = true) }
+        _uiState.update { it.copy(flagChange = null, saved = true) }
         viewModelScope.launch { watches.start(bunnyId, duration) }
     }
 
@@ -313,11 +314,12 @@ class WeightEntryViewModel(
             evaluateTrend(
                 series = weights.series(bunnyId).first().map { it.toWeighing() },
                 acknowledgment = weights.acknowledgment(bunnyId).first()?.toAcknowledgment(),
+                growth = growthStageNow(bunnies.bunnyNow(bunnyId)?.birthDate),
             )
-        val drop = (evaluation.flag as? TrendFlag.WorthACloserLook)?.drop
+        val change = (evaluation.flag as? TrendFlag.WorthACloserLook)?.change
         // Visible *and* unacknowledged, or the screen simply closes: an acknowledged episode is
         // standing information the banner already carries, not something to interrupt with again.
-        _uiState.update { it.copy(flagDrop = drop, saved = drop == null) }
+        _uiState.update { it.copy(flagChange = change, saved = change == null) }
     }
 
     companion object {

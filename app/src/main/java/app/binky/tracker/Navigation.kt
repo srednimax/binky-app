@@ -426,6 +426,9 @@ private fun AppShell(
                             onOpenVisit = { bunnyId, visitId ->
                                 backStack.add(VisitEditor(bunnyId, visitId))
                             },
+                            // The trend flag's age question (ADR-0028), which is the one action on
+                            // that card leading off the tab it is drawn on.
+                            onEditBunny = { bunnyId -> backStack.add(BunnyEditor(bunnyId)) },
                         )
                     }
                     entry<Observations> {
@@ -549,6 +552,7 @@ private fun AppShell(
                             onOpenVisit = { visitId ->
                                 backStack.add(VisitEditor(key.bunnyId, visitId))
                             },
+                            onEditBunny = { backStack.add(BunnyEditor(key.bunnyId)) },
                             onBack = { backStack.removeLastOrNull() },
                         )
                     }
