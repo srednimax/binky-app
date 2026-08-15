@@ -132,6 +132,26 @@ class RestoreStageMigrateSwapTest {
         }
     }
 
+    /**
+     * The values in one of the droppings join tables, value by value rather than counted.
+     *
+     * A row count alone would be satisfied by a migration that wrote the *wrong* value into the right
+     * number of rows, and these enums are stored by name — so the names are the assertion.
+     */
+    private fun droppingsIn(
+        databaseName: String,
+        table: String,
+    ): List<String> {
+        val database = buildBunnyDatabase(context, databaseName)
+        return try {
+            database.openHelper.readableDatabase
+                .query("SELECT `value` FROM `$table` ORDER BY `value`")
+                .use { cursor -> buildList { while (cursor.moveToNext()) add(cursor.getString(0)) } }
+        } finally {
+            database.close()
+        }
+    }
+
     private fun zipOf(vararg entries: Pair<String, ByteArray>): File {
         val target = File(outDir, "hand-built-${UUID.randomUUID()}.zip")
         ZipOutputStream(target.outputStream()).use { zip ->
@@ -440,6 +460,19 @@ class RestoreStageMigrateSwapTest {
             // to carry, so an empty pair of tables is the correct outcome rather than a missing one.
             assertEquals(0, rowsIn(liveName, "care_reminders"))
             assertEquals(0, rowsIn(liveName, "care_events"))
+
+            // The droppings, which `MIGRATION_6_7` moved out of two columns and into two join tables.
+            // Four of the five observations carried a form and a size; the fifth carried neither and
+            // contributes no rows, which is the half a count could not distinguish from a migration
+            // that defaulted the empty one. This is what "restores with its droppings intact" means.
+            assertEquals(
+                listOf("ROUND", "ROUND", "ROUND", "ROUND"),
+                droppingsIn(liveName, "observation_droppings_appearance"),
+            )
+            assertEquals(
+                listOf("NORMAL", "NORMAL", "SMALL", "SMALL"),
+                droppingsIn(liveName, "observation_droppings_sizes"),
+            )
         }
 
     /**
@@ -500,6 +533,19 @@ class RestoreStageMigrateSwapTest {
             assertEquals(0, rowsIn(liveName, "visits"))
             assertEquals(0, rowsIn(liveName, "medication_courses"))
             assertEquals(0, rowsIn(liveName, "documents"))
+
+            // The droppings across `MIGRATION_6_7`, identical to the schema-4 fixture's for the same
+            // reason the counts above are: one seeder, one pinned `now`. Asserted from both artifacts
+            // because they reach the rebuild by different routes — this one arrives at 6 having been
+            // written there, where the schema-4 file is migrated into it two steps earlier.
+            assertEquals(
+                listOf("ROUND", "ROUND", "ROUND", "ROUND"),
+                droppingsIn(liveName, "observation_droppings_appearance"),
+            )
+            assertEquals(
+                listOf("NORMAL", "NORMAL", "SMALL", "SMALL"),
+                droppingsIn(liveName, "observation_droppings_sizes"),
+            )
         }
 
     /** A sanity check that the throwaway live database really is a Binky one. */
