@@ -905,7 +905,17 @@ SCENES = [
         ],
     ),
     # --- full-bleed content, which has no inner padding of its own to hide behind -------------
-    Scene("photos", "full-bleed", [*SELECT_BUNNY, ("tap", "More"), ("tap", "Photos")]),
+    #
+    # **Photos is `tap_text`, and English cannot show why.** The app bar's avatar carries
+    # `bunny_avatar_placeholder` as its content description, and in Polish that is *"Nie ma jeszcze
+    # zdjęcia"* while the More row is *"Zdjęcia"* — one word, two grammatical numbers, the same
+    # form. English keeps them apart for free: *"No photo yet"* is singular, so the needle *Photos*
+    # is not a substring of it. The avatar is 60x60 against the row's 170x59, so `find`'s
+    # smallest-wins rule takes the avatar, and tapping it opens the bunny switcher rather than
+    # navigating. `photo-add-menu` failed loudly on the next tap; these two shot the dropdown over
+    # the More screen and reported clean. The avatar has a description and no text, the row has text
+    # and no description — so `tap_text` separates them, as it does for the "+" in [find].
+    Scene("photos", "full-bleed", [*SELECT_BUNNY, ("tap", "More"), ("tap_text", "Photos")]),
     # --- forms: a TopAppBar with a save action, fields down to the bottom edge -----------------
     Scene("bunny-editor", "form", [*SELECT_BUNNY, ("tap", "Edit")]),
     Scene("bunny-editor-scrolled", "form", [*SELECT_BUNNY, ("tap", "Edit"), ("swipe_up", "")]),
@@ -987,7 +997,7 @@ SCENES = [
         [*SELECT_BUNNY, ("tap", "Observations"), ("swipe_end", "")],
     ),
     Scene("care-bottom", "tab", [*SELECT_BUNNY, ("tap", "Care & Meds"), ("swipe_end", "")]),
-    Scene("photos-bottom", "full-bleed", [*SELECT_BUNNY, ("tap", "More"), ("tap", "Photos"), ("swipe_end", "")]),
+    Scene("photos-bottom", "full-bleed", [*SELECT_BUNNY, ("tap", "More"), ("tap_text", "Photos"), ("swipe_end", "")]),
     Scene("bunny-editor-bottom", "form", [*SELECT_BUNNY, ("tap", "Edit"), ("swipe_end", "")]),
     Scene(
         "observation-entry-bottom",
@@ -1006,7 +1016,7 @@ SCENES = [
     Scene(
         "photo-add-menu",
         "overlay",
-        [*SELECT_BUNNY, ("tap", "More"), ("tap", "Photos"), ("tap", "Add photos"), ("wait", "1.0")],
+        [*SELECT_BUNNY, ("tap", "More"), ("tap_text", "Photos"), ("tap", "Add photos"), ("wait", "1.0")],
     ),
     # **The one entry point for recording a day** (Phase 7.5 §6). The healthy day used to be a
     # button inside the Observations timeline while the "+" opened the long form, so the shortcut
