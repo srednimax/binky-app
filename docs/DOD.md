@@ -20,7 +20,7 @@ answers to commit subjects rather than to this file.
 
 **So what is actually open is evidence, then one short phase of code**: §1's overnight run and the gate
 items behind it, Play's own count (§4), and Phase 7.5's **two remaining items** — the two hand items and the
-driver's two long runs. Everything that touches the app's own code is done and
+driver's **English matrix run** (the Polish one is done, 2026-08-15). Everything that touches the app's own code is done and
 device-proven; the schema bump, its migration and its instrumented run are green. Then Phase 8.
 
 ---
@@ -211,15 +211,23 @@ Built, driven on the device and written up — **6a, 6b, 6c and 6d are all done*
 
 Two boxes outlive the code, and neither is work a build can do:
 
-- [ ] Set `binky.support@gmail.com` as Play's **per-app contact email** in *Store settings*. **Not blocked
-      by §4's testing count** — Store settings is editable today. It is what makes the app, the listing and
-      the privacy policy's *Contact* section name one inbox; the app hardcodes the address, so anything
-      else in that field points the listing at a mailbox the app does not use.
+- [x] Set `binky.support@gmail.com` as Play's **per-app contact email** in *Store settings*. ✅ **Done
+      2026-08-15.** The app, the listing and the privacy policy's *Contact* section now name one inbox.
 - [ ] **Read a support mail that actually arrived**, carried from 6c's gate: send a bug report from the
       phone and confirm in the inbox that the diagnostics block is **visible**, not collapsed behind
       Gmail's signature `…`. The block is separated by a blank line and never `-- ` for exactly that
       reason, and a draft cannot prove it — only a delivered message can. Everything up to the send is
       verified in both locales.
+      ✅ **Delivery is proven (2026-08-15)** — the `mailto:` hand-off, recipient, subject and body all
+      reach a real inbox.
+      ⚠️ **It landed in Spam**, which is silent on both ends: the sender sees a sent message and the
+      maintainer sees an empty inbox. **Fixed by a filter on the receiving account** —
+      `subject:bug OR subject:feature` → *Never send it to Spam*, applied 2026-08-15. It works in every
+      locale because the `#bug` tag is a Kotlin constant rather than a string resource
+      (`SupportHandoff.kt`), so **one rule covers all nine of Phase 8's languages**.
+      **The box stays open for its other half**: the diagnostics block seen *visible* in a message
+      delivered to the inbox proper. A spam-folder copy is weak evidence — Gmail suppresses some
+      rendering there — so the **next** report is the one that settles it.
 
 **1.3 supersedes 1.2.0 on the tracks — do not upload both.** Same schema 6, same two hand-written
 migrations, so §4's field-upgrade proof retargets to **1.0.0 → 1.3** and still crosses `MIGRATION_4_5` and
@@ -254,12 +262,26 @@ and they are now the only code-free work between this phase and its gate.
 
 - [ ] **§5's two hand items first** — Play's per-app contact email, and a delivered support mail read.
       Oldest open boxes in the project, blocked by nothing, an hour between them.
+      ⚠️ **Support mail delivers but was filed as Spam** (2026-08-15), fixed with a
+      `subject:bug OR subject:feature` → *Never send it to Spam* filter on the receiving account. One
+      rule covers all nine languages, because the tag is a Kotlin constant. **The diagnostics-block
+      half is still owed** and needs a report delivered to the inbox proper. See §5.
 - [ ] **§7's capture-driver box**, moved here. ✅ **The code is done and device-proven (2026-08-14)** —
       `return_to_home` + DND as setup/teardown, seed variants through a debug-only broadcast receiver
       (`crowded` is the first), and needles resolved through the string resources before the first tap.
-      The default seed is **not** changed: **58** scenes rest on it. **Two long runs are still owed** — a
-      full **English matrix with the 20:00 dose live**, and a **Polish run reaching every scene**, which
-      is the Polish after set and unblocks §4's Polish listing screenshots.
+      The default seed is **not** changed: **58** scenes rest on it.
+      ✅ **The Polish run is done (2026-08-15)** — 73 scenes in light and dark, **146/146**, in
+      `~/binky-screenshots/phase-7.5/pl`. That is the **Polish after set**, and it unblocks §4's Polish
+      listing screenshots. **One long run is still owed**: the full **English matrix with the 20:00
+      dose live**.
+      ⚠️ **`photos` and `photos-bottom` had been shooting the wrong screen in Polish, silently** —
+      found 2026-08-15 and **fixed**. `more_photos` is *"Zdjęcia"* and `bunny_avatar_placeholder` is
+      *"Nie ma jeszcze zdjęcia"*, the same form; `find` takes the smaller node and the avatar (60×60)
+      beats the row (170×59), so the tap opened the bunny switcher. `photo-add-menu` failed loudly on
+      its next tap and **that is the only reason the other two were found**. All three now use
+      `tap_text` — the third structural needle — and were re-shot.
+      ℹ️ **The English evidence is not retracted**: *"No photo yet"* is singular, so the needle
+      *Photos* cannot match it. This defect is unreachable in English, in any configuration.
       ℹ️ **The relaunch was already landing on Home** — measured from a detail route and from a non-Home
       tab — so the isolation step is a *check*, and the 2026-08-12 cell is better explained by the dose
       banner re-posting on every relaunch. See phase-7.5.md §4 for the rest of what the build found.
@@ -307,8 +329,12 @@ and they are now the only code-free work between this phase and its gate.
       `MIGRATION_6_7` is proven; `aReleaseShapedOpenOfASchemaSixFileSucceeds` is.
       ⚠️ **Still owed: `bunny-schema-6-fixture.zip`**, a device chore against `v1.4.0` — the fixtures are
       real artifacts, not synthesised. Softened by the schema-4 fixture already restoring
-      4 → 5 → 6 → **7** and counting `observation_symptoms` afterwards; what it does not yet assert is that
-      the droppings landed in the join tables, which is a two-line addition needing no new fixture.
+      4 → 5 → 6 → **7** and counting `observation_symptoms` afterwards.
+      ✅ **The droppings assertion is in (2026-08-15)**, in *both* fixture restores and by **value rather
+      than count**: four observations arrive as `ROUND`, the sizes as `NORMAL, NORMAL, SMALL, SMALL`, and
+      the fifth — which carried neither column — contributes **no** rows, which is the half a row count
+      could not tell apart from a migration that defaulted it. 12/12 green on the Xiaomi, and no new
+      fixture was needed, as predicted. The `zip` itself is still owed.
       ℹ️ **HyperOS's ADB install prompt is drivable** with `input touchscreen tap`, contrary to the standing
       note. `INSTALL_FAILED_USER_RESTRICTED` after ~12 s is a *missed prompt*; the same string returned
       instantly is the first-install refusal. The delay tells them apart.

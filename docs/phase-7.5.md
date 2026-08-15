@@ -387,6 +387,39 @@ run reaching every scene**.
   row, so the plain needle would have re-tapped the button and dismissed the sheet. `tap_text` matches on
   a node's **text** and ignores content descriptions, which is exactly the difference between the two.
 
+### The Polish run, 2026-08-15 — 146 scenes, and one collision English cannot express
+
+**73 scenes in light and dark, complete in both cells**, at 39.8 s per scene over 100 minutes. This is
+the Polish after set, and it unblocks `DOD.md` §4's Polish listing screenshots. It found exactly one
+defect, and that defect is the argument for the whole locale-aware exercise: **it cannot be reproduced
+in English, in any configuration, ever.**
+
+- **`Photos` resolves to the wrong node in Polish, and only in Polish.** The More row is
+  `more_photos` = *"Zdjęcia"*; the app bar's avatar carries `bunny_avatar_placeholder` as its content
+  description, which is *"Nie ma jeszcze zdjęcia"*. One word, two grammatical numbers, the same form.
+  English separates them for free — *"No photo yet"* is **singular**, so the needle *Photos* is not a
+  substring of it — which is why Phase 7's after set and all four gate configs hold correct shots of
+  these scenes and **remain valid**. Nothing about the English evidence is retracted here.
+- **`find` takes the smallest node, and the avatar is smaller than the row**: 60×60 against 170×59,
+  3600 px² against 10030. So the tap landed on the avatar and opened the **bunny switcher** instead of
+  navigating to Photos.
+- **One scene failed loudly and two failed silently, which is the same shape as `weight-entry-ime`.**
+  `photo-add-menu` had a following tap with nothing to find, so it reported. `photos` and
+  `photos-bottom` had no following tap — they simply photographed the switcher dropdown over the More
+  screen and reported clean, at a plausible file size, under the right names. **Both were only found
+  because the third scene failed next to them.** That is now twice this phase that a silent scene was
+  caught by its noisy neighbour, and it is the strongest argument in the project for scenes whose last
+  step is a tap rather than a screenshot.
+- **`tap_text` is the fix, and it is the third structural needle.** The avatar has a description and no
+  text; the row has text and no description. Same instrument as §6's "+" and for the same reason —
+  `tap_field` for a control with *no* words, `tap_text` for two controls with the *same* ones. Three
+  scenes changed, re-shot in both themes, 146/146.
+
+**A note on the run's own record.** Re-shooting three scenes rewrites `manifest.json` with only those
+three, because the manifest is written per invocation rather than merged. It was rebuilt from the
+directory afterwards and marks the six re-shot cells; a later reader should know the file describes two
+runs. Worth folding into the script if a second partial re-shoot ever happens.
+
 ## 5 — Phase 6's two hand items
 
 Neither is work a build can do, and neither is blocked by Play's testing count. They go **first** because
@@ -398,6 +431,32 @@ they are the oldest open boxes in the project and cost an hour between them.
 - **Read a support mail that actually arrived** — send a bug report from the phone and confirm in the inbox
   that the diagnostics block is **visible**, not collapsed behind Gmail's signature `…`. Everything up to
   the send is already verified in both locales; only a delivered message can prove the last step.
+
+### Sent 2026-08-15 — it delivers, and Gmail filed it as spam
+
+**The mail arrives.** The `mailto:` hand-off, the recipient, the subject and the body all survive the trip
+to a real inbox, which is the half 6c could never prove from a draft. **It landed in Spam**, and that is
+the finding: not a defect in anything the app does, and worse than one, because the failure is silent on
+both ends. The sender sees a sent message; the maintainer sees an empty inbox. **It reads exactly like
+nobody reporting anything** — the same invisible failure `SupportHandoff.kt` already warns about for a
+missing per-locale filter rule, arriving by a route that comment did not consider.
+
+**The cause is the inbox's age, not the message.** A new Gmail account with no correspondence history,
+receiving a short machine-shaped body, is the ordinary case for this. Nothing in the subject or the
+diagnostics block needs changing.
+
+**The fix is a filter on the receiving account, keyed on the token this file already designed for.**
+`subject:bug OR subject:feature` → **Never send it to Spam**. It works because the tag is a Kotlin
+constant rather than a string resource: a Polish report still carries `#bug`, so **one rule covers all
+nine languages** Phase 8 adds. That is the ADR-0013 exception paying for itself a second time, and for a
+purpose it was not written for — the comment argues the token keeps the inbox *searchable* in one
+language, and it turns out to keep it *reachable* too. Applied 2026-08-15.
+
+**Still owed, and it is the actual box:** the diagnostics block seen **visible** in a delivered message —
+not collapsed behind Gmail's `…`. A spam-folder copy is weak evidence for it, because Gmail suppresses
+some rendering there, so the message that settles this is the **next** report, landing in the inbox
+proper now the filter exists. The block is separated by a blank line and never `-- ` precisely so it
+cannot be taken for a signature; that claim remains unverified against a real client.
 
 ## 6 — The healthy day belongs behind the `+`
 
