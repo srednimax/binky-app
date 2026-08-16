@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.5.0](https://github.com/srednimax/binky-app/compare/v1.4.0...v1.5.0) (2026-08-16)
+
+
+### Features
+
+* **driver:** arm a live dose before every scene, so DND has something to suppress ([290000e](https://github.com/srednimax/binky-app/commit/290000eddcbb00d823eb13fbe016c5fcee97498c))
+* **driver:** let a scene ask for a seed the sample data does not contain ([fc2adea](https://github.com/srednimax/binky-app/commit/fc2adea750a80bf105f8e935aea3dc19fd09f500))
+* **driver:** resolve scene needles through the string resources, and tap the field itself ([75ae620](https://github.com/srednimax/binky-app/commit/75ae6208d233410d40411e3e15ea31b441b66247))
+* **licences:** attribute every bundled dependency, and ship the licence text ([a838a6e](https://github.com/srednimax/binky-app/commit/a838a6eba1313dfe54f47e68b3fcc8afc8205521))
+* **media:** settle both downsample specs on the phone, and add MediaKind.Observation ([d20378e](https://github.com/srednimax/binky-app/commit/d20378e293a634c6b8344bc3af557c99ac62d784))
+* **observations:** droppings are multi-valued, and the tray is worth a photo ([ddb430a](https://github.com/srednimax/binky-app/commit/ddb430a63e45c42593d36960cad91c66df9c758e))
+* **observations:** one way to record a day, and it is the "+" ([e26642d](https://github.com/srednimax/binky-app/commit/e26642df9e0662167f1da1013ead1e840007e3be))
+* **ui:** draw a bunny where the avatar placeholder showed a person ([90dc9e9](https://github.com/srednimax/binky-app/commit/90dc9e953ffab3f573c19f92c443c6fe6df20df4))
+* **weight:** a gain raises the same flag, against a six-month anchor ([c892fe3](https://github.com/srednimax/binky-app/commit/c892fe3f23e5a82c53e82897346ea2a76f1f0b76))
+
+
+### Bug Fixes
+
+* **driver:** isolate every scene at Home, and silence the phone for the run ([3e070dc](https://github.com/srednimax/binky-app/commit/3e070dc01cb8fe24ed208bbcbfef9cd8f62cd662))
+* **driver:** tap Photos by text, a collision only Polish can express ([29d442d](https://github.com/srednimax/binky-app/commit/29d442db888285207e21446b6680b56554da7722))
+* **home:** cap the housemates line, and bound it at two lines ([250c8f0](https://github.com/srednimax/binky-app/commit/250c8f09dfd99fa6833769028018d723c40e6cf8))
+* **i18n:** correct nine Polish strings no mechanical check could see ([ddbd58a](https://github.com/srednimax/binky-app/commit/ddbd58ae0f982c259258eb0e23bda68d822df7b5))
+* let an update migrate instead of refusing to open the records ([c0bc2d7](https://github.com/srednimax/binky-app/commit/c0bc2d7b3a9caa0ebce02e68b29cfebbcdbdc67a))
+* let background work migrate rather than sit out an update ([e781818](https://github.com/srednimax/binky-app/commit/e781818e85a9d5c931af83bd6050e53330d97063))
+
 ## [1.4.0](https://github.com/srednimax/binky-app/compare/v1.3.0...v1.4.0) (2026-08-14)
 
 
