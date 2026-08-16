@@ -605,7 +605,7 @@ in nine languages and having it read twice by nine native speakers.
       same move Polish makes with *po terminie*. `dose_status_skipped` is *Ausgelassen*, agentive
       the way *Pominięta* is.
       🟡 **`es` drafted 2026-08-16** — 685/685, mechanically green, into `translations/es/`.
-      **Five to go: `fr it pt-BR cs uk`.**
+      **Four to go: `it pt-BR cs uk`.**
       ℹ️ **Spanish is the first language to pay §7.3 on the bunny's side rather than the
       owner's**, which is the reverse of German. The owner's half is free — the compound perfect
       with *haber* does not agree with its subject, so *has guardado* and *he mirado* carry no
@@ -636,6 +636,55 @@ in nine languages and having it read twice by nine native speakers.
       governs a bare unit and a counted gap alike, so the sentence German had to give up
       survives. And `photo_import_partial` earns its plural for the second language running:
       *no se pudo leer* against *no se pudieron leer*, where English has nothing to vary.
+      🟡 **`fr` drafted 2026-08-16** — 685/685, mechanically green, into `translations/fr/`.
+      ⚠️ **German's `care_every` problem is not German's**, which is what the last draft asked
+      to have checked. *Tous les jours* but ***toutes** les semaines*, and the app cannot know
+      which unit it is about to substitute; the unit plurals cannot carry the article either,
+      because the editor puts them beside a number field of their own. So the host became a
+      label — `Rythme : %1$s` — and that decided `care_due_in` and `care_due_overdue` in turn:
+      *À faire dans %1$s* and *À faire depuis %1$s*, an invariable infinitive that states the
+      timing and judges nothing. **Two of three languages pay it**, which makes Spanish's
+      *Cada* the exception rather than the rule.
+      ⚠️ **§7.4 exists in French, for a reason its entry does not name.** French has no cases —
+      but *de* elides before a vowel, and the app can no more elide a name the owner typed than
+      Polish can decline it. *"Photo de Alice"* is simply wrong. Six strings put the name first
+      or drop the preposition: `home_about_bunny`, `photo_description`,
+      `bunny_avatar_description`, `watch_expired_title`, `watch_notification_title` and
+      `document_page_description`, whose second argument is a document title. A seventh,
+      `photo_gallery_empty_help`, keeps its argument in the same job by changing the verb —
+      *des photos qui **montrent** %1$s* — which is §7.6's trap and §7.4's in one string.
+      ⚠️ **Apostrophes are typographic (’), not `\'`.** Correct French typography, and it also
+      removes a class of failure the other drafts never faced: French needs some two hundred
+      escapes, and **a missed one would not surface until promotion**, because a staged draft is
+      never compiled. A later edit must not "fix" them back.
+      ⚠️ **Four decisions the native read-through has to confirm, not just read past:**
+      `destination_care` is ***Soins* alone** — Spanish's outcome for Spanish's reason, since
+      *médocs* is too casual for a label seen on every screen and *méds* is not French;
+      ***crottes*** for droppings (the *Köttel* / *cagarrutas* decision a third time, where
+      *excréments* is the clinical word §5 rejects and *crottins* belong to horses), with
+      ***caecotrophes*** beside it; ***suivi rapproché*** for the watch, where *surveillance*
+      carries the alarm ADR-0001 forbids; and ***Sautée*** for `dose_status_skipped`, agentive
+      the way *Pominięta*, *Ausgelassen* and *Omitida* are — *la dose s’est sautée* is not
+      French, which is §6's own test. The fallback is *Omise*.
+      ℹ️ **French finds a §7.1 divergence English hides**: *weigh-in* and *weighing* are two
+      words there and one word here. `care_type_weigh_in` is ***Contrôle du poids*** rather than
+      *Pesée*, or `care_history_weight_help` would have read "les pesées comptent comme des
+      pesées". Nothing predicted it — it shows only from the sentence downstream.
+      ⚠️ **Six breed rows are mappings rather than translations**: the **lop family** (*bélier*),
+      **Himalayan → *Russe*** — the continental standards' name, where Spanish went the other
+      way with *Himalayo* — the UK **Polish → *Hermine*** (German's *Hermelin*), **Dutch →
+      *Hollandais*** against **Netherland Dwarf → *Nain néerlandais***, which French keeps apart
+      where Spanish collides them, plus **Mini Rex → *Rex nain*** and **Rhinelander → *Rhénan***.
+      ℹ️ **Three traps priced, against the table the other two drafts started.** §7.1's *Normal*
+      costs **three** forms of six, between Polish's five and Spanish's one. §7.3 splits the way
+      Spanish's does rather than German's — the owner's half free, because the compound past
+      with *avoir* does not agree with its subject; the bunny's half paid, because *lapin* is
+      masculine, so the masculine generic is stated in the header and genderless wording used
+      wherever it is equally natural. And `photo_import_partial` earns its plural for the
+      **third** language running (*n’a pas pu être lue* / *n’ont pas pu être lues*) while
+      needing a **dodge** neither of the others did: the *added* count sits on the same string
+      and the wrong plural axis, so it is a noun — *Ajout : %1$d sur %2$d* — rather than a
+      participle that would be wrong half the time.
 - [ ] Promote one language per commit, only after its native read-through: move into `res/`, add the
       `<locale>` line, the `AppLanguage` entry, and the endonym label.
 - [x] `AppLanguageTest` extended to compare resource directories too (`values-pt-rBR` vs `pt-BR` — two
