@@ -43,6 +43,13 @@ the *why*, don't restate the line. Prefer explicit and readable over clever.
 
 ## House rules
 
+- **An update never loses an owner's data.** Any change to `BUNNY_SCHEMA_VERSION` ships with its
+  `MIGRATION_x_y` *registered in* `BUNNY_MIGRATIONS`, the exported `app/schemas/*/N.json` committed, a
+  `SchemaGateTest` assertion that the launch gate lets the upgrade through, and a migration test that
+  proves the rows survive. `scripts/schema-gate.py` enforces the mechanical half in CI; the correctness
+  half is the committed backup fixtures. **Every migration test opens the database directly and so walks
+  past the launch gate** — that is how 1.5 nearly shipped a refusal screen to every existing install
+  (ADR-0023's Phase 7.5 amendment). Verify an upgrade on the phone, not only in a test.
 - **Media paths in the DB are relative** and split by kind — `avatars/<uuid>.jpg`, `photos/<uuid>.jpg`,
   `documents/<uuid>.jpg` — resolved against `filesDir` at read time. Absolute paths change across installs
   and break restored backups; the split makes ADR-0005's export scopes a list of directories.

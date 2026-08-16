@@ -38,6 +38,15 @@ jobs:
       - name: Formatting (Spotless)
         run: ./gradlew spotlessCheck
 
+      # A schema bump must arrive with its migration, its exported shape and its launch-gate
+      # assertion — the rule being that an update never loses an owner's data. Mechanical and cheap;
+      # whether the migration is *correct* is the committed fixtures' job, not this script's.
+      - name: Schema gate
+        run: |
+          base="${{ github.base_ref || github.event.repository.default_branch }}"
+          git fetch --depth=50 origin "$base"
+          python3 scripts/schema-gate.py "origin/$base"
+
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
