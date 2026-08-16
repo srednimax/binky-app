@@ -216,11 +216,10 @@
     <string name="settings_backup_summary">Wyeksportuj zapisy do pliku, przywróć je z pliku i zobacz kopie trzymane na tym telefonie.</string>
     <string name="settings_language">Język</string>
     <string name="settings_language_system">Tak jak w telefonie</string>
-    <!-- Endonyms, identical in every locale on purpose: someone stuck in a language they cannot
-         read finds their own by its own name, not by its English one. Repeated here rather than
-         left to fall back, so the switcher's list reads as one deliberate set. -->
-    <string name="settings_language_english">English</string>
-    <string name="settings_language_polish">Polski</string>
+    <!-- The endonyms are gone from this file, not missing from it: they are `translatable="false"`
+         in the base language now, because "identical in every locale on purpose" is the definition
+         of untranslatable. See the comment on them there. -->
+
     <string name="settings_language_help">Binky może działać w innym języku niż reszta telefonu. Zmiana tego ustawienia uruchamia aplikację ponownie.</string>
     <!-- ADR-0027 -->
     <string name="settings_material_you">Kolory z tapety</string>
@@ -349,7 +348,10 @@
     <!-- Zapamiętany folder eksportu (ADR-0005, PLAN 4e). Zapamiętany cel, a nie zamiennik
          udostępniania — każde niepowodzenie kończy się udostępnieniem kopii. -->
     <string name="backup_folder_title">Gdzie trafiają eksporty</string>
-    <string name="backup_folder_help">Zwykle eksport trafia do okna udostępniania i sam(a) decydujesz, co z nim zrobić. Możesz też wskazać folder — na tym telefonie albo w aplikacji chmurowej, na przykład na Dysku — a Binky zapisze go prosto tam.</string>
+    <!-- „to Ty decydujesz”, not „sam(a) decydujesz”: rule 1 at the top of this file bans gendered
+         second person, and a parenthesised suffix is the workaround the rule exists to avoid rather
+         than an exemption from it. The present tense carries no gender. -->
+    <string name="backup_folder_help">Zwykle eksport trafia do okna udostępniania i to Ty decydujesz, co z nim zrobić. Możesz też wskazać folder — na tym telefonie albo w aplikacji chmurowej, na przykład na Dysku — a Binky zapisze go prosto tam.</string>
     <string name="backup_folder_none">Nie wybrano folderu. Eksporty trafiają do okna udostępniania.</string>
     <string name="backup_folder_chosen">Eksporty mogą trafiać prosto do „%1$s”.</string>
     <string name="backup_folder_unavailable">Binky nie może już pisać do wybranego folderu. Mógł zostać przeniesiony lub usunięty, albo cofnięto uprawnienie. Wskaż go ponownie albo korzystaj dalej z okna udostępniania.</string>
@@ -375,7 +377,9 @@
     <string name="backup_reminder_monthly">Co miesiąc</string>
     <string name="backup_reminder_quarterly">Co trzy miesiące</string>
     <string name="export_notification_title">Czas na kopię zapasową zapisów?</string>
-    <string name="export_notification_text">Prosiłeś(-aś) o przypomnienie. Otwórz „Kopia zapasowa i przywracanie”, żeby zrobić świeży eksport — to kilka dotknięć.</string>
+    <!-- Same fix as backup_folder_help, and this one mattered more: a notification is the most
+         glanced-at surface in the app, and „Prosiłeś(-aś)” put a grammatical apology in it. -->
+    <string name="export_notification_text">Przypomnienie na Twoją prośbę. Otwórz „Kopia zapasowa i przywracanie”, żeby zrobić świeży eksport — to kilka dotknięć.</string>
 
     <string name="backup_restore_title">Przywracanie</string>
     <string name="backup_restore_help">Przywracanie zastępuje wszystko, co Binky teraz przechowuje, zawartością pliku. Najpierw na tym telefonie zapisywana jest kopia obecnych zapisów, więc przywracanie da się cofnąć.</string>
@@ -449,13 +453,19 @@
     <string name="droppings_appearance_round">Okrągłe</string>
     <string name="droppings_appearance_misshapen">Zniekształcone</string>
     <string name="droppings_appearance_doubled">Podwójne lub zlepione</string>
-    <string name="droppings_appearance_dry">Suche i twarde</string>
+    <!-- „lub”, not „i”: English is "Dry **or** hard" and the two are separate observations. A tray
+         that is dry but not hard matched no chip while this said "and". -->
+    <string name="droppings_appearance_dry">Suche lub twarde</string>
     <!-- Polish already named the fur before English did, which is the reading the reword follows. -->
     <string name="droppings_appearance_strung_together">Połączone sierścią</string>
     <string name="droppings_appearance_mucus">Śluz</string>
     <string name="droppings_appearance_soft">Miękkie</string>
     <string name="droppings_appearance_diarrhoea">Biegunka</string>
-    <string name="droppings_appearance_very_dark">Bardzo ciemne</string>
+    <!-- „smoliste” restored: English is "Very dark **or tarry**", and tarry is the distinctive half
+         — it is what digested blood looks like. Dropping it left the chip describing only colour,
+         which is the one thing an owner can mistake for ordinary dark droppings. The app still says
+         nothing about what it means (ADR-0026); it just has to name the thing accurately. -->
+    <string name="droppings_appearance_very_dark">Bardzo ciemne lub smoliste</string>
     <string name="droppings_appearance_blood">Krew</string>
 
     <string name="cecotropes_eaten">Zjedzone</string>
@@ -515,7 +525,13 @@
     <string name="observation_participants_help">Króliki dzielące kuwetę są już zaznaczone. Odznacz każdego, kogo to nie dotyczy.</string>
     <string name="observation_participants_required">Wybierz co najmniej jednego królika.</string>
     <string name="observation_excluded_archived">%1$s jest w archiwum, więc ta obserwacja tego królika nie obejmie.</string>
-    <string name="observation_excluded_watch">%1$s — trwa obserwacja, lepiej zapisać osobno.</string>
+    <!-- „baczna obserwacja”, not bare „obserwacja”: Polish uses one word for two of CONTEXT.md's
+         terms — the *Observation* being recorded and the *Watch* running over this bunny — and this
+         string is the one place they collide, because it appears **on the observation form**.
+         „Trwa obserwacja” there reads as "an observation is in progress", which is both wrong and
+         exactly what the owner is doing. The qualifier is the file's own: channel_watch_description
+         already says „bacznie obserwujesz”. -->
+    <string name="observation_excluded_watch">%1$s — trwa baczna obserwacja, lepiej zapisać osobno.</string>
 
     <string name="observation_tray_heading">Kuweta</string>
     <string name="observation_tray_shared_help">Zapisywane raz, dla wszystkich, których to dotyczy — wspólnej kuwety nie da się rozdzielić między króliki.</string>
@@ -569,11 +585,13 @@
     <string name="healthy_day_logged">Zdrowy dzień zapisany dla: %1$s.</string>
     <!-- A flagged bunny is still offered, and named (ADR-0001, ADR-0008). -->
     <string name="healthy_day_name_flagged">%1$s (ostrzeżenie o wadze)</string>
+    <!-- Same collision as observation_excluded_watch, same qualifier — this one rides the
+         healthy-day shortcut, which is also a way of recording an observation. -->
     <plurals name="healthy_day_excluded_watch">
-        <item quantity="one">%1$s — trwa obserwacja, lepiej zapisać osobno.</item>
-        <item quantity="few">%1$s — trwają obserwacje, lepiej zapisać osobno.</item>
-        <item quantity="many">%1$s — trwają obserwacje, lepiej zapisać osobno.</item>
-        <item quantity="other">%1$s — trwają obserwacje, lepiej zapisać osobno.</item>
+        <item quantity="one">%1$s — trwa baczna obserwacja, lepiej zapisać osobno.</item>
+        <item quantity="few">%1$s — trwają baczne obserwacje, lepiej zapisać osobno.</item>
+        <item quantity="many">%1$s — trwają baczne obserwacje, lepiej zapisać osobno.</item>
+        <item quantity="other">%1$s — trwają baczne obserwacje, lepiej zapisać osobno.</item>
     </plurals>
 
     <!-- Przypomnienia o opiece (ADR-0018). Nazwy gotowych rodzajów tłumaczą się, własna nazwa
@@ -723,7 +741,7 @@
     <string name="med_today_heading">Dzisiaj</string>
     <string name="med_dose_due">Na %1$s</string>
     <string name="med_add_course">Dodaj kurację</string>
-    <string name="med_empty">Nie ma tu jeszcze żadnych leków. Kuracja to, co przepisał weterynarz — co to jest, ile i o jakich porach, jeśli są.</string>
+    <string name="med_empty">Nie ma tu jeszcze żadnych leków. Kuracja to zapis tego, co przepisał weterynarz — co to jest, ile i o jakich porach, jeśli są.</string>
     <string name="med_disclaimer">To, co przepisał weterynarz, tak jak zostało zapisane. Binky nigdy nie sprawdza dawek ani interakcji.</string>
 
     <string name="med_dose_answered">%1$s o %2$s</string>
@@ -778,7 +796,6 @@
     <string name="med_editor_section_medication">Lek</string>
     <string name="med_editor_section_when">Kiedy</string>
     <string name="med_editor_name">Co to jest?</string>
-    <string name="med_editor_name_placeholder">Metacam</string>
     <string name="med_editor_name_required">Warto wpisać nazwę z opakowania, żeby zapis coś znaczył także za rok.</string>
     <string name="med_editor_amount">Ile, jeśli tak powiedziano</string>
     <string name="med_editor_amount_placeholder">0,3 ml</string>
@@ -847,7 +864,9 @@
     <string name="support_bug_subject">Zgłoszenie błędu</string>
     <string name="support_bug_prompt">(opisz tutaj, co się stało)</string>
     <string name="support_diagnostics_title">Co trafia do zgłoszenia błędu</string>
-    <string name="support_diagnostics_explain">Do wiadomości dopisujemy wersję aplikacji, wersję Androida, model telefonu i język aplikacji. Nic o Twoich królikach — i nic nie wychodzi, dopóki nie wyślesz wiadomości w swojej poczcie.</string>
+    <!-- Impersonal, not „dopisujemy”: support_intro two lines up says Binky is made by one person,
+         so a first-person plural puts a team behind it that does not exist. -->
+    <string name="support_diagnostics_explain">Do wiadomości dopisywane są wersja aplikacji, wersja Androida, model telefonu i język aplikacji. Nic o Twoich królikach — i nic nie wychodzi, dopóki nie wyślesz wiadomości w swojej poczcie.</string>
     <string name="support_feature_button">Zaproponuj funkcję</string>
     <string name="support_feature_subject">Propozycja funkcji</string>
     <string name="support_email_label">Albo napisz na:</string>
@@ -872,7 +891,10 @@
     <string name="photo_which_bunny">Czyje zdjęcia?</string>
     <string name="photo_gallery_title">Zdjęcia: %1$s</string>
     <string name="photo_gallery_empty">Nie ma jeszcze zdjęć.</string>
-    <string name="photo_gallery_empty_help">Dodaj zdjęcia z galerii albo zrób je aparatem. Zostaną na tym telefonie, w galerii: %1$s.</string>
+    <!-- The name is what the photos are *of*, as in English. It had drifted into naming the gallery
+         they land in — „Zostaną na tym telefonie, w galerii: Bijou” reads as a folder called Bijou,
+         which is a place that does not exist. Format arguments were preserved, so no test saw it. -->
+    <string name="photo_gallery_empty_help">Dodaj zdjęcia królika %1$s z galerii albo zrób je aparatem. Zostaną na tym telefonie.</string>
     <string name="photo_add">Dodaj zdjęcia</string>
     <string name="photo_add_choose">Wybierz z galerii</string>
     <string name="photo_add_take">Zrób zdjęcie</string>
