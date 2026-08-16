@@ -584,7 +584,7 @@ in nine languages and having it read twice by nine native speakers.
       holds a draft to every rule it holds a shipped file to (proven by breaking the German plural
       and the German format argument and watching both redden), `translations/` is a declared test
       input so Gradle cannot report a stale verdict on it, and the gate prints what a draft still
-      owes without ever gating on it. Six to go: `es fr it pt-BR cs uk`.
+      owes without ever gating on it.
       ℹ️ **German costs nothing to §7.3, and that is the surprise.** The perfect tense with *haben*
       carries no gender and predicate adjectives do not inflect, so *"Es ist archiviert"* and
       *"Lebt allein"* are simply correct — the trap that rewrote two Polish strings does not exist
@@ -604,6 +604,38 @@ in nine languages and having it read twice by nine native speakers.
       *%1$s nach dem Termin* and `care_notification_overdue` is *der Termin ist verstrichen* — the
       same move Polish makes with *po terminie*. `dose_status_skipped` is *Ausgelassen*, agentive
       the way *Pominięta* is.
+      🟡 **`es` drafted 2026-08-16** — 685/685, mechanically green, into `translations/es/`.
+      **Five to go: `fr it pt-BR cs uk`.**
+      ℹ️ **Spanish is the first language to pay §7.3 on the bunny's side rather than the
+      owner's**, which is the reverse of German. The owner's half is free — the compound perfect
+      with *haber* does not agree with its subject, so *has guardado* and *he mirado* carry no
+      gender and the file needs no rewrite. But *conejo* is masculine where *Kaninchen* is
+      neuter, so an adjective about the animal has to pick one. **The policy is the masculine
+      generic, Spanish's unmarked form, stated in the file's header rather than hidden** — with
+      the genderless wording preferred wherever it is equally natural: *Vive sin compañía* (not
+      *solo*), *%1$s (en el archivo)* (not *archivado*), and `archived_banner` / `archived_on`
+      both recast around the noun. No parenthesised suffix appears anywhere, which is the rule
+      that actually matters.
+      ⚠️ **Four decisions the native read-through has to confirm, not just read past:**
+      `destination_care` is ***Cuidados* alone** — Spanish has no established short form for
+      "meds" the way German has *Medis*, and *Cuidados y medicación* is twenty-one characters in
+      a bottom-nav tab, so the meds half is lost rather than clipped and 5e's point with it;
+      ***cagarrutas*** for droppings, the *Köttel* decision one language on (fallback
+      *excrementos*, and *bolitas* was rejected outright as exactly the food-pellet ambiguity the
+      brief warns about); ***seguimiento*** for the watch, where *vigilancia* carries alarm
+      ADR-0001 forbids; and ***Bienvenida a Binky*** as a noun, because *Bienvenido/a* would
+      gender the owner on the first screen they ever see.
+      ⚠️ **Four breed rows are mappings rather than translations**, as German's three were:
+      **Dutch → *Holandés*** against **Netherland Dwarf → *Enano holandés***, which Spanish
+      genuinely collides where German splits them with *Farbenzwerg*; the **lop family**
+      (*belier*), which splits differently either side of the Atlantic; **Himalayan →
+      *Himalayo***, where continental standards say *Ruso*; and the UK **Polish → *Polaco***.
+      ℹ️ **Three traps cost Spanish nothing, and it is worth knowing which.** §7.1's *Normal* —
+      Polish's five distinct forms and the file's single biggest trap — is one word six times,
+      because *normal* is invariable in gender. §7.2's `care_every` is *Cada %1$s*, and *cada*
+      governs a bare unit and a counted gap alike, so the sentence German had to give up
+      survives. And `photo_import_partial` earns its plural for the second language running:
+      *no se pudo leer* against *no se pudieron leer*, where English has nothing to vary.
 - [ ] Promote one language per commit, only after its native read-through: move into `res/`, add the
       `<locale>` line, the `AppLanguage` entry, and the endonym label.
 - [x] `AppLanguageTest` extended to compare resource directories too (`values-pt-rBR` vs `pt-BR` — two
