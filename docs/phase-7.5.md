@@ -761,12 +761,28 @@ across a table rebuild reports a change that is not there.
 
 **Two things about reminders, from the same run.** An app update does **not** cancel the pending dose
 alarm — the same alarm object was still armed for 20:00 after the package replace, with the app never
-launched, so no `MY_PACKAGE_REPLACED` receiver is needed to *keep* it. But an alarm that fires over an
-un-migrated database does nothing at all: broadcasting to `DoseAlarmReceiver` at schema 6 under a schema-7
-build posted no notification and left the file untouched, because the guard returns before posting *and*
-before re-arming. So the dose is skipped and the chain stops until the owner opens the app — which is the
-one gap the gate fix does not close, and the reason the candidate follow-up is a package-replaced receiver
-enqueueing a single expedited worker rather than loosening the guard inside a ten-second receiver.
+launched, so nothing is needed to *keep* it. What was left dormant is the work: every background entry
+point asked `schemaWipePending()`, which is version-equality, so over an un-migrated database a worker or
+receiver sat out the morning — including the migration that was already happening around it, since
+`BinkyApplication.onCreate` opens the database on any process start and opening is what migrates.
+
+**Closed the same day, and the guard is what closes it.** `schemaWipePending()` became
+`schemaBlocksBackgroundWork()` and asks `schemaGateDecision` instead: a debug build still blocks on any
+mismatch (no migrations registered, so opening means wiping), a release build still blocks on a file no
+migration covers (opening would throw with nobody to show it to), and an upgrade a migration can walk now
+falls through. Proven in-process rather than by broadcast, which turned out to be the only honest way on
+this phone: the real `bunny.db` left at schema 6 under a release-shaped build, `DoseAlarmTest` 16/16 green,
+and the file at **7** when the run ended — background work performed the migration itself.
+
+⚠️ **And a correction to how the gap was first read.** The broadcast that appeared to show the guard
+skipping a dose never reached the app: HyperOS did not start the process for it at all (`pidof` empty
+afterwards, with `stopped=false` and `notLaunched=false`, so not the stopped-package rule). The same
+restriction means `PackageReplacedReceiver` — added here as belt-and-braces, enqueueing one expedited
+`UpdateCatchUpWorker` so the migration happens with a worker's minutes rather than a receiver's ten
+seconds — **could not be verified on this phone**: after a real `adb install -r`, WorkManager's own
+database held only `ReminderSweepWorker` and no `UpdateCatchUpWorker` row. HyperOS does not deliver
+`MY_PACKAGE_REPLACED` without autostart, and there is no `AUTO_START` appop to grant over `adb`. It should
+run on ROMs that deliver the broadcast; nothing rests on it here.
 
 The lesson worth keeping: **every proof of the migrations opened the database directly** — the
 `MigrationTestHelper` runs, the release-shaped open, three committed archives at three API levels. All true,

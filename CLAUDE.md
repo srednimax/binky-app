@@ -144,4 +144,9 @@ alongside the Play one as a separate install labelled **Binky Debug**; the two n
 which is the whole point — the Play build holds real bunny history.
 
 Xiaomi also kills background work aggressively; scheduled notifications need battery-optimisation
-exemption and autostart.
+exemption and autostart. **Without autostart it does not start the process for a broadcast at all** —
+neither `MY_PACKAGE_REPLACED` after a real `adb install -r` (WorkManager's own database showed no row for
+the work the receiver enqueues) nor an explicit `am broadcast` to a manifest receiver, which leaves `pidof`
+empty with `stopped=false`. There is no `AUTO_START` appop to grant over `adb`; it is a Settings toggle.
+So **a receiver's behaviour cannot be tested from `adb` on this phone** — drive the same code in-process
+from an instrumented test instead, or the run proves only that the ROM dropped the broadcast.

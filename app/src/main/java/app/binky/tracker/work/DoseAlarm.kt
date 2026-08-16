@@ -81,7 +81,7 @@ class DoseAlarmReceiver : BroadcastReceiver() {
             // ADR-0007's guard first, exactly as the sweep does. A receiver woken by the OS over a
             // schema this build must not open does nothing at all — including not re-arming, which
             // is correct: the next launch goes through the consent screen and rebuilds after it.
-            if (appContext.schemaWipePending()) return@rebuildInBackground
+            if (appContext.schemaBlocksBackgroundWork()) return@rebuildInBackground
 
             val now = Instant.now()
             // **Post, then rebuild past what was posted** — and the second half is what stops a loop
@@ -108,7 +108,7 @@ class DoseAlarmReceiver : BroadcastReceiver() {
  * broadcast.
  */
 internal fun Context.doseMedications(): MedicationRepository? {
-    if (schemaWipePending()) return null
+    if (schemaBlocksBackgroundWork()) return null
     return (applicationContext as? BinkyApplication)?.container?.medicationRepository
 }
 
@@ -147,7 +147,7 @@ suspend fun Context.rescheduleDoseAlarm(
     now: Instant = Instant.now(),
     postedThrough: Instant? = null,
 ) {
-    if (schemaWipePending()) return
+    if (schemaBlocksBackgroundWork()) return
     val alarms = getSystemService(AlarmManager::class.java) ?: return
 
     val slot = medications.nextAnswerableDoseSlot(now, postedThrough)

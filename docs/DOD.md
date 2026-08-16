@@ -305,14 +305,23 @@ and they are now the only code-free work between this phase and its gate.
       one that answered neither contributes no rows), and the schema-6 tables arriving present-and-empty
       on the 5 → 7 path.
       ℹ️ **An app update does not cancel the pending dose alarm** — same alarm object, still armed for
-      20:00, across the package replace with the app never launched. But a **fired alarm over an
-      un-migrated database does nothing**: the receiver's guard returns before posting *and* before
-      re-arming, so the dose is silently skipped and the chain stops. Watched directly — broadcast to
-      `DoseAlarmReceiver` at schema 6 under a schema-7 build: no notification, file untouched; after the
-      launch that migrates it, armed again.
-      ⚠️ **Still owed, and smaller**: that dormant window lasts until the owner opens the app. The
-      candidate fix is an `ACTION_MY_PACKAGE_REPLACED` receiver enqueueing one expedited worker that
-      takes the preserved copy, opens the database and rebuilds the alarms — seconds instead of days.
+      20:00, across the package replace with the app never launched.
+      ✅ **The dormant window is closed (2026-08-16).** `schemaWipePending()` became
+      `schemaBlocksBackgroundWork()` and asks the *gate's* question: a debug build still blocks on any
+      mismatch (it has no migrations registered, so opening means wiping) and a release build still
+      blocks on a file no migration covers, but an upgrade a migration can walk now falls through — and
+      opening is what migrates. **Proven in-process**: the real `bunny.db` left at schema 6 under a
+      release-shaped build, `DoseAlarmTest` **16/16 green**, and the file at **7** when the run ended.
+      The background path performed the migration instead of sitting out the morning.
+      ⚠️ **Correcting yesterday's reading of this**: the broadcast that "showed the guard skipping a
+      dose" never reached the app at all — HyperOS did not start the process for it (`pidof` empty,
+      `stopped=false`). What the receiver does over a stale database is proven by the in-process run
+      above, not by an `adb` broadcast.
+      ℹ️ **`PackageReplacedReceiver` is in as belt-and-braces and is unverified on this phone.** After a
+      real `adb install -r` the receiver never ran: WorkManager's own database held only
+      `ReminderSweepWorker`, no `UpdateCatchUpWorker` row. HyperOS does not deliver
+      `MY_PACKAGE_REPLACED` without autostart, and the ROM has no `AUTO_START` appop to grant over
+      `adb`. It should work on ROMs that deliver it; the guard above is what carries the fix here.
 - [ ] **§5's two hand items first** — Play's per-app contact email, and a delivered support mail read.
       Oldest open boxes in the project, blocked by nothing, an hour between them.
       ⚠️ **Support mail delivers but was filed as Spam** (2026-08-15), fixed with a

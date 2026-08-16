@@ -89,6 +89,28 @@ class SchemaGateTest {
     }
 
     /**
+     * The same decision is what background entry points ask before touching anything
+     * (`schemaBlocksBackgroundWork`), so the three answers are worth stating in those terms.
+     *
+     * `Open` is the one that changed. A worker or receiver used to sit out *any* mismatch, including
+     * an upgrade the next database open was about to perform anyway — which is what left the first
+     * dose after an update unposted and the alarm chain unarmed.
+     */
+    @Test
+    fun `background work is blocked by exactly the decisions that are not Open`() {
+        val migratableUpgrade =
+            schemaGateDecision(onDiskVersion = 6, appSchemaVersion = 7, steps = shipped, destructiveAllowed = false)
+        val debugWipe =
+            schemaGateDecision(onDiskVersion = 6, appSchemaVersion = 7, steps = shipped, destructiveAllowed = true)
+        val unreadable =
+            schemaGateDecision(onDiskVersion = 3, appSchemaVersion = 7, steps = shipped, destructiveAllowed = false)
+
+        assertEquals("a worker may run through an upgrade it can migrate", SchemaGate.Open, migratableUpgrade)
+        assertTrue("but never through a wipe with nobody looking", debugWipe != SchemaGate.Open)
+        assertTrue("and never over a file it cannot read", unreadable != SchemaGate.Open)
+    }
+
+    /**
      * The branch order in `schemaGateDecision`, stated as its own claim.
      *
      * A debug build registers **no** migrations — it takes the destructive fallback instead, and Room
