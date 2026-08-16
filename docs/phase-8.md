@@ -191,7 +191,8 @@ there is no schema change and no media path.
 3. **Re-prove the locale-aware capture driver** — built in Phase 7.5 and proven there on `pl`, so what is
    owed here is only that its needle table still resolves once seven locales exist. Every new needle is a
    claim that some resource still says what the table thinks it says.
-4. Draft all seven into `translations/`, validated by the test in place. 🟡 **`de` done 2026-08-16**,
+4. Draft all seven into `translations/`, validated by the test in place. 🟡 **`de`, `es` and `fr`
+   done 2026-08-16** — four to go —
    along with the staging area this step assumed and nothing had yet built: `TranslationTest` reads
    `translations/<tag>/strings.xml` beside `values-<qualifier>/`, holds a draft to the same
    assertions, and rejects a tag that is both staged and shipped — promotion is a *move*, and two
@@ -205,6 +206,15 @@ there is no schema change and no media path.
    (`Rhythmus: %1$s`) and the gap plurals stayed in the citation form, which then decided the
    wording of `care_due_in` and `care_due_overdue` too. Check that chain early in each language: it
    is four strings deep and only visible from the code that composes them (`CareLabels.kt`).
+   **French confirmed it and Spanish did not**, which settles the shape: *tous les jours* against
+   *toutes les semaines* is the same missing preposition, so `care_every` is `Rythme : %1$s` there
+   too, and the same two due-date strings had to be rewritten behind it. Two of three languages
+   pay it; treat Spanish's *Cada* as the exception. **French then added a trap the brief did not
+   have**: §7.4 is not only about cases. French declines nothing, but *de* elides before a vowel
+   and the app can no more elide *Alice* than Polish can decline *Bijou* — seven strings reordered
+   or reworded for it. The lesson for the four remaining is that **§7.4 is really "the app cannot
+   touch a name the owner typed"**, and each language should be asked what its own version of that
+   is rather than checked against Polish's. Both per-language records are `DOD.md` §7.
 5. Promote one language at a time as its native read completes — four edits, one commit, one language.
 6. Listing text for the promoted set; screenshots later, driven by install data.
 

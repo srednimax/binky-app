@@ -268,7 +268,7 @@ Two worked Polish rewrites:
 | *Prosiłeś(-aś) o przypomnienie.* | *Przypomnienie na Twoją prośbę.* | Noun phrase — nothing to inflect |
 | *…i sam(a) decydujesz…* | *…i to Ty decydujesz…* | Present tense carries no gender |
 
-### 7.4 Names the app cannot decline
+### 7.4 Names the app cannot touch
 
 Bunny names are typed by the owner. The app substitutes them raw and can never inflect them.
 
@@ -278,6 +278,16 @@ locative and *Bijou* has no locative the app can produce — so it **reorders to
 Affected: `home_about_bunny`, `archive_dialog_title`, `delete_dialog_title`, `watch_start_title`,
 `watch_expired_title`, `trend_flag_ask_age`, `healthy_day_logged`, `photo_gallery_title`,
 `documents_title`, `observation_excluded_archived`, `observation_excluded_watch`.
+
+**Declension is only one way this bites, and the affected list above is Polish's, not yours.** French
+declines nothing and still has the problem: *de* elides before a vowel, so *"Photo de %1$s"* renders
+*"Photo de Alice"*, which no French reader would accept and no app can fix — it does not know the name
+until run time. The French draft reorders `home_about_bunny`, `photo_description`,
+`bunny_avatar_description`, `watch_expired_title`, `watch_notification_title` and
+`document_page_description` for that, and rewrites `photo_gallery_empty_help` around a verb so the
+argument keeps its job. Ask what **your** language does to a word it cannot see — case, elision,
+liaison, an article that agrees, a particle that attaches — and check every string that substitutes a
+name, a document title or a care reminder's label. They are all owner-typed and all untouchable.
 
 ### 7.5 Plurals
 
