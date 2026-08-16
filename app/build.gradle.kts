@@ -200,6 +200,23 @@ kotlin {
     jvmToolchain(21)
 }
 
+// TranslationTest and AppLanguageTest read `res/` off disk as plain files, because an XML resource
+// is not readable from a JVM unit test without Robolectric and the file itself is the artifact whose
+// contents are in question. Gradle cannot see that: a `File("src/main/res/…")` opened inside a test
+// body is invisible to up-to-date checking, so **editing a translation and re-running `test` used to
+// report the previous run's verdict** — `:app:test UP-TO-DATE`, green, having checked nothing. Found
+// in Phase 8, and it is the worst shape of failure a gate can take: a check that passes because it
+// did not run.
+//
+// Declaring the directory as an input is the whole fix. Registering it on the task type covers both
+// variants' test tasks without naming either.
+tasks.withType<Test>().configureEach {
+    inputs
+        .dir(layout.projectDirectory.dir("src/main/res"))
+        .withPropertyName("resourcesReadByUnitTests")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 // Room exports the compiled schema as JSON. ADR-0007 lets us wipe the database until Phase 3,
 // but these files are what makes Phase 3's first real migration reviewable — so they are
 // generated here and committed.
