@@ -4,6 +4,27 @@ The **live checklist**. `PLAN.md` holds the reasoning and the record; this file 
 yet ticked, so a session can pick up the work without loading 3 000 lines. Keep it short: when an item
 closes, tick it here, write the *result* into `PLAN.md`, and delete the detail from this file.
 
+## The standing schema gate — never ticked, checked at every bump
+
+**An update must migrate an existing install without losing anything.** This one does not close with a
+phase. Whenever `BUNNY_SCHEMA_VERSION` changes, all five hold before the release goes out:
+
+1. `MIGRATION_x_y` written **and registered in** `BUNNY_MIGRATIONS` for every step. A migration Room
+   never runs is not a migration.
+2. The exported `app/schemas/*/N.json` committed and git-tagged (ADR-0007) — every later migration is
+   written from it.
+3. `SchemaGateTest` asserting `appSchemaVersion = N`, so the **launch gate** is proven to let the upgrade
+   through. Every migration test opens the database directly and walks past that gate; this is the only
+   thing standing in front of it (ADR-0023's Phase 7.5 amendment).
+4. A migration test proving the **rows survive** — the committed backup fixtures, restored and counted by
+   value, at API 26/34/36.
+5. **An actual upgrade watched on the phone**: seed the previous tag, install the new build over it,
+   confirm the app opens, `user_version` climbed, and a table-by-table diff on common columns is empty.
+   A release-shaped debug build is how to do this without touching the Play install (phase-7.5.md §7).
+
+`scripts/schema-gate.py` enforces 1–3 in CI on every pull request. 4 and 5 are judgement, and 5 is the one
+that caught the refusal screen 1.5 would otherwise have shipped to every existing owner.
+
 **Phase 5** (vet, medications, documents, dose reminders — ships as 1.2) — software half **done**,
 evidence half open. Status read 2026-08-05 20:30. **Phase 6** (the support contact — ships as 1.3) is
 built, device-tested and documented as of 2026-08-06; only §5's two hand items are left, and 1.3.0 is
@@ -260,6 +281,38 @@ three get more expensive with time. **Both ADRs are made** — ADR-0028 and
 2026-08-14, so nothing here is waiting on a decision. What is left of step 1 is the two hand items,
 and they are now the only code-free work between this phase and its gate.
 
+- [x] **The launch gate refused every schema-bumping update — fixed 2026-08-16, and it blocked 1.5.**
+      `BinkyApplication` treated *any* version mismatch as a reason to show the blocking screen, so a
+      release build met an owner's 1.4.0 database with *"This version cannot open the records on this
+      phone"* and a dead end — `MIGRATION_6_7` never ran, because the gate returns before Room is
+      constructed. Nothing was deleted (the file is untouched, a copy lands in `preserved/`), but the app
+      was unusable, and the same shape shipped at 1.1 and 1.2. Every existing proof of the migrations
+      opens the database *directly* and so walks past the gate entirely.
+      **The fix** is `schemaGateDecision` (`SchemaGate.kt`): a pure `Open`/`Consent`/`Refuse` over the
+      on-disk version, this build's version, the migrations *actually registered*, and whether the
+      fallback is armed — with `destructiveAllowed` asked first, or a debug build would skip its own
+      consent screen. `SchemaGateTest` is the truth table. ADR-0023 carries the reasoning.
+      **Proven on the phone**: a real 1.4.0-written schema-6 database, a release-shaped build installed
+      over it, refusal screen before / app open after, `user_version` 6 → **7**, and every count intact —
+      44 weighings, 5 observations, 2 vets, 3 visits, 3 courses, 14 doses, 4 documents over 7 pages, the
+      droppings in their join tables, `trayPhotoPath` null throughout.
+      **Both live upgrade paths watched on the phone (2026-08-16)**, on the app's own database rather
+      than through the staged restore path — a 1.4.0 seed taken to 1.5, and a **1.1.0 seed taken
+      straight to 1.5**, the skipped-version jump a phone that never took 1.2–1.4 would make. Compared
+      table by table on *common columns*: **zero differing rows in every table**, both times. The only
+      changes are the ones the migrations are for — `weights.visitId` and `observations.trayPhotoPath`
+      added and null, `droppingsSize`/`droppingsForm` moved into the join tables per observation (the
+      one that answered neither contributes no rows), and the schema-6 tables arriving present-and-empty
+      on the 5 → 7 path.
+      ℹ️ **An app update does not cancel the pending dose alarm** — same alarm object, still armed for
+      20:00, across the package replace with the app never launched. But a **fired alarm over an
+      un-migrated database does nothing**: the receiver's guard returns before posting *and* before
+      re-arming, so the dose is silently skipped and the chain stops. Watched directly — broadcast to
+      `DoseAlarmReceiver` at schema 6 under a schema-7 build: no notification, file untouched; after the
+      launch that migrates it, armed again.
+      ⚠️ **Still owed, and smaller**: that dormant window lasts until the owner opens the app. The
+      candidate fix is an `ACTION_MY_PACKAGE_REPLACED` receiver enqueueing one expedited worker that
+      takes the preserved copy, opens the database and rebuilds the alarms — seconds instead of days.
 - [ ] **§5's two hand items first** — Play's per-app contact email, and a delivered support mail read.
       Oldest open boxes in the project, blocked by nothing, an hour between them.
       ⚠️ **Support mail delivers but was filed as Spam** (2026-08-15), fixed with a
@@ -327,14 +380,23 @@ and they are now the only code-free work between this phase and its gate.
       `files/preserved/bunny-20260814T163225Z.db` — the replaced database's size to the byte — before
       wiping, which is ADR-0007's promise watched for real for the first time. So the phone is **not** where
       `MIGRATION_6_7` is proven; `aReleaseShapedOpenOfASchemaSixFileSucceeds` is.
-      ⚠️ **Still owed: `bunny-schema-6-fixture.zip`**, a device chore against `v1.4.0` — the fixtures are
-      real artifacts, not synthesised. Softened by the schema-4 fixture already restoring
-      4 → 5 → 6 → **7** and counting `observation_symptoms` afterwards.
+      ✅ **`bunny-schema-6-fixture.zip` is in (2026-08-16)**, exported on the Xiaomi by the `v1.4.0` tag's
+      own container, seeder, Room and exporter — a real artifact, like the other two. It is the first
+      fixture whose schema-6 tables are **full** rather than present-and-empty: 2 vets, 3 visits, 3 courses
+      over 3 times and 14 doses, 4 documents over 7 pages, carried through the migration that rebuilds
+      `observations` and drops `observation_symptoms` before putting it back.
+      `aSchemaSixBackupWrittenBy140MigratesTheLastStep` asserts all of it, plus the 7 document pages and
+      5 photos landing on disk. **2.8 MB**, because a faithful Everything export carries the seeded
+      3000 px scans; the schema-4 and schema-5 files are 9 KB and 15 KB for want of anything to carry.
+      **216/216 instrumented green on the Xiaomi** with it in — but the chore itself leaves the phone's
+      real `bunny.db` at schema 6, which disarms the dose alarms until `databases/bunny.db*` is deleted
+      through `run-as`. Details, and the two beliefs the artifact corrected, in phase-7.5.md §7.
       ✅ **The droppings assertion is in (2026-08-15)**, in *both* fixture restores and by **value rather
       than count**: four observations arrive as `ROUND`, the sizes as `NORMAL, NORMAL, SMALL, SMALL`, and
       the fifth — which carried neither column — contributes **no** rows, which is the half a row count
       could not tell apart from a migration that defaulted it. 12/12 green on the Xiaomi, and no new
-      fixture was needed, as predicted. The `zip` itself is still owed.
+      fixture was needed, as predicted — the `zip` above landed the next day and asserts the same values
+      from a third artifact.
       ℹ️ **HyperOS's ADB install prompt is drivable** with `input touchscreen tap`, contrary to the standing
       note. `INSTALL_FAILED_USER_RESTRICTED` after ~12 s is a *missed prompt*; the same string returned
       instantly is the first-install refusal. The delay tells them apart.
