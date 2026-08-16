@@ -6,6 +6,8 @@ import android.content.Intent
 import app.binky.tracker.AppContainer
 import app.binky.tracker.BinkyApplication
 import app.binky.tracker.data.BunnyEntity
+import app.binky.tracker.data.MedicationCourseEntity
+import app.binky.tracker.data.MedicationTimeEntity
 import app.binky.tracker.data.NeuterStatus
 import app.binky.tracker.data.Sex
 import app.binky.tracker.data.WeightEntity
@@ -53,6 +55,10 @@ import java.time.temporal.ChronoUnit
  *
  * **Variants are additive and independent**, so two of them can sit on one install — `crowded` and
  * `gaining` add different bunnies and neither touches the other's.
+ *
+ * `due_dose` is the odd one out and is documented at [seedDueDose]: it exists to make the *harness*
+ * face a state rather than to photograph one, and the driver asks for it per scene rather than a
+ * scene asking for it by name.
  */
 class SeedVariantReceiver : BroadcastReceiver() {
     override fun onReceive(
@@ -90,8 +96,83 @@ private suspend fun seedVariant(
     when (variant) {
         "crowded" -> seedCrowded(container)
         "gaining" -> seedGaining(container)
-        else -> error("unknown variant '$variant'; known: crowded, gaining")
+        "due_dose" -> seedDueDose(container)
+        else -> error("unknown variant '$variant'; known: crowded, gaining, due_dose")
     }
+
+/**
+ * **A dose slot minutes in the past, so the reminder banner posts now** (Phase 7.5 §4).
+ *
+ * Not a state a scene photographs — the only variant here that exists to make the harness *harder*
+ * rather than to show something. The hazard it reproduces is the one that wrecked two capture runs
+ * and crippled a third: an unanswered dose slot in the recent past is re-armed by
+ * `BinkyApplication.onCreate` on **every** process start (ADR-0025's self-heal), fires immediately
+ * because the trigger is already behind us, and posts an `importance = 4` heads-up over Home —
+ * exactly where the first tap of most scenes lands. `AUTO_CANCEL` then clears it on the stolen tap,
+ * so a `dumpsys notification` afterwards finds nothing and the evidence looks impossible.
+ *
+ * **Why it cannot simply be run in the evening.** The default seed's live dose is Metacam's 20:00
+ * (`SampleData.kt`), so the hazard is real for anyone capturing after eight — but [DOSE_GRACE] is
+ * thirty minutes, and a slot older than that is neither armed nor posted. A cell of the full matrix
+ * takes closer to fifty, so an evening run exposes its first half and then goes quiet. This variant
+ * is re-broadcast per scene, which is what keeps the banner live across a whole run and makes the
+ * case reachable at nine in the morning — and in Phase 8, where nine locales cannot each be given
+ * their own evening.
+ *
+ * **Idempotent, because it is called ~150 times a run.** The course is found by name and its single
+ * time replaced, never added twice; nothing answers the slot, so no dose history accumulates behind
+ * it. [OFFSET_MINUTES] is one minute rather than the grace's edge so that the slot stays answerable
+ * for the following twenty-nine, which is what makes a *relaunch* re-post it rather than only the
+ * broadcast.
+ *
+ * It is additive like the others — it adds a course and touches nothing the sample data wrote —
+ * though unlike the others it deliberately changes what every scene sees, which is why the driver
+ * asks for it with a flag of its own rather than a scene asking by name.
+ */
+private suspend fun seedDueDose(container: AppContainer): String {
+    val medications = container.medicationRepository
+    val bunnies = container.bunnyRepository
+    val bijou =
+        bunnies.activeBunnies.first().firstOrNull { it.name == "Bijou" }
+            ?: error("seed the sample data first")
+
+    val zone = ZoneId.systemDefault()
+    val slot = LocalTime.now(zone).minusMinutes(OFFSET_MINUTES).truncatedTo(ChronoUnit.MINUTES)
+
+    val existing =
+        medications.courses(bijou.id).first().firstOrNull { it.course.name == DUE_DOSE_NAME }
+    if (existing != null) {
+        // Replace rather than append: the schedule must hold exactly one slot, or an hour of
+        // re-arming would derive a row of missed doses down the Care screen by the end of a cell.
+        medications.setTimes(
+            existing.course.id,
+            listOf(MedicationTimeEntity(courseId = existing.course.id, time = slot)),
+        )
+        return "re-armed for $slot"
+    }
+
+    medications.add(
+        MedicationCourseEntity(
+            bunnyId = bijou.id,
+            name = DUE_DOSE_NAME,
+            doseAmount = "0.5 ml",
+            startOn = LocalDate.now(zone),
+            notes = "Gut motility, twice daily while she is off her food.",
+        ),
+        times = listOf(slot),
+    )
+    return "armed for $slot"
+}
+
+/**
+ * A real rabbit prokinetic, so the Care screen still reads like a rabbit's Care screen — the banner
+ * this variant exists for is photographed over the app, and a course called `TEST` in the shot would
+ * make every screenshot of the run unusable as evidence of anything else.
+ */
+private const val DUE_DOSE_NAME = "Emeprid"
+
+/** Far enough past to have fired, near enough to stay inside `DOSE_GRACE` for the rest of the cell. */
+private const val OFFSET_MINUTES = 1L
 
 /**
  * **Seven bunnies: a fluffle of five, and a bonded pair with names nobody can fit on a line.**
