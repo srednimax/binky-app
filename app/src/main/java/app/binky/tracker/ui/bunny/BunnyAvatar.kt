@@ -1,22 +1,20 @@
 package app.binky.tracker.ui.bunny
 
 import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -39,7 +37,12 @@ fun BunnyAvatar(
     modifier: Modifier = Modifier,
     size: Dp = 56.dp,
 ) {
-    val placeholder = rememberVectorPainter(Icons.Filled.Person)
+    // The drawn bunny, not Material's person silhouette — this app never shows a human here.
+    // `painterResource` is the Compose equivalent of importing an image asset in JS: it resolves
+    // the id against the resource table once and caches it for the composition.
+    // The file lives in `drawable-nodpi` because it is a raster: without `-nodpi` Android would
+    // treat it as mdpi art and upscale it 4x on a phone, wasting memory to draw the same circle.
+    val placeholder = painterResource(R.drawable.avatar_placeholder)
     Box(
         modifier =
             modifier
@@ -49,11 +52,12 @@ fun BunnyAvatar(
         contentAlignment = Alignment.Center,
     ) {
         if (avatar == null) {
-            Icon(
-                imageVector = Icons.Filled.Person,
+            // `Image`, not `Icon`: an Icon would flatten the artwork to a single tint colour.
+            Image(
+                painter = placeholder,
                 contentDescription = stringResource(R.string.bunny_avatar_placeholder),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(size / 2),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
             )
         } else {
             AsyncImage(
@@ -63,7 +67,7 @@ fun BunnyAvatar(
                 model = remember(avatar) { Uri.fromFile(avatar) },
                 contentDescription = stringResource(R.string.bunny_avatar_description, name),
                 contentScale = ContentScale.Crop,
-                // Both fall back to the same silhouette: `error` covers a path whose file has gone
+                // Both fall back to the same drawn bunny: `error` covers a path whose file has gone
                 // missing, `fallback` a null model. Neither is an error worth shouting about.
                 error = placeholder,
                 fallback = placeholder,
