@@ -212,6 +212,23 @@
         </receiver>
 
         <!--
+            Delivered to this app when it has just been replaced by an update. A schema-bumping
+            update leaves the database at the old version until something opens it, and every
+            background entry point correctly declines to work over one — so without this the first
+            dose after an update goes unposted and the alarm chain stops until the owner opens the
+            app. The receiver only enqueues; the migrating happens in a worker, which has minutes
+            where a receiver has ten seconds. Protected broadcast, so `exported="false"` is right.
+        -->
+        <receiver
+            android:name=".work.PackageReplacedReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
             The two buttons on a dose notification (PLAN 5f). No intent-filter, for the same reason
             DoseAlarmReceiver has none: these are the targets of our own PendingIntents, addressed by
             component. The action strings on those intents exist to keep `Given` and `Skipped` from

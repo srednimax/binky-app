@@ -61,9 +61,9 @@ class ReminderSweepWorker(
         // on a phone nobody is looking at. So this is asked *before* anything else, and answered
         // out of four bytes of the file header rather than by opening anything.
         //
-        // The read and the predicate are `schemaWipePending()` since 5a, shared with the three dose
+        // The read and the predicate are `schemaBlocksBackgroundWork()` since 5a, shared with the three dose
         // receivers rather than re-derived in each of them.
-        if (applicationContext.schemaWipePending()) {
+        if (applicationContext.schemaBlocksBackgroundWork()) {
             // Success, and deliberately no re-enqueue. There is nothing wrong with the *work* — the
             // database is simply not this build's to open yet, and the consent screen is what
             // resolves that. Re-arming happens on the next launch, through the same path the boot

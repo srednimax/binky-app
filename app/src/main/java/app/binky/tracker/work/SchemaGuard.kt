@@ -4,8 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import app.binky.tracker.data.BUNNY_DATABASE_FILE
 import app.binky.tracker.data.BUNNY_SCHEMA_VERSION
+import app.binky.tracker.data.SchemaGate
 import app.binky.tracker.data.readUserVersion
-import app.binky.tracker.data.schemaMismatchPending
+import app.binky.tracker.data.schemaGateDecision
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -15,20 +16,28 @@ import kotlinx.coroutines.launch
  * receiver in this package needs before it touches anything.
  *
  * The hazard is specific: the OS can start this process to run a worker or deliver a broadcast with
- * no UI and no owner present, and anything that forces the container over a stale schema destroys
- * the database in the background on a phone nobody is looking at. So the question is asked out of
- * four bytes of the file header rather than by opening anything, and the answer is `true` exactly
- * when the right move is to do nothing and let the next launch's consent screen resolve it.
+ * no UI and no owner present, and anything that forces the container over a schema this build cannot
+ * open destroys the database in the background on a phone nobody is looking at. So the question is
+ * asked out of four bytes of the file header rather than by opening anything, and the answer is
+ * `true` exactly when the right move is to do nothing.
  *
- * One function rather than the same three lines in five places. `schemaMismatchPending` is the pure
- * predicate underneath and is tested as one in `DatabasePreserveTest`; this is only the file read in
- * front of it.
+ * **It asks the launch gate's question, not "do the versions differ"** (ADR-0023's Phase 7.5
+ * amendment). A debug build still blocks on any mismatch — it has no migrations registered, so
+ * opening means wiping — and a release build still blocks on a file no migration covers, where
+ * opening would throw in a process with nobody to show it to. What it no longer blocks is the
+ * ordinary upgrade: a mismatch a registered migration can walk is one the *next* database open
+ * performs, so a worker that skipped it would be sitting out a migration that is already happening
+ * around it. That is what left the first dose after an update unposted, and the chain unarmed.
+ *
+ * One function rather than the same three lines in five places. `schemaGateDecision` is the pure
+ * predicate underneath and is tested as a truth table in `SchemaGateTest`; this is only the file
+ * read in front of it.
  */
-internal fun Context.schemaWipePending(): Boolean =
-    schemaMismatchPending(
+internal fun Context.schemaBlocksBackgroundWork(): Boolean =
+    schemaGateDecision(
         readUserVersion(getDatabasePath(BUNNY_DATABASE_FILE)),
         BUNNY_SCHEMA_VERSION,
-    )
+    ) != SchemaGate.Open
 
 /**
  * Runs [work] off the main thread while holding the broadcast open, and lets go when it finishes.
