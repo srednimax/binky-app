@@ -46,6 +46,12 @@ class RestoreStageMigrateSwapTest {
     /** The same, produced once by the tagged 1.1.0 build — see [aSchemaFiveBackupWrittenBy110MigratesTheLastStep]. */
     private val schemaFiveFixture = "bunny-schema-5-fixture.zip"
 
+    /**
+     * Committed under `app/src/androidTest/assets/`, produced once by the tagged 1.4.0 build — the
+     * first fixture whose schema-6 tables are *full* rather than present-and-empty.
+     */
+    private val schemaSixFixture = "bunny-schema-6-fixture.zip"
+
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
     private lateinit var filesDir: File
@@ -116,6 +122,28 @@ class RestoreStageMigrateSwapTest {
         val database = buildBunnyDatabase(context, databaseName)
         return try {
             database.countRows(table)
+        } finally {
+            database.close()
+        }
+    }
+
+    /**
+     * Rows in [table] satisfying [where] — for asserting what a migration put in a *column*, where
+     * [rowsIn] can only say how many rows survived it.
+     */
+    private fun rowsIn(
+        databaseName: String,
+        table: String,
+        where: String,
+    ): Int {
+        val database = buildBunnyDatabase(context, databaseName)
+        return try {
+            database.openHelper.readableDatabase
+                .query("SELECT COUNT(*) FROM `$table` WHERE $where")
+                .use { cursor ->
+                    cursor.moveToFirst()
+                    cursor.getInt(0)
+                }
         } finally {
             database.close()
         }
@@ -546,6 +574,93 @@ class RestoreStageMigrateSwapTest {
                 listOf("NORMAL", "NORMAL", "SMALL", "SMALL"),
                 droppingsIn(liveName, "observation_droppings_sizes"),
             )
+        }
+
+    /**
+     * **The 6 → 7 step, against the first artifact whose schema-6 tables are not empty** (7.5 §7).
+     *
+     * The schema-4 and schema-5 fixtures both reach 7 already, so `MIGRATION_6_7` is not unproven.
+     * What neither of them can show is the migration running with the schema-6 graph *populated*:
+     * 1.0.1 and 1.1.0 had no vets, visits, courses, doses or documents to carry, so those tables are
+     * present-and-empty in both. This file was written by 1.4.0, which seeds all of them — and
+     * `MIGRATION_6_7` rebuilds `observations` and drops `observation_symptoms` outright before
+     * putting it back, with foreign keys and their cascades live throughout. A rebuild that took
+     * something else down with it has, until this fixture, had nothing to take.
+     *
+     * Regenerating it is the same device chore as the other two: build the `v1.4.0` tag in a
+     * worktree, `pm clear`, install, and run the seeder and `AppContainer.backupExporter` against
+     * the real container with the pinned `now` (`2026-08-05T12:00:00Z`, which is what fixes every
+     * count below), then pull the archive out of `cache/exports`.
+     */
+    @Test
+    fun aSchemaSixBackupWrittenBy140MigratesTheLastStep() =
+        runTest {
+            val liveName = databaseHolding("Already here")
+            val liveFile = context.getDatabasePath(liveName)
+
+            val outcome =
+                restorerFor(liveName).restore(
+                    open = {
+                        InstrumentationRegistry
+                            .getInstrumentation()
+                            .context.assets
+                            .open(schemaSixFixture)
+                    },
+                )
+
+            val restored = outcome as? RestoreOutcome.Restored
+            assertTrue(outcome.toString(), restored != null)
+            assertEquals("the archive really is a 1.4.0 one", 6, restored!!.manifest.schemaVersion)
+            assertEquals(BUNNY_SCHEMA_VERSION, readUserVersion(liveFile))
+
+            // The 1.0.1-era counts, unchanged by three schema versions. Weights are 44 rather than
+            // the other two fixtures' 43 because 1.2 seeds a vet visit that records its own weighing
+            // — the counts are read off this artifact, never assumed to match the older ones.
+            assertEquals(listOf("Bijou", "Nugget"), bunnyNamesIn(liveName))
+            assertEquals(44, rowsIn(liveName, "weights"))
+            assertEquals(5, rowsIn(liveName, "observations"))
+            assertEquals(5, rowsIn(liveName, "photos"))
+            assertEquals(2, rowsIn(liveName, "observation_symptoms"))
+            assertEquals(4, rowsIn(liveName, "care_reminders"))
+            assertEquals(2, rowsIn(liveName, "care_events"))
+            assertEquals(2, rowsIn(liveName, "watches"))
+
+            // What only this fixture carries: the schema-6 tables with rows in them, through a
+            // migration that rebuilds a table they are joined to.
+            assertEquals(2, rowsIn(liveName, "vets"))
+            assertEquals(3, rowsIn(liveName, "visits"))
+            assertEquals(3, rowsIn(liveName, "medication_courses"))
+            assertEquals(3, rowsIn(liveName, "medication_times"))
+            assertEquals(14, rowsIn(liveName, "doses"))
+            assertEquals(4, rowsIn(liveName, "documents"))
+            assertEquals(7, rowsIn(liveName, "document_pages"))
+
+            // The droppings across `MIGRATION_6_7`, by value: four observations carried both columns
+            // and the fifth carried neither, which is the half a row count cannot tell apart from a
+            // migration that defaulted it.
+            assertEquals(
+                listOf("ROUND", "ROUND", "ROUND", "ROUND"),
+                droppingsIn(liveName, "observation_droppings_appearance"),
+            )
+            assertEquals(
+                listOf("NORMAL", "NORMAL", "SMALL", "SMALL"),
+                droppingsIn(liveName, "observation_droppings_sizes"),
+            )
+
+            // Schema 7's other half: the tray photo link exists and is empty on every row, because
+            // `MIGRATION_6_7` writes it as NULL — 1.4.0 had nowhere to have put one.
+            assertEquals(0, rowsIn(liveName, "observations", "`trayPhotoPath` IS NOT NULL"))
+
+            // And the media the older fixtures could not carry: the document pages arrive beside the
+            // photos. `overlaid` rather than `kept` — the archive's own files are the ones written
+            // over the disk, where `kept` is the disk's own files in a kind this scope never carried.
+            assertEquals(5, restored.merge.overlaid.count { it.startsWith("photos/") })
+            assertEquals(7, restored.merge.overlaid.count { it.startsWith("documents/") })
+            // Planned is not written: the pages have to be on disk under their relative paths, which
+            // is what makes a restored document open rather than render as seven placeholders.
+            restored.merge.overlaid.forEach { path ->
+                assertTrue("$path missing on disk", File(filesDir, path).isFile)
+            }
         }
 
     /** A sanity check that the throwaway live database really is a Binky one. */
