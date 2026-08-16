@@ -1,7 +1,8 @@
 # Phase 7.5 — The interlude — ships as 1.5
 
-**Status: in progress.** Opened 2026-08-14; ADR-0028 and ADR-0029 both written that day, so step 1's
-decision half is done and only its two hand items are outstanding. Boxes in [`DOD.md`](DOD.md) §6.5; this file is the reasoning. Finished
+**Status: in progress.** Opened 2026-08-14; every item is built and device-proven, and step 1's two hand
+items closed on 2026-08-15 and 2026-08-16. **The one thing left is the full English matrix run with the
+20:00 dose live.** Boxes in [`DOD.md`](DOD.md) §6.5; this file is the reasoning. Finished
 phases are in [`PLAN.md`](PLAN.md) and are not needed to build this one.
 
 **Why a phase and not a pile of chores.** Four unrelated-looking items share one property: each is cheaper
@@ -420,6 +421,94 @@ three, because the manifest is written per invocation rather than merged. It was
 directory afterwards and marks the six re-shot cells; a later reader should know the file describes two
 runs. Worth folding into the script if a second partial re-shoot ever happens.
 
+### The English matrix, 2026-08-16 — a live dose on demand, and an ampersand Polish cannot express
+
+**292 cells, 292 reached, zero errors, and no confirmed defect** — 65 `full` scenes, 6 `empty` and 2
+`mismatch`, each across all four configs, 09:00 to 12:54 into `~/binky-screenshots/phase-7.5/en`. This is
+the gate's *"full English matrix run clean with the 20:00 dose live"*, and it closes Phase 7.5's last box.
+**Three defects had to be fixed to get it**, all three in the driver and none in the app, and each was
+invisible to the run that came before it.
+
+**The live dose is a lever now, not a time of day.** The gate asks for a run *with the 20:00 dose live*,
+and the honest way to read that is the evening: the seed leaves Metacam's 20:00 slot unanswered
+(`SampleData.kt`), so after eight o'clock every reseed leaves a missed dose, `BinkyApplication.onCreate`
+re-arms it on each process start (ADR-0025's self-heal), and it posts an `importance = 4` heads-up over
+Home exactly where `SELECT_BUNNY` taps. **`DOSE_GRACE` is what makes waiting for the evening the wrong
+plan**: a slot older than thirty minutes is neither armed nor posted, and a cell of this matrix takes
+closer to fifty — so an evening run exposes its first half and then goes quiet, and reseeds happen only
+a handful of times per cell anyway. So `due_dose` is a variant that puts an unanswered slot **one minute**
+in the past, and `--live-dose` re-broadcasts it **per scene**, which keeps the banner live end to end and
+makes the case reachable at nine in the morning. Phase 8 is the other half of the argument: nine locales
+cannot each be given their own evening.
+
+- **Verified before the run rather than assumed**: `channel=doses importance=4 actions=2 AUTO_CANCEL`
+  posting on demand, and **`mBypassDnd=false`** on the channel — which is the fact the whole DND fix
+  rests on and had never been read off the phone. A run whose banner was quietly exempt would have
+  looked identical to a run that survived one.
+- **Idempotent, because it runs ~290 times.** One course, its single time replaced rather than appended;
+  nothing answers the slot, so no dose history piles up behind it. It is additive like the other
+  variants, but unlike them it changes what *every* scene sees, which is why it is a driver flag rather
+  than something a scene asks for by name.
+
+**`Care & Meds` and `Backup & restore` could not match anything, and only English could see it.**
+`dump_ui` reads the uiautomator XML **with a regex** and never unescaped entities, so the dump's
+`Care &amp; Meds` was never the needle's `Care & Meds`. Those two needles head roughly **twenty** scenes,
+every one of which would have failed at its first tap.
+
+- **The Polish run could not have caught it**, which is the mirror of the `photos` collision three
+  paragraphs up: `destination_care` is *"Opieka i leki"* and `settings_backup` is *"Kopia zapasowa i
+  przywracanie"*, and neither carries an ampersand. This is the third defect this phase that is
+  unreachable in one locale and fatal in the other — **and the first where English is the broken half**,
+  which retires the assumption that the English table is the reference and the translation is the risk.
+- **It was introduced by the fix for something else.** Both needles were *lengthened* on 2026-08-14 to
+  stop them naming several strings at once, and the only complete run since was Polish — so the
+  disambiguation went in and was immediately unobservable. A needle table that resolves at startup still
+  says nothing about whether the resolved string can be *found*, which is the gap between
+  `resolve_needles` and `find`.
+- Fixed by unescaping attributes as they are parsed. `care` and `backup` went from failing to clean on
+  the same build.
+
+**Seven landscape cells came back unreachable, and the driver was wrong rather than the app.**
+`visit-editor`, `visit-editor-bottom` and `home-crowded-all` failed in both landscape configs and
+`weight-entry` in one, every one of them *"no node matching"* on the right screen. **`tap` retried a
+fixed four times**, swiping between tries — and a landscape swipe covers 70%→32% of 1220 px, about
+464 px, against roughly 1030 px of a portrait screen. So the search reached ~1856 px sideways where it
+reaches ~4120 px upright, against a Care screen that shows **two and a half rows at a time**. The
+screenshots settle it without touching the phone: `care-bottom` scrolls clean past those controls to the
+banner at the end, so they were always reachable. **A fixed budget is a portrait-shaped constant** — the
+same shape as the rotation a wipe used to cost, and it fails only where the viewport is short. `tap` now
+scrolls *while the screen is still changing*, capped at 16 like `swipe_to_end`, with a four-dump floor so
+a still-composing `ComposeView` is not read as "nowhere left to go". It is also **faster** on a screen
+that cannot scroll, which now stops after one swipe rather than three. All seven re-shot clean.
+
+**Fifteen scenes reported inset overlaps and none of them is a defect**, which is the same verdict
+Phase 7's 244-scene run reached and is worth stating with the reasoning rather than the count. The
+checker's own tiers decide it: `touch` is a node with **no** label, so it is a hit area inflated by
+`minimumInteractiveComponentSize` and its overlap says nothing on its own; `drawn` is a node **with** a
+label, so something legible is under a bar. Twelve scenes are `touch`. The four `drawn` ones were read
+off the screenshots: `reminders-sheet` and `care-reminder-editor` are captured **mid-scroll**, which the
+checker's own docstring calls what edge-to-edge looks like — the defect is a list still under the bar
+once it has nowhere left to go, and both `-bottom` counterparts are clean; `document-viewer`'s caption is
+fully legible with only the 13 px of its line box grazing the inset; and `reminders-sheet-bottom` is the
+modal scrim clipped to 7 px.
+
+- **`landscape-threebutton` produced no findings at all**, and the reason is worth keeping: its
+  navigation bar is on the **right edge** (`[2570, 0, 2712, 1220]`), so bottom-anchored content never
+  meets it. Every overlap in the whole matrix is against a bottom bar.
+- **`medication-course` is checked correctly for the first time.** `DOD.md` §2 records its existing
+  evidence as wrong — it used to photograph the system Settings app — so its two unlabelled hit areas
+  are new information rather than a regression, and they are the benign tier.
+- **`setup-backup` and `setup-reminders` likewise.** All six `empty` scenes wipe as their first step, so
+  their landscape cells were shot in portrait until `wipe()` learned to re-pin the rotation. The setup
+  wizard has now been seen sideways for the first time, and it reached every scene.
+
+**A partial re-shoot no longer eats the run it repairs.** Re-running seven cells rewrote `report-full.json`
+with only those seven, because the report was written per invocation — the same trap the Polish run hit on
+2026-08-15, rebuilt by hand then with a note that it was worth folding into the script if it ever happened
+twice. It happened twice, so `write_report` merges by scene name instead. It never *removes* an entry,
+which is the deliberate half: a renamed scene leaves an orphan, and the directory of screenshots stays the
+truth.
+
 ## 5 — Phase 6's two hand items
 
 Neither is work a build can do, and neither is blocked by Play's testing count. They go **first** because
@@ -452,11 +541,20 @@ nine languages** Phase 8 adds. That is the ADR-0013 exception paying for itself 
 purpose it was not written for — the comment argues the token keeps the inbox *searchable* in one
 language, and it turns out to keep it *reachable* too. Applied 2026-08-15.
 
-**Still owed, and it is the actual box:** the diagnostics block seen **visible** in a delivered message —
-not collapsed behind Gmail's `…`. A spam-folder copy is weak evidence for it, because Gmail suppresses
-some rendering there, so the message that settles this is the **next** report, landing in the inbox
-proper now the filter exists. The block is separated by a blank line and never `-- ` precisely so it
-cannot be taken for a signature; that claim remains unverified against a real client.
+### Settled 2026-08-16 — the block is visible in a delivered message
+
+**The next report landed in the inbox proper and reads as intended**, so the box closes on the half a
+spam-folder copy could not carry: the diagnostics block is **visible**, not collapsed behind Gmail's `…`.
+The blank-line separator and the deliberate refusal to use `-- ` are what buy that, and they are now
+verified against a real client rather than argued from the RFC. Everything up to the send was already
+verified in both locales, so the whole path — compose, hand off, deliver, read — is proven end to end.
+
+**Two things this closes rather than one.** The filter applied the day before is what put the message in
+front of the eye that read it, so the spam finding and its fix are part of this proof rather than a
+detour: without the rule the settling report would have gone the same way as the first, and *"nobody is
+reporting anything"* is indistinguishable from *"nobody can reach us"*. **Phase 6 is closed** with this —
+the oldest open boxes in the project, shut a day apart, and the last code-free work between this phase
+and its gate.
 
 ## 6 — The healthy day belongs behind the `+`
 
@@ -951,7 +1049,9 @@ are written answers.
    phase**, so it was written here rather than immediately before the build. ✅ **Done 2026-08-14**: two
    typed join tables keyed on `observationId`, `DroppingsAppearance` confirmed, the tray photo **ships** as
    a new record-grade `MediaKind`, and the migration recipe pinned — so step 3 is judging a live feature.
-   The two hand items remain.
+   ✅ **The hand items closed 2026-08-15 and 2026-08-16** — Play's per-app contact email, then a support
+   mail delivered to the inbox proper with its diagnostics block visible. The step is done, and with it
+   Phase 6.
 2. **The capture driver** — isolation step first, proven in English against the live 20:00 dose, then the
    locale needles proven on `pl`, the one complete locale. Shoot the Polish after set with it.
 3. **The two spec judgements in one sitting**, while the phone is already in hand and before the code churn

@@ -1,6 +1,8 @@
 # Phase 6 — Support contact — ships as 1.3
 
-**Status: planned, not started.** The boxes to tick are in [`DOD.md`](DOD.md) §5; this file is the
+**Status: closed 2026-08-16.** Built, device-tested and documented 2026-08-06; the two hand items that
+outlived the code closed on 2026-08-15 (Play's per-app contact email) and 2026-08-16 (a support mail read
+in the inbox with its diagnostics block visible). The boxes it ticked are in [`DOD.md`](DOD.md) §5; this file is the
 reasoning behind them. The finished phases live in [`PLAN.md`](PLAN.md), which is 3 000 lines of record
 and is deliberately not loaded to work on this one — read it only for a phase this file names.
 
@@ -466,9 +468,10 @@ and it retired `DOD.md` §2's blocker on the way.
 - **The test device is a `Xiaomi 24115RA8EG` on Android 16 (API 36)**, not the `2312DRA50G` / Android 15
   (API 35) this file's examples assume. The examples are illustrative and were left alone.
 
-**Still owed, and it needs a person:** the gate's *"the block is visible in the received mail, not
-collapsed behind Gmail's `…`"*. That one cannot be read from a draft — it needs a mail actually sent to
-`binky.support@gmail.com` and then read in the inbox. Everything up to the send is verified.
+**Owed a person, and paid 2026-08-16:** the gate's *"the block is visible in the received mail, not
+collapsed behind Gmail's `…`"*. That one could not be read from a draft — it needed a mail actually sent to
+`binky.support@gmail.com` and then read in the inbox, and it now has been. Everything up to the send was
+already verified. See the close below.
 
 ### 6d — the docs, the Console and the release
 
@@ -531,18 +534,25 @@ answers move together or Play's cross-check catches the gap.
   `more_coming_soon` gone from both and surviving only inside the comment that explains what replaced it;
   61 scenes in `SCENES`; the three `<queries>` entries present; 14 tests in `SupportHandoffTest`.
 
-**Still owed, and both need a person rather than a build:**
+**Owed a person rather than a build, and both now paid — carried through Phase 7.5, closed a day apart:**
 
 1. **Play's per-app contact email** set to `binky.support@gmail.com` in *Store settings* — the one Console
    item in the plan not blocked by the testing count, and the thing that makes the app, the listing and
-   the privacy policy's *Contact* section name one inbox.
+   the privacy policy's *Contact* section name one inbox. ✅ **Done 2026-08-15.**
 2. **The gate's received-mail read**, carried from 6c: send a bug report to the inbox and confirm the
-   block is *visible* and not collapsed behind Gmail's signature `…`. Everything up to the send is
-   verified; this cannot be read from a draft.
+   block is *visible* and not collapsed behind Gmail's signature `…`. ✅ **Done 2026-08-16**, and it took
+   two mails rather than one. The first (2026-08-15) proved the `mailto:` hand-off, the recipient, the
+   subject and the body all reach a real inbox — **and landed in Spam**, which is the finding, because it
+   fails silently at both ends: the sender sees a sent message, the maintainer sees nothing, and it reads
+   exactly like nobody reporting anything. Fixed with a `subject:bug OR subject:feature` → *Never send it
+   to Spam* filter on the receiving account, which covers all nine of Phase 8's languages **because the
+   `#bug` tag is a Kotlin constant rather than a string resource** — the ADR-0013 exception paying for
+   itself in a way its own comment did not predict. The next report landed in the inbox proper with the
+   block visible, which is the box. Reasoning in [`phase-7.5.md`](phase-7.5.md) §5.
 
-Phase 6 is therefore ticked in [`PLAN.md`](PLAN.md) **on the build and the documents**, with those two
+Phase 6 was therefore ticked in [`PLAN.md`](PLAN.md) **on the build and the documents**, with those two
 carried in [`DOD.md`](DOD.md) — the same shape as Phase 4's close, where the Console half and one night's
-evidence outlived the code.
+evidence outlived the code. **They are ticked now too, so the phase is closed outright.**
 
 ## The strings, by key
 
