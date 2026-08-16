@@ -490,9 +490,43 @@ Design in **[`phase-8.md`](phase-8.md)**. **Runs after Phases 6 and 7** — tran
 to gain a Support screen, and then to have its copy rewritten by a redesign, means translating it twice
 in nine languages and having it read twice by nine native speakers.
 
-- [ ] Generalise `PolishTranslationTest` → `TranslationTest`, parameterised over the locale table, with
+- [x] **The English base re-read end to end** ✅ **2026-08-16**, before anything was translated from it.
+      **689 resources, zero orphans, zero hardcoded owner-visible strings** — ADR-0013's rule holds, and
+      the only bare literals in `main/` are a file path, a `require()` message and debug-only sample data.
+      No string says *missed*; the only two saying *overdue* are Phase 4 care reminders, where ADR-0026
+      permits it. Three resources became `translatable="false"` — the two endonyms and
+      `med_editor_name_placeholder` (*Metacam* is a brand name, and Polish had already left it alone).
+      ⚠️ **Four look untranslatable and are not**, which is the half a machine draft gets wrong:
+      `0.3 ml` (Polish writes `0,3 ml`), `%1$s kg` / `%1$s g` (Ukrainian writes **кг**, **г**), `~%1$s`,
+      and the breed array — where the rule is *translate the descriptive names, keep the registered ones*.
+- [x] **Polish re-read end to end** ✅ **2026-08-16**, the base for nothing but worth the same pass.
+      Mechanically exact (655 = 659 − 4 untranslatable, all 29 plurals with four categories, no English
+      left behind). **Seven defects fixed**, none of which any test could see:
+      ⚠️ **Two broke the file's own stated rule 1** — `Prosiłeś(-aś)` and `sam(a)` are gendered second
+      person behind a parenthesis, which is the workaround that rule exists to forbid; one of them was in
+      a **notification**. Rewritten impersonally.
+      ⚠️ **`photo_gallery_empty_help` had drifted in meaning while keeping its format argument** — `%1$s`
+      moved from the thing the photos are *of* to the gallery they land *in*, describing a folder that
+      does not exist. **This is the failure mode no mechanical check reaches**, and the reason a language
+      ships on a person's word.
+      ⚠️ **Two droppings chips had lost information**: *Suche **i** twarde* for English's "or", and
+      *Bardzo ciemne* with "or tarry" dropped — tarry being the distinctive half.
+      Plus `med_empty` grammar and `support_diagnostics_explain`'s *dopisujemy* ("we", against an app
+      made by one person).
+      ℹ️ **Polish uses one word — *obserwacja* — for both *Observation* and *Watch***, which CONTEXT.md
+      keeps apart. **Decided 2026-08-16: keep the word**, since every alternative is worse in a pet-health
+      app, and disambiguate only the two strings where they collide *on the observation form* (now
+      *baczna obserwacja*, the qualifier the file already used).
+- [x] Generalise `PolishTranslationTest` → `TranslationTest`, parameterised over the locale table, with
       **per-language plural categories from CLDR** (not a hardcoded set of four). Do this **first**, on
-      `en` + `pl`, so it can fail before there is anything to check.
+      `en` + `pl`, so it can fail before there is anything to check. ✅ **Done 2026-08-16.** The locale
+      list is read from `locales_config.xml`, so a tenth language is one line of XML; `CLDR_PLURALS`
+      carries all nine rows ready. **Proven able to fail** — dropping `few` from one Polish plural
+      reddens the build.
+      ⚠️ **It had not been able to fail at all, and neither had the old one.** Both translation tests read
+      `res/` off disk as plain files, invisible to Gradle's up-to-date check, so editing a translation and
+      re-running `test` printed `:app:test UP-TO-DATE` and a green build **having checked nothing**. Fixed
+      by declaring `src/main/res` as a test input in `app/build.gradle.kts`.
 - [ ] ⤷ **Phase 7.5 owns this box as of 2026-08-14** — the tool is built there, on `en` + `pl`, so this
       phase starts with it in hand and the Polish after set is shot in passing. Everything below stays
       here as the record of *why*; the work is §6.5's.
@@ -528,22 +562,45 @@ in nine languages and having it read twice by nine native speakers.
       scenes did not prove the current code against this case — that run started after the 20:00 dose had
       already fired. **Write the step while building the locale work**, since a locale run walks every
       scene twice over.
-- [ ] `settings_language_*` → `translatable="false"` — endonyms are locale-invariant, and this removes
-      81 duplicated entries at nine languages.
-- [ ] Translator brief + per-language banned-word lists (ADR-0026's *missed*/*overdue*, ADR-0001's
+- [x] `settings_language_*` → `translatable="false"` — endonyms are locale-invariant, and this removes
+      81 duplicated entries at nine languages. ✅ **Done 2026-08-16**, with a general assertion behind it
+      rather than `app_name`'s specific one.
+- [x] Translator brief + per-language banned-word lists (ADR-0026's *missed*/*overdue*, ADR-0001's
       inference-from-silence, `CONTEXT.md`'s vocabulary and its *Avoid* lists).
+      ✅ **[`translator-brief.md`](translator-brief.md) written 2026-08-16.** Carries the three rules that
+      outrank fluency, the vocabulary with its *Avoid* column, the do-not-translate table **and its
+      inverse**, and the traps — which are the part that had never been written down anywhere.
+      ⚠️ **The banned lists are drafts until each native reviewer confirms their own row**, and Polish
+      proved why: *pominięta* was on the draft list and came off it. `pominąć` is **agentive** — the thing
+      the owner deliberately did — where *przegapiona* and *zapomniana* carry the passive sense ADR-0026
+      forbids. `dose_status_skipped` is *Pominięta* and is correct.
+      ℹ️ **The biggest trap was missing from the first draft**: the app knows **neither the owner's gender
+      nor the bunny's**, which breaks second-person past tense and predicate adjectives in every remaining
+      language. English hides it completely. Now §7.3, with both Polish rewrites as worked examples.
 - [ ] Draft `de es fr it pt-BR cs uk` into **`translations/<locale>/`, not `res/`** — `values-de/`
       existing means every German phone gets it, reviewed or not. `locales_config.xml` is a *picker*
       list, **not** a delivery filter.
 - [ ] Promote one language per commit, only after its native read-through: move into `res/`, add the
       `<locale>` line, the `AppLanguage` entry, and the endonym label.
-- [ ] `AppLanguageTest` extended to compare resource directories too (`values-pt-rBR` vs `pt-BR` — two
-      spellings of one locale in two files).
+- [x] `AppLanguageTest` extended to compare resource directories too (`values-pt-rBR` vs `pt-BR` — two
+      spellings of one locale in two files). ✅ **Done 2026-08-16**, though it landed in `TranslationTest`
+      rather than `AppLanguageTest`: the BCP-47 → qualifier conversion is a single function there, so the
+      two spellings cannot be written independently and then compared. `AppLanguageTest` keeps its own
+      job, which is the enum against the XML.
 - [ ] Play listing title + short + full description in all nine. Screenshots may lag (Play falls back);
       they need the locale-aware driver above — **not** a `--locale` flag, which already exists and is
       not the missing half.
-- [ ] **Decide the lagging-translation policy** when the test is generalised — strict red build, or a
-      dated `translations-pending` allowlist. See phase-8.md's open question.
+- [x] **Decide the lagging-translation policy** when the test is generalised — strict red build, or a
+      dated `translations-pending` allowlist. ✅ **Answered 2026-08-16, and it was neither.** Both options
+      ask *how much lag to tolerate*; the answer is *where to ask*. **Completeness moved out of the test
+      into `scripts/translation-gate.py`**, which CI runs on every pull request beside the schema gate:
+      **free while you work, strict before it merges.** The point is translating **once** — under a
+      red-build rule the copy is translated against the draft wording and again after review reworded it,
+      nine times over. The allowlist was dropped as unnecessary: it existed to make lag *visible*, and a
+      gate that refuses the merge makes lag impossible. The gate catches **missing** (split by whether
+      this branch introduced them), **stale** (English moved here, translation did not) and **orphans**;
+      `--report` prints the same list and exits 0 for use mid-branch. **All three failure modes proven to
+      fire.**
 
 ---
 

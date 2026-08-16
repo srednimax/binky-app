@@ -116,17 +116,37 @@ it is declared anyway for the same reason Polish declares `other`.
   mirroring, `supportsRtl`, and 4f's edge-to-edge matrix doubling. Excluded deliberately so that the cost
   is a decision rather than a discovery.
 
-## The open question this phase owes
+## The open question this phase owed 🟢 answered 2026-08-16
 
-**Nine locales means every future string is nine translations before the build goes green.** The current
-test makes a missing translation a red build, which is why Polish never rotted — and at nine languages
-that same strictness puts every future feature behind a translation round.
+**Nine locales means every future string is nine translations before the build goes green.** The old test
+made a missing translation a red build, which is why Polish never rotted — and at nine languages that same
+strictness puts every future feature behind a translation round.
 
-The recommendation is **strict, with a visible escape**: the test reads a `translations-pending` list,
-each entry dated and naming its locale, and no release ships with an entry older than one release cycle.
-A lagging language then shows English mid-screen — bad, and *visible in the file that admits it* — rather
-than the alternative, which is quietly dropping the rule and letting eight languages rot at once. Decide
-it when the test is generalised, not before; it is cheap to change and expensive to get wrong by default.
+**Answered: the boundary moves, not the rule.** Neither of the two options this file weighed — strict red
+build, or a dated `translations-pending` allowlist — is what shipped. Both treat the question as *how much
+lag to tolerate*, and the better answer is *where to ask*: **free while you work, strict before it merges.**
+
+- **Completeness left `TranslationTest` for `scripts/translation-gate.py`**, which CI runs on every pull
+  request beside the schema gate. Adding an English string no longer reddens your own build; a branch that
+  still owes a translation cannot merge.
+- The point is not developer comfort, it is **translating once**. Under a red-build rule the copy gets
+  translated against the draft wording and then again after review reworded it — nine times, for nothing.
+  ADR-0013's promise is about what *ships*, and `main` is where shipping starts.
+- The allowlist is unnecessary under this shape and was dropped: it existed to make lag *visible*, and a
+  gate that refuses the merge makes lag impossible instead. Nothing to date, nothing to expire, no file
+  admitting a debt.
+- The gate checks three things, and the second is the one no test could hold: resources **missing** from a
+  locale (split by whether this branch introduced them, so the list is the work rather than the debt),
+  translations gone **stale** because the English moved on this branch and they did not, and **orphans** a
+  rename left behind. `--report` prints the same list and exits 0, for use mid-branch.
+- Everything that must hold for whatever *is* translated — format arguments, plural categories per CLDR,
+  orphans, untranslatable resources — stays in `TranslationTest` and stays green continuously.
+
+⚠️ **`./gradlew test` was reporting a stale verdict, and this is what made it matter.** Both translation
+tests read `res/` off disk as plain files, which Gradle's up-to-date check cannot see — so editing a
+translation and re-running `test` printed `:app:test UP-TO-DATE` and a green build having checked nothing.
+Fixed by declaring `src/main/res` as a test input in `app/build.gradle.kts`. Found while building this
+gate; it had been true since the Polish test was written.
 
 ## Tests
 
@@ -160,9 +180,14 @@ there is no schema change and no media path.
 
 ## Order of work
 
-1. Generalise the test and the locale table **first**, on `en` + `pl` alone. It must be able to fail
-   before there is anything to check.
-2. Endonym labels to `translatable="false"`; the brief and the banned-word lists written.
+1. ✅ **Done 2026-08-16.** Generalise the test and the locale table **first**, on `en` + `pl` alone. It
+   must be able to fail before there is anything to check. `PolishTranslationTest` → `TranslationTest`,
+   the locale list read from `locales_config.xml` so a tenth language is one line of XML, and
+   `CLDR_PLURALS` carrying all nine rows ready. Proven able to fail: dropping `few` from one Polish
+   plural reddens the build. `scripts/translation-gate.py` likewise, on all three of its failure modes.
+2. ✅ **Endonyms done 2026-08-16**, along with `app_name`'s general rule and `med_editor_name_placeholder`
+   (a medicine brand name). The brief is [`translator-brief.md`](translator-brief.md); its per-language
+   banned lists are drafts until each native reviewer confirms their own row.
 3. **Re-prove the locale-aware capture driver** — built in Phase 7.5 and proven there on `pl`, so what is
    owed here is only that its needle table still resolves once seven locales exist. Every new needle is a
    claim that some resource still says what the table thinks it says.

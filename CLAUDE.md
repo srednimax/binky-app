@@ -50,6 +50,12 @@ the *why*, don't restate the line. Prefer explicit and readable over clever.
   half is the committed backup fixtures. **Every migration test opens the database directly and so walks
   past the launch gate** — that is how 1.5 nearly shipped a refusal screen to every existing install
   (ADR-0023's Phase 7.5 amendment). Verify an upgrade on the phone, not only in a test.
+- **A branch merges with every shipped language complete.** Adding an English string does *not* redden
+  your build — completeness is a merge gate (`scripts/translation-gate.py`, run by CI on every PR), not a
+  test, so copy is translated **once** rather than against draft wording and again after review. Everything
+  else about a translation — format arguments, plural categories per CLDR, orphans, `translatable="false"` —
+  is `TranslationTest` and holds continuously. Translate from **English only**, per
+  [`docs/translator-brief.md`](docs/translator-brief.md).
 - **Media paths in the DB are relative** and split by kind — `avatars/<uuid>.jpg`, `photos/<uuid>.jpg`,
   `documents/<uuid>.jpg` — resolved against `filesDir` at read time. Absolute paths change across installs
   and break restored backups; the split makes ADR-0005's export scopes a list of directories.
@@ -80,6 +86,8 @@ the *why*, don't restate the line. Prefer explicit and readable over clever.
 ./gradlew test                   # JVM unit tests
 ./gradlew connectedAndroidTest   # instrumented Room/DAO tests — needs a device
 ./gradlew lint
+python3 scripts/translation-gate.py --report   # what translations does this branch still owe?
+python3 scripts/translation-gate.py origin/main # the gate itself — would this merge?
 adb devices                      # confirm the phone is attached
 ```
 
