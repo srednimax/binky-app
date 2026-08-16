@@ -47,6 +47,17 @@ jobs:
           git fetch --depth=50 origin "$base"
           python3 scripts/schema-gate.py "origin/$base"
 
+      # A branch merges with every shipped language complete, and not before. This is deliberately a
+      # gate rather than an assertion in TranslationTest: requiring a translation the moment the
+      # English string is written puts every feature branch behind a translation round, and gets the
+      # copy translated twice — once against the draft wording and again after review reworded it.
+      # Free while you work, strict before it merges. Run `--report` locally to see what you owe.
+      - name: Translation gate
+        run: |
+          base="${{ github.base_ref || github.event.repository.default_branch }}"
+          git fetch --depth=50 origin "$base"
+          python3 scripts/translation-gate.py "origin/$base"
+
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
