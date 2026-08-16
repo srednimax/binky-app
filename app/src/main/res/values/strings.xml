@@ -200,9 +200,14 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_system">Same as this phone</string>
     <!-- Endonyms: each language named in itself, in every locale. Someone who has landed in a
-         language they cannot read finds their own by the name they would recognise. -->
-    <string name="settings_language_english">English</string>
-    <string name="settings_language_polish">Polski</string>
+         language they cannot read finds their own by the name they would recognise.
+
+         Which makes them locale-*invariant*, and that is what `translatable="false"` means: `Polski`
+         is `Polski` on an English phone too. Every values-<locale> copy of these was byte-identical
+         to the base, so at nine languages this would have been nine labels duplicated nine times —
+         81 entries for a translator to read past and no benefit at any of them. -->
+    <string name="settings_language_english" translatable="false">English</string>
+    <string name="settings_language_polish" translatable="false">Polski</string>
     <string name="settings_language_help">Binky can use a different language from the rest of the phone. Changing this restarts the app.</string>
     <!-- ADR-0027. The row is shown on Android 12 and newer only, where there is a wallpaper palette
          to take; below that the app has always used its own colours and there is nothing to offer. -->
@@ -739,9 +744,6 @@
     <string name="vet_delete_title">Remove this vet?</string>
     <string name="vet_delete_body">%1$s goes from the directory. Every visit that named them stays exactly as it is, without the name.</string>
 
-    <!-- The watch (ADR-0001): opt-in, time-boxed, and framed about the owner's checking rather than
-         about the bunny. Nothing here may read as a claim that anything is wrong — the app knows
-         only that nothing has been logged, and silence means nobody looked. -->
     <!-- Medications (PLAN 5e). This is the closest the app ever comes to medical advice, so the
          rule is stated in an ADR *and* on screen: it records what the owner was told to give and
          reasons about none of it (ADR-0026). Nothing here may say a dose was missed, warn, or
@@ -812,7 +814,14 @@
     <string name="med_editor_section_medication">The medication</string>
     <string name="med_editor_section_when">When</string>
     <string name="med_editor_name">What is it?</string>
-    <string name="med_editor_name_placeholder">Metacam</string>
+    <!-- A brand name, not a word: Metacam is sold as Metacam in every market this app ships to, so
+         translating it would be inventing a medicine. The Polish file had already left it alone,
+         which is the evidence rather than the argument.
+
+         Its neighbour below deliberately does NOT get the same treatment — `0.3 ml` is a *number*,
+         and the decimal separator is locale-specific (`0,3 ml` in Polish). The pair is worth keeping
+         side by side: "looks like data, so leave it" is wrong exactly half the time here. -->
+    <string name="med_editor_name_placeholder" translatable="false">Metacam</string>
     <string name="med_editor_name_required">Give it the name on the box, so the record still means something in a year.</string>
     <!-- Free text and never required: an owner told "one syringe, morning and night" has nothing to
          type in a number field, and insisting would make them invent a figure the app would then
@@ -835,6 +844,12 @@
     <string name="med_editor_reminders_help">Binky sets one alarm, for the next dose across every course. The line at the top of the tab says what this phone will actually do with it.</string>
     <string name="med_editor_notes">Notes, if you want them</string>
 
+    <!-- The watch (ADR-0001): opt-in, time-boxed, and framed about the owner's checking rather than
+         about the bunny. Nothing here may read as a claim that anything is wrong — the app knows
+         only that nothing has been logged, and silence means nobody looked.
+
+         This comment sat above the medication block until Phase 8's read-through, eighty lines from
+         the strings it describes — an ADR-0001 warning parked over ADR-0026's copy. -->
     <string name="watch_start">Start a watch</string>
     <string name="watch_start_title">Keep an eye on %1$s?</string>
     <string name="watch_start_body">Each morning Binky asks whether you have checked on them. Logging anything for that bunny settles the day — a healthy day counts. It stops on its own when the time is up.</string>
