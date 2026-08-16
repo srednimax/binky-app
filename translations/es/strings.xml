@@ -1,0 +1,1185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Spanish — DRAFT, staged. Not in res/ on purpose (Phase 8): the moment values-es/ exists,
+    every phone set to Spanish gets these strings, reviewed or not. locales_config.xml is a
+    picker list, not a delivery filter. Promotion is four edits and one commit, and it happens
+    only after a native speaker has read every screen in the running app.
+
+    Translated from English only, against docs/translator-brief.md.
+
+    The decisions a reviewer should confirm first, because everything else follows from them:
+
+    · Address form is **tú**, and the register is peninsular-neutral: "Ajustes" rather than
+      "Configuración", no voseo, no "vosotros". "Usted" would put a counter between the app and
+      one owner talking about their own animal.
+    · **The owner is never gendered, and nothing in this file is parenthesised.** Spanish makes
+      that cheap on the owner's side: the compound perfect with "haber" does not agree with its
+      subject ("has guardado", "he mirado"), and the file leans on imperatives, the present
+      tense and impersonal "se" everywhere else. There is no "¿estás seguro/a?" and no
+      "guardado(a)" anywhere below — §7.3's forbidden workaround.
+    · **Conejo, masculine generic, for the bunny — and this is the one §7.3 cost German did not
+      pay.** Spanish has no bunny/rabbit pair ("conejito" is the baby talk §3 forbids), and
+      "conejo" carries a gender the app does not know. Where a genderless wording is just as
+      natural it is used instead: `bunny_lives_with_alone` is *Vive sin compañía* (not "solo"),
+      `bunny_archived_name` is *%1$s (en el archivo)* (not "archivado"), `archived_banner` and
+      `archived_on` are recast around the noun *el archivo*, and `symptom_hunched_posture` is
+      the noun phrase *Postura encogida*. Where it is not — *Está en seguimiento*, the four mood
+      and activity chips, the clitic in *regístralo aparte* — the masculine generic stands,
+      which is Spanish's unmarked form and not a guess about the animal. **Nothing hides this;
+      it is the first thing to put in front of the reviewer.**
+    · **Cagarrutas** for droppings. This is the German *Köttel* decision: it is what Spanish
+      rabbit owners actually say, where *excrementos* and *heces* are the clinical words §5
+      rejects. *Bolitas* was rejected outright — it is exactly the food-pellet ambiguity the
+      brief's Avoid column warns about. If the register reads too coarse to a native ear, the
+      fallback is *excrementos*, losing the owner's voice rather than gaining a wrong word.
+    · **Cecotrofos** for cecotropes — the established Spanish term, and distinct from the above.
+    · **Arenero** for the litter tray. Plain and ordinary, and what every Spanish owner calls it.
+    · **Pesaje** for one recorded weighing: it counts, where *pesada* reads as the act.
+    · **Seguimiento** for the watch. *Vigilancia* carries alarm the ADR-0001 copy must not, and
+      *observación atenta* would collide with Observación, the record type. Note this is the
+      inverse of Polish's problem: Spanish has two clean words and uses both.
+    · **Tratamiento** for a medication course, **dosis** for one administration,
+      **Administrada** / **Omitida** for the two statuses. *Omitir* is agentive the way
+      *pominąć* and *auslassen* are — the owner did it and recorded it.
+    · **`destination_care` is *Cuidados* alone**, and it loses the meds half rather than clipping
+      it. *Cuidados y medicación* is twenty-one characters in a bottom-nav tab, and Spanish has
+      no established short form for "meds" the way German has *Medis* — inventing one would read
+      as an anglicism in the one label an owner sees on every screen. **This is the second thing
+      to put in front of the reviewer**, because 5e wanted the second half advertised.
+    · **`setup_bunny_title` is the noun *Bienvenida a Binky***, not "Bienvenido/a", which would
+      gender the owner on the very first screen they see.
+    · Quotation is **« »**, per the RAE, wherever the English uses “ ”.
+    · Four breed rows are mappings rather than translations and want a rabbit person's eye:
+      **Dutch → Holandés** against **Netherland Dwarf → Enano holandés** (Spanish genuinely
+      collides these two where German splits them with *Farbenzwerg*); the **lop family**, which
+      Spanish calls *belier* and splits differently either side of the Atlantic; **Himalayan →
+      Himalayo**, where continental European standards say *Ruso*; and the UK **Polish →
+      Polaco**, which is *Hermelin* in German. The ARBA-registered names with no Spanish form —
+      Beveren, Blanc de Hotot, Britannia Petite, American Sable, Cinnamon, Havana, Jersey Wooly,
+      Lilac, Silver, Silver Fox, Silver Marten, Tan, Thrianta, Velveteen Lop — stay as they are.
+
+    Where Spanish costs nothing, and it is worth knowing which traps did not fire:
+
+    · **§7.1's "Normal" is free.** *Normal* is invariable in gender in Spanish, so all six of
+      the resources that trap Polish into five distinct forms simply read "Normal". The
+      surrounding chips do inflect and do diverge — the droppings ones agree with *cagarrutas*
+      (feminine plural), the mood and activity ones with *conejo*.
+    · **§7.2's `care_every` is free.** *Cada* governs both a bare unit (*Cada semana*) and a
+      counted gap (*Cada 6 semanas*), so the German problem does not exist and the unit plurals
+      need no special case.
+    · **The banned list needed no argument.** *Atrasada*, *vencida*, *perdida* and *olvidada*
+      appear nowhere. The two permitted strings state the timing instead of judging it, the same
+      move as Polish's *po terminie*: `care_due_overdue` is *Tocaba hace %1$s* and
+      `care_notification_overdue` is *A %1$s ya le tocaba*.
+    · **`photo_import_partial` earns its plural here**, where English has nothing to vary:
+      *no se pudo leer* against *no se pudieron leer*.
+    · The romance `many` category is declared on every plural and is unreachable for the integer
+      counts this app produces — it is a large-number form. It is spelled identically to
+      `other`, which is correct for the digit-rendered counts Binky passes in.
+-->
+<resources>
+
+    <!-- Bottom-navigation destinations (ADR-0015). See the header on destination_care. -->
+    <string name="destination_home">Inicio</string>
+    <string name="destination_weight">Peso</string>
+    <string name="destination_observations">Observaciones</string>
+    <string name="destination_care">Cuidados</string>
+    <string name="destination_more">Más</string>
+
+    <!-- The bunny switcher -->
+    <string name="switcher_open">Elige qué conejo mostrar</string>
+    <string name="switcher_all_bunnies">Todos los conejos</string>
+    <string name="switcher_add_bunny">Añadir un conejo</string>
+    <string name="switcher_no_bunnies">Todavía no hay conejos</string>
+
+    <!-- The read-only scope onto an archived bunny. Built on the noun "el archivo" rather than
+         on the participle "archivado", which would have to guess the bunny's gender. -->
+    <string name="archived_banner">En el archivo. Los registros se pueden leer, pero no cambiar.</string>
+    <string name="archived_banner_leave">Salir</string>
+
+    <string name="action_back">Atrás</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_edit">Editar</string>
+    <string name="action_archive">Archivar</string>
+    <string name="action_unarchive">Sacar del archivo</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_ok">Aceptar</string>
+    <string name="action_done">Hecho</string>
+    <string name="action_undo">Deshacer</string>
+    <string name="action_change">Cambiar</string>
+    <string name="action_clear">Borrar</string>
+    <string name="add_a_bunny_first">Añade primero un conejo.</string>
+
+    <!-- The shared "when did this happen" field. The wording has to stay identical to
+         more_needs_bunny and to itself across screens. -->
+    <string name="recorded_at_pick_date">Cambiar la fecha</string>
+    <string name="recorded_at_pick_time">Cambiar la hora</string>
+
+    <!-- The searchable picker, shared by symptoms and breed (ADR-0010) -->
+    <string name="picker_search_label">Buscar</string>
+    <string name="picker_no_matches">No hay nada que coincida.</string>
+    <string name="picker_add_symptom">Añadir «%1$s» como síntoma</string>
+    <string name="picker_use_breed">Usar «%1$s»</string>
+
+    <!-- Home -->
+    <string name="home_empty_title">Todavía no hay conejos</string>
+    <string name="home_empty_body">Añade tu primer conejo para empezar a llevar el registro.</string>
+    <string name="home_all_bunnies_stub">Toca un conejo para abrirlo.</string>
+    <!-- Unlike Polish, Spanish needs no reordering here: "Sobre" governs no case a typed name
+         would have to decline into. -->
+    <string name="home_about_bunny">Sobre %1$s</string>
+    <string name="home_last_weight_label">Último pesaje</string>
+    <string name="home_last_weight_value">%1$s el %2$s</string>
+    <string name="home_last_observation_label">Última observación</string>
+    <!-- §2.1: two statements about the record, never about the bunny. Not "todo bien". -->
+    <string name="home_no_weighings">Todavía no hay nada registrado</string>
+    <string name="home_no_observations">Todavía no hay nada registrado</string>
+
+    <!-- Weight -->
+    <string name="weight_pick_a_bunny">El peso se registra por conejo. Elige uno en el selector para ver su historial.</string>
+    <string name="weight_add">Registrar un pesaje</string>
+    <string name="weight_chart_section">El peso a lo largo del tiempo</string>
+    <string name="weight_history_section">Historial</string>
+    <plurals name="weight_history_count">
+        <item quantity="one">%d pesaje</item>
+        <item quantity="many">%d pesajes</item>
+        <item quantity="other">%d pesajes</item>
+    </plurals>
+    <string name="weight_history_empty">Todavía no hay pesajes registrados. Hacen falta tres para poder valorar una tendencia.</string>
+    <string name="weight_delete_title">¿Eliminar este pesaje?</string>
+    <string name="weight_delete_body">%1$s el %2$s se quita del historial, y la tendencia se calcula de nuevo sin él.</string>
+
+    <!-- The chart's range selector (ADR-0022) -->
+    <string name="weight_chart_range_30d">30 días</string>
+    <string name="weight_chart_range_90d">90 días</string>
+    <string name="weight_chart_range_1y">1 año</string>
+    <string name="weight_chart_range_all">Todo</string>
+
+    <!-- §7.2, pre-inflected for their host: both sentences below put this phrase after "En",
+         so all four carry their own article. They are never rendered on their own — the
+         selector above is what the owner taps. -->
+    <string name="weight_chart_window_30d">los últimos 30 días</string>
+    <string name="weight_chart_window_90d">los últimos 90 días</string>
+    <string name="weight_chart_window_1y">el último año</string>
+    <string name="weight_chart_window_all">todo el historial</string>
+
+    <string name="weight_chart_no_weighings">Todavía no hay nada que dibujar. Un gráfico necesita al menos dos pesajes.</string>
+    <string name="weight_chart_single_point">De momento hay un pesaje. Con un segundo, el gráfico tiene una línea que trazar.</string>
+    <string name="weight_chart_single_in_range">En %1$s solo hay un pesaje, así que no hay línea que trazar. Sí hay otros anteriores.</string>
+    <string name="weight_chart_none_in_range">En %1$s no hay ningún pesaje. El más reciente fue el %2$s.</string>
+    <string name="weight_chart_show_all">Ver todos los pesajes</string>
+
+    <!-- Entry is always in grams, whatever the display unit says (house rule) -->
+    <string name="weight_entry_add_title">Registrar un pesaje</string>
+    <string name="weight_entry_edit_title">Editar un pesaje</string>
+    <string name="weight_grams_help">Peso en gramos. Gramos enteros, tal como los da la báscula.</string>
+    <string name="weight_recent">Pesajes recientes: %1$s.</string>
+    <string name="weight_grams_required">Escribe el peso en gramos.</string>
+    <string name="weight_grams_as_kilograms">Son %1$s.</string>
+    <string name="weight_recorded_at_label">Cuándo estuvo el conejo en la báscula</string>
+    <string name="weight_backdating_help">Por defecto, ahora. Si pesas por la mañana y lo anotas por la noche, no pasa nada: la hora que pongas es la que cuenta.</string>
+    <string name="weight_future_rejected">Eso está en el futuro. Un pesaje que todavía no ha ocurrido no se puede registrar.</string>
+
+    <!-- The exact-timestamp collision prompt (ADR-0021) -->
+    <string name="weight_collision_title">Ya hay un pesaje a esa hora</string>
+    <plurals name="weight_collision_body">
+        <item quantity="one">Este conejo ya tiene %d pesaje registrado exactamente con esa fecha y esa hora. Reemplazarlo deja un valor para ese momento; añadir un segundo deja los dos.</item>
+        <item quantity="many">Este conejo ya tiene %d pesajes registrados exactamente con esa fecha y esa hora. Reemplazar deja un valor para ese momento; añadir otro los deja todos.</item>
+        <item quantity="other">Este conejo ya tiene %d pesajes registrados exactamente con esa fecha y esa hora. Reemplazar deja un valor para ese momento; añadir otro los deja todos.</item>
+    </plurals>
+    <string name="weight_collision_replace">Reemplazarlo</string>
+    <string name="weight_collision_add_second">Añadir un segundo</string>
+    <!-- ADR-0017, ADR-0021: two ways out, never three — no "Reemplazarlo" on this one. -->
+    <string name="weight_collision_visit_body">El pesaje que ya hay a esa hora se registró en una visita al veterinario. Binky no lo va a sobrescribir: añade un segundo valor, o corrige el número en la propia visita.</string>
+    <string name="weight_row_from_visit">%1$s · de una visita</string>
+    <string name="weight_open_visit">Abrir la visita</string>
+    <string name="weight_visit_owned">Este pesaje se registró en una visita al veterinario, así que se cambia allí. La fecha de la visita es la que decide cuándo se tomó.</string>
+
+    <!-- Changes are ALWAYS in grams, whatever the display unit says (§2.3). The kg and g
+         symbols are the same in Spanish; the decimal comma is the formatter's job, not this
+         file's. -->
+    <string name="weight_in_kilograms">%1$s kg</string>
+    <string name="weight_in_grams">%1$s g</string>
+    <string name="weight_change_down">−%1$s g</string>
+    <string name="weight_change_up">+%1$s g</string>
+    <string name="weight_change_none">sin cambio</string>
+    <string name="weight_change_first">primero</string>
+
+    <!-- The trend flag (ADR-0001). "Worth a closer look", never a diagnosis. -->
+    <string name="trend_flag_title">Merece una mirada más atenta</string>
+    <string name="trend_flag_drop">%1$s ha bajado %2$s desde el %3$s.</string>
+    <string name="trend_flag_rise">%1$s ha subido %2$s desde el %3$s.</string>
+    <string name="trend_flag_readings">%1$s entonces, %2$s ahora.</string>
+    <string name="trend_flag_long_gap">Entre esos dos pesajes hay %1$s, así que es un cambio a lo largo de una temporada y no algo repentino.</string>
+    <!-- §2.2: the one string licensed to mention a vet, and it says it as a conditional the
+         owner controls. Not "si estás preocupado", which would gender them. -->
+    <string name="trend_flag_not_advice">Esto es una observación sobre los números, no un diagnóstico. Si te preocupa, consulta a tu veterinario.</string>
+    <string name="trend_flag_vet_diet">¿Está a dieta indicada por el veterinario? Entonces esta es la pérdida que buscas, y puedes no hacer caso de estos avisos.</string>
+    <string name="trend_flag_vet_gain">¿Sigue un plan de alimentación indicado por el veterinario? Entonces esta es la ganancia que buscas, y puedes no hacer caso de estos avisos.</string>
+    <string name="trend_flag_acknowledge">Ya lo he visto</string>
+    <string name="trend_flag_ask_age">¿Qué edad tiene %1$s?</string>
+    <string name="trend_flag_acknowledged">Visto el %1$s.</string>
+    <string name="trend_flag_close">Cerrar</string>
+
+    <!-- How far apart two weighings are. Separate from the age plurals (ADR-0013). -->
+    <plurals name="gap_years">
+        <item quantity="one">%d año</item>
+        <item quantity="many">%d años</item>
+        <item quantity="other">%d años</item>
+    </plurals>
+    <plurals name="gap_months">
+        <item quantity="one">%d mes</item>
+        <item quantity="many">%d meses</item>
+        <item quantity="other">%d meses</item>
+    </plurals>
+    <plurals name="gap_weeks">
+        <item quantity="one">%d semana</item>
+        <item quantity="many">%d semanas</item>
+        <item quantity="other">%d semanas</item>
+    </plurals>
+    <plurals name="gap_days">
+        <item quantity="one">%d día</item>
+        <item quantity="many">%d días</item>
+        <item quantity="other">%d días</item>
+    </plurals>
+
+    <!-- Settings -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_weight_unit">Mostrar los pesos en</string>
+    <string name="settings_unit_kilograms">Kilogramos</string>
+    <string name="settings_unit_grams">Gramos</string>
+    <string name="settings_weight_unit_help">Esto cambia cómo se muestran los pesos, no cómo se escriben: se escriben siempre en gramos, y los cambios se muestran siempre en gramos.</string>
+    <string name="settings_backup">Copia y restauración</string>
+    <string name="settings_backup_summary">Exporta tus registros a un archivo, restáuralos desde uno, y mira las copias guardadas en este teléfono.</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_language_system">El del teléfono</string>
+    <!-- The endonyms are translatable="false" and deliberately absent from this file (§4). -->
+    <string name="settings_language_help">Binky puede usar un idioma distinto del resto del teléfono. Al cambiarlo, la app se reinicia.</string>
+    <!-- ADR-0027 -->
+    <string name="settings_material_you">Colores de tu fondo de pantalla</string>
+    <string name="settings_material_you_help">Binky tiene sus propios colores. Actívalo y los tomará de tu fondo de pantalla, como hace Android con sus propias pantallas.</string>
+
+    <!-- First-run setup (ADR-0006). "Bienvenida" is a noun here: "Bienvenido" would gender the
+         owner on the first screen they ever see. -->
+    <string name="setup_step">Paso %1$d de %2$d</string>
+    <string name="setup_continue">Continuar</string>
+    <string name="setup_back">Un paso atrás</string>
+    <string name="setup_bunny_title">Bienvenida a Binky</string>
+    <string name="setup_bunny_body">Binky guarda en este teléfono el historial de salud de tus conejos: pesos, observaciones y fotos. No hay cuenta ni servidor, y nada de lo que anotes aquí se envía a ningún sitio.\n\nTres preguntas rápidas y es todo tuyo.</string>
+    <string name="setup_bunny_action">Añade tu primer conejo</string>
+    <string name="setup_bunny_add_another">Añadir otro conejo</string>
+    <string name="setup_bunny_skip">Ahora no</string>
+    <string name="setup_bunny_added_one">%1$s ya está. Puedes añadir más conejos cuando quieras desde el selector de la parte de arriba.</string>
+    <string name="setup_bunny_added_many">Tus conejos ya están. Puedes añadir más cuando quieras desde el selector de la parte de arriba.</string>
+    <string name="setup_backup_title">Que tus registros no se pierdan</string>
+    <string name="setup_backup_body">Todo vive en este teléfono, así que perder el teléfono es perder el historial, salvo que algo lo esté copiando. Dos cosas distintas pueden hacerlo, y ninguna de las dos lo cubre todo.</string>
+    <string name="setup_backup_auto_ask">Binky no puede saber si está activada, ni activarla por ti. Es buen momento para comprobarlo.</string>
+    <string name="setup_backup_changeable">Todo esto se puede cambiar luego en Ajustes › Copia y restauración.</string>
+    <string name="setup_finish">Terminar</string>
+
+    <!-- Reminders (ADR-0003, ADR-0006, ADR-0024). The three delivery states are the
+         load-bearing copy in this app: "blocked" is a certainty, "best-effort" is a real hedge
+         about a real thing, and "armed" is the only one that promises anything. -->
+    <string name="reminders_title">Recordatorios</string>
+    <string name="reminders_body">Binky puede recordarte los cuidados que se repiten: cortar las uñas cada seis semanas, la vacuna anual, un pesaje a la semana. Los recordatorios llegan una vez al día, solo a este teléfono, y tú eliges para qué son.</string>
+    <string name="reminders_enable_action">Activar los recordatorios</string>
+    <string name="reminders_state_blocked">Las notificaciones están desactivadas, así que los recordatorios solo aparecerán dentro de la app.</string>
+    <string name="reminders_state_best_effort">Los recordatorios están activados. Este teléfono todavía puede retrasarlos o descartarlos mientras Binky está en segundo plano; el ajuste de abajo es lo que lo arregla.</string>
+    <string name="reminders_state_armed">Los recordatorios están activados, y este teléfono está preparado para dejarlos pasar.</string>
+    <string name="reminders_denied_once">Sin problema. Puedes activarlos cuando quieras.</string>
+    <string name="reminders_permanently_denied">Android ya no va a volver a preguntar, así que este hay que activarlo en los ajustes del teléfono.</string>
+    <string name="reminders_open_settings_action">Abrir los ajustes de notificaciones</string>
+    <string name="reminders_battery_title">Una cosa más, o los recordatorios pueden no llegar</string>
+    <string name="reminders_battery_body">Android pausa las apps que cree inactivas, y una Binky pausada no puede lanzar un recordatorio. Eximirla de la optimización de batería es lo que deja pasar un recordatorio a las nueve de la mañana después de una noche entera con el teléfono dormido.</string>
+    <string name="reminders_battery_action">Abrir los ajustes de batería</string>
+    <string name="reminders_battery_dismiss">Ahora no</string>
+    <string name="reminders_autostart_help">Algunos teléfonos, y los Xiaomi los primeros, tienen además su propia lista de inicio automático. Binky no puede leerla, así que no puede decirte si está puesta; esto es solo el camino hasta ella.</string>
+    <string name="reminders_autostart_action">Abrir los ajustes de inicio automático</string>
+
+    <!-- Dose delivery (ADR-0003, ADR-0025, ADR-0026). Four sentences for three states:
+         "best-effort" arrives for two different reasons with two different fixes, and the copy
+         has to say which one is missing or the button underneath it looks arbitrary. -->
+    <string name="doses_state_blocked">Las notificaciones están desactivadas, así que los recordatorios de dosis solo aparecerán dentro de la app.</string>
+    <string name="doses_state_best_effort_exact">Los recordatorios de dosis están activados, pero Android no deja que Binky los ponga al minuto: espera uno a los pocos minutos de la hora, no justo a la hora.</string>
+    <string name="doses_state_best_effort_battery">Los recordatorios de dosis están activados y puestos al minuto. Este teléfono todavía puede retrasarlos mientras Binky está en segundo plano.</string>
+    <string name="doses_exact_alarm_action">Abrir los ajustes de alarmas</string>
+    <string name="reminders_caveat_notifications_title">Las notificaciones están desactivadas</string>
+    <string name="reminders_caveat_exact_title">Los recordatorios pueden llegar tarde</string>
+    <string name="reminders_caveat_battery_title">Este teléfono puede retener los recordatorios</string>
+
+    <!-- Debug builds only, and never shown in a release build. -->
+    <string name="settings_sample_data">Datos de ejemplo</string>
+    <string name="settings_debug_header">Solo en compilaciones de depuración</string>
+    <string name="settings_sample_data_help">Añade dos conejos que conviven, un año de pesajes irregulares con fecha anterior y unas cuantas observaciones, para poder revisar el gráfico, el aviso de tendencia y la línea de tiempo con un historial de verdad.</string>
+    <string name="settings_sample_data_action">Añadir los datos de ejemplo</string>
+    <string name="settings_sample_data_seeded">Datos de ejemplo añadidos.</string>
+    <string name="settings_sample_data_present">Los conejos de ejemplo ya están aquí.</string>
+    <string name="settings_debug_reminder">Entrega de recordatorios</string>
+    <string name="settings_debug_reminder_help">Lanza una notificación dentro de dos minutos, por su propio camino y no por el barrido diario, para poder probar el canal, el permiso y la entrega sin que exista ningún recordatorio.</string>
+    <string name="settings_debug_reminder_settings_action">Ajustes de recordatorios</string>
+    <string name="settings_debug_reminder_action">Recuérdamelo en dos minutos</string>
+    <string name="settings_debug_reminder_scheduled">Llegará un recordatorio de prueba dentro de dos minutos. Bloquea el teléfono y espera.</string>
+    <string name="debug_reminder_notification_title">Recordatorio de prueba</string>
+    <string name="debug_reminder_notification_text">Así se verá un recordatorio de cuidados. No hay nada previsto: este se programó a mano desde Ajustes.</string>
+
+    <!-- A dose notification: the medicine is the title, this is the line under it. It names the
+         amount exactly as the vet wrote it and says nothing about whether the dose is late
+         (ADR-0002, ADR-0026, ADR-0001). -->
+    <string name="dose_notification_amount">%1$s para %2$s</string>
+    <string name="dose_notification_no_amount">Para %1$s</string>
+
+    <!-- Notification channels: the only per-kind control the owner has, so a daily watch nudge
+         and a yearly vaccination must never share one. -->
+    <string name="channel_care_name">Recordatorios de cuidados</string>
+    <string name="channel_care_description">Cortes de uñas, vacunas, pesajes y cualquier otra cosa para la que hayas puesto un recordatorio que se repite.</string>
+    <string name="channel_watch_name">Avisos de seguimiento</string>
+    <string name="channel_watch_description">Un aviso al día para mirar a un conejo que sigues de cerca. Solo mientras hay un seguimiento en marcha.</string>
+    <string name="channel_backup_name">Recordatorios de copia</string>
+    <string name="channel_backup_description">Un aviso de vez en cuando para exportar tus registros, con el intervalo que hayas elegido. Nada que ver con ningún conejo.</string>
+    <string name="channel_doses_name">Dosis de medicación</string>
+    <string name="channel_doses_description">Un recordatorio a la hora de una dosis que hayas programado. Solo mientras hay un tratamiento en marcha.</string>
+
+    <!-- Backup and restore (ADR-0005) -->
+    <string name="backup_title">Copia y restauración</string>
+
+    <!-- The automatic net, stated in all three states. Absence is spelled out rather than left
+         blank: an empty line would read as a working net. -->
+    <string name="backup_auto_title">Copia automática</string>
+    <string name="backup_auto_help">Android hace una copia de Binky en tu cuenta de Google cuando le viene bien: con el teléfono inactivo, cargando y con conexión. Binky no puede activarlo ni comprobarlo por ti.</string>
+    <string name="backup_auto_never">En este teléfono no consta ninguna copia automática.</string>
+    <string name="backup_auto_recorded">Última copia automática: %1$s.</string>
+    <string name="backup_auto_stale">La última copia automática fue el %1$s, hace más de dos semanas. Puede que algo la haya desactivado.</string>
+    <string name="backup_auto_photos">Cubre tus registros, tus ajustes y las fotos de perfil de tus conejos. Tu galería de fotos no entra.</string>
+    <plurals name="backup_auto_excluded">
+        <item quantity="one">%d documento o foto del arenero era demasiado grande para incluirlo. Usa la exportación manual para conservarlo.</item>
+        <item quantity="many">%d documentos y fotos del arenero eran demasiado grandes para incluirlos. Usa la exportación manual para conservarlos.</item>
+        <item quantity="other">%d documentos y fotos del arenero eran demasiado grandes para incluirlos. Usa la exportación manual para conservarlos.</item>
+    </plurals>
+    <string name="backup_auto_settings_action">Abrir los ajustes de copia de Android</string>
+
+    <string name="backup_excluded_notification_title">Algunos documentos y fotos del arenero no están en la copia</string>
+    <plurals name="backup_excluded_notification_text">
+        <item quantity="one">La copia automática de Android no pudo con %d documento o foto del arenero. Exporta a mano para conservar una copia.</item>
+        <item quantity="many">La copia automática de Android no pudo con %d documentos y fotos del arenero. Exporta a mano para conservar una copia.</item>
+        <item quantity="other">La copia automática de Android no pudo con %d documentos y fotos del arenero. Exporta a mano para conservar una copia.</item>
+    </plurals>
+
+    <!-- §7.2: these three names are substituted into two sentences below, and the quotation
+         marks are what let them be. A quoted name has no gender for the host to agree with. -->
+    <string name="backup_scope_title">Qué incluye una exportación</string>
+    <string name="backup_scope_essential">Esencial</string>
+    <string name="backup_scope_records">Registros</string>
+    <string name="backup_scope_everything">Todo</string>
+    <string name="backup_scope_essential_help">Tus registros, tus ajustes y las fotos de perfil de los conejos. La copia útil más pequeña.</string>
+    <string name="backup_scope_records_help">Todo lo de Esencial, más los documentos escaneados y las fotos del arenero: todo lo que puedas volver a necesitar.</string>
+    <string name="backup_scope_everything_help">Todo lo de Registros, más tu galería de fotos. Mucho más grande, y la única copia que tendrán nunca tus fotos.</string>
+    <string name="backup_photos_warning">Tus fotos son lo menos protegido de Binky. La copia automática de Android deja fuera la galería, y Esencial y Registros también. Una exportación «Todo» es la única copia que tendrán nunca tus fotos.</string>
+    <string name="backup_export_action">Exportar una copia</string>
+    <string name="backup_exporting">Preparando la copia…</string>
+    <string name="backup_export_share">Compartir esta copia</string>
+
+    <!-- The remembered export folder (ADR-0005). Every failure here ends with the backup shared
+         instead — the path that worked before a folder was ever remembered. -->
+    <string name="backup_folder_title">Dónde van las exportaciones</string>
+    <string name="backup_folder_help">Normalmente una exportación va al menú de compartir y tú eliges qué hacer con ella. También puedes elegir una carpeta, en este teléfono o en una app en la nube como Drive, y Binky escribirá directamente ahí.</string>
+    <string name="backup_folder_none">No hay ninguna carpeta elegida. Las exportaciones van al menú de compartir.</string>
+    <string name="backup_folder_chosen">Las exportaciones pueden ir directas a «%1$s».</string>
+    <string name="backup_folder_unavailable">Binky ya no puede escribir en la carpeta que elegiste. Puede que se haya movido o borrado, o que le hayan quitado el permiso. Vuelve a elegirla, o sigue usando el menú de compartir.</string>
+    <string name="backup_folder_choose">Elegir una carpeta</string>
+    <string name="backup_folder_change">Elegir otra carpeta</string>
+    <string name="backup_folder_forget">Olvidar esta carpeta</string>
+    <string name="backup_folder_export">Exportar a esta carpeta</string>
+    <string name="backup_folder_saved">Guardada como «%1$s».</string>
+    <!-- §3: says what happened and what is still possible, and never blames the owner. -->
+    <string name="backup_folder_refused">Binky no pudo escribir en esa carpeta, así que la copia se compartió en su lugar: no se ha perdido nada. Si sigue pasando, elige una carpeta de este teléfono.</string>
+    <string name="backup_folder_not_remembered">Este teléfono no ha dejado que Binky conserve el acceso a esa carpeta, así que no se ha guardado ninguna. Las exportaciones siguen yendo al menú de compartir.</string>
+    <string name="backup_folder_no_picker">Este teléfono no tiene ningún selector de archivos que Binky pueda abrir, así que las exportaciones van al menú de compartir.</string>
+
+    <!-- The recurring export reminder (ADR-0005). A prompt about the owner's export, never a
+         claim that their data is unsafe. -->
+    <string name="backup_reminder_title">Recuérdame exportar</string>
+    <string name="backup_reminder_help">Un aviso para hacer una exportación, a la misma hora del día que tus otros recordatorios. Es un aviso sobre tus copias, no una señal de que algo vaya mal.</string>
+    <string name="backup_reminder_switch">Recuérdamelo</string>
+    <string name="backup_reminder_off">Desactivado. Binky no preguntará.</string>
+    <string name="backup_reminder_next">Próximo recordatorio: %1$s.</string>
+    <string name="backup_reminder_blocked">Las notificaciones están desactivadas para Binky, o silenciadas para los recordatorios de copia, así que este no puede llegar.</string>
+    <string name="backup_reminder_weekly">Cada semana</string>
+    <string name="backup_reminder_fortnightly">Cada dos semanas</string>
+    <string name="backup_reminder_monthly">Cada mes</string>
+    <string name="backup_reminder_quarterly">Cada tres meses</string>
+    <string name="export_notification_title">¿Toca hacer copia de tus registros?</string>
+    <string name="export_notification_text">Pediste este recordatorio. Abre Copia y restauración para hacer una exportación nueva: son un par de toques.</string>
+
+    <string name="backup_restore_title">Restaurar</string>
+    <string name="backup_restore_help">Restaurar reemplaza todo lo que Binky tiene ahora por lo que haya dentro del archivo. Antes se guarda en este teléfono una copia de los registros actuales, así que una restauración se puede deshacer.</string>
+    <string name="backup_restore_action">Restaurar desde un archivo</string>
+    <string name="backup_restore_confirm_title">¿Restaurar esta copia?</string>
+    <!-- Scope and date both come from the manifest inside the zip, never from the filename. -->
+    <string name="backup_restore_confirm_body">Copia «%1$s» del %2$s.\n\nSe reemplaza todo lo que Binky tiene ahora. Antes se guarda en este teléfono una copia de los registros actuales.</string>
+    <string name="backup_restore_confirm_action">Reemplazarlo todo</string>
+    <string name="backup_restoring">Restaurando…</string>
+
+    <string name="backup_refused_title">No se ha restaurado nada</string>
+    <string name="backup_refused_not_a_backup">Este archivo no es una copia de Binky. No se ha cambiado nada en este teléfono.</string>
+    <string name="backup_refused_newer">Esta copia la hizo una versión de Binky más nueva, que esta no puede leer. Se guardó con la versión %1$d, y esta app lee hasta la versión %2$d. No se ha cambiado nada en este teléfono.</string>
+    <string name="backup_refused_too_large">Este archivo es demasiado grande para ser una copia de Binky. No se ha cambiado nada en este teléfono.</string>
+    <string name="backup_refused_unreadable">Binky no pudo abrir los registros que hay dentro de esta copia, así que no se ha cambiado nada. Puede que el archivo esté dañado.</string>
+
+    <string name="backup_restored_title">Restauración terminada</string>
+    <string name="backup_restored_scope">Copia «%1$s» del %2$s restaurada.</string>
+    <plurals name="backup_restored_overlaid">
+        <item quantity="one">%d imagen viene de la copia.</item>
+        <item quantity="many">%d imágenes vienen de la copia.</item>
+        <item quantity="other">%d imágenes vienen de la copia.</item>
+    </plurals>
+    <plurals name="backup_restored_kept">
+        <item quantity="one">%d imagen que ya estaba en este teléfono quedaba fuera del alcance de esta copia y se ha conservado.</item>
+        <item quantity="many">%d imágenes que ya estaban en este teléfono quedaban fuera del alcance de esta copia y se han conservado.</item>
+        <item quantity="other">%d imágenes que ya estaban en este teléfono quedaban fuera del alcance de esta copia y se han conservado.</item>
+    </plurals>
+    <string name="backup_restored_snapshot">Lo que Binky tenía antes de esta restauración se ha guardado como %1$s, en «Copias guardadas en este teléfono».</string>
+    <string name="backup_restored_close">Cerrar Binky</string>
+    <string name="backup_restored_close_help">Binky tiene que cerrarse para volver a abrirse con los registros restaurados. Ábrela otra vez desde tu pantalla de inicio.</string>
+
+    <!-- The two occupants of preserved/: shared by the Backup screen and by ADR-0023's
+         schema-mismatch screen. -->
+    <string name="preserved_title">Copias guardadas en este teléfono</string>
+    <string name="preserved_help">Binky guarda una copia antes de cualquier cosa que fuera a reemplazar tus registros. Aquí no se borra nada automáticamente.</string>
+    <string name="preserved_empty">No se ha guardado ninguna copia en este teléfono.</string>
+    <string name="preserved_detail">Guardada el %1$s · %2$s · %3$s</string>
+    <plurals name="preserved_files">
+        <item quantity="one">%d archivo</item>
+        <item quantity="many">%d archivos</item>
+        <item quantity="other">%d archivos</item>
+    </plurals>
+    <string name="preserved_undated">fecha desconocida</string>
+    <string name="preserved_share">Compartir esta copia</string>
+    <string name="preserved_delete_title">¿Eliminar esta copia?</string>
+    <string name="preserved_delete_body">%1$s se quita de este teléfono para siempre. Si no la has compartido en otro sitio, se pierde.</string>
+    <string name="preserved_kind_wipe">Guardada antes de que una actualización borrara los registros</string>
+    <string name="preserved_kind_snapshot">Guardada antes de una restauración</string>
+    <string name="preserved_not_restorable">La escribió una versión más antigua de Binky, así que solo se puede compartir, no volver a cargar.</string>
+    <string name="preserved_restore">Restaurar esta copia</string>
+
+    <!-- Observations: the vocabularies (ADR-0010). "Sin comprobar" is a recorded fact in its
+         own right — nobody looked — and never a polite word for "normal" (§2.1). -->
+    <string name="observation_not_checked">Sin comprobar</string>
+
+    <!-- §7.1: all six "Normal" chips read the same because "normal" is invariable in gender.
+         Their neighbours are not: these four agree with "cagarrutas", feminine plural. -->
+    <string name="droppings_amount_none">Ninguna</string>
+    <string name="droppings_amount_few">Pocas</string>
+    <string name="droppings_amount_normal">Normal</string>
+    <string name="droppings_amount_many">Muchas</string>
+
+    <string name="droppings_size_small">Pequeñas</string>
+    <string name="droppings_size_normal">Normal</string>
+    <string name="droppings_size_large">Grandes</string>
+
+    <!-- Several can be true of one tray at once, and the app records every one of them without
+         saying a word about what it means: no "consulta al veterinario" on Sangre (ADR-0026).
+         "con pelo" is load-bearing, and "alquitranadas" is the distinctive half of the last but
+         one — the half the Polish read-through found dropped. -->
+    <string name="droppings_appearance_round">Redondas</string>
+    <string name="droppings_appearance_misshapen">Deformes</string>
+    <string name="droppings_appearance_doubled">Dobles o pegadas</string>
+    <string name="droppings_appearance_dry">Secas o duras</string>
+    <string name="droppings_appearance_strung_together">Encadenadas con pelo</string>
+    <string name="droppings_appearance_mucus">Con moco o baba</string>
+    <string name="droppings_appearance_soft">Blandas</string>
+    <string name="droppings_appearance_diarrhoea">Diarrea</string>
+    <string name="droppings_appearance_very_dark">Muy oscuras o alquitranadas</string>
+    <string name="droppings_appearance_blood">Sangre</string>
+
+    <string name="cecotropes_eaten">Comidos</string>
+    <string name="cecotropes_left_uneaten">Sin comer</string>
+    <string name="cecotropes_excess">Muchos sin comer</string>
+
+    <string name="appetite_none">No come</string>
+    <string name="appetite_reduced">Come menos</string>
+    <string name="appetite_normal">Normal</string>
+    <string name="appetite_eager">Con ganas</string>
+
+    <string name="mood_withdrawn">Retraído</string>
+    <string name="mood_subdued">Apagado</string>
+    <string name="mood_normal">Normal</string>
+    <string name="mood_bright">Despierto</string>
+
+    <string name="activity_lethargic">Aletargado</string>
+    <string name="activity_quiet">Tranquilo</string>
+    <string name="activity_normal">Normal</string>
+    <string name="activity_active">Activo</string>
+
+    <string name="water_none">No bebe</string>
+    <string name="water_less">Bebe menos</string>
+    <string name="water_normal">Normal</string>
+    <string name="water_more">Bebe más</string>
+
+    <!-- The built-in symptoms (ADR-0010). Each is something an owner can SEE, worded as the
+         thing observed and never as the condition it might mean. "fuerte" on the teeth
+         grinding is deliberate: rabbits purr by grinding softly. -->
+    <string name="symptom_head_tilt">Cabeza ladeada</string>
+    <string name="symptom_drooling_or_wet_chin">Babeo o barbilla mojada</string>
+    <string name="symptom_sneezing_or_nasal_discharge">Estornudos o moqueo</string>
+    <string name="symptom_eye_discharge">Ojos llorosos o con legañas</string>
+    <string name="symptom_dirty_bottom">Trasero sucio</string>
+    <string name="symptom_loud_teeth_grinding">Rechinar de dientes fuerte</string>
+    <string name="symptom_hunched_posture">Postura encogida</string>
+    <string name="symptom_laboured_breathing">Respiración dificultosa</string>
+    <string name="symptom_not_drinking">No bebe</string>
+    <string name="symptom_limping">Cojera</string>
+    <string name="symptom_ear_scratching">Se rasca las orejas</string>
+    <string name="symptom_blood_in_urine">Sangre en la orina</string>
+    <string name="symptom_hiding_more_than_usual">Se esconde más de lo normal</string>
+
+    <!-- Recording an observation -->
+    <string name="observation_add_title">Registrar una observación</string>
+    <string name="observation_edit_title">Editar una observación</string>
+    <string name="observation_recorded_at_label">Cuándo miraste</string>
+    <string name="observation_backdating_help">Por defecto, ahora. ¿Miraste el arenero esta mañana y lo escribes esta noche? Pon la hora en que miraste: esa es la que cuenta.</string>
+    <string name="observation_future_rejected">Eso está en el futuro. Una observación que todavía no ha ocurrido no se puede registrar.</string>
+
+    <!-- Who the observation covers (ADR-0008) -->
+    <string name="observation_participants_label">A quién incluye</string>
+    <string name="observation_participants_help">Los conejos que comparten arenero ya están marcados. Desmarca a quien esto no describa.</string>
+    <string name="observation_participants_required">Elige al menos un conejo.</string>
+    <string name="observation_excluded_archived">%1$s está en el archivo, así que esto no puede incluirlo.</string>
+    <string name="observation_excluded_watch">%1$s está en seguimiento: regístralo aparte.</string>
+
+    <string name="observation_tray_heading">El arenero</string>
+    <string name="observation_tray_shared_help">Se registra una vez, para todos los que incluye: un arenero compartido no se puede separar por conejo.</string>
+    <string name="observation_droppings_amount_label">Cuántas cagarrutas</string>
+    <string name="observation_droppings_size_label">Tamaño</string>
+    <string name="observation_droppings_appearance_label">Aspecto</string>
+    <string name="observation_cecotropes_label">Cecotrofos</string>
+    <string name="observation_tray_photo_label">Foto del arenero</string>
+    <!-- About the light, not about the camera. -->
+    <string name="observation_tray_photo_help">La luz uniforme e indirecta es la que mejor muestra la forma: las cagarrutas en sombra cuestan de leer después.</string>
+    <string name="observation_tray_photo_description">El arenero</string>
+    <string name="observation_tray_photo_unreadable">Binky no pudo leer esa imagen, así que no se ha adjuntado nada.</string>
+
+    <string name="observation_individual_heading">Este conejo</string>
+    <string name="observation_individual_heading_named">%1$s</string>
+    <string name="observation_appetite_label">Apetito</string>
+    <string name="observation_mood_label">Ánimo</string>
+    <string name="observation_activity_label">Actividad</string>
+    <string name="observation_water_label">Agua</string>
+
+    <string name="observation_symptoms_label">Síntomas</string>
+    <string name="observation_symptoms_none_selected">Ninguno seleccionado</string>
+    <string name="observation_symptoms_pick">Elegir síntomas</string>
+    <!-- §2.1: "looked, none seen" is the one state an empty list cannot express, and it has to
+         stay distinguishable from "Ninguno seleccionado" above. -->
+    <string name="observation_symptoms_checked">He mirado y no he visto ninguno de estos</string>
+    <string name="observation_symptoms_checked_help">Merece la pena marcarlo. Una lista vacía, por sí sola, solo significa que nadie miró.</string>
+
+    <string name="observation_note_label">Algo más</string>
+    <string name="observation_note_placeholder">Lo que hayas notado, con tus palabras</string>
+
+    <!-- The timeline -->
+    <string name="observations_empty">Todavía no hay observaciones registradas. Cualquier cosa que notes (el arenero, el ánimo, un síntoma) va aquí.</string>
+    <string name="observation_with">Con %1$s</string>
+    <!-- The lone survivor. It still reads as shared and deliberately names nobody (ADR-0008),
+         so it is a noun phrase rather than a participle with a gender to guess. -->
+    <string name="observation_observed_together_alone">Observación compartida</string>
+    <string name="observation_tray_section">El arenero</string>
+    <string name="observation_tray_section_shared">Compartido: el arenero</string>
+    <string name="observation_no_symptoms_seen">Se buscaron síntomas y no se vio ninguno</string>
+    <string name="observation_delete_title">¿Eliminar esta observación?</string>
+    <string name="observation_delete_body">Se quita la observación registrada el %1$s.</string>
+    <string name="observation_delete_body_shared">Esta observación incluía a %1$s. Al eliminarla, se quita para todos ellos.</string>
+    <string name="observation_which_bunny">¿De qué conejo es esto?</string>
+
+    <!-- The healthy-day shortcut: one tap and an Undo, no confirmation. -->
+    <string name="healthy_day_action">Registrar un día sano</string>
+    <string name="healthy_day_help">Registra el día corriente: cagarrutas normales, come y bebe como siempre, despierto y activo.</string>
+    <string name="healthy_day_which_bunny">¿De quién era el día?</string>
+    <string name="healthy_day_logged">Día sano registrado para %1$s.</string>
+    <!-- A flagged bunny is still offered and is named, not withheld (ADR-0001, ADR-0008). -->
+    <string name="healthy_day_name_flagged">%1$s (aviso de peso)</string>
+    <plurals name="healthy_day_excluded_watch">
+        <item quantity="one">%1$s está en seguimiento: regístralo aparte.</item>
+        <item quantity="many">%1$s están en seguimiento: regístralos aparte.</item>
+        <item quantity="other">%1$s están en seguimiento: regístralos aparte.</item>
+    </plurals>
+
+    <!-- Care reminders (ADR-0018). A reminder is {label, interval, optional type}: the three
+         presets carry a type and translate, a custom one is the owner's own words. -->
+    <string name="care_empty">Todavía no hay nada programado. Un recordatorio de cuidados es una tarea que vuelve: cortar las uñas, la vacuna anual, un pesaje a la semana.</string>
+    <string name="care_pick_a_bunny">Los cuidados son por conejo. ¿Cuál?</string>
+    <string name="care_choose_bunny">Elegir un conejo</string>
+    <string name="care_add">Añadir un recordatorio</string>
+
+    <!-- "Control de peso" rather than "Pesaje": the care task and the weight record must not be
+         the same word, or care_history_weight_help below says nothing. -->
+    <string name="care_type_nail_trim">Corte de uñas</string>
+    <string name="care_type_vaccination">Vacuna</string>
+    <string name="care_type_weigh_in">Control de peso</string>
+    <string name="care_type_custom">Otra cosa</string>
+
+    <!-- §6, and the whole of it: these five state the timing and never judge it. "Tocaba hace
+         %1$s" is "it was due %1$s ago" — the same move as Polish's "po terminie", and it keeps
+         atrasada, vencida, perdida and olvidada out of the file entirely. -->
+    <string name="care_due_today">Toca hoy</string>
+    <string name="care_due_tomorrow">Toca mañana</string>
+    <string name="care_due_yesterday">Tocaba ayer</string>
+    <string name="care_due_in">Toca dentro de %1$s</string>
+    <string name="care_due_overdue">Tocaba hace %1$s</string>
+
+    <!-- §7.2: "Cada" governs a bare unit and a counted gap alike, so Spanish pays nothing here
+         where German had to give up the sentence. -->
+    <string name="care_every">Cada %1$s</string>
+
+    <!-- The unit on its own. No %d: the number is beside it, but the word still has to agree. -->
+    <plurals name="care_unit_days">
+        <item quantity="one">día</item>
+        <item quantity="many">días</item>
+        <item quantity="other">días</item>
+    </plurals>
+    <plurals name="care_unit_weeks">
+        <item quantity="one">semana</item>
+        <item quantity="many">semanas</item>
+        <item quantity="other">semanas</item>
+    </plurals>
+    <plurals name="care_unit_months">
+        <item quantity="one">mes</item>
+        <item quantity="many">meses</item>
+        <item quantity="other">meses</item>
+    </plurals>
+    <plurals name="care_unit_years">
+        <item quantity="one">año</item>
+        <item quantity="many">años</item>
+        <item quantity="other">años</item>
+    </plurals>
+
+    <!-- Completion. Back-datable on the same terms as a weighing. -->
+    <string name="care_complete_title">Marcar como hecho</string>
+    <string name="care_complete_when">¿Cuándo se hizo?</string>
+    <string name="care_complete_help">Hoy, salvo que digas otra cosa. El siguiente se programa desde el día en que se hizo de verdad, así que un corte tardío reinicia el intervalo en vez de arrastrarlo.</string>
+    <string name="care_complete_future">Ese día todavía no ha llegado.</string>
+    <string name="care_complete_note">Nota, si quieres poner una</string>
+    <string name="care_complete_action">Registrarlo</string>
+
+    <!-- A weigh-in is done by weighing. -->
+    <string name="care_weigh_in_action">Registrar un peso</string>
+    <string name="care_weigh_in_help">Este se completa pesando, así que abre el formulario de peso. Vale cualquier pesaje, lo registres cuando lo registres.</string>
+
+    <string name="care_history_title">Hecho antes</string>
+    <string name="care_history_empty">Todavía no hay nada registrado. Registrar que está hecho es lo que mueve la próxima fecha.</string>
+    <string name="care_history_weight">Pesó %1$s</string>
+    <string name="care_history_weight_help">Los pesajes cuentan como control de peso. Se editan y se eliminan en la pantalla de Peso, no aquí.</string>
+    <string name="care_event_edit_title">Corregir este registro</string>
+    <string name="care_event_delete_title">¿Eliminar este registro?</string>
+    <string name="care_event_delete_body">Quitar lo registrado el %1$s mueve todas las repeticiones posteriores.</string>
+
+    <!-- Add to calendar (ADR-0014): one-way, no permission, and the app does not own what it
+         hands over. The copy has to say so, or it reads as syncing. -->
+    <string name="care_calendar_add">Añadir al calendario</string>
+    <string name="care_calendar_added">Añadido a tu calendario</string>
+    <string name="care_calendar_help">Entrega esta repetición a tu app de calendario una sola vez, donde sobrevive a un teléfono nuevo. Binky no mantiene las dos al día después: editar el recordatorio aquí no cambia nada allí.</string>
+    <string name="care_calendar_none">No hay ninguna app de calendario en este teléfono a la que entregárselo.</string>
+
+    <string name="care_editor_add_title">Nuevo recordatorio</string>
+    <string name="care_editor_edit_title">Editar recordatorio</string>
+    <!-- §7.1: "What is it?" twice in the file, and the two questions are different. This one
+         picks a kind of care task; med_editor_name asks a medicine's name. -->
+    <string name="care_editor_kind">¿De qué se trata?</string>
+    <string name="care_editor_label">¿Cómo lo llamas?</string>
+    <string name="care_editor_label_help">Con tus palabras, para que este se quede tal como lo escribiste, esté Binky en el idioma que esté.</string>
+    <string name="care_editor_label_required">Ponle un nombre para saber qué es.</string>
+    <string name="care_editor_interval">¿Cada cuánto?</string>
+    <string name="care_editor_interval_required">Al menos uno.</string>
+    <string name="care_editor_first_due">¿Cuándo toca la próxima vez?</string>
+    <string name="care_editor_first_due_help">No cuándo lo hiciste por última vez, sino cuándo toca la próxima, que es lo que pone la cartilla del veterinario. Si sabes cuándo se hizo por última vez, anótalo abajo como algo ya hecho.</string>
+
+    <string name="care_delete_title">¿Eliminar este recordatorio?</string>
+    <string name="care_delete_body">%1$s desaparece, y con él todo lo registrado como hecho. Los pesajes no se tocan.</string>
+
+    <!-- What the daily sweep posts. The reminder's name is the title, so the shade reads as the
+         job rather than as the app. -->
+    <string name="care_notification_due">Hoy le toca a %1$s.</string>
+    <string name="care_notification_overdue">A %1$s ya le tocaba.</string>
+    <plurals name="care_summary_title">
+        <item quantity="one">%d recordatorio de cuidados pendiente</item>
+        <item quantity="many">%d recordatorios de cuidados pendientes</item>
+        <item quantity="other">%d recordatorios de cuidados pendientes</item>
+    </plurals>
+
+    <!-- Vet visits on the Care tab (ADR-0017). A health record, never an expense. -->
+    <string name="care_reminders_heading">Cuidados de rutina</string>
+    <string name="visits_heading">Visitas al veterinario</string>
+    <string name="visits_empty">Todavía no hay visitas registradas. Una visita es un registro de salud: el día, para qué fue, y el peso si el veterinario lo tomó.</string>
+    <string name="visit_add">Añadir una visita</string>
+    <string name="visit_row_weighed">Pesó %1$s</string>
+    <string name="row_pair">%1$s · %2$s</string>
+
+    <string name="visit_editor_add_title">Nueva visita</string>
+    <string name="visit_editor_edit_title">Editar visita</string>
+    <string name="visit_date_label">¿Cuándo fue?</string>
+    <string name="visit_future_rejected">Ese día todavía no ha llegado.</string>
+    <string name="visit_reason_label">¿Para qué fue?</string>
+    <string name="visit_reason_required">Di para qué fue, para que dentro de un año el registro siga diciendo algo.</string>
+    <string name="visit_notes_label">Notas, si quieres ponerlas</string>
+    <string name="visit_vet_label">Veterinario</string>
+    <string name="visit_vet_none">Sin registrar</string>
+    <string name="visit_vet_choose">Elegir</string>
+    <string name="visit_vet_clear">Quitar</string>
+    <string name="visit_vet_picker_title">¿Qué veterinario?</string>
+    <string name="visit_vet_add_typed">Añadir «%1$s» como veterinario nuevo</string>
+    <!-- Optional, and empty is the ordinary case. -->
+    <string name="visit_weight_label">Peso en gramos, si lo pesaron</string>
+    <string name="visit_weight_help">Opcional. Se registra una vez, como el pesaje de este conejo de ese día.</string>
+    <string name="visit_weight_invalid">Gramos enteros, o déjalo vacío.</string>
+
+    <string name="visit_delete_title">¿Eliminar esta visita?</string>
+    <string name="visit_delete_body">La visita del %1$s desaparece, con sus notas.</string>
+    <!-- The choice is stated rather than guessed: a weighing outlives the visit perfectly well. -->
+    <string name="visit_delete_weighing">En ella se registró un pesaje de %1$s.</string>
+    <string name="visit_delete_keep_weighing">Conservar el pesaje por su cuenta</string>
+    <string name="visit_delete_remove_weighing">Eliminar también el pesaje</string>
+
+    <!-- The vet directory, reached from More (ADR-0017). "Nombre" covers a person and a
+         practice alike in Spanish, so §7.1's split between this and bunny_name_label costs
+         nothing here — but the two stay separate resources. -->
+    <string name="vets_title">Veterinarios</string>
+    <string name="vets_empty">Todavía no hay veterinarios. Añade la clínica que usas y cualquier visita podrá nombrarla, o añade uno mientras escribes una visita.</string>
+    <string name="vet_add">Añadir un veterinario</string>
+    <string name="vet_editor_add_title">Nuevo veterinario</string>
+    <string name="vet_editor_edit_title">Editar veterinario</string>
+    <string name="vet_name_label">Nombre</string>
+    <string name="vet_name_required">Ponle un nombre para poder encontrarlo otra vez.</string>
+    <string name="vet_clinic_label">Clínica, si la hay</string>
+    <string name="vet_phone_label">Teléfono, si lo hay</string>
+    <string name="vet_notes_label">Notas, si quieres ponerlas</string>
+    <string name="vet_delete_title">¿Quitar este veterinario?</string>
+    <string name="vet_delete_body">%1$s sale del directorio. Todas las visitas que lo nombraban se quedan exactamente igual, sin el nombre.</string>
+
+    <!-- Medications. The closest the app comes to medical advice, so ADR-0026's rule is both in
+         an ADR and on screen: it records what the owner was told to give and reasons about none
+         of it. Nothing here may say a dose was missed — an unanswered slot is unanswered, which
+         is a fact about the record and not about the rabbit (ADR-0001). -->
+    <string name="med_heading">Tratamientos</string>
+    <string name="med_today_heading">Hoy</string>
+    <string name="med_dose_due">Prevista: %1$s</string>
+    <string name="med_add_course">Añadir un tratamiento</string>
+    <string name="med_empty">No hay medicación registrada. Un tratamiento es lo que recetó el veterinario: qué es, cuánto, y las horas del día si las hay.</string>
+    <!-- The one permanent line the phase owes the owner, who cannot read an ADR. -->
+    <string name="med_disclaimer">Lo que recetó tu veterinario, tal como lo anotaste. Binky nunca comprueba dosis ni interacciones.</string>
+
+    <string name="med_dose_answered">%1$s a las %2$s</string>
+    <!-- §6: "Omitida" is agentive — the owner did it and recorded it — and so is not in the
+         family the ADR forbids. It must stay clearly apart from anything meaning "forgotten". -->
+    <string name="dose_status_given">Administrada</string>
+    <string name="dose_status_skipped">Omitida</string>
+
+    <string name="med_schedule_none">Sin horario: las dosis se anotan a mano</string>
+    <string name="med_schedule_once">Una vez al día a las %1$s</string>
+    <string name="med_schedule_times">%1$s todos los días</string>
+    <!-- The day is relative and the time is not: the clock time is what the vet actually said. -->
+    <string name="med_next_today">Próxima dosis a las %1$s</string>
+    <string name="med_next_tomorrow">Próxima dosis mañana a las %1$s</string>
+    <string name="med_next_later">Próxima dosis el %1$s a las %2$s</string>
+    <string name="med_next_not_started">Empieza el %1$s</string>
+    <string name="med_next_ended">Terminó el %1$s</string>
+    <string name="med_next_done">No hay nada más programado</string>
+    <string name="med_range_open">Desde el %1$s</string>
+    <string name="med_range_closed">Del %1$s al %2$s</string>
+
+    <string name="med_delete_title">¿Eliminar este tratamiento?</string>
+    <string name="med_delete_body">%1$s desaparece, con su horario.</string>
+    <plurals name="med_delete_doses">
+        <item quantity="one">También se elimina %d dosis registrada.</item>
+        <item quantity="many">También se eliminan %d dosis registradas.</item>
+        <item quantity="other">También se eliminan %d dosis registradas.</item>
+    </plurals>
+    <string name="med_delete_end_help">Terminarlo conserva todas las dosis y simplemente detiene el horario a partir de hoy.</string>
+    <string name="med_delete_end_action">Mejor terminar el tratamiento</string>
+
+    <string name="med_history_title">Dosis registradas</string>
+    <string name="med_history_empty">Todavía no hay nada registrado.</string>
+    <string name="med_history_row">%1$s · %2$s a las %3$s</string>
+    <!-- An ad-hoc dose says so rather than showing a blank (ADR-0002). -->
+    <string name="med_history_ad_hoc">Sin hora programada</string>
+    <string name="med_history_for_slot">De la dosis de las %1$s</string>
+    <string name="med_end_action">Terminar el tratamiento</string>
+    <string name="med_end_help">Pone el final en hoy. Todas las dosis ya registradas se quedan.</string>
+    <string name="med_dose_delete_title">¿Eliminar esta dosis?</string>
+    <string name="med_dose_delete_body">El registro desaparece. Si respondía a una hora programada, esa hora vuelve a quedar sin responder.</string>
+
+    <string name="med_record_title">Registrar una dosis</string>
+    <string name="med_record_edit_title">Editar esta dosis</string>
+    <string name="med_record_status">¿Qué pasó?</string>
+    <string name="med_record_when">¿Cuándo?</string>
+    <string name="med_record_when_help">Por defecto, ahora. Ponle una fecha anterior si lo estás anotando después.</string>
+    <string name="med_record_future">Eso es más tarde que ahora.</string>
+    <string name="med_record_for_slot">de la dosis de las %1$s</string>
+    <string name="med_record_note">Nota, si quieres poner una</string>
+    <string name="med_record_action">Registrar</string>
+
+    <string name="med_editor_add_title">Nuevo tratamiento</string>
+    <string name="med_editor_edit_title">Editar tratamiento</string>
+    <string name="med_editor_section_medication">El medicamento</string>
+    <string name="med_editor_section_when">Cuándo</string>
+    <!-- §7.1's other half: this asks the medicine's name, care_editor_kind asks a kind. -->
+    <string name="med_editor_name">¿Qué es?</string>
+    <!-- med_editor_name_placeholder is Metacam and translatable="false" (§4). Its neighbour
+         below is NOT: "0.3 ml" is a number, and Spanish writes the decimal with a comma. -->
+    <string name="med_editor_name_required">Ponle el nombre de la caja, para que dentro de un año el registro siga diciendo algo.</string>
+    <!-- Free text and never required: an owner told "one syringe, morning and night" has
+         nothing to type in a number field (ADR-0002). -->
+    <string name="med_editor_amount">Cuánto, si te lo dijeron</string>
+    <string name="med_editor_amount_placeholder">0,3 ml</string>
+    <string name="med_editor_amount_help">Exactamente como lo dijo el veterinario: «0,3 ml», «media pastilla». Binky nunca lo lee.</string>
+    <string name="med_editor_start">Empieza</string>
+    <string name="med_editor_pick_start">Cambiar la fecha de inicio</string>
+    <string name="med_editor_ongoing">En curso</string>
+    <string name="med_editor_ongoing_help">Actívalo para un tratamiento que no tiene final a la vista. Desactívalo para poner el último día.</string>
+    <string name="med_editor_end">Termina</string>
+    <string name="med_editor_pick_end">Cambiar la fecha de fin</string>
+    <string name="med_editor_end_before_start">Eso es antes de que empiece el tratamiento.</string>
+    <string name="med_editor_schedule">Horas del día</string>
+    <string name="med_editor_schedule_help">Opcional. Déjalo vacío para un tratamiento en el que anotas las dosis a mano.</string>
+    <string name="med_editor_add_time">Añadir una hora</string>
+    <string name="med_editor_remove_time">Quitar %1$s</string>
+    <string name="med_editor_reminders">Recordármelo a estas horas</string>
+    <string name="med_editor_reminders_help">Binky pone una alarma, para la próxima dosis de todos los tratamientos juntos. La línea de arriba de la pestaña dice lo que este teléfono va a hacer de verdad con ella.</string>
+    <string name="med_editor_notes">Notas, si quieres ponerlas</string>
+
+    <!-- The watch (ADR-0001): opt-in, time-boxed, and framed about the owner's checking rather
+         than about the bunny. "Seguimiento" and "observación" are two clean words in Spanish,
+         which is the inverse of Polish's problem with this pair. -->
+    <string name="watch_start">Iniciar un seguimiento</string>
+    <string name="watch_start_title">¿Seguir de cerca a %1$s?</string>
+    <string name="watch_start_body">Cada mañana Binky te pregunta si lo has mirado. Registrar cualquier cosa para ese conejo cierra el día, y un día sano cuenta. Se para solo cuando se acaba el tiempo.</string>
+    <string name="watch_duration_question">¿Durante cuánto tiempo?</string>
+    <plurals name="watch_duration_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="many">%1$d días</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
+    <string name="watch_start_action">Iniciarlo</string>
+    <plurals name="watch_days_left">
+        <item quantity="one">queda %1$d día</item>
+        <item quantity="many">quedan %1$d días</item>
+        <item quantity="other">quedan %1$d días</item>
+    </plurals>
+    <string name="watch_active_line">Seguimiento activo · %1$s</string>
+    <string name="watch_close">Cerrarlo</string>
+    <string name="watch_expired_title">El seguimiento de %1$s se ha acabado</string>
+    <string name="watch_expired_body">Ya ha dejado de preguntar. Amplíalo si sigues pendiente, o ciérralo.</string>
+    <string name="watch_expired_weight">Último peso: %1$s, el %2$s.</string>
+    <string name="watch_expired_no_weight">No se ha pesado nada, así que tampoco hay una tendencia que mostrar en ningún sentido.</string>
+    <string name="watch_expired_extend">Ampliarlo</string>
+    <string name="watch_notification_title">¿Has mirado hoy a %1$s?</string>
+    <string name="watch_notification_text">Hay un seguimiento en marcha. Lo que hayas visto merece la pena anotarlo, y un día sano cuenta.</string>
+
+    <!-- More -->
+    <string name="more_archived_bunnies">Conejos archivados</string>
+    <string name="more_archived_bunnies_summary">Conejos que has archivado. Sus registros se conservan.</string>
+    <string name="more_photos">Fotos</string>
+    <string name="more_photos_summary">Imágenes de un conejo, guardadas en este teléfono.</string>
+    <string name="more_documents">Documentos</string>
+    <string name="more_documents_summary">Papeles escaneados de un conejo, guardados en este teléfono.</string>
+    <string name="more_vets">Veterinarios</string>
+    <string name="more_vets_summary">Nombres y teléfonos, compartidos por todos los conejos.</string>
+    <string name="more_settings">Ajustes</string>
+    <string name="more_settings_summary">Unidades de peso, idioma, copia y restauración.</string>
+    <string name="more_support">Soporte</string>
+    <string name="more_support_summary">Informar de un fallo, sugerir una función, valorar la app.</string>
+    <string name="more_needs_bunny">Añade primero un conejo.</string>
+
+    <!-- Support. The #bug / #feature tag is a Kotlin constant, not a resource. -->
+    <string name="support_title">Soporte</string>
+    <string name="support_intro">Binky la hace una sola persona. Un informe de fallo o una idea le llegan directamente.</string>
+    <string name="support_bug_button">Informar de un fallo</string>
+    <string name="support_bug_subject">Informe de fallo</string>
+    <string name="support_bug_prompt">(describe aquí lo que ha pasado)</string>
+    <string name="support_diagnostics_title">Qué lleva un informe de fallo</string>
+    <!-- Impersonal, and singular: the app is made by one person, so nothing here says "we"
+         — the mistake the Polish read-through found in this very string. -->
+    <string name="support_diagnostics_explain">Al mensaje se añaden la versión de la app, tu versión de Android, el modelo del teléfono y el idioma de la app. Nada sobre tus conejos, y no se envía nada hasta que toques enviar en tu app de correo.</string>
+    <string name="support_feature_button">Pedir una función</string>
+    <string name="support_feature_subject">Petición de función</string>
+    <string name="support_email_label">O escribe a:</string>
+    <string name="support_no_mail_app">No hay ninguna app de correo en este teléfono. La dirección de arriba se puede copiar.</string>
+    <string name="support_rate_button">Valorar Binky en Google Play</string>
+    <string name="support_rate_help">Binky es gratis y sin anuncios. Una valoración es lo único que pide.</string>
+    <string name="support_no_store_app">No se pudo abrir Google Play en este teléfono.</string>
+    <string name="support_privacy_button">Política de privacidad</string>
+    <string name="support_no_browser">No hay ningún navegador en este teléfono para abrir la página.</string>
+    <string name="support_licences_button">Licencias de código abierto</string>
+    <string name="support_version_label">Versión</string>
+
+    <!-- Open-source licence attribution. The list itself is generated at build time and is not
+         translatable content: a translated Apache-2.0 is not Apache-2.0. -->
+    <string name="licences_title">Licencias de código abierto</string>
+    <string name="licences_intro">Binky está construida sobre las bibliotecas de abajo. La lista sale de la propia compilación, así que nombra todo lo que esta copia de la app contiene de verdad.</string>
+    <string name="licences_read">Leer la licencia</string>
+    <string name="licences_open_terms">Abrir los términos</string>
+    <!-- Both describe a broken build rather than anything an owner did, so they say what is
+         missing and stop. -->
+    <string name="licences_unavailable">No se pudo leer la lista de licencias de esta compilación.</string>
+    <string name="licences_text_missing">El texto de esta licencia no viene incluido en la app.</string>
+
+    <!-- The photo gallery: one bunny's pictures, reached from More. Note %1$s here is the bunny
+         the photos are OF — the argument the Polish draft quietly moved to the gallery they
+         land in (§7.6). -->
+    <string name="photo_which_bunny">¿Fotos de quién?</string>
+    <string name="photo_gallery_title">Fotos: %1$s</string>
+    <string name="photo_gallery_empty">Todavía no hay fotos.</string>
+    <string name="photo_gallery_empty_help">Añade imágenes de %1$s desde tu galería o con la cámara. Se quedan en este teléfono.</string>
+    <string name="photo_add">Añadir fotos</string>
+    <string name="photo_add_choose">Elegir de tu galería</string>
+    <string name="photo_add_take">Hacer una foto</string>
+    <string name="photo_import_progress">Añadiendo %1$d de %2$d…</string>
+    <plurals name="photo_import_added">
+        <item quantity="one">%d foto añadida.</item>
+        <item quantity="many">%d fotos añadidas.</item>
+        <item quantity="other">%d fotos añadidas.</item>
+    </plurals>
+    <!-- §7.5: the quantity governs the *unreadable* count, which inflects in Spanish
+         ("no se pudo leer" / "no se pudieron leer") where English has nothing to vary. -->
+    <plurals name="photo_import_partial">
+        <item quantity="one">%1$d de %2$d añadidas, %3$d no se pudo leer.</item>
+        <item quantity="many">%1$d de %2$d añadidas, %3$d no se pudieron leer.</item>
+        <item quantity="other">%1$d de %2$d añadidas, %3$d no se pudieron leer.</item>
+    </plurals>
+    <string name="photo_description">Foto de %1$s</string>
+    <string name="photo_close">Cerrar</string>
+    <!-- "Hecha" only when the picture's own metadata said so; anything else is dated by when it
+         arrived here, and calling that "taken" would invent a fact. -->
+    <string name="photo_taken_on">Hecha el %1$s</string>
+    <string name="photo_added_on">Añadida el %1$s</string>
+    <string name="photo_caption_label">Pie de foto</string>
+    <string name="photo_caption_none">Sin pie de foto</string>
+    <string name="photo_caption_add">Añadir uno</string>
+    <string name="photo_caption_edit">Editar</string>
+    <string name="photo_delete">Eliminar foto</string>
+    <string name="photo_delete_body">¿Eliminar esta foto? La imagen se quita de este teléfono para siempre.</string>
+
+    <!-- Documents: one bunny's scanned paperwork (ADR-0017, ADR-0009) -->
+    <string name="document_which_bunny">¿Documentos de quién?</string>
+    <string name="documents_title">Documentos: %1$s</string>
+    <string name="documents_empty">Todavía no hay documentos.</string>
+    <string name="documents_empty_help">Escanea una cartilla de vacunación, un resultado de laboratorio o un informe de alta. Se quedan en este teléfono.</string>
+    <string name="document_scan">Escanear un documento</string>
+    <!-- Written into the database when a scan lands, so it is read in the owner's language at
+         that moment and never re-translated afterwards (ADR-0013). -->
+    <string name="document_default_title">Documento escaneado</string>
+    <plurals name="document_page_count">
+        <item quantity="one">%d página</item>
+        <item quantity="many">%d páginas</item>
+        <item quantity="other">%d páginas</item>
+    </plurals>
+    <!-- Names what the result lacks rather than what the phone lacks. -->
+    <string name="document_scan_camera_used">Escaneado con la cámara: en este teléfono no hay recorte automático ni detección de páginas.</string>
+    <string name="document_scan_failed">Ese escaneo no se pudo guardar. Inténtalo otra vez.</string>
+    <!-- "Fechado" is the date printed on the page; "Escaneado" is when it arrived here. -->
+    <string name="document_dated_on">Fechado el %1$s</string>
+    <string name="document_scanned_on">Escaneado el %1$s</string>
+    <string name="document_no_date">La página no tiene fecha</string>
+    <string name="document_from_visit">De la visita del %1$s — %2$s</string>
+    <string name="document_actions">Acciones del documento</string>
+    <string name="document_rename">Cambiar el nombre</string>
+    <string name="document_title_label">Título</string>
+    <string name="document_set_date">Poner la fecha de la página</string>
+    <string name="document_clear_date">Quitar la fecha</string>
+    <string name="document_date_label">Fecha de la página</string>
+    <string name="document_attach_visit">Adjuntar a una visita</string>
+    <string name="document_attach_none">No es de una visita</string>
+    <string name="document_attach_no_visits">Todavía no hay visitas registradas para este conejo.</string>
+    <string name="document_add_page">Añadir una página</string>
+    <string name="document_manage_pages">Reordenar o quitar páginas</string>
+    <string name="document_page_number">Página %1$d</string>
+    <string name="document_page_up">Subir</string>
+    <string name="document_page_down">Bajar</string>
+    <string name="document_page_position">Página %1$d de %2$d</string>
+    <string name="document_page_description">Página %1$d de %2$s</string>
+    <string name="document_no_pages">Este documento no tiene páginas.</string>
+    <string name="document_no_pages_help">Su título y su fecha se conservan. Añade una página, o elimina el documento.</string>
+    <string name="document_delete">Eliminar documento</string>
+    <string name="document_delete_body">¿Eliminar «%1$s»? Todas las páginas se quitan de este teléfono para siempre.</string>
+    <!-- The visit editor's documents section: paperwork usually comes *from* a visit -->
+    <string name="visit_documents_label">Documentos</string>
+    <string name="visit_documents_save_first">Guarda primero la visita, y luego escanea o adjunta sus papeles.</string>
+    <string name="visit_documents_none">No hay nada adjunto a esta visita.</string>
+    <string name="visit_documents_attach_existing">Adjuntar uno que ya tengas</string>
+    <string name="visit_documents_none_free">Todos los documentos de este conejo pertenecen ya a una visita. Sepáralo allí primero.</string>
+    <string name="visit_documents_detach">Separar</string>
+
+    <!-- The archived list (ADR-0004) -->
+    <string name="archived_title">Conejos archivados</string>
+    <string name="archived_empty">No hay nada archivado. Archivar esconde a un conejo del selector y conserva todos sus registros.</string>
+    <string name="archived_on">En el archivo desde el %1$s</string>
+    <string name="archived_open">Abrir</string>
+
+    <!-- Bunny profile -->
+    <string name="bunny_editor_add_title">Añadir un conejo</string>
+    <string name="bunny_editor_edit_title">Editar conejo</string>
+    <string name="bunny_editor_section_details">Datos</string>
+    <string name="bunny_name_label">Nombre</string>
+    <string name="bunny_name_required">Un conejo necesita un nombre.</string>
+    <string name="bunny_avatar_take">Hacer una foto</string>
+    <string name="bunny_avatar_choose">Elegir una foto</string>
+    <string name="bunny_avatar_remove">Quitar la foto</string>
+    <string name="bunny_avatar_failed">Esa imagen no se pudo leer. Prueba con otra.</string>
+    <string name="bunny_avatar_description">Foto de %1$s</string>
+    <string name="bunny_avatar_placeholder">Todavía sin foto</string>
+    <string name="bunny_birthdate_label">Cumpleaños</string>
+    <string name="bunny_birthdate_none">No se sabe</string>
+    <string name="bunny_birthdate_set">Poner un cumpleaños</string>
+    <string name="bunny_birthdate_clear">Quitar el cumpleaños</string>
+    <string name="bunny_birthdate_approximate">Aproximado</string>
+    <string name="bunny_birthdate_approximate_help">Los conejos rescatados suelen llegar con una edad supuesta. Un cumpleaños aproximado se muestra como una edad, nunca como una fecha.</string>
+    <string name="bunny_sex_label">Sexo</string>
+    <string name="sex_male">Macho</string>
+    <string name="sex_female">Hembra</string>
+    <!-- §7.1: two "Unknown"s. This one qualifies "el sexo"; the one below answers a yes/no. -->
+    <string name="sex_unknown">Desconocido</string>
+    <string name="bunny_neutered_label">Esterilizado</string>
+    <string name="neutered_yes">Sí</string>
+    <string name="neutered_no">No</string>
+    <string name="neutered_unknown">No se sabe</string>
+    <string name="bunny_breed_label">Raza</string>
+    <string name="bunny_breed_none">Sin definir</string>
+    <string name="bunny_breed_choose">Elegir una raza</string>
+    <string name="bunny_breed_clear">Quitar la raza</string>
+    <string name="bunny_colour_label">Color y marcas</string>
+    <string name="bunny_lives_with_label">Vive con</string>
+    <!-- §7.3: "Vive sin compañía" rather than "Vive solo", which would guess a gender. This is
+         the same move as Polish's adverbial "samotnie". -->
+    <string name="bunny_lives_with_alone">Vive sin compañía</string>
+    <string name="bunny_lives_with_nobody_yet">Añade un segundo conejo para registrar con quién vive.</string>
+    <string name="bunny_lives_with_help">Los conejos que conviven comparten arenero, así que una observación puede incluirlos a todos.</string>
+    <string name="bunny_lives_with_value">Vive con %1$s</string>
+    <!-- §7.3 again: the noun phrase avoids "archivado" agreeing with the bunny. -->
+    <string name="bunny_archived_name">%1$s (en el archivo)</string>
+    <!-- The tail of a capped housemates line, joined through list_join_pair like any other
+         item. Never rendered at one, but declared because Android resolves against it. -->
+    <plurals name="bunny_lives_with_others">
+        <item quantity="one">%1$d más</item>
+        <item quantity="many">%1$d más</item>
+        <item quantity="other">%1$d más</item>
+    </plurals>
+
+    <!-- ADR-0007's consent half. One forward button, no cancel. -->
+    <string name="wipe_title">Esta actualización tiene que borrar los registros de este teléfono</string>
+    <string name="wipe_body">Binky todavía se está construyendo, y esta versión ha cambiado la forma de guardar los registros. No puede leer lo que ya hay en este teléfono, así que eso tiene que irse.</string>
+    <string name="wipe_versions">Registros en este teléfono: formato %1$d. Esta versión: formato %2$d.</string>
+    <string name="wipe_copy_taken">Ya se ha guardado una copia en este teléfono antes de borrar nada:</string>
+    <string name="wipe_copy_reach">La copia no se puede volver a cargar automáticamente: leer registros antiguos en el formato nuevo es una conversión que hay que escribir a mano. Apunta en otro sitio los pesos que te importen hasta que llegue la copia de seguridad.</string>
+    <string name="wipe_continue">Borrar los registros y continuar</string>
+
+    <!-- ADR-0023's release half of the same screen. Nothing is deleted here: a dead end that
+         names the copy and offers to share it. -->
+    <string name="schema_refused_title">Esta versión no puede abrir los registros de este teléfono</string>
+    <string name="schema_refused_body">Los registros de este teléfono los guardó una versión distinta de Binky, y esta no puede leerlos. No se ha borrado nada.</string>
+    <string name="schema_refused_copy_taken">Hay una copia de ellos guardada en este teléfono, y ahí se queda:</string>
+    <string name="schema_refused_reach">Instalar la versión que los guardó debería devolverte el acceso. Hasta entonces, comparte la copia en un sitio seguro: es la única que hay.</string>
+
+    <!-- Joining names into a list. Never concatenated: other languages join lists differently,
+         and this label appears in the switcher, on the profile and in the healthy-day
+         snackbar (ADR-0008, ADR-0013). -->
+    <string name="list_join_pair">%1$s y %2$s</string>
+    <string name="list_join_more">%1$s, %2$s</string>
+
+    <!-- §4: a tilde is not universal shorthand for "about". Spanish writes "aprox.". -->
+    <string name="age_approximate">aprox. %1$s</string>
+    <plurals name="age_years">
+        <item quantity="one">%d año</item>
+        <item quantity="many">%d años</item>
+        <item quantity="other">%d años</item>
+    </plurals>
+    <plurals name="age_months">
+        <item quantity="one">%d mes</item>
+        <item quantity="many">%d meses</item>
+        <item quantity="other">%d meses</item>
+    </plurals>
+    <plurals name="age_weeks">
+        <item quantity="one">%d semana</item>
+        <item quantity="many">%d semanas</item>
+        <item quantity="other">%d semanas</item>
+    </plurals>
+
+    <!-- Archiving asks once and says plainly that nothing is lost (ADR-0004). The personal "a"
+         takes a typed name without declining it. -->
+    <string name="archive_dialog_title">¿Archivar a %1$s?</string>
+    <string name="archive_dialog_body">Todos los registros se conservan y se pueden seguir leyendo en Más. %1$s sale del selector de conejos, y puedes traerlo de vuelta cuando quieras.</string>
+
+    <!-- Deleting is the explicit escape hatch. A second dialog appears only when there is
+         history to destroy — an avatar is not history (ADR-0004). -->
+    <string name="delete_dialog_title">¿Eliminar a %1$s?</string>
+    <string name="delete_dialog_body">Esto quita al conejo de la app. Archivarlo en su lugar conserva todo y solo lo esconde.</string>
+    <string name="delete_dialog_avatar_note">Su foto también se borra de este teléfono.</string>
+    <string name="delete_dialog_second_title">¿Eliminar a %1$s y sus registros?</string>
+    <string name="delete_dialog_second_body">Esto no se puede deshacer.</string>
+    <plurals name="delete_records_sole_owned">
+        <item quantity="one">Se destruye %d registro guardado solo para este conejo.</item>
+        <item quantity="many">Se destruyen %d registros guardados solo para este conejo.</item>
+        <item quantity="other">Se destruyen %d registros guardados solo para este conejo.</item>
+    </plurals>
+    <plurals name="delete_records_shared">
+        <item quantity="one">%d entrada compartida se queda, para los demás conejos que incluía.</item>
+        <item quantity="many">%d entradas compartidas se quedan, para los demás conejos que incluían.</item>
+        <item quantity="other">%d entradas compartidas se quedan, para los demás conejos que incluían.</item>
+    </plurals>
+
+    <!-- Breed suggestions, not a closed vocabulary. §4's rule: translate the descriptive names,
+         keep the registered ones, same length and same order, "Mestizo / desconocido" first.
+         The four rows worth a rabbit person's eye are named in the header. -->
+    <string-array name="built_in_breeds">
+        <item>Mestizo / desconocido</item>
+        <item>Americano</item>
+        <item>American Fuzzy Lop</item>
+        <item>American Sable</item>
+        <item>Angora (inglés)</item>
+        <item>Angora (francés)</item>
+        <item>Angora (gigante)</item>
+        <item>Angora (satén)</item>
+        <item>Liebre belga</item>
+        <item>Beveren</item>
+        <item>Blanc de Hotot</item>
+        <item>Britannia Petite</item>
+        <item>Californiano</item>
+        <item>Champagne d\'Argent</item>
+        <item>Gigante mariposa</item>
+        <item>Chinchilla (americano)</item>
+        <item>Chinchilla (gigante)</item>
+        <item>Chinchilla (estándar)</item>
+        <item>Cinnamon</item>
+        <item>Gigante continental</item>
+        <item>Crème d\'Argent</item>
+        <item>Holandés</item>
+        <item>Enano de Hotot</item>
+        <item>Belier enano</item>
+        <item>Belier inglés</item>
+        <item>Mariposa inglés</item>
+        <item>Gigante de Flandes</item>
+        <item>Florida White</item>
+        <item>Belier francés</item>
+        <item>Arlequín</item>
+        <item>Havana</item>
+        <item>Himalayo</item>
+        <item>Belier holandés</item>
+        <item>Jersey Wooly</item>
+        <item>Lilac</item>
+        <item>Cabeza de león</item>
+        <item>Mini belier</item>
+        <item>Mini rex</item>
+        <item>Mini satén</item>
+        <item>Enano holandés</item>
+        <item>Neozelandés</item>
+        <item>Palomino</item>
+        <item>Polaco</item>
+        <item>Rex</item>
+        <item>Renano</item>
+        <item>Satén</item>
+        <item>Silver</item>
+        <item>Silver Fox</item>
+        <item>Silver Marten</item>
+        <item>Tan</item>
+        <item>Thrianta</item>
+        <item>Velveteen Lop</item>
+    </string-array>
+</resources>
