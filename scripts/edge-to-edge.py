@@ -29,6 +29,7 @@ The phone is left in whatever configuration the last cell used; `--restore` puts
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import re
 import subprocess
@@ -272,7 +273,15 @@ def dump_ui() -> list[Node]:
 
     nodes: list[Node] = []
     for match in NODE_RE.finditer(xml):
-        attrs = dict(ATTR_RE.findall(match.group(1)))
+        # **Unescape, because this reads XML with a regex and the labels are English prose.** The
+        # dump writes `Care &amp; Meds`, so a needle spelled with a real ampersand — `"Care & Meds"`,
+        # `"Backup & restore"` — matched nothing at all, and those two sit at the head of roughly
+        # twenty scenes. Found 2026-08-16 on the first English cell run since the needles were
+        # lengthened on 2026-08-14; **the 146/146 Polish run could not see it**, because *"Opieka i
+        # leki"* and *"Kopia zapasowa i przywracanie"* carry no ampersand. Third defect this phase that is
+        # unreachable in one locale and fatal in the other, and the first one that English is the
+        # broken half of.
+        attrs = {name: html.unescape(value) for name, value in ATTR_RE.findall(match.group(1))}
         bounds_match = BOUNDS_RE.search(attrs.get("bounds", ""))
         if not bounds_match:
             continue
@@ -449,24 +458,48 @@ def return_to_home() -> None:
         tap(HOME_TAB)
 
 
+# How far [tap] will scroll looking for a needle, and how many dumps it takes before an unchanged
+# screen is believed. The cap matches [swipe_to_end]'s for the same reason — the observation
+# timeline holds a year of rows — and the floor is the composition grace the old fixed budget was
+# really providing.
+TAP_SCROLL_CAP = 16
+MIN_TAP_TRIES = 4
+
+
 def tap(needle: str, *, optional: bool = False, text_only: bool = False) -> None:
     # Retried rather than waited on a fixed delay: a screen that is still composing dumps as an
     # empty ComposeView, and how long that takes depends on the screen, not on the driver. An
     # *optional* tap is not retried — it is asking whether something is there, and four rounds of
     # waiting to be told "no" is most of the run time of the matrix.
-    attempts = 1 if optional else 4
+    # **Scroll while the screen is still moving, rather than a fixed number of times.** A landscape
+    # swipe covers 70%→32% of 1220px — about 464px, against roughly 1030px of a portrait screen — so
+    # a budget of four tries reaches ~1856px sideways where it reaches ~4120px upright. The Care
+    # screen is several thousand pixels long in landscape (it shows two and a half rows at a time),
+    # which is how `visit-editor`, `weight-entry` and `home-crowded-all` came back unreachable on
+    # 2026-08-16 for controls that are plainly reachable: `care-bottom` scrolls clean past them to
+    # the banner at the end. **A fixed budget is a portrait-shaped constant**, the same shape of bug
+    # as the rotation a wipe used to cost, and it fails only where the viewport is short.
+    #
+    # The signature check is what keeps this from being slower: a screen that cannot scroll stops
+    # changing after one swipe and gives up sooner than the old budget did. [MIN_TAP_TRIES] is the
+    # floor underneath it, because a screen still composing dumps as an empty `ComposeView` and two
+    # identical empty dumps must not be read as "nowhere left to go".
+    attempts = 1 if optional else TAP_SCROLL_CAP
+    node = None
+    previous = ""
     for attempt in range(attempts):
         nodes = dump_ui()
         node = find(nodes, needle, text_only=text_only)
         if node is not None:
             break
-        # Landscape is 1220px tall where portrait is 2712, so the control a portrait screen shows
-        # without asking is often several screens down — scroll for it rather than calling the scene
-        # unreachable, which would quietly drop exactly the configurations under test.
-        if not optional:
-            swipe_up()
-        else:
+        if optional:
             settle(1.0)
+            continue
+        current = screen_signature(nodes)
+        if attempt >= MIN_TAP_TRIES - 1 and current == previous:
+            break
+        previous = current
+        swipe_up()
     if node is None:
         if optional:
             return
@@ -662,6 +695,39 @@ def seed_variant(variant: str) -> None:
     if "result=0" not in output:
         raise StepFailed(f"seeding variant {variant!r} failed: {output.strip()[:200]}")
     _SEEDED = variant
+    settle(1.0)
+
+
+# Whether every scene runs with a dose reminder trying to post over it. Off unless `--live-dose`
+# asks for it, because it changes what every screenshot contains — see [arm_live_dose].
+_LIVE_DOSE = False
+
+
+def arm_live_dose() -> None:
+    """Put an unanswered dose slot a minute in the past, so the reminder banner posts over this scene.
+
+    **The hazard this reproduces is the one that wrecked two runs and crippled a third.** A missed
+    dose is re-armed at every process start (ADR-0025's self-heal), fires immediately because its
+    trigger is behind us, and posts an `importance=4` heads-up over Home — exactly where
+    `SELECT_BUNNY` taps. The tap lands on the banner, `AUTO_CANCEL` clears it, and every scene after
+    that relaunches into the record-dose screen and fails on a needle that was never wrong. That is
+    the 2026-08-12 cell, and [set_dnd] is the fix; **this is what makes a clean run mean anything**,
+    because DND suppressing a banner nobody posted is not evidence of DND.
+
+    **Why per scene rather than per seed.** The default seed's live dose is Metacam's 20:00, so an
+    evening run faces this for real — but `DOSE_GRACE` is thirty minutes and a cell is closer to
+    fifty, so the second half of every cell would be quiet, and a reseed happens only a handful of
+    times per cell. Re-arming per scene keeps the banner live end to end, and it makes the case
+    reachable at any hour: Phase 8 runs nine locales, and nine evenings is not a plan.
+
+    Idempotent on the app's side — one course, its single time replaced — so this can run 146 times
+    without accumulating anything. See [SeedVariantReceiver.seedDueDose].
+    """
+    output = shell(f"am broadcast -n {SEED_RECEIVER} -f 0x00000020 --es variant due_dose")
+    if "result=0" not in output:
+        raise StepFailed(f"arming the live dose failed: {output.strip()[:200]}")
+    # Long enough for AlarmManager to deliver a trigger that is already in the past and for the
+    # notification to be posted, so the scene walks *into* the banner rather than ahead of it.
     settle(1.0)
 
 
@@ -1407,6 +1473,16 @@ def reach_scene(scene: Scene) -> str | None:
     still produce a screenshot of *something*.
     """
     relaunch()
+    # After the relaunch, not before: `am start -S` force-stops, and a force-stop cancels every
+    # alarm the app has placed. Arming into a live process is also the honest order — the banner
+    # arrives *during* the scene, which is the case the driver has to survive.
+    #
+    # **`full` only**, for the same reason [return_to_home] is: the variant needs Bijou to hang a
+    # course on, and `empty` opens on a wiped install while `mismatch` replaces the whole screen
+    # before anything is captured. Arming there would fail every scene in both suites on a seed that
+    # is deliberately absent.
+    if _LIVE_DOSE and scene.suite == "full":
+        arm_live_dose()
     try:
         if not scene.keeps_watch_prompt:
             # The prompt is hosted above the shell and so composes a beat after it; asking before
@@ -1479,8 +1555,20 @@ def main() -> int:
             "through the resource names before the first tap; default leaves the device alone"
         ),
     )
+    parser.add_argument(
+        "--live-dose",
+        action="store_true",
+        help=(
+            "re-arm an unanswered dose slot a minute in the past before every scene, so a reminder "
+            "banner tries to post over each one — the case DND exists for, without waiting for the "
+            "seed's own 20:00 dose. Debug build only; see [arm_live_dose]"
+        ),
+    )
     parser.add_argument("--restore", action="store_true", help="undo the pinned rotation and nav mode")
     args = parser.parse_args()
+
+    global _LIVE_DOSE
+    _LIVE_DOSE = args.live_dose
 
     if args.restore:
         set_locale(None)
@@ -1530,9 +1618,45 @@ def main() -> int:
         # the point, do not. Twice on 2026-08-12 a run had to be stopped mid-cell and both times the
         # completed cells were lost. `run_matrix` also writes after each config, so the file is
         # complete for every cell that finished.
-        report_path.write_text(json.dumps(report, indent=2))
+        write_report(report_path, report)
     print(f"\nreport: {report_path}")
     return 0
+
+
+def write_report(report_path: Path, report: dict) -> None:
+    """Merge this invocation's cells into whatever the file already holds, keyed by scene name.
+
+    **A partial re-shoot must not delete the run it is repairing.** The report was written per
+    invocation, so re-running three scenes replaced a whole matrix with those three — which happened
+    to the Polish run on 2026-08-15 and was rebuilt from the directory by hand, with a note that it
+    was worth folding in here if it ever happened twice. It happened twice: the 2026-08-16 English
+    matrix left seven landscape cells to redo after a driver fix, against 285 that stood.
+
+    Replaced by name and never removed, so the merge cannot lose a cell. The cost of that choice is
+    that a *renamed* scene leaves its old entry behind — the directory of screenshots is the truth,
+    and a reader comparing the two will find the orphan rather than a silently shortened run.
+    """
+    merged: dict = {"configs": []}
+    if report_path.exists():
+        try:
+            merged = json.loads(report_path.read_text())
+        except json.JSONDecodeError:
+            # A run killed mid-write leaves a truncated file, and refusing to start because of it
+            # would be the wrong way round: this invocation's cells are the ones in hand.
+            merged = {"configs": []}
+    by_name = {config["config"]: config for config in merged.setdefault("configs", [])}
+    for config in report["configs"]:
+        existing = by_name.get(config["config"])
+        if existing is None:
+            merged["configs"].append(config)
+            by_name[config["config"]] = config
+            continue
+        scenes = {scene["scene"]: scene for scene in existing.get("scenes", [])}
+        for scene in config.get("scenes", []):
+            scenes[scene["scene"]] = scene
+        existing.update({key: value for key, value in config.items() if key != "scenes"})
+        existing["scenes"] = list(scenes.values())
+    report_path.write_text(json.dumps(merged, indent=2))
 
 
 def run_matrix(
@@ -1607,7 +1731,7 @@ def run_matrix(
         )
         # Land each cell as it finishes rather than banking four of them against a clean exit.
         if report_path is not None:
-            report_path.write_text(json.dumps(report, indent=2))
+            write_report(report_path, report)
 
 
 if __name__ == "__main__":
