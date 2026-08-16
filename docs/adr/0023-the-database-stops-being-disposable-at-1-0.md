@@ -84,6 +84,37 @@ against the exported schema, plus a release-shaped open through `allowDestructiv
 is the second thing 3c's parameter buys. CI runs both on every pull request, which is what makes the guard
 always-on rather than a thing someone remembers to do before a release.
 
+## Amendment (Phase 7.5): the gate asks whether a migration **exists**, not whether the versions differ
+
+This ADR's release half says the open "will fail instead" — and that is true of a file **no migration
+covers**. The guard in front of Room did not make that distinction. `schemaMismatchPending` is
+`onDisk != 0 && onDisk != app`, and `BinkyApplication` treated every `true` as a reason to show the
+blocking screen, so the release variant — deliberately a dead end, with no forward button — stood in front
+of the commonest event in the app's life: an owner updating across a schema bump.
+
+**The consequence was total and had been shipping since 1.1.** A phone holding a 1.4.0 database that opens
+1.5 gets *"This version cannot open the records on this phone"*, a share button, and advice to install the
+version that wrote them — which a Play owner cannot do. The database is untouched and a copy lands in
+`preserved/`, so nothing is deleted; the app is simply unusable, and `MIGRATION_6_7` never runs. Watched on
+the phone at 7.5 with a real schema-6 database under a release-shaped build, after being read out of the
+code rather than met in the wild.
+
+Every proof this project had of the migrations opened the database **directly** — `MigrationTestHelper`,
+the release-shaped open, three committed backup archives at three API levels. All of them true, none of
+them touching the gate the owner actually arrives at. That is the general lesson: a guard in front of the
+thing under test is not covered by testing the thing.
+
+So the decision moves into `schemaGateDecision` (`SchemaGate.kt`), a pure function over the on-disk
+version, this build's version, the migrations **actually registered**, and whether the fallback is armed.
+It returns `Open` for a fresh install, a matching version, or a mismatch a registered migration can walk;
+`Consent` for a debug build, which by the amendment above has no migrations registered at all; `Refuse`
+only for what a release build genuinely cannot read — an unknown version, or a file from a newer Binky,
+since no migration runs backwards. Branch order is load-bearing: `destructiveAllowed` is asked **before**
+the migrations, or a debug build would sail past the consent screen and let Room empty the file in silence.
+
+The copy is still taken before a migratable upgrade. It is one file copy per schema bump, and a migration
+rewriting the only record of a bunny's weight series is the one moment insurance is worth having.
+
 ## Consequences
 
 A schema mistake now costs differently per build, and that asymmetry is the point: free in debug, a failed
