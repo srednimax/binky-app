@@ -28,6 +28,11 @@ Three things fail this gate:
   3. **Orphaned** — a locale declares something the base language does not. Cheap to catch here too,
      and it is what a rename leaves behind.
 
+Drafts staged in `translations/<tag>/` are **reported and never gated**. A language that is not in
+`locales_config.xml` is offered to nobody, so its completeness cannot block a merge — but it is the
+one number nothing else prints, since `TranslationTest` checks a draft's correctness and says
+nothing about how much of it exists yet.
+
 What it deliberately does not check: whether the translation is any *good*. A language ships on a
 native speaker's read-through (`docs/translator-brief.md` §8), and no script stands in for that.
 """
@@ -44,6 +49,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RES = ROOT / "app/src/main/res"
 BASE_STRINGS = RES / "values/strings.xml"
 LOCALES_CONFIG = RES / "xml/locales_config.xml"
+STAGED = ROOT / "translations"
 BASE_LOCALE = "en"
 
 STRING = re.compile(r'<string\s+name="([^"]+)"([^>]*)>(.*?)</string>', re.S)
@@ -104,6 +110,18 @@ def shipped_locales() -> list[str]:
     return LOCALE_ENTRY.findall(LOCALES_CONFIG.read_text())
 
 
+def staged_locales() -> list[str]:
+    """Drafts waiting outside `res/`, one directory per BCP-47 tag (Phase 8)."""
+    if not STAGED.is_dir():
+        return []
+    return sorted(child.name for child in STAGED.iterdir() if (child / "strings.xml").is_file())
+
+
+def outstanding(translated: dict[str, str], translatable: dict[str, str], current: dict[str, str]) -> tuple[list[str], list[str]]:
+    """What one locale is missing, and what it declares that the base language does not."""
+    return sorted(set(translatable) - set(translated)), sorted(set(translated) - set(current))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("base", nargs="?", default="origin/main", help="branch to compare against")
@@ -142,8 +160,7 @@ def main() -> int:
             continue
 
         translated, _ = parse(path.read_text())
-        missing = sorted(set(translatable) - set(translated))
-        orphaned = sorted(set(translated) - set(current))
+        missing, orphaned = outstanding(translated, translatable, current)
 
         # Stale: the English moved on this branch and the translation did not follow it. Checked
         # against the translation's own previous text rather than against "did the file change",
@@ -173,9 +190,36 @@ def main() -> int:
             problems.append(f"{label}: {len(orphaned)} declared here but not in the base language")
             problems.extend(f"    ? {name}" for name in orphaned)
 
+    # Staged drafts are reported and never gated. A draft is work in progress by definition, and
+    # the merge rule is about what *ships* — a language that is not in locales_config.xml is not
+    # offered to anyone. What is worth printing is how far one still has to go, which is the only
+    # place that number is visible: `TranslationTest` checks a draft's correctness and says nothing
+    # about its completeness.
+    drafts: list[str] = []
+    for tag in staged_locales():
+        if tag in locales:
+            drafts.append(
+                f"translations/{tag}: also shipped as values-{qualifier(tag)} — "
+                "promotion is a move, not a copy"
+            )
+            continue
+        translated, _ = parse((STAGED / tag / "strings.xml").read_text())
+        missing, orphaned = outstanding(translated, translatable, current)
+        drafts.append(f"translations/{tag}: {len(translatable) - len(missing)}/{len(translatable)} translated")
+        drafts.extend(f"    · {name}" for name in missing)
+        drafts.extend(f"    ? {name} — not in the base language" for name in orphaned)
+
+    def report_drafts(stream) -> None:
+        if not drafts:
+            return
+        print("\nStaged drafts, not shipped and not gated:", file=stream)
+        for draft in drafts:
+            print(f"  {draft}" if draft.startswith("    ") else f"  › {draft}", file=stream)
+
     scope = f"{len(translatable)} translatable resources × {len(locales)} locale(s)"
     if not problems:
         print(f"translation-gate: {scope} — complete, and nothing stale.")
+        report_drafts(sys.stdout)
         return 0
 
     stream = sys.stdout if args.report else sys.stderr
@@ -183,6 +227,7 @@ def main() -> int:
     print(f"translation-gate: {scope} — {headline}:", file=stream)
     for problem in problems:
         print(f"  {problem}" if problem.startswith("    ") else f"  ✗ {problem}", file=stream)
+    report_drafts(stream)
 
     if args.report:
         print(

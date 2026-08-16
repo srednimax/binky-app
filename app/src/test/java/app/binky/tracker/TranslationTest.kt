@@ -40,12 +40,39 @@ class TranslationTest {
             .map { it.groupValues[1] }
             .toList()
 
-    /** Every shipped locale except the base one, paired with its parsed file. */
-    private val translations: Map<String, Resources>
+    /**
+     * Drafts staged outside `res/`, one directory per BCP-47 tag (Phase 8).
+     *
+     * Resource resolution never consults `locales_config.xml`, so the moment `values-de/` exists
+     * every phone set to German gets those strings, reviewed or not. A draft therefore lands here
+     * and promotion is a file move.
+     */
+    private val staged: List<String> =
+        File(STAGED)
+            .listFiles()
+            ?.filter { it.isDirectory }
+            ?.map { it.name }
+            ?.sorted()
+            .orEmpty()
+
+    /**
+     * Everything checked below: every shipped locale except the base one, and every staged draft.
+     *
+     * A draft is held to exactly the same rules as a shipped translation — that is what staging it
+     * in the repository buys over reviewing it in a spreadsheet. The one rule it is *not* held to
+     * is completeness, which belongs to `scripts/translation-gate.py` and to shipped languages.
+     */
+    private val translations: List<Translation>
         get() =
-            shipped
-                .filterNot { it == BASE_LOCALE }
-                .associateWith { parse(stringsFor(it)) }
+            shipped.filterNot { it == BASE_LOCALE }.map {
+                Translation(it, "values-${qualifier(it)}", parse(stringsFor(it)))
+            } +
+                staged.map {
+                    // Labelled from the repository root rather than from `STAGED`, whose leading
+                    // `..` is an artefact of the working directory and not part of the path anyone
+                    // would type.
+                    Translation(it, "translations/$it/strings.xml", parse(stagedFor(it)))
+                }
 
     @Test
     fun `every shipped locale has a resource directory and a plural table`() {
@@ -75,14 +102,38 @@ class TranslationTest {
     }
 
     @Test
+    fun `every staged draft is a language the app could ship, and is staged only once`() {
+        // A draft's directory name is a claim about which language it is, and two of the three
+        // checks below exist because that claim is otherwise never tested: a typo'd tag would be
+        // drafted, reviewed and promoted into a `values-` directory no phone ever resolves.
+        staged.forEach { tag ->
+            assertTrue(
+                "translations/$tag drafts a locale with no CLDR plural row — add it to " +
+                    "CLDR_PLURALS before drafting, or its plurals go unchecked.",
+                tag in CLDR_PLURALS,
+            )
+            assertTrue(
+                "'$tag' is staged in translations/$tag *and* shipped in values-${qualifier(tag)}. " +
+                    "Promotion is a move, not a copy: two files for one language drift, and res/ " +
+                    "is the one the phone reads.",
+                tag !in shipped,
+            )
+            assertTrue(
+                "translations/$tag exists but holds no strings.xml.",
+                File(stagedFor(tag)).isFile,
+            )
+        }
+    }
+
+    @Test
     fun `no translated file declares a resource the base language does not`() {
         // The reverse drift: a resource renamed in `values/` and left behind in a translation
         // resolves to nothing, silently, because the base file is what the R class is generated
         // from. Unlike a missing translation, this one is never visible on screen.
-        translations.forEach { (tag, translated) ->
+        translations.forEach { (_, label, translated) ->
             val orphaned = translated.all.keys - base.all.keys
             assertTrue(
-                "values-${qualifier(tag)} declares resources the base language does not: ${orphaned.sorted()}",
+                "$label declares resources the base language does not: ${orphaned.sorted()}",
                 orphaned.isEmpty(),
             )
         }
@@ -95,10 +146,10 @@ class TranslationTest {
         // words, so nothing is ever visibly wrong — it just costs a line per language, forever,
         // and every future translator reads past it. At nine languages the endonyms alone would
         // have been 81 duplicated entries.
-        translations.forEach { (tag, translated) ->
+        translations.forEach { (_, label, translated) ->
             val copied = base.untranslatable intersect translated.all.keys
             assertTrue(
-                "values-${qualifier(tag)} translates resources the base language marks " +
+                "$label translates resources the base language marks " +
                     "translatable=\"false\": ${copied.sorted()} — delete them there, or drop the " +
                     "marker in values/strings.xml",
                 copied.isEmpty(),
@@ -128,11 +179,11 @@ class TranslationTest {
         // `photo_gallery_empty_help` carried its %1$s faithfully and moved it from the thing the
         // photos are of to the gallery they land in, describing a folder that does not exist. Every
         // assertion here passed. That half is the native read-through's, and always will be.
-        translations.forEach { (tag, translated) ->
+        translations.forEach { (_, label, translated) ->
             base.strings.forEach { (name, element) ->
                 val counterpart = translated.strings[name] ?: return@forEach
                 assertEquals(
-                    "format arguments differ for string '$name' in values-${qualifier(tag)}",
+                    "format arguments differ for string '$name' in $label",
                     element.formatArguments(),
                     counterpart.formatArguments(),
                 )
@@ -149,7 +200,7 @@ class TranslationTest {
                 translated.plurals[name]?.items()?.forEach { item ->
                     assertEquals(
                         "format arguments differ for plural '$name', quantity " +
-                            "'${item.getAttribute("quantity")}' in values-${qualifier(tag)}",
+                            "'${item.getAttribute("quantity")}' in $label",
                         expected,
                         item.formatArguments(),
                     )
@@ -165,7 +216,7 @@ class TranslationTest {
         // against the language's *own* rules rather than a hardcoded set of four: Polish needs
         // one/few/many/other where German needs one/other, and requiring four of German would be as
         // wrong as requiring two of Polish.
-        translations.forEach { (tag, translated) ->
+        translations.forEach { (tag, label, translated) ->
             val required = CLDR_PLURALS.getValue(tag)
             translated.plurals.forEach { (name, element) ->
                 val quantities =
@@ -174,7 +225,7 @@ class TranslationTest {
                         .mapNotNull { it.getAttribute("quantity").takeIf(String::isNotEmpty) }
                         .toSet()
                 assertEquals(
-                    "plural '$name' in values-${qualifier(tag)} does not carry exactly the " +
+                    "plural '$name' in $label does not carry exactly the " +
                         "categories CLDR gives '$tag'",
                     required,
                     quantities,
@@ -191,10 +242,10 @@ class TranslationTest {
         // local form stay in their original ("Beveren", "Blanc de Hotot"); that is a translation
         // decision, not a missing entry, and it keeps the lengths equal.
         val baseBreeds = base.arrays.getValue("built_in_breeds").items()
-        translations.forEach { (tag, translated) ->
+        translations.forEach { (_, label, translated) ->
             val breeds = translated.arrays[BREEDS] ?: return@forEach
             assertEquals(
-                "built_in_breeds in values-${qualifier(tag)} has drifted in length",
+                "built_in_breeds in $label has drifted in length",
                 baseBreeds.size,
                 breeds.items().size,
             )
@@ -221,6 +272,20 @@ class TranslationTest {
     }
 
     /**
+     * One translation under test, wherever it lives.
+     *
+     * [label] is what a failure message names, and it is the file's own path rather than a derived
+     * one: "values-de" and "translations/de/strings.xml" are two different claims about a language,
+     * and an assertion that pointed at the wrong one would send someone editing a file that is not
+     * the problem.
+     */
+    private data class Translation(
+        val tag: String,
+        val label: String,
+        val resources: Resources,
+    )
+
+    /**
      * One `strings.xml`, split by resource kind.
      *
      * Kotlin note: a `data class` here is closer to a TS interface than to a class — it exists for
@@ -243,6 +308,13 @@ class TranslationTest {
         const val BASE_STRINGS = "src/main/res/values/strings.xml"
         const val LOCALES_CONFIG = "src/main/res/xml/locales_config.xml"
         const val BREEDS = "built_in_breeds"
+
+        /**
+         * Where a language waits for its native read-through. One directory up, because it is a
+         * repository-level staging area rather than an Android source set — and outside `res/`
+         * precisely so that a draft cannot be shipped by existing.
+         */
+        const val STAGED = "../translations"
 
         /**
          * Plural categories per language, from CLDR.
@@ -283,6 +355,9 @@ class TranslationTest {
             }
 
         fun stringsFor(tag: String) = "src/main/res/values-${qualifier(tag)}/strings.xml"
+
+        /** A staged draft keeps the BCP-47 tag itself — no `r` prefix, because it is not a qualifier. */
+        fun stagedFor(tag: String) = "$STAGED/$tag/strings.xml"
 
         /** `%1$s`, `%2$d`, and the non-positional `%d` that single-argument plurals use. */
         val FORMAT_ARGUMENT = Regex("""%(\d+\$)?[a-zA-Z]""")

@@ -1,0 +1,1116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    German — DRAFT, staged. Not in res/ on purpose (Phase 8): the moment values-de/ exists,
+    every phone set to German gets these strings, reviewed or not. locales_config.xml is a
+    picker list, not a delivery filter. Promotion is four edits and one commit, and it happens
+    only after a native speaker has read every screen in the running app.
+
+    Translated from English only, against docs/translator-brief.md.
+
+    The decisions a reviewer should confirm first, because everything else follows from them:
+
+    · Address form is **du**. Binky talks to one owner about their own animal, warm and plain;
+      "Sie" would put a counter between them. German's perfect tense with "haben" carries no
+      gender, so the brief's §7.3 trap — the app knowing neither the owner's nor the bunny's
+      gender — costs German nothing. Neither do predicate adjectives: "Es ist archiviert" is
+      uninflected. No parenthesised suffix appears anywhere in this file.
+    · **Kaninchen** for "bunny". German has no bunny/rabbit pair; "Hase" is a different animal
+      and "Häschen" is the baby talk §3 forbids. Neuter and identical in the plural, which is
+      why nothing here has to guess a gender.
+    · **Köttel** for droppings — what German rabbit owners actually say, where "Kot" is the
+      clinical word §5 rejects. Cecotropes are **Blinddarmkot**, the established term.
+    · **Klo** for the litter tray. Plain and ordinary, not cute.
+    · **Wägung** for one recorded weighing. "Wiegen" is the act and its plural collides with
+      "Wiege" (a cradle); "Wägung" counts.
+    · **Im Blick** for the watch. §5 rules out "Beobachtungszeitraum" — it collides with
+      Beobachtung, the record type — and "Wachphase" reads as sleep. "Im Blick" carries the
+      owner's attention rather than a claim about the animal, which is ADR-0001's whole point.
+    · **Medikament** for a course, **Gabe** for a dose, **absetzen** for ending one. "Gabe" is
+      the ordinary German word for one administration to an animal.
+    · **Tierarzt** for a directory entry that may be a person or a practice. Generic, and the
+      clinic has its own field.
+-->
+<resources>
+    <!-- app_name, settings_language_* and med_editor_name_placeholder are translatable="false"
+         and deliberately absent: a copy of them here would resolve fine, render the same words
+         and cost a line per language forever. A test fails if they appear. -->
+
+    <!-- Bottom-navigation destinations (ADR-0015) -->
+    <string name="destination_home">Start</string>
+    <string name="destination_weight">Gewicht</string>
+    <string name="destination_observations">Beobachtungen</string>
+    <!-- The one label in this file whose *width* matters more than its wording: a bottom-nav
+         tab, and "Pflege &amp; Medikamente" is nearly twice the English. §5 says shorten rather
+         than wrap. "Medis" is what German speakers say out loud; if the reviewer finds it too
+         casual, "Pflege" alone is the fallback and the meds half is lost rather than clipped. -->
+    <string name="destination_care">Pflege &amp; Medis</string>
+    <string name="destination_more">Mehr</string>
+
+    <!-- The bunny switcher -->
+    <string name="switcher_open">Wähle aus, welches Kaninchen angezeigt wird</string>
+    <string name="switcher_all_bunnies">Alle Kaninchen</string>
+    <string name="switcher_add_bunny">Kaninchen hinzufügen</string>
+    <string name="switcher_no_bunnies">Noch keine Kaninchen</string>
+
+    <!-- The read-only scope onto an archived bunny -->
+    <string name="archived_banner">Archiviert. Aufzeichnungen lassen sich lesen, aber nicht ändern.</string>
+    <string name="archived_banner_leave">Verlassen</string>
+
+    <string name="action_back">Zurück</string>
+    <string name="action_save">Speichern</string>
+    <string name="action_cancel">Abbrechen</string>
+    <string name="action_edit">Bearbeiten</string>
+    <string name="action_archive">Archivieren</string>
+    <string name="action_unarchive">Aus dem Archiv holen</string>
+    <string name="action_delete">Löschen</string>
+    <string name="action_ok">OK</string>
+    <string name="action_done">Fertig</string>
+    <string name="action_undo">Rückgängig</string>
+    <string name="action_change">Ändern</string>
+    <!-- "Leeren", not "Löschen": clearing a field is not deleting a record, and German has two
+         words where the English screen relies on context to keep them apart. -->
+    <string name="action_clear">Leeren</string>
+    <string name="add_a_bunny_first">Füge zuerst ein Kaninchen hinzu.</string>
+
+    <string name="recorded_at_pick_date">Datum ändern</string>
+    <string name="recorded_at_pick_time">Uhrzeit ändern</string>
+
+    <!-- The searchable picker, shared by symptoms and breed -->
+    <string name="picker_search_label">Suchen</string>
+    <string name="picker_no_matches">Dazu passt nichts.</string>
+    <string name="picker_add_symptom">„%1$s“ als Symptom hinzufügen</string>
+    <string name="picker_use_breed">„%1$s“ verwenden</string>
+
+    <!-- Home -->
+    <string name="home_empty_title">Noch keine Kaninchen</string>
+    <string name="home_empty_body">Füge dein erstes Kaninchen hinzu, um mit den Aufzeichnungen zu beginnen.</string>
+    <string name="home_all_bunnies_stub">Tippe ein Kaninchen an, um es zu öffnen.</string>
+    <!-- §7.4 does not bite here: "über" takes the accusative and a German name does not decline
+         in it, so the name can stay where the English puts it. -->
+    <string name="home_about_bunny">Über %1$s</string>
+    <string name="home_last_weight_label">Letzte Wägung</string>
+    <string name="home_last_weight_value">%1$s am %2$s</string>
+    <string name="home_last_observation_label">Letzte Beobachtung</string>
+    <!-- Two statements about the record, never about the bunny (ADR-0001): nobody has looked
+         yet, which is not the same as "alles in Ordnung". -->
+    <string name="home_no_weighings">Noch nichts erfasst</string>
+    <string name="home_no_observations">Noch nichts erfasst</string>
+
+    <!-- Weight -->
+    <string name="weight_pick_a_bunny">Das Gewicht wird je Kaninchen erfasst. Wähle oben ein Kaninchen aus, um seinen Verlauf zu sehen.</string>
+    <string name="weight_add">Wägung erfassen</string>
+    <string name="weight_chart_section">Gewicht im Verlauf</string>
+    <string name="weight_history_section">Verlauf</string>
+    <plurals name="weight_history_count">
+        <item quantity="one">%d Wägung</item>
+        <item quantity="other">%d Wägungen</item>
+    </plurals>
+    <string name="weight_history_empty">Noch keine Wägungen erfasst. Für eine Einschätzung der Entwicklung braucht es mindestens drei.</string>
+    <string name="weight_delete_title">Diese Wägung löschen?</string>
+    <string name="weight_delete_body">%1$s am %2$s wird aus dem Verlauf entfernt, und die Entwicklung wird ohne diesen Wert neu berechnet.</string>
+
+    <!-- The chart's range selector (ADR-0022) -->
+    <string name="weight_chart_range_30d">30 Tage</string>
+    <string name="weight_chart_range_90d">90 Tage</string>
+    <string name="weight_chart_range_1y">1 Jahr</string>
+    <string name="weight_chart_range_all">Alle</string>
+
+    <!-- §7.2, pre-inflected for their host: both sentences below put this phrase after "in",
+         so all four are already dative. They are never rendered on their own — the selector
+         above is what the owner taps. -->
+    <string name="weight_chart_window_30d">den letzten 30 Tagen</string>
+    <string name="weight_chart_window_90d">den letzten 90 Tagen</string>
+    <string name="weight_chart_window_1y">dem letzten Jahr</string>
+    <string name="weight_chart_window_all">der gesamten Zeit</string>
+
+    <string name="weight_chart_no_weighings">Noch nichts zum Zeichnen. Ein Diagramm braucht mindestens zwei Wägungen.</string>
+    <string name="weight_chart_single_point">Bisher eine Wägung. Mit einer zweiten entsteht eine Linie.</string>
+    <string name="weight_chart_single_in_range">In %1$s gibt es nur eine Wägung, deshalb lässt sich keine Linie zeichnen. Frühere gibt es aber.</string>
+    <string name="weight_chart_none_in_range">In %1$s gibt es keine Wägung. Die letzte war am %2$s.</string>
+    <string name="weight_chart_show_all">Alle Wägungen zeigen</string>
+
+    <!-- Entry is always in grams, whatever the display unit says (house rule) -->
+    <string name="weight_entry_add_title">Wägung erfassen</string>
+    <string name="weight_entry_edit_title">Wägung bearbeiten</string>
+    <string name="weight_grams_help">Gewicht in Gramm. Ganze Gramm, so wie die Waage es anzeigt.</string>
+    <string name="weight_recent">Zuletzt gewogen: %1$s.</string>
+    <string name="weight_grams_required">Gib das Gewicht in Gramm ein.</string>
+    <string name="weight_grams_as_kilograms">Das sind %1$s.</string>
+    <string name="weight_recorded_at_label">Wann das Kaninchen auf der Waage stand</string>
+    <string name="weight_backdating_help">Standard ist jetzt. Morgens wiegen und abends eintragen ist völlig in Ordnung — es zählt die Zeit, die du einstellst.</string>
+    <string name="weight_future_rejected">Das liegt in der Zukunft. Eine Wägung, die noch nicht stattgefunden hat, lässt sich nicht erfassen.</string>
+
+    <!-- The exact-timestamp collision prompt (ADR-0021) -->
+    <string name="weight_collision_title">Zu dieser Zeit gibt es bereits eine Wägung</string>
+    <plurals name="weight_collision_body">
+        <item quantity="one">Für dieses Kaninchen ist %d Wägung mit genau diesem Datum und dieser Uhrzeit erfasst. Ersetzen behält einen Wert für diesen Moment; eine zweite hinzufügen behält beide.</item>
+        <item quantity="other">Für dieses Kaninchen sind %d Wägungen mit genau diesem Datum und dieser Uhrzeit erfasst. Ersetzen behält einen Wert für diesen Moment; eine weitere hinzufügen behält alle.</item>
+    </plurals>
+    <string name="weight_collision_replace">Ersetzen</string>
+    <string name="weight_collision_add_second">Zweite hinzufügen</string>
+    <string name="weight_collision_visit_body">Die Wägung zu dieser Zeit stammt aus einem Tierarztbesuch. Binky überschreibt sie nicht — füge eine zweite hinzu, oder korrigiere die Zahl im Besuch selbst.</string>
+    <string name="weight_row_from_visit">%1$s · aus einem Besuch</string>
+    <string name="weight_open_visit">Besuch öffnen</string>
+    <string name="weight_visit_owned">Diese Wägung stammt aus einem Tierarztbesuch und wird dort geändert. Das Datum des Besuchs bestimmt, wann sie gemacht wurde.</string>
+
+    <!-- Changes are ALWAYS in grams, whatever the display unit says (§2.3) -->
+    <string name="weight_in_kilograms">%1$s kg</string>
+    <string name="weight_in_grams">%1$s g</string>
+    <string name="weight_change_down">−%1$s g</string>
+    <string name="weight_change_up">+%1$s g</string>
+    <string name="weight_change_none">keine Änderung</string>
+    <!-- Feminine, because it stands for "die erste Wägung" — the only word in the weight column
+         that agrees with anything. -->
+    <string name="weight_change_first">erste</string>
+
+    <!-- The trend flag (ADR-0001): about the numbers, never about the animal -->
+    <string name="trend_flag_title">Einen zweiten Blick wert</string>
+    <string name="trend_flag_drop">%1$s hat seit %3$s %2$s abgenommen.</string>
+    <string name="trend_flag_rise">%1$s hat seit %3$s %2$s zugenommen.</string>
+    <string name="trend_flag_readings">Damals %1$s, jetzt %2$s.</string>
+    <string name="trend_flag_long_gap">Diese beiden Wägungen liegen %1$s auseinander, es geht also um eine Veränderung über einen langen Zeitraum und nicht um eine plötzliche.</string>
+    <!-- The one string in the app licensed to mention a vet (§2.2), and it stays a condition the
+         owner controls. -->
+    <string name="trend_flag_not_advice">Das ist eine Feststellung zu den Zahlen, keine Diagnose. Wenn du dir Sorgen machst, frag deinen Tierarzt.</string>
+    <string name="trend_flag_vet_diet">Diät nach tierärztlicher Anweisung? Dann ist das genau die Abnahme, die du erreichen willst, und du kannst diese Hinweise ignorieren.</string>
+    <string name="trend_flag_vet_gain">Fütterungsplan nach tierärztlicher Anweisung? Dann ist das genau die Zunahme, die du erreichen willst, und du kannst diese Hinweise ignorieren.</string>
+    <string name="trend_flag_acknowledge">Habe ich gesehen</string>
+    <string name="trend_flag_ask_age">Wie alt ist %1$s?</string>
+    <string name="trend_flag_acknowledged">Gesehen am %1$s.</string>
+    <string name="trend_flag_close">Schließen</string>
+
+    <!-- Gaps stay in the citation form rather than the dative, because care_every substitutes
+         them too and "Rhythmus: 6 Tagen" would be wrong. Every host below is worded to take
+         them as they are — see care_due_in and care_due_overdue. -->
+    <plurals name="gap_years">
+        <item quantity="one">%d Jahr</item>
+        <item quantity="other">%d Jahre</item>
+    </plurals>
+    <plurals name="gap_months">
+        <item quantity="one">%d Monat</item>
+        <item quantity="other">%d Monate</item>
+    </plurals>
+    <plurals name="gap_weeks">
+        <item quantity="one">%d Woche</item>
+        <item quantity="other">%d Wochen</item>
+    </plurals>
+    <plurals name="gap_days">
+        <item quantity="one">%d Tag</item>
+        <item quantity="other">%d Tage</item>
+    </plurals>
+
+    <!-- Settings -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_weight_unit">Gewichte anzeigen in</string>
+    <string name="settings_unit_kilograms">Kilogramm</string>
+    <string name="settings_unit_grams">Gramm</string>
+    <string name="settings_weight_unit_help">Das ändert nur, wie Gewichte angezeigt werden, nicht wie sie eingegeben werden — eingegeben wird immer in Gramm, und Änderungen werden immer in Gramm angezeigt.</string>
+    <string name="settings_backup">Sicherung &amp; Wiederherstellung</string>
+    <string name="settings_backup_summary">Exportiere deine Aufzeichnungen in eine Datei, stelle sie daraus wieder her, und sieh dir die Kopien auf diesem Handy an.</string>
+    <string name="settings_language">Sprache</string>
+    <string name="settings_language_system">Wie auf diesem Handy</string>
+    <string name="settings_language_help">Binky kann eine andere Sprache verwenden als der Rest des Handys. Eine Änderung startet die App neu.</string>
+    <!-- ADR-0027 -->
+    <string name="settings_material_you">Farben von deinem Hintergrundbild</string>
+    <string name="settings_material_you_help">Binky hat eigene Farben. Wenn du das einschaltest, nimmt es stattdessen die Farben deines Hintergrundbilds, so wie Android es bei seinen eigenen Bildschirmen macht.</string>
+
+    <!-- First-run setup (ADR-0006) -->
+    <string name="setup_step">Schritt %1$d von %2$d</string>
+    <string name="setup_continue">Weiter</string>
+    <string name="setup_back">Einen Schritt zurück</string>
+    <string name="setup_bunny_title">Willkommen bei Binky</string>
+    <string name="setup_bunny_body">Binky bewahrt die Gesundheitsgeschichte deiner Kaninchen auf diesem Handy auf — Gewichte, Beobachtungen und Fotos. Es gibt kein Konto und keinen Server: Nichts, was du hier erfasst, wird irgendwohin gesendet.\n\nDrei kurze Fragen, dann gehört es dir.</string>
+    <string name="setup_bunny_action">Erstes Kaninchen hinzufügen</string>
+    <string name="setup_bunny_add_another">Weiteres Kaninchen hinzufügen</string>
+    <string name="setup_bunny_skip">Erst mal überspringen</string>
+    <string name="setup_bunny_added_one">%1$s ist dabei. Weitere Kaninchen kannst du jederzeit über die Auswahl oben hinzufügen.</string>
+    <string name="setup_bunny_added_many">Deine Kaninchen sind dabei. Weitere kannst du jederzeit über die Auswahl oben hinzufügen.</string>
+    <string name="setup_backup_title">Deine Aufzeichnungen sichern</string>
+    <string name="setup_backup_body">Alles liegt auf diesem Handy. Ein verlorenes Handy ist also eine verlorene Geschichte, wenn nichts davon eine Kopie macht. Zwei verschiedene Dinge können das, und keines davon deckt alles ab.</string>
+    <string name="setup_backup_auto_ask">Binky kann nicht erkennen, ob das eingeschaltet ist, und kann es auch nicht für dich einschalten. Jetzt ist ein guter Moment, das zu prüfen.</string>
+    <string name="setup_backup_changeable">All das bleibt unter Einstellungen › Sicherung &amp; Wiederherstellung änderbar.</string>
+    <string name="setup_finish">Einrichtung abschließen</string>
+
+    <!-- Reminders (ADR-0003, ADR-0006, ADR-0024). The three delivery states are the load-bearing
+         copy in this app: "blocked" is a certainty, "best-effort" is a real hedge about a real
+         thing, and "armed" is the only one that promises anything. None may overstate what the
+         phone will do. -->
+    <string name="reminders_title">Erinnerungen</string>
+    <string name="reminders_body">Binky kann dich an regelmäßige Pflege erinnern — Krallen schneiden alle sechs Wochen, eine jährliche Impfung, wöchentliches Wiegen. Erinnerungen kommen einmal am Tag, nur auf diesem Handy, und du bestimmst, wofür.</string>
+    <string name="reminders_enable_action">Erinnerungen einschalten</string>
+    <string name="reminders_state_blocked">Benachrichtigungen sind aus, deshalb erscheinen Erinnerungen nur in der App.</string>
+    <string name="reminders_state_best_effort">Erinnerungen sind an. Dieses Handy kann sie trotzdem verzögern oder verwerfen, während Binky im Hintergrund ist — die Einstellung unten behebt das.</string>
+    <string name="reminders_state_armed">Erinnerungen sind an, und dieses Handy ist so eingestellt, dass es sie durchlässt.</string>
+    <string name="reminders_denied_once">Kein Problem. Du kannst sie jederzeit einschalten.</string>
+    <string name="reminders_permanently_denied">Android fragt nicht noch einmal, deshalb muss das in den Einstellungen des Handys eingeschaltet werden.</string>
+    <string name="reminders_open_settings_action">Benachrichtigungseinstellungen öffnen</string>
+    <string name="reminders_battery_title">Noch eine Sache, sonst kommen Erinnerungen vielleicht nicht an</string>
+    <string name="reminders_battery_body">Android pausiert Apps, die es für untätig hält, und ein pausiertes Binky kann keine Erinnerung senden. Eine Ausnahme von der Akku-Optimierung ist das, was eine Erinnerung um neun Uhr morgens durchlässt, nachdem das Handy die ganze Nacht geschlafen hat.</string>
+    <string name="reminders_battery_action">Akku-Einstellungen öffnen</string>
+    <string name="reminders_battery_dismiss">Jetzt nicht</string>
+    <string name="reminders_autostart_help">Manche Handys — allen voran Xiaomi — führen zusätzlich eine eigene Autostart-Liste. Binky kann sie nicht lesen und dir deshalb nicht sagen, ob sie gesetzt ist; das hier ist nur der Weg dorthin.</string>
+    <string name="reminders_autostart_action">Autostart-Einstellungen öffnen</string>
+
+    <!-- Dose delivery (ADR-0003, ADR-0025, ADR-0026). Nothing here says anything about the
+         medication itself. -->
+    <string name="doses_state_blocked">Benachrichtigungen sind aus, deshalb erscheinen Erinnerungen an Gaben nur in der App.</string>
+    <string name="doses_state_best_effort_exact">Erinnerungen an Gaben sind an, aber Android lässt Binky sie nicht auf die Minute genau setzen — rechne mit einer Erinnerung innerhalb einiger Minuten um die Zeit herum, nicht genau dann.</string>
+    <string name="doses_state_best_effort_battery">Erinnerungen an Gaben sind an und auf die Minute genau gesetzt. Dieses Handy kann sie trotzdem verzögern, während Binky im Hintergrund ist.</string>
+    <string name="doses_exact_alarm_action">Wecker-Einstellungen öffnen</string>
+    <string name="reminders_caveat_notifications_title">Benachrichtigungen sind aus</string>
+    <string name="reminders_caveat_exact_title">Erinnerungen können verspätet ankommen</string>
+    <string name="reminders_caveat_battery_title">Dieses Handy kann Erinnerungen zurückhalten</string>
+
+    <!-- Debug builds only -->
+    <string name="settings_sample_data">Beispieldaten</string>
+    <string name="settings_debug_header">Nur in Debug-Builds</string>
+    <string name="settings_sample_data_help">Fügt zwei zusammenlebende Kaninchen hinzu, ein Jahr ungleichmäßiger, rückdatierter Wägungen und eine Handvoll Beobachtungen, damit sich Diagramm, Hinweis zur Entwicklung und Zeitleiste an echter Geschichte prüfen lassen.</string>
+    <string name="settings_sample_data_action">Beispieldaten hinzufügen</string>
+    <string name="settings_sample_data_seeded">Beispieldaten hinzugefügt.</string>
+    <string name="settings_sample_data_present">Die Beispielkaninchen sind schon da.</string>
+    <string name="settings_debug_reminder">Zustellung von Erinnerungen</string>
+    <string name="settings_debug_reminder_help">Sendet in zwei Minuten eine Benachrichtigung, auf eigenem Weg statt über den täglichen Durchlauf — so lassen sich Kanal, Berechtigung und Zustellung prüfen, ohne dass es eine einzige Erinnerung gibt.</string>
+    <string name="settings_debug_reminder_settings_action">Einstellungen für Erinnerungen</string>
+    <string name="settings_debug_reminder_action">In zwei Minuten erinnern</string>
+    <string name="settings_debug_reminder_scheduled">In zwei Minuten kommt eine Test-Erinnerung. Sperre das Handy und warte.</string>
+    <string name="debug_reminder_notification_title">Test-Erinnerung</string>
+    <string name="debug_reminder_notification_text">So sieht eine Pflege-Erinnerung aus. Es steht nichts an — diese Erinnerung wurde von Hand in den Einstellungen geplant.</string>
+
+    <!-- A dose notification: the medicine is the title, this is the line under it. It names the
+         amount exactly as the vet wrote it and says nothing about whether the dose is late. -->
+    <string name="dose_notification_amount">%1$s für %2$s</string>
+    <string name="dose_notification_no_amount">Für %1$s</string>
+
+    <!-- Notification channels, as the owner sees them in the phone's settings -->
+    <string name="channel_care_name">Pflege-Erinnerungen</string>
+    <string name="channel_care_description">Krallen schneiden, Impfungen, Wiegen und alles andere, wofür du eine wiederkehrende Erinnerung eingerichtet hast.</string>
+    <string name="channel_watch_name">Tägliche Nachfrage</string>
+    <string name="channel_watch_description">Ein täglicher Anstoß, nach einem Kaninchen zu sehen, das du im Blick behältst. Nur solange die Zeit läuft.</string>
+    <string name="channel_backup_name">Erinnerungen an Sicherungen</string>
+    <string name="channel_backup_description">Ein gelegentlicher Anstoß, deine Aufzeichnungen zu exportieren, in dem Abstand, den du gewählt hast. Hat mit keinem Kaninchen zu tun.</string>
+    <string name="channel_doses_name">Gaben von Medikamenten</string>
+    <string name="channel_doses_description">Eine Erinnerung zur Zeit einer Gabe, die du geplant hast. Nur solange ein Medikament läuft.</string>
+
+    <!-- Backup and restore (ADR-0005) -->
+    <string name="backup_title">Sicherung &amp; Wiederherstellung</string>
+
+    <string name="backup_auto_title">Automatische Sicherung</string>
+    <string name="backup_auto_help">Android sichert Binky nach eigenem Zeitplan in deinem Google-Konto — wenn das Handy untätig ist, lädt und online ist. Binky kann das weder einschalten noch für dich prüfen.</string>
+    <string name="backup_auto_never">Auf diesem Handy wurde keine automatische Sicherung erfasst.</string>
+    <string name="backup_auto_recorded">Letzte automatische Sicherung: %1$s.</string>
+    <string name="backup_auto_stale">Die letzte automatische Sicherung war am %1$s — vor mehr als zwei Wochen. Vielleicht hat etwas sie abgeschaltet.</string>
+    <string name="backup_auto_photos">Sie umfasst deine Aufzeichnungen, deine Einstellungen und die Avatare deiner Kaninchen. Deine Fotogalerie ist nicht dabei.</string>
+    <plurals name="backup_auto_excluded">
+        <item quantity="one">%d Dokument oder Foto vom Klo war zu groß und ist nicht dabei. Nutze den manuellen Export, um es zu behalten.</item>
+        <item quantity="other">%d Dokumente und Fotos vom Klo waren zu groß und sind nicht dabei. Nutze den manuellen Export, um sie zu behalten.</item>
+    </plurals>
+    <string name="backup_auto_settings_action">Android-Sicherungseinstellungen öffnen</string>
+
+    <string name="backup_excluded_notification_title">Einige Dokumente und Fotos vom Klo sind nicht gesichert</string>
+    <plurals name="backup_excluded_notification_text">
+        <item quantity="one">Androids automatische Sicherung hatte für %d Dokument oder Foto vom Klo keinen Platz. Exportiere von Hand, um eine Kopie davon zu behalten.</item>
+        <item quantity="other">Androids automatische Sicherung hatte für %d Dokumente und Fotos vom Klo keinen Platz. Exportiere von Hand, um eine Kopie davon zu behalten.</item>
+    </plurals>
+
+    <!-- §7.2: these three names are substituted into two sentences below. German quotes them
+         there, so nothing has to agree with a name chosen at run time. -->
+    <string name="backup_scope_title">Was ein Export enthält</string>
+    <string name="backup_scope_essential">Basis</string>
+    <string name="backup_scope_records">Belege</string>
+    <string name="backup_scope_everything">Alles</string>
+    <string name="backup_scope_essential_help">Deine Aufzeichnungen, deine Einstellungen und die Avatare der Kaninchen. Die kleinste sinnvolle Sicherung.</string>
+    <string name="backup_scope_records_help">Alles aus „Basis“, dazu gescannte Dokumente und Fotos vom Klo — alles, was du noch einmal brauchen könntest.</string>
+    <string name="backup_scope_everything_help">Alles aus „Belege“, dazu deine Fotogalerie. Deutlich größer, und die einzige Sicherung, die deine Fotos je bekommen.</string>
+    <string name="backup_photos_warning">Deine Fotos sind das am wenigsten geschützte in Binky. Androids automatische Sicherung lässt die Galerie aus, und „Basis“ und „Belege“ tun das auch. Ein Export mit „Alles“ ist die einzige Kopie, die deine Fotos je haben werden.</string>
+    <string name="backup_export_action">Sicherung exportieren</string>
+    <string name="backup_exporting">Sicherung wird erstellt …</string>
+    <string name="backup_export_share">Diese Sicherung teilen</string>
+
+    <!-- The remembered export folder (ADR-0005). Every failure here ends with the backup shared
+         instead, and says so — never blaming the owner (§3). -->
+    <string name="backup_folder_title">Wohin Exporte gehen</string>
+    <string name="backup_folder_help">Ein Export geht normalerweise an die Teilen-Auswahl und du entscheidest, was damit passiert. Du kannst auch einen Ordner wählen — auf diesem Handy oder in einer Cloud-App wie Drive — und Binky schreibt direkt dorthin.</string>
+    <string name="backup_folder_none">Kein Ordner gewählt. Exporte gehen an die Teilen-Auswahl.</string>
+    <string name="backup_folder_chosen">Exporte können direkt nach „%1$s“ gehen.</string>
+    <string name="backup_folder_unavailable">Binky kann nicht mehr in den Ordner schreiben, den du gewählt hast. Er wurde vielleicht verschoben oder gelöscht, oder die Berechtigung wurde entzogen. Wähle ihn erneut, oder nutze weiter die Teilen-Auswahl.</string>
+    <string name="backup_folder_choose">Ordner wählen</string>
+    <string name="backup_folder_change">Anderen Ordner wählen</string>
+    <string name="backup_folder_forget">Diesen Ordner vergessen</string>
+    <string name="backup_folder_export">In diesen Ordner exportieren</string>
+    <string name="backup_folder_saved">Gespeichert als „%1$s“.</string>
+    <string name="backup_folder_refused">Binky konnte nicht in diesen Ordner schreiben, deshalb wurde die Sicherung stattdessen geteilt — nichts ist verloren gegangen. Wenn das öfter passiert, wähle einen Ordner auf diesem Handy.</string>
+    <string name="backup_folder_not_remembered">Dieses Handy hat Binky keinen dauerhaften Zugriff auf den Ordner gegeben, deshalb wurde kein Ordner gespeichert. Exporte gehen weiterhin an die Teilen-Auswahl.</string>
+    <string name="backup_folder_no_picker">Auf diesem Handy gibt es keine Dateiauswahl, die Binky öffnen kann, deshalb gehen Exporte an die Teilen-Auswahl.</string>
+
+    <!-- The recurring export reminder (ADR-0005): a prompt about the owner's export, never a
+         claim that their data is unsafe. -->
+    <string name="backup_reminder_title">An Export erinnern</string>
+    <string name="backup_reminder_help">Ein Anstoß, einen Export zu machen, zur selben Tageszeit wie deine anderen Erinnerungen. Es ist ein Hinweis auf deine Sicherungen, kein Zeichen, dass etwas nicht stimmt.</string>
+    <string name="backup_reminder_switch">Erinnere mich</string>
+    <string name="backup_reminder_off">Aus. Binky fragt nicht nach.</string>
+    <string name="backup_reminder_next">Nächste Erinnerung: %1$s.</string>
+    <string name="backup_reminder_blocked">Benachrichtigungen sind für Binky aus oder für Erinnerungen an Sicherungen stummgeschaltet, deshalb kann diese nicht ankommen.</string>
+    <string name="backup_reminder_weekly">Jede Woche</string>
+    <string name="backup_reminder_fortnightly">Alle zwei Wochen</string>
+    <string name="backup_reminder_monthly">Jeden Monat</string>
+    <string name="backup_reminder_quarterly">Alle drei Monate</string>
+    <string name="export_notification_title">Zeit für eine Sicherung deiner Aufzeichnungen?</string>
+    <string name="export_notification_text">Du wolltest erinnert werden. Öffne Sicherung &amp; Wiederherstellung für einen frischen Export — das sind zwei Fingertipps.</string>
+
+    <string name="backup_restore_title">Wiederherstellen</string>
+    <string name="backup_restore_help">Beim Wiederherstellen wird alles ersetzt, was Binky derzeit hat, und zwar durch den Inhalt der Datei. Vorher wird eine Kopie der aktuellen Aufzeichnungen auf diesem Handy gespeichert, damit sich das rückgängig machen lässt.</string>
+    <string name="backup_restore_action">Aus einer Datei wiederherstellen</string>
+    <string name="backup_restore_confirm_title">Diese Sicherung wiederherstellen?</string>
+    <string name="backup_restore_confirm_body">Sicherung „%1$s“ vom %2$s.\n\nAlles, was Binky derzeit hat, wird ersetzt. Vorher wird eine Kopie der aktuellen Aufzeichnungen auf diesem Handy gespeichert.</string>
+    <string name="backup_restore_confirm_action">Alles ersetzen</string>
+    <string name="backup_restoring">Wird wiederhergestellt …</string>
+
+    <string name="backup_refused_title">Es wurde nichts wiederhergestellt</string>
+    <string name="backup_refused_not_a_backup">Diese Datei ist keine Binky-Sicherung. Auf diesem Handy wurde nichts geändert.</string>
+    <string name="backup_refused_newer">Diese Sicherung stammt aus einer neueren Version von Binky, die diese hier nicht lesen kann. Sie wurde mit Version %1$d gespeichert, und diese App liest bis Version %2$d. Auf diesem Handy wurde nichts geändert.</string>
+    <string name="backup_refused_too_large">Diese Datei ist viel zu groß für eine Binky-Sicherung. Auf diesem Handy wurde nichts geändert.</string>
+    <string name="backup_refused_unreadable">Binky konnte die Aufzeichnungen in dieser Sicherung nicht öffnen, deshalb wurde nichts geändert. Die Datei ist vielleicht beschädigt.</string>
+
+    <string name="backup_restored_title">Wiederherstellung abgeschlossen</string>
+    <string name="backup_restored_scope">Sicherung „%1$s“ vom %2$s wiederhergestellt.</string>
+    <plurals name="backup_restored_overlaid">
+        <item quantity="one">%d Bild kam aus der Sicherung.</item>
+        <item quantity="other">%d Bilder kamen aus der Sicherung.</item>
+    </plurals>
+    <plurals name="backup_restored_kept">
+        <item quantity="one">%d Bild auf diesem Handy lag außerhalb des Umfangs dieser Sicherung und wurde behalten.</item>
+        <item quantity="other">%d Bilder auf diesem Handy lagen außerhalb des Umfangs dieser Sicherung und wurden behalten.</item>
+    </plurals>
+    <string name="backup_restored_snapshot">Was Binky vor dieser Wiederherstellung hatte, wurde als %1$s gespeichert, unter „Kopien auf diesem Handy“.</string>
+    <string name="backup_restored_close">Binky schließen</string>
+    <string name="backup_restored_close_help">Binky muss sich schließen, damit es mit den wiederhergestellten Aufzeichnungen neu startet. Starte es von deinem Startbildschirm aus neu.</string>
+
+    <!-- The two occupants of preserved/, shared by the Backup screen and ADR-0023's screen -->
+    <string name="preserved_title">Kopien auf diesem Handy</string>
+    <string name="preserved_help">Binky speichert eine Kopie, bevor etwas deine Aufzeichnungen ersetzt. Hier wird nie etwas automatisch gelöscht.</string>
+    <string name="preserved_empty">Auf diesem Handy wurden keine Kopien gespeichert.</string>
+    <!-- No preposition before %1$s: the date can be preserved_undated, and "Gespeichert am
+         Datum unbekannt" would be the sentence that proves nobody re-read it with a real
+         value in place (§7.6). -->
+    <string name="preserved_detail">Gespeichert %1$s · %2$s · %3$s</string>
+    <plurals name="preserved_files">
+        <item quantity="one">%d Datei</item>
+        <item quantity="other">%d Dateien</item>
+    </plurals>
+    <string name="preserved_undated">Datum unbekannt</string>
+    <string name="preserved_share">Diese Kopie teilen</string>
+    <string name="preserved_delete_title">Diese Kopie löschen?</string>
+    <string name="preserved_delete_body">%1$s wird endgültig von diesem Handy entfernt. Wenn du es nicht anderswo geteilt hast, ist es weg.</string>
+    <string name="preserved_kind_wipe">Gespeichert, bevor ein Update die Aufzeichnungen gelöscht hat</string>
+    <string name="preserved_kind_snapshot">Gespeichert vor einer Wiederherstellung</string>
+    <string name="preserved_not_restorable">Von einer älteren Version von Binky geschrieben, deshalb lässt sie sich nur teilen — nicht wieder einlesen.</string>
+    <string name="preserved_restore">Diese Kopie wiederherstellen</string>
+
+    <!-- Observations: the vocabularies (ADR-0010). "Nicht nachgesehen" is a recorded fact in its
+         own right and never a polite word for "normal" (§2.1). -->
+    <string name="observation_not_checked">Nicht nachgesehen</string>
+
+    <string name="droppings_amount_none">Keine</string>
+    <string name="droppings_amount_few">Wenige</string>
+    <!-- §7.1's biggest trap costs German nothing: "Normal" is a predicate adjective and does not
+         inflect, so all six of these are the same word — deliberately, not by oversight. -->
+    <string name="droppings_amount_normal">Normal</string>
+    <string name="droppings_amount_many">Viele</string>
+
+    <string name="droppings_size_small">Klein</string>
+    <string name="droppings_size_normal">Normal</string>
+    <string name="droppings_size_large">Groß</string>
+
+    <!-- What the droppings looked like. No advice on any of them: "Blut" is "Blut" and nothing
+         more (§2.2). "mit Fell" is load-bearing — mucus looks the same. -->
+    <string name="droppings_appearance_round">Rund</string>
+    <string name="droppings_appearance_misshapen">Unförmig</string>
+    <string name="droppings_appearance_doubled">Doppelt oder verwachsen</string>
+    <string name="droppings_appearance_dry">Trocken oder hart</string>
+    <string name="droppings_appearance_strung_together">Mit Fell aneinandergereiht</string>
+    <string name="droppings_appearance_mucus">Schleim</string>
+    <string name="droppings_appearance_soft">Weich</string>
+    <string name="droppings_appearance_diarrhoea">Durchfall</string>
+    <string name="droppings_appearance_very_dark">Sehr dunkel oder teerartig</string>
+    <string name="droppings_appearance_blood">Blut</string>
+
+    <string name="cecotropes_eaten">Gefressen</string>
+    <string name="cecotropes_left_uneaten">Liegen geblieben</string>
+    <string name="cecotropes_excess">Viele liegen geblieben</string>
+
+    <string name="appetite_none">Frisst nicht</string>
+    <string name="appetite_reduced">Frisst weniger</string>
+    <string name="appetite_normal">Normal</string>
+    <string name="appetite_eager">Sehr hungrig</string>
+
+    <string name="mood_withdrawn">Zurückgezogen</string>
+    <string name="mood_subdued">Gedämpft</string>
+    <string name="mood_normal">Normal</string>
+    <string name="mood_bright">Aufgeweckt</string>
+
+    <string name="activity_lethargic">Teilnahmslos</string>
+    <string name="activity_quiet">Ruhig</string>
+    <string name="activity_normal">Normal</string>
+    <string name="activity_active">Aktiv</string>
+
+    <string name="water_none">Trinkt nicht</string>
+    <string name="water_less">Trinkt weniger</string>
+    <string name="water_normal">Normal</string>
+    <string name="water_more">Trinkt mehr</string>
+
+    <!-- The built-in symptoms (ADR-0010): each is something an owner can SEE, worded as the
+         thing observed and never as the condition it might mean. "Schiefhals" is the term
+         German owners use and names the posture, not E. cuniculi. -->
+    <string name="symptom_head_tilt">Schiefhals</string>
+    <string name="symptom_drooling_or_wet_chin">Speichelfluss oder nasses Kinn</string>
+    <string name="symptom_sneezing_or_nasal_discharge">Niesen oder laufende Nase</string>
+    <string name="symptom_eye_discharge">Tränende oder verklebte Augen</string>
+    <string name="symptom_dirty_bottom">Verschmutzter Po</string>
+    <!-- "Lautes" is deliberate: rabbits purr by grinding their teeth softly. -->
+    <string name="symptom_loud_teeth_grinding">Lautes Zähneknirschen</string>
+    <string name="symptom_hunched_posture">Sitzt zusammengekauert</string>
+    <string name="symptom_laboured_breathing">Schweres Atmen</string>
+    <string name="symptom_not_drinking">Trinkt nicht</string>
+    <string name="symptom_limping">Humpelt</string>
+    <string name="symptom_ear_scratching">Kratzt an den Ohren</string>
+    <string name="symptom_blood_in_urine">Blut im Urin</string>
+    <string name="symptom_hiding_more_than_usual">Versteckt sich mehr als sonst</string>
+
+    <!-- Recording an observation -->
+    <string name="observation_add_title">Beobachtung erfassen</string>
+    <string name="observation_edit_title">Beobachtung bearbeiten</string>
+    <string name="observation_recorded_at_label">Wann du nachgesehen hast</string>
+    <string name="observation_backdating_help">Standard ist jetzt. Heute Morgen ins Klo geschaut und schreibst es abends auf? Stelle die Zeit ein, zu der du nachgesehen hast — die zählt.</string>
+    <string name="observation_future_rejected">Das liegt in der Zukunft. Eine Beobachtung, die noch nicht stattgefunden hat, lässt sich nicht erfassen.</string>
+
+    <!-- Who the observation covers (ADR-0008) -->
+    <string name="observation_participants_label">Für wen das gilt</string>
+    <string name="observation_participants_help">Kaninchen, die sich ein Klo teilen, sind schon angehakt. Nimm den Haken weg, wo es nicht passt.</string>
+    <string name="observation_participants_required">Wähle mindestens ein Kaninchen.</string>
+    <string name="observation_excluded_archived">%1$s ist archiviert, deshalb kann das nicht dafür gelten.</string>
+    <string name="observation_excluded_watch">%1$s ist im Blick — bitte einzeln erfassen.</string>
+
+    <string name="observation_tray_heading">Das Klo</string>
+    <string name="observation_tray_shared_help">Einmal erfasst, für alle, für die es gilt — ein geteiltes Klo lässt sich nicht nach Kaninchen trennen.</string>
+    <string name="observation_droppings_amount_label">Wie viele Köttel</string>
+    <string name="observation_droppings_size_label">Größe</string>
+    <string name="observation_droppings_appearance_label">Aussehen</string>
+    <string name="observation_cecotropes_label">Blinddarmkot</string>
+    <string name="observation_tray_photo_label">Foto vom Klo</string>
+    <string name="observation_tray_photo_help">Gleichmäßiges, indirektes Licht zeigt die Form am besten — Köttel im Schatten sind später schwer zu erkennen.</string>
+    <string name="observation_tray_photo_description">Das Klo</string>
+    <string name="observation_tray_photo_unreadable">Binky konnte dieses Bild nicht lesen, deshalb wurde nichts angehängt.</string>
+
+    <string name="observation_individual_heading">Dieses Kaninchen</string>
+    <string name="observation_individual_heading_named">%1$s</string>
+    <string name="observation_appetite_label">Appetit</string>
+    <string name="observation_mood_label">Stimmung</string>
+    <string name="observation_activity_label">Aktivität</string>
+    <string name="observation_water_label">Wasser</string>
+
+    <string name="observation_symptoms_label">Symptome</string>
+    <string name="observation_symptoms_none_selected">Nichts ausgewählt</string>
+    <string name="observation_symptoms_pick">Symptome auswählen</string>
+    <!-- Deliberately different from an empty list, and the more useful of the two records
+         (ADR-0010, ADR-0001). -->
+    <string name="observation_symptoms_checked">Ich habe nachgesehen und nichts davon gesehen</string>
+    <string name="observation_symptoms_checked_help">Lohnt sich anzuhaken. Eine leere Liste allein heißt nur, dass niemand nachgesehen hat.</string>
+
+    <string name="observation_note_label">Sonst noch etwas</string>
+    <string name="observation_note_placeholder">Was dir aufgefallen ist, in deinen eigenen Worten</string>
+
+    <!-- The timeline -->
+    <string name="observations_empty">Noch keine Beobachtungen erfasst. Alles, was dir auffällt — das Klo, die Stimmung, ein Symptom — gehört hierher.</string>
+    <string name="observation_with">Mit %1$s</string>
+    <!-- Names nobody on purpose: ADR-0008 wants no tombstone of the bunny who is gone. -->
+    <string name="observation_observed_together_alone">Gemeinsam beobachtet</string>
+    <string name="observation_tray_section">Das Klo</string>
+    <string name="observation_tray_section_shared">Geteilt — das Klo</string>
+    <string name="observation_no_symptoms_seen">Nach Symptomen gesehen, keine entdeckt</string>
+    <string name="observation_delete_title">Diese Beobachtung löschen?</string>
+    <string name="observation_delete_body">Die Beobachtung vom %1$s wird entfernt.</string>
+    <string name="observation_delete_body_shared">Diese Beobachtung galt für %1$s. Beim Löschen wird sie für alle entfernt.</string>
+    <string name="observation_which_bunny">Um welches Kaninchen geht es?</string>
+
+    <!-- The healthy-day shortcut -->
+    <string name="healthy_day_action">Gesunden Tag erfassen</string>
+    <string name="healthy_day_help">Erfasst den gewöhnlichen Tag: Köttel normal, frisst und trinkt wie immer, aufgeweckt und aktiv.</string>
+    <string name="healthy_day_which_bunny">Wessen Tag war es?</string>
+    <!-- "bei", not "für": the name here can be a joined list ending in bunny_lives_with_others,
+         which is dative. Every host that takes that list is dative for the same reason. -->
+    <string name="healthy_day_logged">Gesunder Tag bei %1$s erfasst.</string>
+    <string name="healthy_day_name_flagged">%1$s (Hinweis zum Gewicht)</string>
+    <plurals name="healthy_day_excluded_watch">
+        <item quantity="one">%1$s ist im Blick — bitte einzeln erfassen.</item>
+        <item quantity="other">%1$s sind im Blick — bitte einzeln erfassen.</item>
+    </plurals>
+
+    <!-- Care reminders (ADR-0018) -->
+    <string name="care_empty">Noch nichts geplant. Eine Pflege-Erinnerung ist eine Aufgabe, die wiederkommt — Krallen schneiden, eine jährliche Impfung, wöchentliches Wiegen.</string>
+    <string name="care_pick_a_bunny">Pflege wird je Kaninchen erfasst. Welches?</string>
+    <string name="care_choose_bunny">Kaninchen wählen</string>
+    <string name="care_add">Erinnerung hinzufügen</string>
+
+    <string name="care_type_nail_trim">Krallen schneiden</string>
+    <string name="care_type_vaccination">Impfung</string>
+    <string name="care_type_weigh_in">Wiegen</string>
+    <string name="care_type_custom">Etwas anderes</string>
+
+    <string name="care_due_today">Heute fällig</string>
+    <string name="care_due_tomorrow">Morgen fällig</string>
+    <string name="care_due_yesterday">War gestern fällig</string>
+    <!-- "Noch 3 Tage" rather than "Fällig in 3 Tagen": the gap plurals are shared with
+         care_every, which needs them in the citation form, so the host takes them as they are
+         instead of demanding a dative none of the other hosts could give. -->
+    <string name="care_due_in">Noch %1$s</string>
+    <!-- One of the only two strings in the app allowed to say a thing is late (§6), and it
+         states the timing rather than passing judgement — Polish writes "po terminie" and this
+         is the same move. "Überfällig" is on German's banned list and appears nowhere. -->
+    <string name="care_due_overdue">%1$s nach dem Termin</string>
+
+    <!-- §7.2's own note. The host is handed either a bare unit ("Woche") or a counted gap
+         ("6 Wochen"), and German has no preposition that takes both: "Alle Woche" is not
+         idiomatic and "Jede/Jeder/Jedes" would have to guess the unit's gender. A colon takes
+         either, at the cost of reading as a label rather than a sentence. -->
+    <string name="care_every">Rhythmus: %1$s</string>
+
+    <plurals name="care_unit_days">
+        <item quantity="one">Tag</item>
+        <item quantity="other">Tage</item>
+    </plurals>
+    <plurals name="care_unit_weeks">
+        <item quantity="one">Woche</item>
+        <item quantity="other">Wochen</item>
+    </plurals>
+    <plurals name="care_unit_months">
+        <item quantity="one">Monat</item>
+        <item quantity="other">Monate</item>
+    </plurals>
+    <plurals name="care_unit_years">
+        <item quantity="one">Jahr</item>
+        <item quantity="other">Jahre</item>
+    </plurals>
+
+    <!-- Completion, back-datable on the same terms as a weighing -->
+    <string name="care_complete_title">Als erledigt eintragen</string>
+    <string name="care_complete_when">Wann war das?</string>
+    <string name="care_complete_help">Heute, wenn du nichts anderes sagst. Der nächste Termin wird ab dem Tag gerechnet, an dem es tatsächlich gemacht wurde — spätes Krallenschneiden setzt den Abstand also neu, statt ihn nachzuholen.</string>
+    <string name="care_complete_future">Dieser Tag war noch nicht.</string>
+    <string name="care_complete_note">Notiz, wenn du magst</string>
+    <string name="care_complete_action">Eintragen</string>
+
+    <!-- A weigh-in is done by weighing, so this one opens the weight form -->
+    <string name="care_weigh_in_action">Gewicht erfassen</string>
+    <string name="care_weigh_in_help">Erledigt wird das hier durchs Wiegen, deshalb öffnet sich das Gewichtsformular. Jede Wägung zählt, wann immer du sie erfasst.</string>
+
+    <string name="care_history_title">Schon erledigt</string>
+    <string name="care_history_empty">Noch nichts erfasst. Ein eingetragener Abschluss ist das, was den nächsten Termin verschiebt.</string>
+    <string name="care_history_weight">Gewogen: %1$s</string>
+    <string name="care_history_weight_help">Wägungen zählen als Wiegen. Sie werden auf dem Gewichtsbildschirm bearbeitet und gelöscht, nicht hier.</string>
+    <string name="care_event_edit_title">Diesen Eintrag korrigieren</string>
+    <string name="care_event_delete_title">Diesen Eintrag löschen?</string>
+    <string name="care_event_delete_body">Wenn du den Eintrag vom %1$s entfernst, verschieben sich alle Termine danach.</string>
+
+    <!-- Add to calendar (ADR-0014): one-way, and the copy has to say so or it reads as syncing -->
+    <string name="care_calendar_add">Zum Kalender hinzufügen</string>
+    <string name="care_calendar_added">Zu deinem Kalender hinzugefügt</string>
+    <string name="care_calendar_help">Übergibt diese Wiederholung einmal an deine Kalender-App, wo sie ein neues Handy übersteht. Binky hält die beiden danach nicht in Einklang — wenn du die Erinnerung hier änderst, ändert sich dort nichts.</string>
+    <string name="care_calendar_none">Auf diesem Handy gibt es keine Kalender-App, an die sich das übergeben ließe.</string>
+
+    <string name="care_editor_add_title">Neue Erinnerung</string>
+    <string name="care_editor_edit_title">Erinnerung bearbeiten</string>
+    <!-- §7.1: this asks which *kind* of care task it is, where med_editor_name asks a medicine's
+         name. Two different questions, and German keeps them apart. -->
+    <string name="care_editor_kind">Worum geht es?</string>
+    <string name="care_editor_label">Wie nennst du es?</string>
+    <string name="care_editor_label_help">Deine eigenen Worte, damit dieser Eintrag so bleibt, wie du ihn getippt hast — in welcher Sprache Binky auch läuft.</string>
+    <string name="care_editor_label_required">Gib ihr einen Namen, damit du weißt, worum es geht.</string>
+    <string name="care_editor_interval">Wie oft?</string>
+    <string name="care_editor_interval_required">Mindestens eins.</string>
+    <string name="care_editor_first_due">Wann ist es das nächste Mal fällig?</string>
+    <string name="care_editor_first_due_help">Nicht wann du es zuletzt gemacht hast — wann es das nächste Mal ansteht, so wie es im Impfpass steht. Wenn du weißt, wann es zuletzt gemacht wurde, trage das unten als Abschluss ein.</string>
+
+    <string name="care_delete_title">Diese Erinnerung löschen?</string>
+    <string name="care_delete_body">%1$s wird entfernt, mit allen Einträgen dazu. Wägungen bleiben unberührt.</string>
+
+    <!-- What the daily sweep posts. The reminder's name is the title. -->
+    <string name="care_notification_due">Heute fällig für %1$s.</string>
+    <!-- The second of the two permitted strings (§6): "verstrichen" states that the date has
+         passed, where "überfällig" would judge it. -->
+    <string name="care_notification_overdue">Für %1$s ist der Termin verstrichen.</string>
+    <plurals name="care_summary_title">
+        <item quantity="one">%d Pflege-Erinnerung fällig</item>
+        <item quantity="other">%d Pflege-Erinnerungen fällig</item>
+    </plurals>
+
+    <!-- Vet visits on the Care tab (ADR-0017): a health record, never an expense -->
+    <string name="care_reminders_heading">Regelmäßige Pflege</string>
+    <string name="visits_heading">Tierarztbesuche</string>
+    <string name="visits_empty">Noch keine Besuche erfasst. Ein Besuch ist ein Gesundheitseintrag: der Tag, worum es ging, und das Gewicht, falls der Tierarzt eines genommen hat.</string>
+    <string name="visit_add">Besuch hinzufügen</string>
+    <string name="visit_row_weighed">Gewogen: %1$s</string>
+    <string name="row_pair">%1$s · %2$s</string>
+
+    <string name="visit_editor_add_title">Neuer Besuch</string>
+    <string name="visit_editor_edit_title">Besuch bearbeiten</string>
+    <string name="visit_date_label">Wann war das?</string>
+    <string name="visit_future_rejected">Dieser Tag war noch nicht.</string>
+    <string name="visit_reason_label">Worum ging es?</string>
+    <string name="visit_reason_required">Schreib auf, worum es ging, damit der Eintrag in einem Jahr noch etwas sagt.</string>
+    <string name="visit_notes_label">Notizen, wenn du magst</string>
+    <string name="visit_vet_label">Tierarzt</string>
+    <string name="visit_vet_none">Nicht erfasst</string>
+    <string name="visit_vet_choose">Wählen</string>
+    <string name="visit_vet_clear">Entfernen</string>
+    <string name="visit_vet_picker_title">Welcher Tierarzt?</string>
+    <string name="visit_vet_add_typed">„%1$s“ als neuen Tierarzt hinzufügen</string>
+    <string name="visit_weight_label">Gewicht in Gramm, falls gewogen wurde</string>
+    <string name="visit_weight_help">Optional. Es wird einmal erfasst, als die Wägung dieses Kaninchens für diesen Tag.</string>
+    <string name="visit_weight_invalid">Ganze Gramm, oder leer lassen.</string>
+
+    <string name="visit_delete_title">Diesen Besuch löschen?</string>
+    <string name="visit_delete_body">Der Besuch vom %1$s wird entfernt, mit seinen Notizen.</string>
+    <string name="visit_delete_weighing">Dabei wurde eine Wägung von %1$s erfasst.</string>
+    <string name="visit_delete_keep_weighing">Wägung für sich behalten</string>
+    <string name="visit_delete_remove_weighing">Wägung auch löschen</string>
+
+    <!-- The vet directory, reached from More (ADR-0017) -->
+    <string name="vets_title">Tierärzte</string>
+    <string name="vets_empty">Noch keine Tierärzte. Füge die Praxis hinzu, zu der du gehst, dann kann jeder Besuch sie nennen — oder lege einen an, während du einen Besuch einträgst.</string>
+    <string name="vet_add">Tierarzt hinzufügen</string>
+    <string name="vet_editor_add_title">Neuer Tierarzt</string>
+    <string name="vet_editor_edit_title">Tierarzt bearbeiten</string>
+    <!-- §7.1: an animal has a given name and a vet may be a person or a practice, but German
+         "Name" covers both without help, so these two do not diverge the way Polish's do. -->
+    <string name="vet_name_label">Name</string>
+    <string name="vet_name_required">Gib einen Namen an, damit du sie wiederfindest.</string>
+    <string name="vet_clinic_label">Praxis, falls vorhanden</string>
+    <string name="vet_phone_label">Telefon, falls vorhanden</string>
+    <string name="vet_notes_label">Notizen, wenn du magst</string>
+    <string name="vet_delete_title">Diesen Tierarzt entfernen?</string>
+    <string name="vet_delete_body">%1$s wird aus dem Verzeichnis entfernt. Jeder Besuch, der den Namen nennt, bleibt genau so, wie er ist — nur ohne ihn.</string>
+
+    <!-- Medications (ADR-0026). This records what the owner was told to give and reasons about
+         none of it. Nothing here says a dose was missed, warns, or suggests: an unanswered slot
+         is unanswered, which is a fact about the record and not about the animal (ADR-0001). -->
+    <string name="med_heading">Medikamente</string>
+    <string name="med_today_heading">Heute</string>
+    <string name="med_dose_due">Fällig um %1$s</string>
+    <string name="med_add_course">Medikament hinzufügen</string>
+    <string name="med_empty">Keine Medikamente erfasst. Ein Eintrag ist das, was der Tierarzt verordnet hat — was es ist, wie viel, und die Uhrzeiten, falls es welche gibt.</string>
+    <!-- Permanent on screen, and a plain statement of what the record is — not a warning. -->
+    <string name="med_disclaimer">Was dein Tierarzt verordnet hat, so wie du es erfasst hast. Binky prüft weder Dosierungen noch Wechselwirkungen.</string>
+
+    <string name="med_dose_answered">%1$s um %2$s</string>
+    <string name="dose_status_given">Gegeben</string>
+    <!-- Agentive on purpose (§6): "auslassen" is something the owner deliberately did and
+         recorded, where "verpasst" or "vergessen" would be the passive sense ADR-0026 forbids. -->
+    <string name="dose_status_skipped">Ausgelassen</string>
+
+    <string name="med_schedule_none">Kein Zeitplan — Gaben werden von Hand erfasst</string>
+    <string name="med_schedule_once">Einmal täglich um %1$s</string>
+    <string name="med_schedule_times">%1$s täglich</string>
+    <string name="med_next_today">Nächste Gabe um %1$s</string>
+    <string name="med_next_tomorrow">Nächste Gabe morgen um %1$s</string>
+    <string name="med_next_later">Nächste Gabe am %1$s um %2$s</string>
+    <string name="med_next_not_started">Beginnt am %1$s</string>
+    <string name="med_next_ended">Beendet am %1$s</string>
+    <string name="med_next_done">Nichts weiter geplant</string>
+    <string name="med_range_open">Ab %1$s</string>
+    <string name="med_range_closed">%1$s bis %2$s</string>
+
+    <string name="med_delete_title">Dieses Medikament löschen?</string>
+    <string name="med_delete_body">%1$s wird entfernt, mit seinem Zeitplan.</string>
+    <plurals name="med_delete_doses">
+        <item quantity="one">Damit wird auch %d erfasste Gabe gelöscht.</item>
+        <item quantity="other">Damit werden auch %d erfasste Gaben gelöscht.</item>
+    </plurals>
+    <string name="med_delete_end_help">Beim Absetzen bleiben alle Gaben erhalten, und der Zeitplan endet einfach ab heute.</string>
+    <string name="med_delete_end_action">Stattdessen absetzen</string>
+
+    <string name="med_history_title">Erfasste Gaben</string>
+    <string name="med_history_empty">Noch nichts erfasst.</string>
+    <string name="med_history_row">%1$s · %2$s um %3$s</string>
+    <!-- A fact about the dose, not missing information (ADR-0002) -->
+    <string name="med_history_ad_hoc">Nicht zu einer geplanten Zeit</string>
+    <string name="med_history_for_slot">Für die Gabe um %1$s</string>
+    <string name="med_end_action">Medikament absetzen</string>
+    <string name="med_end_help">Setzt das Ende auf heute. Alle bereits erfassten Gaben bleiben.</string>
+    <string name="med_dose_delete_title">Diese Gabe löschen?</string>
+    <string name="med_dose_delete_body">Der Eintrag wird entfernt. Wenn er zu einer geplanten Zeit gehörte, ist diese Zeit wieder unbeantwortet.</string>
+
+    <string name="med_record_title">Gabe erfassen</string>
+    <string name="med_record_edit_title">Diese Gabe bearbeiten</string>
+    <string name="med_record_status">Was ist passiert?</string>
+    <string name="med_record_when">Wann?</string>
+    <string name="med_record_when_help">Standard ist jetzt. Datiere zurück, wenn du es später aufschreibst.</string>
+    <string name="med_record_future">Das liegt später als jetzt.</string>
+    <string name="med_record_for_slot">für die Gabe um %1$s</string>
+    <string name="med_record_note">Notiz, wenn du magst</string>
+    <string name="med_record_action">Erfassen</string>
+
+    <string name="med_editor_add_title">Neues Medikament</string>
+    <string name="med_editor_edit_title">Medikament bearbeiten</string>
+    <string name="med_editor_section_medication">Das Medikament</string>
+    <string name="med_editor_section_when">Wann</string>
+    <!-- §7.1: this asks the medicine's name, where care_editor_kind asks which kind of care task
+         it is. The placeholder beside it is the brand name Metacam and is untranslatable. -->
+    <string name="med_editor_name">Wie heißt es?</string>
+    <string name="med_editor_name_required">Nimm den Namen von der Packung, damit der Eintrag in einem Jahr noch etwas sagt.</string>
+    <string name="med_editor_amount">Wie viel, falls es dir gesagt wurde</string>
+    <!-- §4: this looks like data and is not. It is a *number*, and German writes the decimal
+         separator as a comma. -->
+    <string name="med_editor_amount_placeholder">0,3 ml</string>
+    <string name="med_editor_amount_help">Genau so, wie der Tierarzt es gesagt hat — „0,3 ml“, „eine halbe Tablette“. Binky liest es nie aus.</string>
+    <string name="med_editor_start">Beginnt</string>
+    <string name="med_editor_pick_start">Startdatum ändern</string>
+    <string name="med_editor_ongoing">Läuft weiter</string>
+    <string name="med_editor_ongoing_help">An für ein Medikament ohne absehbares Ende. Schalte es aus, um den letzten Tag zu setzen.</string>
+    <string name="med_editor_end">Endet</string>
+    <string name="med_editor_pick_end">Enddatum ändern</string>
+    <string name="med_editor_end_before_start">Das liegt vor dem Beginn.</string>
+    <string name="med_editor_schedule">Uhrzeiten</string>
+    <string name="med_editor_schedule_help">Optional. Lass es leer für ein Medikament, dessen Gaben du von Hand erfasst.</string>
+    <string name="med_editor_add_time">Uhrzeit hinzufügen</string>
+    <string name="med_editor_remove_time">%1$s entfernen</string>
+    <string name="med_editor_reminders">Zu diesen Zeiten erinnern</string>
+    <string name="med_editor_reminders_help">Binky stellt einen Wecker, für die nächste Gabe über alle Medikamente hinweg. Die Zeile oben auf dem Tab sagt, was dieses Handy damit tatsächlich macht.</string>
+    <string name="med_editor_notes">Notizen, wenn du magst</string>
+
+    <!-- The watch (ADR-0001): opt-in, time-boxed, and framed about the owner's looking rather
+         than about the animal. Nothing here may read as a claim that anything is wrong — the app
+         knows only that nothing has been logged. -->
+    <string name="watch_start">Im Blick behalten</string>
+    <string name="watch_start_title">%1$s im Blick behalten?</string>
+    <string name="watch_start_body">Jeden Morgen fragt Binky nach, ob du nachgesehen hast. Ein Eintrag für dieses Kaninchen erledigt den Tag — ein gesunder Tag zählt auch. Es endet von selbst, wenn die Zeit um ist.</string>
+    <string name="watch_duration_question">Wie lange?</string>
+    <plurals name="watch_duration_days">
+        <item quantity="one">%1$d Tag</item>
+        <item quantity="other">%1$d Tage</item>
+    </plurals>
+    <string name="watch_start_action">Starten</string>
+    <plurals name="watch_days_left">
+        <item quantity="one">noch %1$d Tag</item>
+        <item quantity="other">noch %1$d Tage</item>
+    </plurals>
+    <string name="watch_active_line">Im Blick · %1$s</string>
+    <string name="watch_close">Beenden</string>
+    <string name="watch_expired_title">%1$s: die Zeit im Blick ist um</string>
+    <string name="watch_expired_body">Binky fragt schon nicht mehr nach. Verlängere die Zeit, wenn du weiter hinsiehst, oder beende sie.</string>
+    <string name="watch_expired_weight">Zuletzt gewogen: %1$s, am %2$s.</string>
+    <string name="watch_expired_no_weight">Es wurde nichts gewogen, deshalb gibt es auch keine Entwicklung zu zeigen.</string>
+    <string name="watch_expired_extend">Verlängern</string>
+    <string name="watch_notification_title">Hast du heute nach %1$s gesehen?</string>
+    <string name="watch_notification_text">Es läuft eine Zeit im Blick. Was immer du gesehen hast, ist es wert, aufgeschrieben zu werden — ein gesunder Tag zählt auch.</string>
+
+    <!-- More -->
+    <string name="more_archived_bunnies">Archivierte Kaninchen</string>
+    <string name="more_archived_bunnies_summary">Kaninchen, die du archiviert hast. Ihre Aufzeichnungen bleiben erhalten.</string>
+    <string name="more_photos">Fotos</string>
+    <string name="more_photos_summary">Bilder eines Kaninchens, auf diesem Handy.</string>
+    <string name="more_documents">Dokumente</string>
+    <string name="more_documents_summary">Gescannte Unterlagen eines Kaninchens, auf diesem Handy.</string>
+    <string name="more_vets">Tierärzte</string>
+    <string name="more_vets_summary">Namen und Nummern, für alle Kaninchen gemeinsam.</string>
+    <string name="more_settings">Einstellungen</string>
+    <string name="more_settings_summary">Gewichtseinheiten, Sprache, Sicherung und Wiederherstellung.</string>
+    <string name="more_support">Support</string>
+    <string name="more_support_summary">Fehler melden, Idee vorschlagen, App bewerten.</string>
+    <string name="more_needs_bunny">Füge zuerst ein Kaninchen hinzu.</string>
+
+    <!-- Support: the app's only About-shaped screen -->
+    <string name="support_title">Support</string>
+    <string name="support_intro">Binky wird von einer einzelnen Person gemacht. Eine Fehlermeldung oder eine Idee kommt direkt an.</string>
+    <string name="support_bug_button">Fehler melden</string>
+    <string name="support_bug_subject">Fehlermeldung</string>
+    <string name="support_bug_prompt">(hier beschreiben, was passiert ist)</string>
+    <string name="support_diagnostics_title">Was eine Fehlermeldung mitschickt</string>
+    <string name="support_diagnostics_explain">Die App-Version, deine Android-Version, das Handymodell und die Sprache der App werden der Nachricht hinzugefügt. Nichts über deine Kaninchen, und nichts wird gesendet, bevor du in deiner Mail-App auf Senden tippst.</string>
+    <string name="support_feature_button">Funktion vorschlagen</string>
+    <string name="support_feature_subject">Funktionswunsch</string>
+    <string name="support_email_label">Oder schreib an:</string>
+    <string name="support_no_mail_app">Keine Mail-App auf diesem Handy. Die Adresse oben lässt sich kopieren.</string>
+    <string name="support_rate_button">Binky bei Google Play bewerten</string>
+    <string name="support_rate_help">Binky ist kostenlos und werbefrei. Eine Bewertung ist das Einzige, worum es bittet.</string>
+    <string name="support_no_store_app">Google Play ließ sich auf diesem Handy nicht öffnen.</string>
+    <string name="support_privacy_button">Datenschutzerklärung</string>
+    <string name="support_no_browser">Kein Browser auf diesem Handy, um die Seite zu öffnen.</string>
+    <string name="support_licences_button">Open-Source-Lizenzen</string>
+    <string name="support_version_label">Version</string>
+
+    <!-- Open-source licence attribution. The generated list, the licence names and the licence
+         texts are not resources and stay English — a translated Apache-2.0 is not Apache-2.0.
+         These seven strings around them are ordinary copy. -->
+    <string name="licences_title">Open-Source-Lizenzen</string>
+    <string name="licences_intro">Binky baut auf den Bibliotheken unten auf. Die Liste kommt aus dem Build selbst und nennt daher alles, was diese Kopie der App wirklich enthält.</string>
+    <string name="licences_read">Lizenz lesen</string>
+    <string name="licences_open_terms">Bedingungen öffnen</string>
+    <string name="licences_unavailable">Die Lizenzliste ließ sich aus diesem Build nicht lesen.</string>
+    <string name="licences_text_missing">Der Text dieser Lizenz liegt der App nicht bei.</string>
+
+    <!-- The photo gallery: one bunny's pictures -->
+    <string name="photo_which_bunny">Wessen Fotos?</string>
+    <string name="photo_gallery_title">Fotos: %1$s</string>
+    <string name="photo_gallery_empty">Noch keine Fotos.</string>
+    <!-- §7.6: %1$s is the bunny the pictures are *of*, not a folder they land in. The Polish
+         draft moved exactly this argument and every assertion still passed. -->
+    <string name="photo_gallery_empty_help">Füge Bilder von %1$s aus deiner Galerie oder von der Kamera hinzu. Sie bleiben auf diesem Handy.</string>
+    <string name="photo_add">Fotos hinzufügen</string>
+    <string name="photo_add_choose">Aus deiner Galerie wählen</string>
+    <string name="photo_add_take">Foto aufnehmen</string>
+    <string name="photo_import_progress">%1$d von %2$d wird hinzugefügt …</string>
+    <plurals name="photo_import_added">
+        <item quantity="one">%d Foto hinzugefügt.</item>
+        <item quantity="other">%d Fotos hinzugefügt.</item>
+    </plurals>
+    <!-- The quantity governs the *unreadable* count, which German inflects on the verb
+         (konnte / konnten) where English has nothing to vary. -->
+    <plurals name="photo_import_partial">
+        <item quantity="one">%1$d von %2$d hinzugefügt, %3$d konnte nicht gelesen werden.</item>
+        <item quantity="other">%1$d von %2$d hinzugefügt, %3$d konnten nicht gelesen werden.</item>
+    </plurals>
+    <string name="photo_description">Foto von %1$s</string>
+    <string name="photo_close">Schließen</string>
+    <!-- "Aufgenommen" only when the picture's own metadata said so; anything else is dated by
+         when it arrived here. -->
+    <string name="photo_taken_on">Aufgenommen am %1$s</string>
+    <string name="photo_added_on">Hinzugefügt am %1$s</string>
+    <string name="photo_caption_label">Bildunterschrift</string>
+    <string name="photo_caption_none">Keine Bildunterschrift</string>
+    <string name="photo_caption_add">Hinzufügen</string>
+    <string name="photo_caption_edit">Bearbeiten</string>
+    <string name="photo_delete">Foto löschen</string>
+    <string name="photo_delete_body">Dieses Foto löschen? Das Bild wird endgültig von diesem Handy entfernt.</string>
+
+    <!-- Documents: one bunny's scanned paperwork (ADR-0017, ADR-0009) -->
+    <string name="document_which_bunny">Wessen Dokumente?</string>
+    <string name="documents_title">Dokumente: %1$s</string>
+    <string name="documents_empty">Noch keine Dokumente.</string>
+    <string name="documents_empty_help">Scanne einen Impfpass, einen Laborbefund oder einen Entlassungsbericht. Sie bleiben auf diesem Handy.</string>
+    <string name="document_scan">Dokument scannen</string>
+    <!-- Written into the database when a scan lands, so it is read in the owner's language at
+         that moment and never re-translated afterwards (ADR-0013). -->
+    <string name="document_default_title">Gescanntes Dokument</string>
+    <plurals name="document_page_count">
+        <item quantity="one">%d Seite</item>
+        <item quantity="other">%d Seiten</item>
+    </plurals>
+    <!-- Names what the result lacks rather than what the phone lacks: a crooked scan is
+         something the owner can act on. -->
+    <string name="document_scan_camera_used">Mit der Kamera gescannt — auf diesem Handy ohne automatischen Zuschnitt und ohne Seitenerkennung.</string>
+    <string name="document_scan_failed">Dieser Scan ließ sich nicht speichern. Versuch es noch einmal.</string>
+    <!-- "Datiert" is the date printed on the page; "Gescannt" is when it arrived here. -->
+    <string name="document_dated_on">Datiert auf %1$s</string>
+    <string name="document_scanned_on">Gescannt am %1$s</string>
+    <string name="document_no_date">Kein Datum auf der Seite</string>
+    <string name="document_from_visit">Vom Besuch am %1$s — %2$s</string>
+    <string name="document_actions">Aktionen für das Dokument</string>
+    <string name="document_rename">Umbenennen</string>
+    <string name="document_title_label">Titel</string>
+    <string name="document_set_date">Datum auf der Seite setzen</string>
+    <string name="document_clear_date">Datum entfernen</string>
+    <string name="document_date_label">Datum auf der Seite</string>
+    <string name="document_attach_visit">An einen Besuch anhängen</string>
+    <string name="document_attach_none">Nicht aus einem Besuch</string>
+    <string name="document_attach_no_visits">Für dieses Kaninchen sind noch keine Besuche erfasst.</string>
+    <string name="document_add_page">Seite hinzufügen</string>
+    <string name="document_manage_pages">Seiten sortieren oder entfernen</string>
+    <string name="document_page_number">Seite %1$d</string>
+    <string name="document_page_up">Nach oben</string>
+    <string name="document_page_down">Nach unten</string>
+    <string name="document_page_position">Seite %1$d von %2$d</string>
+    <string name="document_page_description">Seite %1$d von %2$s</string>
+    <string name="document_no_pages">Dieses Dokument hat keine Seiten.</string>
+    <string name="document_no_pages_help">Titel und Datum bleiben erhalten. Füge eine Seite hinzu, oder lösche das Dokument.</string>
+    <string name="document_delete">Dokument löschen</string>
+    <string name="document_delete_body">„%1$s“ löschen? Jede Seite wird endgültig von diesem Handy entfernt.</string>
+    <!-- The visit editor's documents section: paperwork usually comes *from* a visit -->
+    <string name="visit_documents_label">Dokumente</string>
+    <string name="visit_documents_save_first">Speichere zuerst den Besuch, dann kannst du die Unterlagen scannen oder anhängen.</string>
+    <string name="visit_documents_none">An diesen Besuch ist nichts angehängt.</string>
+    <string name="visit_documents_attach_existing">Vorhandenes anhängen</string>
+    <string name="visit_documents_none_free">Jedes Dokument dieses Kaninchens gehört bereits zu einem Besuch. Löse es dort zuerst.</string>
+    <string name="visit_documents_detach">Lösen</string>
+
+    <!-- The archived list (ADR-0004) -->
+    <string name="archived_title">Archivierte Kaninchen</string>
+    <string name="archived_empty">Nichts archiviert. Beim Archivieren verschwindet ein Kaninchen aus der Auswahl, und alle Aufzeichnungen bleiben.</string>
+    <string name="archived_on">Archiviert am %1$s</string>
+    <string name="archived_open">Öffnen</string>
+
+    <!-- Bunny profile -->
+    <string name="bunny_editor_add_title">Kaninchen hinzufügen</string>
+    <string name="bunny_editor_edit_title">Kaninchen bearbeiten</string>
+    <string name="bunny_editor_section_details">Angaben</string>
+    <string name="bunny_name_label">Name</string>
+    <string name="bunny_name_required">Ein Kaninchen braucht einen Namen.</string>
+    <string name="bunny_avatar_take">Foto aufnehmen</string>
+    <string name="bunny_avatar_choose">Foto auswählen</string>
+    <string name="bunny_avatar_remove">Foto entfernen</string>
+    <string name="bunny_avatar_failed">Dieses Bild ließ sich nicht lesen. Versuch ein anderes.</string>
+    <string name="bunny_avatar_description">Foto von %1$s</string>
+    <string name="bunny_avatar_placeholder">Noch kein Foto</string>
+    <string name="bunny_birthdate_label">Geburtstag</string>
+    <string name="bunny_birthdate_none">Nicht bekannt</string>
+    <string name="bunny_birthdate_set">Geburtstag setzen</string>
+    <string name="bunny_birthdate_clear">Geburtstag entfernen</string>
+    <string name="bunny_birthdate_approximate">Ungefähr</string>
+    <string name="bunny_birthdate_approximate_help">Tiere aus dem Tierschutz kommen oft mit einem geschätzten Alter. Ein ungefährer Geburtstag wird als Alter angezeigt, nie als Datum.</string>
+    <string name="bunny_sex_label">Geschlecht</string>
+    <string name="sex_male">Männlich</string>
+    <string name="sex_female">Weiblich</string>
+    <!-- §7.1: one qualifies the animal's sex, the other answers a yes/no question. German
+         "Unbekannt" carries both without inflecting, so unlike Polish these two do not
+         diverge. -->
+    <string name="sex_unknown">Unbekannt</string>
+    <string name="bunny_neutered_label">Kastriert</string>
+    <string name="neutered_yes">Ja</string>
+    <string name="neutered_no">Nein</string>
+    <string name="neutered_unknown">Unbekannt</string>
+    <string name="bunny_breed_label">Rasse</string>
+    <string name="bunny_breed_none">Nicht gesetzt</string>
+    <string name="bunny_breed_choose">Rasse wählen</string>
+    <string name="bunny_breed_clear">Rasse entfernen</string>
+    <string name="bunny_colour_label">Farbe und Zeichnung</string>
+    <string name="bunny_lives_with_label">Lebt mit</string>
+    <!-- §7.3: "allein" is an adverb and does not inflect, so nothing here has to guess the
+         animal's gender. -->
+    <string name="bunny_lives_with_alone">Lebt allein</string>
+    <string name="bunny_lives_with_nobody_yet">Füge ein zweites Kaninchen hinzu, um festzuhalten, mit wem es zusammenlebt.</string>
+    <string name="bunny_lives_with_help">Kaninchen, die zusammenleben, teilen sich ein Klo, deshalb kann eine Beobachtung für alle gelten.</string>
+    <string name="bunny_lives_with_value">Lebt mit %1$s</string>
+    <string name="bunny_archived_name">%1$s (archiviert)</string>
+    <!-- Dative in both forms, because every sentence this tail lands in is dative: "Lebt mit …",
+         "Mit …", "Gesunder Tag bei …". The singular is unreachable — at three housemates the
+         line names all three — but Android resolves against the declaration. -->
+    <plurals name="bunny_lives_with_others">
+        <item quantity="one">%1$d weiteren</item>
+        <item quantity="other">%1$d weiteren</item>
+    </plurals>
+
+    <!-- ADR-0007's consent half. The copy has already been taken by the time this shows, so the
+         screen states what is going and where the copy is rather than pretending there is a
+         choice. -->
+    <string name="wipe_title">Dieses Update muss die Aufzeichnungen auf diesem Handy löschen</string>
+    <string name="wipe_body">Binky wird noch gebaut, und diese Version hat geändert, wie Aufzeichnungen gespeichert werden. Sie kann nicht lesen, was schon auf diesem Handy liegt, deshalb muss das weg.</string>
+    <string name="wipe_versions">Aufzeichnungen auf diesem Handy: Format %1$d. Diese Version: Format %2$d.</string>
+    <string name="wipe_copy_taken">Bevor etwas gelöscht wird, wurde bereits eine Kopie auf diesem Handy gespeichert:</string>
+    <string name="wipe_copy_reach">Die Kopie lässt sich nicht automatisch wieder einlesen — alte Aufzeichnungen ins neue Format zu übertragen ist eine Umwandlung, die von Hand geschrieben werden muss. Notiere dir alle Gewichte, die dir wichtig sind, woanders, bis es eine Sicherung gibt.</string>
+    <string name="wipe_continue">Aufzeichnungen löschen und fortfahren</string>
+
+    <!-- ADR-0023's release half of the same screen: nothing is deleted here, and there is no
+         forward button because there is nowhere forward to go. -->
+    <string name="schema_refused_title">Diese Version kann die Aufzeichnungen auf diesem Handy nicht öffnen</string>
+    <string name="schema_refused_body">Die Aufzeichnungen auf diesem Handy wurden von einer anderen Version von Binky gespeichert, und diese hier kann sie nicht lesen. Es wurde nichts gelöscht.</string>
+    <string name="schema_refused_copy_taken">Eine Kopie davon ist auf diesem Handy gespeichert und bleibt dort:</string>
+    <string name="schema_refused_reach">Wenn du die Version installierst, die sie gespeichert hat, solltest du wieder hineinkommen. Bis dahin teile die Kopie an einen sicheren Ort — sie ist die einzige.</string>
+
+    <!-- Joining names into a list: German writes "und" where English writes "&amp;" -->
+    <string name="list_join_pair">%1$s und %2$s</string>
+    <string name="list_join_more">%1$s, %2$s</string>
+
+    <!-- §4: a tilde is not universal shorthand for "about". German writes "ca." -->
+    <string name="age_approximate">ca. %1$s</string>
+    <plurals name="age_years">
+        <item quantity="one">%d Jahr alt</item>
+        <item quantity="other">%d Jahre alt</item>
+    </plurals>
+    <plurals name="age_months">
+        <item quantity="one">%d Monat alt</item>
+        <item quantity="other">%d Monate alt</item>
+    </plurals>
+    <plurals name="age_weeks">
+        <item quantity="one">%d Woche alt</item>
+        <item quantity="other">%d Wochen alt</item>
+    </plurals>
+
+    <!-- Archiving asks once and says plainly that nothing is lost (ADR-0004) -->
+    <string name="archive_dialog_title">%1$s archivieren?</string>
+    <string name="archive_dialog_body">Alle Aufzeichnungen bleiben erhalten und sind unter „Mehr“ weiter lesbar. %1$s verschwindet aus der Auswahl, und du kannst es jederzeit zurückholen.</string>
+
+    <!-- Deleting is the explicit escape hatch -->
+    <string name="delete_dialog_title">%1$s löschen?</string>
+    <string name="delete_dialog_body">Damit wird das Kaninchen aus der App entfernt. Archivieren behält stattdessen alles und blendet es nur aus.</string>
+    <string name="delete_dialog_avatar_note">Sein Foto wird ebenfalls von diesem Handy gelöscht.</string>
+    <string name="delete_dialog_second_title">%1$s und seine Aufzeichnungen löschen?</string>
+    <string name="delete_dialog_second_body">Das lässt sich nicht rückgängig machen.</string>
+    <plurals name="delete_records_sole_owned">
+        <item quantity="one">%d Eintrag, der nur zu diesem Kaninchen gehört, wird gelöscht.</item>
+        <item quantity="other">%d Einträge, die nur zu diesem Kaninchen gehören, werden gelöscht.</item>
+    </plurals>
+    <plurals name="delete_records_shared">
+        <item quantity="one">%d geteilter Eintrag bleibt, für die anderen Kaninchen, für die er galt.</item>
+        <item quantity="other">%d geteilte Einträge bleiben, für die anderen Kaninchen, für die sie galten.</item>
+    </plurals>
+
+    <!-- Breed suggestions (§4): the *descriptive* names translate, the *registered* ones do not,
+         and the list keeps its length and its order — "Mischling / unbekannt" stays first
+         because most pet rabbits are rescues of no stated breed.
+
+         Where German rabbit keeping has its own established name it wins: Belgischer Hase,
+         Kalifornier, Riesenschecke, Deutscher Riese, Holländer, Englische Schecke, Flämischer
+         Riese, Löwenköpfchen, Farbenzwerg, Neuseeländer, Rheinische Schecke, Havanna,
+         Russenkaninchen, Lohkaninchen. Where a breed is known here only by its original name
+         (Beveren, Blanc de Hotot, Britannia Petite, American Sable, Jersey Wooly, …) that name
+         stays.
+
+         Three the reviewer should check, because they are mappings rather than translations:
+         Harlequin is "Japaner" in German breed standards and "Harlekin" in ordinary use; the UK
+         "Polish" is the German "Hermelin"; and the lop family splits differently on each side of
+         the Atlantic, so Dwarf Lop is read as the German Zwergwidder and the US names (Holland
+         Lop, Mini Lop) are kept as they are. -->
+    <string-array name="built_in_breeds">
+        <item>Mischling / unbekannt</item>
+        <item>American</item>
+        <item>American Fuzzy Lop</item>
+        <item>American Sable</item>
+        <item>Angora (Englisch)</item>
+        <item>Angora (Französisch)</item>
+        <item>Angora (Riesen)</item>
+        <item>Angora (Satin)</item>
+        <item>Belgischer Hase</item>
+        <item>Beveren</item>
+        <item>Blanc de Hotot</item>
+        <item>Britannia Petite</item>
+        <item>Kalifornier</item>
+        <item>Champagne d\'Argent</item>
+        <item>Riesenschecke</item>
+        <item>Chinchilla (Amerikanisch)</item>
+        <item>Chinchilla (Riesen)</item>
+        <item>Chinchilla (Standard)</item>
+        <item>Cinnamon</item>
+        <item>Deutscher Riese</item>
+        <item>Crème d\'Argent</item>
+        <item>Holländer</item>
+        <item>Zwerghotot</item>
+        <item>Zwergwidder</item>
+        <item>Englischer Widder</item>
+        <item>Englische Schecke</item>
+        <item>Flämischer Riese</item>
+        <item>Florida White</item>
+        <item>Französischer Widder</item>
+        <item>Harlekin</item>
+        <item>Havanna</item>
+        <item>Russenkaninchen</item>
+        <item>Holland Lop</item>
+        <item>Jersey Wooly</item>
+        <item>Lilac</item>
+        <item>Löwenköpfchen</item>
+        <item>Mini Lop</item>
+        <item>Mini Rex</item>
+        <item>Mini Satin</item>
+        <item>Farbenzwerg</item>
+        <item>Neuseeländer</item>
+        <item>Palomino</item>
+        <item>Hermelin</item>
+        <item>Rex</item>
+        <item>Rheinische Schecke</item>
+        <item>Satin</item>
+        <item>Silver</item>
+        <item>Silver Fox</item>
+        <item>Silver Marten</item>
+        <item>Lohkaninchen</item>
+        <item>Thrianta</item>
+        <item>Velveteen Lop</item>
+    </string-array>
+</resources>

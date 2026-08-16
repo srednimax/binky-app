@@ -580,6 +580,30 @@ in nine languages and having it read twice by nine native speakers.
 - [ ] Draft `de es fr it pt-BR cs uk` into **`translations/<locale>/`, not `res/`** — `values-de/`
       existing means every German phone gets it, reviewed or not. `locales_config.xml` is a *picker*
       list, **not** a delivery filter.
+      🟡 **`de` drafted 2026-08-16** — 685/685, and the staging area itself now exists: `TranslationTest`
+      holds a draft to every rule it holds a shipped file to (proven by breaking the German plural
+      and the German format argument and watching both redden), `translations/` is a declared test
+      input so Gradle cannot report a stale verdict on it, and the gate prints what a draft still
+      owes without ever gating on it. Six to go: `es fr it pt-BR cs uk`.
+      ℹ️ **German costs nothing to §7.3, and that is the surprise.** The perfect tense with *haben*
+      carries no gender and predicate adjectives do not inflect, so *"Es ist archiviert"* and
+      *"Lebt allein"* are simply correct — the trap that rewrote two Polish strings does not exist
+      here. `care_every` is where German pays instead: the host takes either a bare unit (*Woche*)
+      or a counted gap (*6 Wochen*), and no German preposition governs both — *"Alle Woche"* is not
+      idiomatic and *jede/jeder/jedes* would have to guess the unit's gender. It is `Rhythmus: %1$s`,
+      a label rather than a sentence, and it is the first thing to put in front of the reviewer.
+      ⚠️ **Four decisions the native read-through has to confirm, not just read past:**
+      `destination_care` = *Pflege & Medis* (a bottom-nav tab, and *Pflege & Medikamente* does not
+      fit — the fallback is *Pflege* alone, losing the meds half rather than clipping it); *Klo* for
+      the litter tray and *Köttel* for droppings (what German rabbit owners say, where *Kot* is the
+      clinical word §5 rejects); *Im Blick* for the watch (*Beobachtungszeitraum* collides with
+      Beobachtung and *Wachphase* reads as sleep); and three breed rows that are mappings rather
+      than translations — Harlequin (*Japaner* in the standards, *Harlekin* in use), the UK *Polish*
+      (*Hermelin*), and the lop family, which splits differently either side of the Atlantic.
+      German's banned list needed no argument: *überfällig* appears nowhere, `care_due_overdue` is
+      *%1$s nach dem Termin* and `care_notification_overdue` is *der Termin ist verstrichen* — the
+      same move Polish makes with *po terminie*. `dose_status_skipped` is *Ausgelassen*, agentive
+      the way *Pominięta* is.
 - [ ] Promote one language per commit, only after its native read-through: move into `res/`, add the
       `<locale>` line, the `AppLanguage` entry, and the endonym label.
 - [x] `AppLanguageTest` extended to compare resource directories too (`values-pt-rBR` vs `pt-BR` — two

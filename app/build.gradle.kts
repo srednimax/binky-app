@@ -210,11 +210,21 @@ kotlin {
 //
 // Declaring the directory as an input is the whole fix. Registering it on the task type covers both
 // variants' test tasks without naming either.
+//
+// `translations/` is the same fix for the same reason, one directory up: Phase 8 stages a language's
+// draft outside `res/` so that its existence does not ship it, and TranslationTest holds a staged
+// draft to exactly the rules it holds a shipped one to. A draft Gradle cannot see is a draft nobody
+// checks.
 tasks.withType<Test>().configureEach {
     inputs
         .dir(layout.projectDirectory.dir("src/main/res"))
         .withPropertyName("resourcesReadByUnitTests")
         .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs
+        .dir(rootProject.layout.projectDirectory.dir("translations"))
+        .withPropertyName("stagedTranslationsReadByUnitTests")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+        .optional()
 }
 
 // Room exports the compiled schema as JSON. ADR-0007 lets us wipe the database until Phase 3,

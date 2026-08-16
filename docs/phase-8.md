@@ -191,7 +191,20 @@ there is no schema change and no media path.
 3. **Re-prove the locale-aware capture driver** — built in Phase 7.5 and proven there on `pl`, so what is
    owed here is only that its needle table still resolves once seven locales exist. Every new needle is a
    claim that some resource still says what the table thinks it says.
-4. Draft all seven into `translations/`, validated by the test in place.
+4. Draft all seven into `translations/`, validated by the test in place. 🟡 **`de` done 2026-08-16**,
+   along with the staging area this step assumed and nothing had yet built: `TranslationTest` reads
+   `translations/<tag>/strings.xml` beside `values-<qualifier>/`, holds a draft to the same
+   assertions, and rejects a tag that is both staged and shipped — promotion is a *move*, and two
+   files for one language drift. `translations/` is declared a test input in `app/build.gradle.kts`
+   for the reason `src/main/res` already was: a file Gradle cannot see is a file the test reports a
+   stale verdict on. The gate prints a draft's completeness under a heading of its own and never
+   gates on it, because the merge rule is about what ships.
+   The German draft's own decisions are in `DOD.md` §7; the one worth carrying to the next six is
+   that **§7.2's `care_every` is harder than §7.3's gender trap** in at least one language. German
+   has no preposition that takes both a bare unit and a counted gap, so the host became a label
+   (`Rhythmus: %1$s`) and the gap plurals stayed in the citation form, which then decided the
+   wording of `care_due_in` and `care_due_overdue` too. Check that chain early in each language: it
+   is four strings deep and only visible from the code that composes them (`CareLabels.kt`).
 5. Promote one language at a time as its native read completes — four edits, one commit, one language.
 6. Listing text for the promoted set; screenshots later, driven by install data.
 
