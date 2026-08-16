@@ -701,14 +701,78 @@ replaced, to the byte. That is the guard doing exactly what it says. **It also m
 `MIGRATION_6_7` is proven** — `aReleaseShapedOpenOfASchemaSixFileSucceeds` is, because it is the only path
 that opens a schema-6 file the way a release build would.
 
-**Still owed, and it is a judgement rather than a task.** There is no `bunny-schema-6-fixture.zip` — the
-gate's "beside the schema-4 and schema-5 fixtures" implies one, and those are *real artifacts* exported by
-the tagged builds that wrote them, so a schema-6 one is a device chore against `v1.4.0` rather than
-something that can be synthesised. What softens it: the schema-4 fixture's restore already runs
-4 → 5 → 6 → **7** through the staged path and already counts `observation_symptoms` afterwards, so the
-cascade is proven against a real artifact for free. What it does *not* yet assert is that the droppings
-landed in the join tables, which is a two-line addition to a test that already exists and needs no new
-fixture.
+**Done, 2026-08-16, and it is a real artifact like the other two.** `bunny-schema-6-fixture.zip` was
+written by the `v1.4.0` tag itself: the tag in a worktree, `pm clear`, install over the debug app with
+`-r -d` (the tag's versionCode is 273 against the phone's 291, so it is a downgrade), and a throwaway
+`androidTest` — never committed to `main` — driving the real `AppContainer`'s repositories and
+`backupExporter` with the pinned `2026-08-05T12:00:00Z` the other two fixtures use. 4.5 s to write, and
+`adb exec-out run-as … cat cache/exports/…` to pull. No taps: the SAF picker only chooses where the bytes
+land and `exportTo` has built the whole archive before the share sheet appears, which is the same shortcut
+the schema-5 chore found. Manifest reads `schemaVersion 6`, scope `Everything`, 7 documents and 5 photos;
+the database inside carries `user_version` 6.
+
+**What it adds over the two already there.** Both of those reach 7 already, so `MIGRATION_6_7` was never
+unproven — what neither can show is the migration running with the schema-6 graph *populated*. 1.0.1 and
+1.1.0 had no vets, visits, courses, doses or documents, so those tables are present-and-empty in both,
+and `MIGRATION_6_7` rebuilds `observations` and drops `observation_symptoms` outright, cascades live
+throughout. A rebuild that took something else down with it has, until this file, had nothing to take.
+Now it carries 2 vets, 3 visits, 3 courses over 3 times, 14 doses, 4 documents over 7 pages — and the
+restore puts all twelve media files back on disk under their relative paths, which is the difference
+between a restored document opening and rendering as seven placeholders.
+
+**Two things the artifact corrected, both of the same kind — a belief about a fixture that the fixture
+disagreed with.** The counts are **44 weighings, not 43**: 1.2's seeder records a weighing with the vet
+visit, so "identical to the schema-4 fixture, because the seeder and the pinned `now` are the same" stops
+holding at schema 6, and every count in the new test is read off the artifact rather than copied from the
+older ones. And the media assertion belongs on `MediaMergePlan.overlaid`, not `kept` — `kept` is the
+*disk's* own files in a kind the scope does not carry, which for a restore onto an empty phone is empty by
+definition. The first draft asserted `kept`, expected 5, got 0, and was right to fail.
+
+⚠️ **The chore leaves the trap the suite already knows about, arrived at from a new direction.** Writing
+the fixture seeds the *real* `bunny.db` at schema 6, and it survives the reinstall of `main`'s debug build
+— so `schemaWipePending()` reads 6 against 7 and disarms every alarm the suite arms. That is the 11
+`DoseAlarmTest` failures, all of them `assertTrue(armed())`, and none of them the code's fault. Deleting
+`databases/bunny.db{,-wal,-shm}` through `run-as` fixes it and, unlike `pm clear`, keeps the runtime
+permissions the rest of the suite depends on. With it gone the suite reads **216/216 green on the Xiaomi**,
+the restore class 13/13 of them.
+
+🛑 **And then the obvious question found what none of the fixtures could.** Asked what a real owner does
+when 1.5 lands on a phone holding 1.4.0 data, the answer read out of the code was: nothing that works. The
+launch gate showed the blocking screen on *any* version mismatch, so a release build met a schema-6
+database with *"This version cannot open the records on this phone"*, a share button and a dead end, and
+`MIGRATION_6_7` never ran — the gate returns before Room is constructed. Reproduced on the phone the same
+morning with a real 1.4.0 database and a release-shaped debug build over the top: refusal screen,
+`user_version` still 6, a copy in `preserved/`. Fixed by `schemaGateDecision` (`SchemaGate.kt`), which asks
+whether a *registered* migration covers the file rather than whether the versions differ, and verified the
+same way: the app opens on Bijou and Nugget, `user_version` 7, all 44 weighings and the whole medication
+and document graph intact. `SchemaGateTest` is the truth table, ADR-0023 carries the amendment, and the
+DOD box is above §5's two hand items because it blocked the release outright.
+
+**Then the upgrade itself, on live data, twice.** A 1.4.0 seed at the real instant — live medication
+courses, so the container armed a real 20:00 dose alarm — taken to 1.5; and a **1.1.0 seed taken straight
+to 1.5**, the skipped-version jump a phone that never took 1.2, 1.3 or 1.4 would make. Both compared table
+by table on *common columns* rather than by row count: **zero differing rows in any table, on either
+path**. What changed is only what the migrations exist to change — `weights.visitId` and
+`observations.trayPhotoPath` added and null throughout, each observation's `droppingsSize`/`droppingsForm`
+pair moved into its join row (and the observation that answered neither contributing none), and the
+schema-6 tables arriving present-and-empty on the 5 → 7 path. The `observations` rows look scrambled in a
+positional dump and are identical by column name, which is the check worth writing down: a positional diff
+across a table rebuild reports a change that is not there.
+
+**Two things about reminders, from the same run.** An app update does **not** cancel the pending dose
+alarm — the same alarm object was still armed for 20:00 after the package replace, with the app never
+launched, so no `MY_PACKAGE_REPLACED` receiver is needed to *keep* it. But an alarm that fires over an
+un-migrated database does nothing at all: broadcasting to `DoseAlarmReceiver` at schema 6 under a schema-7
+build posted no notification and left the file untouched, because the guard returns before posting *and*
+before re-arming. So the dose is skipped and the chain stops until the owner opens the app — which is the
+one gap the gate fix does not close, and the reason the candidate follow-up is a package-replaced receiver
+enqueueing a single expedited worker rather than loosening the guard inside a ten-second receiver.
+
+The lesson worth keeping: **every proof of the migrations opened the database directly** — the
+`MigrationTestHelper` runs, the release-shaped open, three committed archives at three API levels. All true,
+and all of them walk past the guard standing in front of the door. The fixture chore is what put a real
+schema-6 database on the phone, which is the only reason the question could be answered by watching rather
+than by arguing.
 
 ℹ️ **The ADB install prompt is drivable after all.** HyperOS's `AdbInstallActivity` — *"Install this app via
 USB?"*, with an auto-denying countdown — takes `input touchscreen tap` like any other window, which is what

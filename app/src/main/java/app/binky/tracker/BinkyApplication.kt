@@ -7,10 +7,12 @@ import app.binky.tracker.data.AppPreferences
 import app.binky.tracker.data.BUNNY_DATABASE_FILE
 import app.binky.tracker.data.BUNNY_SCHEMA_VERSION
 import app.binky.tracker.data.PRESERVED_DIRECTORY
+import app.binky.tracker.data.SchemaGate
 import app.binky.tracker.data.backup.adoptRestoredDatabase
 import app.binky.tracker.data.destructiveMigrationAllowed
 import app.binky.tracker.data.preserveBeforeWipe
 import app.binky.tracker.data.readUserVersion
+import app.binky.tracker.data.schemaGateDecision
 import app.binky.tracker.work.ensureSweepEnqueued
 import app.binky.tracker.work.postBackupExclusionNoticeIfDue
 import app.binky.tracker.work.rescheduleDoseAlarm
@@ -126,21 +128,24 @@ class BinkyApplication :
                 preservedDir = File(filesDir, PRESERVED_DIRECTORY),
             )
 
-        if (preserved == null) {
-            // The ordinary case: a fresh install, or a file already at this schema. Nothing to
-            // consent to, so the gate opens immediately.
-            openDatabase()
-        } else {
-            // The copy is taken in **both** builds. In a release it is preserving before a
-            // *failure* rather than before a wipe, which is a better reason than the one
-            // `preserveBeforeWipe` was written for (ADR-0023).
-            _schemaMismatch.value =
-                SchemaMismatch(
-                    preservedCopy = preserved,
-                    fromVersion = onDiskVersion,
-                    toVersion = BUNNY_SCHEMA_VERSION,
-                    wipeOnConsent = destructiveMigrationAllowed(),
-                )
+        // The copy is taken whenever the file is not already at this build's shape, in **both**
+        // builds and now on the migrating path too: a release preserves before a *failure* rather
+        // than before a wipe (ADR-0023), and an upgrade preserves before a migration, which is the
+        // one moment an owner's only copy is being rewritten. It costs one file copy per schema bump.
+        when (schemaGateDecision(onDiskVersion)) {
+            // A fresh install, a file already at this schema, or — the case this gate used to get
+            // wrong — an upgrade the registered migrations can walk. Room migrates on the way in.
+            SchemaGate.Open -> openDatabase()
+            SchemaGate.Consent, SchemaGate.Refuse ->
+                _schemaMismatch.value =
+                    SchemaMismatch(
+                        // Non-null on both of these paths: neither is reachable unless the versions
+                        // differ, which is exactly when `preserveBeforeWipe` copies.
+                        preservedCopy = preserved!!,
+                        fromVersion = onDiskVersion,
+                        toVersion = BUNNY_SCHEMA_VERSION,
+                        wipeOnConsent = destructiveMigrationAllowed(),
+                    )
         }
     }
 
