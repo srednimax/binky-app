@@ -27,8 +27,8 @@ that caught the refusal screen 1.5 would otherwise have shipped to every existin
 
 **Phase 5** (vet, medications, documents, dose reminders — ships as 1.2) — software half **done**,
 evidence half open. Status read 2026-08-05 20:30. **Phase 6** (the support contact — ships as 1.3) is
-built, device-tested and documented as of 2026-08-06; only §5's two hand items are left, and 1.3.0 is
-waiting on a release PR. **Phase 7** (the redesign — ships as 1.4) **closed 2026-08-13**; §6 is its
+built, device-tested and documented as of 2026-08-06 and **closed 2026-08-16**, when the last of §5's two
+hand items landed; 1.3.0 is waiting on a release PR. **Phase 7** (the redesign — ships as 1.4) **closed 2026-08-13**; §6 is its
 closing note, and the one thing it carried out is §7's first box.
 
 **Phase 7.5** (the interlude — ships as **1.5**, opened 2026-08-14) collects what was scattered here and
@@ -40,9 +40,11 @@ below is its summary. **Phase 8 retargets to 1.6** — two phases cannot both cl
 answers to commit subjects rather than to this file.
 
 **So what is actually open is evidence, then one short phase of code**: §1's overnight run and the gate
-items behind it, Play's own count (§4), and Phase 7.5's **two remaining items** — the two hand items and the
-driver's **English matrix run** (the Polish one is done, 2026-08-15). Everything that touches the app's own code is done and
-device-proven; the schema bump, its migration and its instrumented run are green. Then Phase 8.
+items behind it, and Play's own count (§4). **Phase 7.5's own boxes are all ticked as of 2026-08-16** —
+§5's two hand items (2026-08-15 and 2026-08-16) and the driver's English matrix (292 cells, zero errors).
+Everything that touches the app's own code is done and
+device-proven; the schema bump, its migration and its instrumented run are green. What is left of the
+phase is closing it: `PLAN.md`, emptying §6.5 and the sections it borrowed, and the 1.5 cut. Then Phase 8.
 
 ---
 
@@ -224,31 +226,30 @@ All three land in **one sitting** once the count clears, in this order:
 
 ---
 
-## 5 — Phase 6: the support contact 🟡 two hand items left ⤷ Phase 7.5
+## 5 — Phase 6: the support contact ✅ closed 2026-08-16
 
 Built, driven on the device and written up — **6a, 6b, 6c and 6d are all done**. The record is
 [`phase-6.md`](phase-6.md), and `PLAN.md`'s status list ticks Phase 6 on the build and the documents.
 `release-please` already has **1.3.0** waiting on PR #93; merging it is the cut.
 
-Two boxes outlive the code, and neither is work a build can do:
+Two boxes outlived the code, and neither was work a build could do. **Both are closed** — the oldest open
+boxes in the project, shut a day apart:
 
 - [x] Set `binky.support@gmail.com` as Play's **per-app contact email** in *Store settings*. ✅ **Done
       2026-08-15.** The app, the listing and the privacy policy's *Contact* section now name one inbox.
-- [ ] **Read a support mail that actually arrived**, carried from 6c's gate: send a bug report from the
-      phone and confirm in the inbox that the diagnostics block is **visible**, not collapsed behind
-      Gmail's signature `…`. The block is separated by a blank line and never `-- ` for exactly that
-      reason, and a draft cannot prove it — only a delivered message can. Everything up to the send is
-      verified in both locales.
-      ✅ **Delivery is proven (2026-08-15)** — the `mailto:` hand-off, recipient, subject and body all
-      reach a real inbox.
-      ⚠️ **It landed in Spam**, which is silent on both ends: the sender sees a sent message and the
-      maintainer sees an empty inbox. **Fixed by a filter on the receiving account** —
+- [x] **Read a support mail that actually arrived**, carried from 6c's gate. ✅ **Done 2026-08-16.** A bug
+      report sent from the phone lands in the **inbox proper** and the diagnostics block is **visible** —
+      not collapsed behind Gmail's signature `…`. That was the whole claim: the block is separated by a
+      blank line and never `-- ` for exactly this reason, and only a delivered message could prove it.
+      Everything up to the send was already verified in both locales.
+      ✅ **Delivery was proven first (2026-08-15)** — the `mailto:` hand-off, recipient, subject and body
+      all reach a real inbox.
+      ⚠️ **That first one landed in Spam**, which is silent on both ends: the sender sees a sent message
+      and the maintainer sees an empty inbox. **Fixed by a filter on the receiving account** —
       `subject:bug OR subject:feature` → *Never send it to Spam*, applied 2026-08-15. It works in every
       locale because the `#bug` tag is a Kotlin constant rather than a string resource
-      (`SupportHandoff.kt`), so **one rule covers all nine of Phase 8's languages**.
-      **The box stays open for its other half**: the diagnostics block seen *visible* in a message
-      delivered to the inbox proper. A spam-folder copy is weak evidence — Gmail suppresses some
-      rendering there — so the **next** report is the one that settles it.
+      (`SupportHandoff.kt`), so **one rule covers all nine of Phase 8's languages** — and the filter is
+      what put the settling report in front of the eye that read it.
 
 **1.3 supersedes 1.2.0 on the tracks — do not upload both.** Same schema 6, same two hand-written
 migrations, so §4's field-upgrade proof retargets to **1.0.0 → 1.3** and still crosses `MIGRATION_4_5` and
@@ -278,8 +279,9 @@ Design in **[`phase-7.5.md`](phase-7.5.md)**. It owns no boxes of its own — it
 that are already written down elsewhere in this file. Each is cheaper before nine languages than after, and
 three get more expensive with time. **Both ADRs are made** — ADR-0028 and
 [ADR-0029](adr/0029-droppings-are-multi-valued-and-the-tray-is-worth-a-photo.md), grilled and written
-2026-08-14, so nothing here is waiting on a decision. What is left of step 1 is the two hand items,
-and they are now the only code-free work between this phase and its gate.
+2026-08-14, so nothing here is waiting on a decision. **Every box below is ticked as of 2026-08-16** — the
+second hand item that morning, the English matrix that afternoon — so what remains is closing the phase,
+not working it.
 
 - [x] **The launch gate refused every schema-bumping update — fixed 2026-08-16, and it blocked 1.5.**
       `BinkyApplication` treated *any* version mismatch as a reason to show the blocking screen, so a
@@ -322,20 +324,36 @@ and they are now the only code-free work between this phase and its gate.
       `ReminderSweepWorker`, no `UpdateCatchUpWorker` row. HyperOS does not deliver
       `MY_PACKAGE_REPLACED` without autostart, and the ROM has no `AUTO_START` appop to grant over
       `adb`. It should work on ROMs that deliver it; the guard above is what carries the fix here.
-- [ ] **§5's two hand items first** — Play's per-app contact email, and a delivered support mail read.
-      Oldest open boxes in the project, blocked by nothing, an hour between them.
-      ⚠️ **Support mail delivers but was filed as Spam** (2026-08-15), fixed with a
+- [x] **§5's two hand items** — Play's per-app contact email (2026-08-15) and a delivered support mail
+      read (2026-08-16). The oldest open boxes in the project, shut a day apart.
+      ⚠️ **The first mail delivered but was filed as Spam**, fixed with a
       `subject:bug OR subject:feature` → *Never send it to Spam* filter on the receiving account. One
-      rule covers all nine languages, because the tag is a Kotlin constant. **The diagnostics-block
-      half is still owed** and needs a report delivered to the inbox proper. See §5.
-- [ ] **§7's capture-driver box**, moved here. ✅ **The code is done and device-proven (2026-08-14)** —
+      rule covers all nine languages, because the tag is a Kotlin constant. **The next report landed in
+      the inbox proper with the diagnostics block visible**, which is what the box was for. See §5.
+- [x] **§7's capture-driver box**, moved here. ✅ **The code is done and device-proven (2026-08-14)** —
       `return_to_home` + DND as setup/teardown, seed variants through a debug-only broadcast receiver
       (`crowded` is the first), and needles resolved through the string resources before the first tap.
       The default seed is **not** changed: **58** scenes rest on it.
       ✅ **The Polish run is done (2026-08-15)** — 73 scenes in light and dark, **146/146**, in
       `~/binky-screenshots/phase-7.5/pl`. That is the **Polish after set**, and it unblocks §4's Polish
-      listing screenshots. **One long run is still owed**: the full **English matrix with the 20:00
-      dose live**.
+      listing screenshots.
+      ✅ **The English matrix is done (2026-08-16)** — **292 cells, 292 reached, zero errors, no
+      confirmed defect**, in `~/binky-screenshots/phase-7.5/en`. The 20:00 dose was made live *on demand*
+      rather than waited for: `DOSE_GRACE` is 30 minutes and a cell is nearer fifty, so an evening run
+      goes quiet halfway. A `due_dose` seed variant re-armed a slot a minute in the past **before every
+      scene**, and `mBypassDnd=false` was read off the channel first, so DND suppressing it is evidence
+      rather than luck. **Three driver defects had to be fixed to get the run, and none was in the app** —
+      see phase-7.5.md §4.
+      ⚠️ **`Care & Meds` and `Backup & restore` matched nothing in English**, because `dump_ui` parses the
+      XML with a regex and never unescaped `&amp;`. Those two needles head roughly **twenty** scenes.
+      Unreachable in Polish (*"Opieka i leki"*, *"Kopia zapasowa i przywracanie"*), so the 146/146 run
+      could not see it — **the first defect this phase where English is the broken half**, and it arrived
+      with the 2026-08-14 lengthening that fixed a different ambiguity.
+      ⚠️ **`tap`'s four-try scroll budget is a portrait-shaped constant.** A landscape swipe covers ~464 px
+      against portrait's ~1030, so seven landscape cells reported controls unreachable that `care-bottom`
+      scrolls straight past. It scrolls while the screen keeps changing now.
+      ⚠️ **A partial re-shoot used to overwrite the report** with only the re-shot cells — the Polish run's
+      2026-08-15 note, now folded into `write_report`, which merges by scene name.
       ⚠️ **`photos` and `photos-bottom` had been shooting the wrong screen in Polish, silently** —
       found 2026-08-15 and **fixed**. `more_photos` is *"Zdjęcia"* and `bunny_avatar_placeholder` is
       *"Nie ma jeszcze zdjęcia"*, the same form; `find` takes the smaller node and the avatar (60×60)
