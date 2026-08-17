@@ -192,7 +192,7 @@ there is no schema change and no media path.
    owed here is only that its needle table still resolves once seven locales exist. Every new needle is a
    claim that some resource still says what the table thinks it says.
 4. Draft all seven into `translations/`, validated by the test in place. 🟡 **`de`, `es` and `fr`
-   done 2026-08-16** — four to go —
+   done 2026-08-16, `it` on 2026-08-17** — three to go —
    along with the staging area this step assumed and nothing had yet built: `TranslationTest` reads
    `translations/<tag>/strings.xml` beside `values-<qualifier>/`, holds a draft to the same
    assertions, and rejects a tag that is both staged and shipped — promotion is a *move*, and two
@@ -215,6 +215,15 @@ there is no schema change and no media path.
    or reworded for it. The lesson for the four remaining is that **§7.4 is really "the app cannot
    touch a name the owner typed"**, and each language should be asked what its own version of that
    is rather than checked against Polish's. Both per-language records are `DOD.md` §7.
+   **Italian closes both of those questions rather than adding to them.** `care_every` is *Ogni
+   %1$s* and needs no label — *ogni* governs a bare unit and a counted gap alike — so the split is
+   **two of four**, and Spanish stops being the exception: ask a new language which side it falls
+   on rather than expecting the label. And §7.4 comes back **empty** for the first time, which is a
+   result and not a skipped check: Italian declines nothing *and* need not elide (*foto di Alice*
+   is correct), so no string was reordered. What Italian pays instead is §7.2, in Polish's own
+   coin — *in* + the article contracts (*negli*, *nell’*) and the app cannot do it at run time, so
+   the chart windows are pre-inflected exactly as Polish's are. **The technique generalises past
+   the language it was written for; the trap it answers does not.** Its own record is `DOD.md` §7.
 5. Promote one language at a time as its native read completes — four edits, one commit, one language.
 6. Listing text for the promoted set; screenshots later, driven by install data.
 
