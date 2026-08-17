@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    French — DRAFT, staged. Not in res/ on purpose (Phase 8): the moment values-fr/ exists,
-    every phone set to French gets these strings, reviewed or not. locales_config.xml is a
-    picker list, not a delivery filter. Promotion is four edits and one commit, and it happens
-    only after a native speaker has read every screen in the running app.
+    French — shipped, promoted from translations/ in Phase 8.
+
+    **It ships without a native read-through**, which is a decision rather than an
+    oversight: no native reviewer was available, and a gate that can never be satisfied is
+    worse than a different one. Three things stand in its place. An ethics audit against the
+    rules that outrank fluency — ADR-0026's blame words, ADR-0001's inference from silence,
+    and "observe, never advise" — which this file passed. An argument-role pass over every
+    format string, catching the one failure mode no test reaches: an argument that keeps its
+    slot and changes what it refers to. And the report row in the language picker, which is
+    what turns the people reading this into the reviewers it never had.
+
+    So the decisions listed below are not settled. They are the first things to put to the
+    first speaker who writes in, and each carries the fallback to move to if they object.
 
     Translated from English only, against docs/translator-brief.md.
 
@@ -130,7 +139,7 @@
       Silver Fox, Silver Marten, Tan, Thrianta, Velveteen Lop — stay exactly as they are, and
       *Blanc de Hotot*, *Champagne d’Argent* and *Crème d’Argent* were French to begin with.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- app_name, settings_language_* and med_editor_name_placeholder are translatable="false"
          and deliberately absent: a copy of them here would resolve fine, render the same words
          and cost a line per language forever. A test fails if they appear. -->
@@ -699,22 +708,30 @@
          the editor also puts them beside a number field of their own. -->
     <string name="care_every">Rythme : %1$s</string>
 
-    <plurals name="care_unit_days">
+    <!-- The four unit plurals below carry no %d on purpose, and lint's ImpliedQuantity is a
+         false positive on exactly this shape. They are bare agreeing words: the count is rendered
+         beside them by the editor's own number field, or is absent entirely in care_every. The
+         rule assumes a plural spells its own number ("%d pages"), which is true of every other
+         plural in this file and not of these. Ukrainian `one` covers 21, 31, 41 …, and "21 день"
+         is exactly the singular the language wants; French and Portuguese `one` covers 0, which a
+         care interval can never be. Suppressed per-resource rather than project-wide, so a real
+         ImpliedQuantity in a future plural still reddens the build. -->
+    <plurals name="care_unit_days" tools:ignore="ImpliedQuantity">
         <item quantity="one">jour</item>
         <item quantity="many">jours</item>
         <item quantity="other">jours</item>
     </plurals>
-    <plurals name="care_unit_weeks">
+    <plurals name="care_unit_weeks" tools:ignore="ImpliedQuantity">
         <item quantity="one">semaine</item>
         <item quantity="many">semaines</item>
         <item quantity="other">semaines</item>
     </plurals>
-    <plurals name="care_unit_months">
+    <plurals name="care_unit_months" tools:ignore="ImpliedQuantity">
         <item quantity="one">mois</item>
         <item quantity="many">mois</item>
         <item quantity="other">mois</item>
     </plurals>
-    <plurals name="care_unit_years">
+    <plurals name="care_unit_years" tools:ignore="ImpliedQuantity">
         <item quantity="one">an</item>
         <item quantity="many">ans</item>
         <item quantity="other">ans</item>
