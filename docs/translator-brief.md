@@ -184,6 +184,14 @@ came off it: `pominąć` is **agentive** — *pominąłem dawkę* is "I skipped 
 `dose_status_skipped` is *Pominięta* and is correct. **Check your own candidates the same way before
 banning them**: the test is whether the word can only describe something that happened *to* the owner.
 
+**Italian ran the same test and kept its word banned**, which is the other half of the lesson.
+*Saltare* is agentive when it is transitive — *ho saltato la dose* is something the owner did — but
+*è saltata la dose* is ordinary Italian for a thing that simply fell through, and a status chip has
+no subject to disambiguate it. So *saltata* stays on the list and `dose_status_skipped` is *Omessa*,
+beside Spanish's *Omitida*, French's *Sautée* and German's *Ausgelassen*. **A word that is agentive
+in one construction and passive in another fails the test**; the question is not whether the word
+*can* mean the owner did it.
+
 ---
 
 ## 7. Traps
@@ -235,10 +243,22 @@ The full list of strings where a translated phrase lands inside a translated sen
 | `med_history_for_slot`, `med_record_for_slot` | a formatted clock time |
 | `bunny_lives_with_value`, `observation_with`, `healthy_day_logged` | a joined list of names |
 
+**Pre-inflection is not only for languages with cases.** Italian declines nothing and needs it anyway:
+*in* + the article contracts (*in* + *gli* → **negli**, *in* + *l’* → **nell’**), and the app cannot
+make that contraction at run time, so `weight_chart_window_*` carry it — *negli ultimi 30 giorni*,
+*nell’ultimo anno*. Ask what your language does to a fragment dropped into a sentence, not whether it
+has cases.
+
 `care_every` has a note of its own: English *"Every %1$s"* takes *"6 weeks"* or the bare unit *"week"*, so
 `Every 1 year` can never render. Polish *"Co %1$s"* governs the accusative, which for all four units is
 spelled like the nominative the plurals already hold. **Check that coincidence in your language** — if the
 accusative differs, the unit plurals need the accusative form, because that is their only host.
+
+**And check whether the sentence survives at all.** German and French have no preposition that governs
+both a bare unit and a counted gap, so both gave the host up and made it a label (*Rhythmus: %1$s*,
+*Rythme : %1$s*), which then decided the wording of `care_due_in` and `care_due_overdue` behind it.
+Spanish's *Cada* and Italian's *Ogni* govern both and keep the sentence. **Two of four either way** —
+so the question is which side your language falls on, and it is four strings deep by the time it shows.
 
 ### 7.3 The app knows neither the owner's gender nor the bunny's
 
@@ -288,6 +308,12 @@ until run time. The French draft reorders `home_about_bunny`, `photo_description
 argument keeps its job. Ask what **your** language does to a word it cannot see — case, elision,
 liaison, an article that agrees, a particle that attaches — and check every string that substitutes a
 name, a document title or a care reminder's label. They are all owner-typed and all untouchable.
+
+**"Nothing" is a legitimate answer, and Italian is the one that gives it.** Italian declines nothing
+and — unlike French — is not obliged to elide: *foto di Alice*, *informazioni su Alice*, *a Alice*
+are all correct as they stand (*ad* is a style choice, never a rule), and no article precedes a first
+name. Not one string was reordered. Say so explicitly when it happens, with the strings you read to
+get there; an unremarked §7.4 is indistinguishable from a skipped one.
 
 ### 7.5 Plurals
 

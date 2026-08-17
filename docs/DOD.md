@@ -605,7 +605,7 @@ in nine languages and having it read twice by nine native speakers.
       same move Polish makes with *po terminie*. `dose_status_skipped` is *Ausgelassen*, agentive
       the way *Pominięta* is.
       🟡 **`es` drafted 2026-08-16** — 685/685, mechanically green, into `translations/es/`.
-      **Four to go: `it pt-BR cs uk`.**
+      **Three to go: `pt-BR cs uk`.**
       ℹ️ **Spanish is the first language to pay §7.3 on the bunny's side rather than the
       owner's**, which is the reverse of German. The owner's half is free — the compound perfect
       with *haber* does not agree with its subject, so *has guardado* and *he mirado* carry no
@@ -685,6 +685,60 @@ in nine languages and having it read twice by nine native speakers.
       needing a **dodge** neither of the others did: the *added* count sits on the same string
       and the wrong plural axis, so it is a noun — *Ajout : %1$d sur %2$d* — rather than a
       participle that would be wrong half the time.
+      🟡 **`it` drafted 2026-08-17** — 685/685, mechanically green, into `translations/it/`.
+      ℹ️ **`care_every` survives as a sentence, which settles what the German draft asked.**
+      *Ogni* governs a bare unit and a counted gap alike (*ogni settimana*, *ogni 6 settimane*),
+      so Italian needs neither German's label nor French's, the unit plurals stay in the citation
+      form, and `care_due_in` / `care_due_overdue` are rewritten for §6's reason rather than for
+      grammar: *Da fare tra %1$s* and *Da fare da %1$s*. **Two of four pay it, two do not** —
+      Spanish was not the exception it looked like, so the thing to ask a new language is which
+      side it falls on, not whether it is the odd one out.
+      ℹ️ **§7.4 costs Italian nothing, and that is the first nil result in four.** Italian
+      declines nothing *and* does not have to elide — *foto di Alice*, *informazioni su Alice*,
+      *a Alice* are all correct as they stand, the euphonic *ad* being a style choice rather than
+      a rule — and no article precedes a first name. Every name-substituting string was read with
+      a vowel-initial name in it and none needed reordering, so `home_about_bunny` keeps English's
+      shape. **"Nothing" is a legitimate answer to §7.4**, not a sign the check was skipped.
+      ⚠️ **Italian's own §7.2 trap is the preposition swallowing the article**, which is Polish's
+      problem in a language with no cases: *in* + *gli* is **negli**, *in* + *l’* is **nell’**, and
+      the app cannot contract at run time. The four `weight_chart_window_*` are **pre-inflected** —
+      *negli ultimi 30 giorni*, *nell’ultimo anno* — exactly as Polish pre-inflects for the
+      locative, which is the first reuse of that technique outside the language it was written
+      for. Both hosts take the fragment bare; a third host with a different preposition would
+      break all four at once.
+      ⚠️ ***Saltata* stays banned, which is the mirror image of Polish's *pominięta*.** Same test,
+      opposite answer: *saltare* is agentive when transitive (*ho saltato la dose*), but *è saltata
+      la dose* is idiomatic for a thing that simply fell through, and a status chip has no subject
+      to disambiguate it. `dose_status_skipped` is ***Omessa*** — Spanish's *Omitida* and French's
+      fallback, reached independently. *Mancata*, *dimenticata* and *scaduta* appear nowhere, and
+      `backup_folder_forget` is *Rimuovi questa cartella* rather than *Dimentica*, because the gate
+      reads the file for those words rather than for their sense.
+      ⚠️ **Four decisions the native read-through has to confirm, not just read past:**
+      `destination_care` is ***Cure e farmaci*** — **the meds half survives**, where Spanish and
+      French both dropped it, at fourteen characters, the width German accepted for *Pflege &amp;
+      Medis*; **the capture driver is what settles it**, and the fallback is *Cure* alone.
+      ***Palline*** for droppings, where *feci* is the clinical word §5 rejects and *cacca* the
+      baby talk §3 rejects — Spanish's objection to *bolitas* does not carry over, because pelleted
+      food is *mangime* or *pellet* in Italian, never *palline*. ***Controllo ravvicinato*** for the
+      watch: *sorveglianza* carries the alarm ADR-0001 forbids, *osservazione* collides with the
+      record type, *monitoraggio* is clinical. And ***terapia*** for the medication course, because
+      **English *care* and *course* both want *cura*** and the two meet on one screen — a §7.1
+      collision running the other way, two English words folding into one Italian one and split by
+      hand.
+      ℹ️ **Three traps priced against the running table.** §7.1's *Normal* costs **three** forms of
+      six, French's count: *Normale* four times, ***Normali*** for the droppings' size — which
+      agrees with the pellets rather than with the measurement, the only split in the file that
+      turns on number instead of gender — and *Beve normalmente* for water. §7.3 splits the
+      Spanish/French way, the owner's half free because *avere* does not agree with its subject
+      (the trend flag is *Dal %3$s %1$s ha perso %2$s*), the bunny's half paid — with **two dodges
+      neither of them had**: the possessive agrees with the thing possessed (*i suoi dati*), and a
+      pronoun can hang off the common noun *il coniglio*, whose masculine is a fact about the word
+      rather than a guess about the animal. And `photo_import_partial` earns its plural for the
+      **fourth** language running, needing French's noun dodge for the added count.
+      ⚠️ **`observation_not_checked` is the string most worth reading in place.** One resource sits
+      under four fields of two genders — *appetito* and *umore* masculine, *attività* and *acqua*
+      feminine — so any participle is wrong on half the screen. It is *Nessun controllo*, a noun
+      phrase, which is also what keeps it a fact about the record (ADR-0001).
 - [ ] Promote one language per commit, only after its native read-through: move into `res/`, add the
       `<locale>` line, the `AppLanguage` entry, and the endonym label.
 - [x] `AppLanguageTest` extended to compare resource directories too (`values-pt-rBR` vs `pt-BR` — two
