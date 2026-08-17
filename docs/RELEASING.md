@@ -34,6 +34,12 @@ git config core.hooksPath .githooks
 
 (It's plain shell — no husky/Node. Bypass in an emergency with `git commit --no-verify`.)
 
+The same setting turns on `.githooks/pre-push`, which prints what the branch still
+owes the translation gate before you push. It is **advisory and cannot fail a push**:
+completeness is a merge boundary, not a work boundary, and a branch mid-translation is
+ordinary (`docs/phase-8.md`). It exists only so you hear it in a second rather than
+from CI four minutes later. Silent when there is nothing outstanding.
+
 ## How a release happens
 
 1. You push normal Conventional Commits to `main`.
