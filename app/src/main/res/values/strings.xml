@@ -208,6 +208,7 @@
          81 entries for a translator to read past and no benefit at any of them. -->
     <string name="settings_language_english" translatable="false">English</string>
     <string name="settings_language_polish" translatable="false">Polski</string>
+    <string name="settings_language_czech" translatable="false">Čeština</string>
     <string name="settings_language_help">Binky can use a different language from the rest of the phone. Changing this restarts the app.</string>
     <string name="settings_language_report">Something read wrong?</string>
     <string name="settings_language_report_help">Tell me if a word looks off in your language.</string>
