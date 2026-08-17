@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -807,13 +809,27 @@ private fun BunnyNavigationBar(
                         // Four destinations at 1.0 and five again when Care & Meds returns, which
                         // is ~70dp per label at its tightest; "Observations" has no break
                         // opportunity, and left to wrap it splits mid-word and draws over its
-                        // neighbours. One line, ellipsised, at the smaller of the two label styles
-                        // — sized for the five-tab case so 1.1 does not have to rediscover this.
+                        // neighbours. One line at the smaller of the two label styles — sized for
+                        // the five-tab case so 1.1 does not have to rediscover this.
+                        //
+                        // The label *shrinks* rather than ellipsising, which is a translation
+                        // decision rather than a visual one: English "Observations" fits at 11sp
+                        // and German "Beobachtungen" does not, and there is no shorter German word
+                        // for it — CONTEXT.md's vocabulary is the concept, not a phrasing choice.
+                        // Ellipsis would make four of nine languages ask the owner to recognise a
+                        // truncated tab. autoSize only ever steps *down* from 11sp, so English and
+                        // Polish render exactly as they did before.
                         Text(
                             text = stringResource(destination.labelRes),
                             style = MaterialTheme.typography.labelSmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            autoSize =
+                                TextAutoSize.StepBased(
+                                    minFontSize = 8.sp,
+                                    maxFontSize = 11.sp,
+                                    stepSize = 0.5.sp,
+                                ),
                         )
                     },
                 )
