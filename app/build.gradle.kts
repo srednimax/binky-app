@@ -220,11 +220,21 @@ tasks.withType<Test>().configureEach {
         .dir(layout.projectDirectory.dir("src/main/res"))
         .withPropertyName("resourcesReadByUnitTests")
         .withPathSensitivity(PathSensitivity.RELATIVE)
+    // It is registered as a **file tree** rather than as a directory, because `translations/` is
+    // legitimately absent whenever nothing is staged — which is the normal state, and became the
+    // state the moment Phase 8 promoted its last draft. A missing directory is a hard validation
+    // failure for `inputs.dir()`, and `.optional()` does **not** rescue it: that makes the *property*
+    // optional, not the *path* absent. A `fileTree` over a missing directory is simply empty, so it
+    // validates whether or not anything is staged, and still sees every file once something is.
+    //
+    // ⚠️ This fails only on a fresh clone, which is why it reached CI green from here. Git does not
+    // track an empty directory, so promotion deletes the drafts and leaves `translations/` behind on
+    // the machine that did it — `./gradlew test` passes locally and every CI job dies at task
+    // configuration. `rmdir translations` before trusting a local run.
     inputs
-        .dir(rootProject.layout.projectDirectory.dir("translations"))
+        .files(fileTree(rootProject.layout.projectDirectory.dir("translations")))
         .withPropertyName("stagedTranslationsReadByUnitTests")
         .withPathSensitivity(PathSensitivity.RELATIVE)
-        .optional()
 }
 
 // Room exports the compiled schema as JSON. ADR-0007 lets us wipe the database until Phase 3,
