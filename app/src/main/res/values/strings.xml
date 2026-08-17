@@ -32,6 +32,7 @@
 
     <string name="action_back">Back</string>
     <string name="action_save">Save</string>
+    <string name="gate_probe_added">Gate probe</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_edit">Edit</string>
     <string name="action_archive">Archive</string>
