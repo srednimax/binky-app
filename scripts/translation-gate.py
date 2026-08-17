@@ -28,6 +28,11 @@ Three things fail this gate:
   3. **Orphaned** — a locale declares something the base language does not. Cheap to catch here too,
      and it is what a rename leaves behind.
 
+And a fourth that is not about the translations at all: **an unusable comparison**. Missing and
+orphaned are read off the working tree, but stale needs a merge base, and without one it does not
+fail — it disappears. So no merge base is itself a failure, rather than a quiet downgrade to the two
+checks that still work.
+
 Drafts staged in `translations/<tag>/` are **reported and never gated**. A language that is not in
 `locales_config.xml` is offered to nobody, so its completeness cannot block a merge — but it is the
 one number nothing else prints, since `TranslationTest` checks a draft's correctness and says
@@ -103,7 +108,11 @@ def merge_base(ref: str) -> str | None:
         capture_output=True,
         text=True,
     )
-    return found.stdout.strip() if found.returncode == 0 else None
+    # Empty output counts as failure too, not just a non-zero exit: both mean "no common ancestor",
+    # and an empty string would sail through a truthiness check further down.
+    if found.returncode != 0:
+        return None
+    return found.stdout.strip() or None
 
 
 def shipped_locales() -> list[str]:
@@ -140,10 +149,29 @@ def main() -> int:
         print("translation-gate: English only, nothing to translate against.")
         return 0
 
-    # What this branch did to the base language. `previous` is None on a repo with no such ref, in
-    # which case every string reads as pre-existing rather than as added — the safe way round, since
-    # the gate still demands they all be translated.
+    # What this branch did to the base language — which needs a merge base, and refuses to guess
+    # without one.
+    #
+    # This used to fall back to an empty `previous`, on the reasoning that reading every string as
+    # pre-existing is "the safe way round". It is not. It is safe for *missing* (those are still
+    # demanded) and silently fatal for *stale*, which is computed only from `reworded` and so
+    # becomes an unconditional no-op. CI ran that way: a depth-1 checkout of the PR merge ref
+    # against a shallow `main` share no ancestor, `git merge-base` exits 1, and a reworded English
+    # string whose translation had not followed passed green. A gate that cannot make its
+    # comparison must fail, not pass — the whole point is that nothing else in this repo catches it.
     point = merge_base(args.base)
+    if point is None:
+        unusable = (
+            f"translation-gate: no merge base between HEAD and {args.base}. Nothing to compare "
+            "against, so the stale check cannot run — refusing to pass on a comparison that did "
+            "not happen. In CI this means the checkout is shallow: use fetch-depth: 0 and fetch "
+            f"the base branch without --depth. Locally, `git fetch origin {args.base.split('/')[-1]}`."
+        )
+        if not args.report:
+            print(unusable, file=sys.stderr)
+            return 1
+        print(f"{unusable}\nReporting what can still be checked.\n", file=sys.stderr)
+
     previous_text = at_ref(point, BASE_STRINGS) if point else None
     previous, _ = parse(previous_text) if previous_text is not None else ({}, set())
 
