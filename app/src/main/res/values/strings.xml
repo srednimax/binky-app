@@ -212,6 +212,7 @@
     <string name="settings_language_german" translatable="false">Deutsch</string>
     <string name="settings_language_spanish" translatable="false">Español</string>
     <string name="settings_language_french" translatable="false">Français</string>
+    <string name="settings_language_italian" translatable="false">Italiano</string>
     <string name="settings_language_help">Binky can use a different language from the rest of the phone. Changing this restarts the app.</string>
     <string name="settings_language_report">Something read wrong?</string>
     <string name="settings_language_report_help">Tell me if a word looks off in your language.</string>
