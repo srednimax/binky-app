@@ -605,7 +605,7 @@ in nine languages and having it read twice by nine native speakers.
       same move Polish makes with *po terminie*. `dose_status_skipped` is *Ausgelassen*, agentive
       the way *Pominięta* is.
       🟡 **`es` drafted 2026-08-16** — 685/685, mechanically green, into `translations/es/`.
-      **Two to go: `cs uk`.**
+      **One to go: `uk`.**
       ℹ️ **Spanish is the first language to pay §7.3 on the bunny's side rather than the
       owner's**, which is the reverse of German. The owner's half is free — the compound perfect
       with *haber* does not agree with its subject, so *has guardado* and *he mirado* carry no
@@ -810,6 +810,83 @@ in nine languages and having it read twice by nine native speakers.
       holandês***; **Lionhead → *Cabeça de leão*** is genuinely current here unlike the English
       names around it; and **Mixed / unknown → *Sem raça definida***, Brazil's real idiom (SRD),
       which is why it earns first place rather than being sorted there.
+      🟡 **`cs` drafted 2026-08-17** — 685/685, mechanically green, into `translations/cs/`, and
+      the staging harness re-proven on a locale it had never seen: dropping `few` from one Czech
+      plural reddens `TranslationTest`, so a brand-new draft directory is checked rather than
+      merely counted.
+      ✅ **The question Portuguese left for the Slavic pair comes back clean, and it was worth
+      asking rather than assuming.** CLDR gives `cs` *one: i = 1*, so **zero lands in `other`** —
+      *0 stran*, *0 záznamů*, *0 obrázků* — which is the genitive plural Czech actually wants.
+      The three counts Portuguese had to recast as labels stay ordinary sentences here, and
+      nothing in the file is knowingly wrong at zero. `uk` should answer the same way.
+      ⚠️ **Czech's own plural finding is that four categories are not four reachable ones.**
+      `many` is *v != 0* — the **fraction** form (*1,5 dne*), spelled genitive singular — where
+      Polish and Ukrainian spend theirs on ordinary integers. So a Slavic row can be as
+      unreachable as a romance one, and the draft fills it with what a decimal would really take
+      rather than mirroring `other`, except in whole sentences where a fractional count is
+      nonsense. **The brief's plural table is right about the count of categories and silent
+      about which of them can render**, which is now written down in §7.5.
+      ⚠️ **The trap no plural table can see: the predicate agrees with the count.** *Jsou 3
+      měsíce* against *je 6 měsíců* — so `trend_flag_long_gap`, which substitutes a gap phrase,
+      would need two verbs. It is built on ***dělí***, whose 3rd person singular and plural are
+      spelled alike (*Ta dvě vážení dělí %1$s*). Every §7.2 substitution owes this check in an
+      inflecting language, and English cannot show it.
+      ⚠️ **§7.3 is paid on both halves, which no earlier draft has been.** German paid neither;
+      Spanish, French, Italian and Portuguese paid the bunny's half only. Czech's past tense
+      agrees with the addressee, so **no sentence in this file puts "you" in the past** —
+      imperatives, the present and impersonal passives (*zapsáno*, *nepodařilo se*) carry it, and
+      several strings were rewritten for it including two notifications. The bunny's half is the
+      masculine generic *králík*, stated in the header, with the graded chips dodging it entirely
+      by agreeing with their **field noun** (*chuť*, *nálada*, *aktivita* are all feminine) rather
+      than with the animal. ℹ️ **A third party needs the same care**: *Binky* has no settled
+      gender in Czech, so the app is never the subject of a verb that has to agree with it — the
+      feminine common noun *aplikace* stands in where one is unavoidable.
+      ⚠️ **§7.4 is the most expensive of the six drafts, and it produced a technique worth
+      carrying.** Beyond Polish's colon (*%1$s — informace*, *Smazat: %1$s?*), Czech puts a
+      **declined common noun in front of the name and lets it carry the case** — *fotky králíka
+      %1$s*, *pro králíka %1$s*, *z dokumentu %2$s* — so the sentence keeps its shape and
+      `photo_gallery_empty_help` keeps its argument in its real job. And one string needed nothing
+      at all: *Kolik let má %1$s?* puts the name in **subject** position, where the citation form
+      is already correct. Ask that before reordering anything.
+      ⚠️ **Four decisions the native read-through has to confirm, not just read past:**
+      `destination_care` is ***Péče a léky*** at eleven characters — **the meds half survives**, a
+      third language keeping it against three that dropped it, because *léky* is the ordinary word
+      and not an abbreviation; the fallback is *Péče* alone. ***Bobky*** for droppings, the
+      *Köttel* / *cagarrutas* / *crottes* / *palline* / *bolinhas* decision a sixth time, where
+      *trus* is the clinical word §5 rejects and pelleted food is *granule*, so Spanish's
+      collision does not arise. ***Sledování*** for the watch — and Czech is the first language
+      where **Polish's own collision does not happen**: *pozorování* stays the record type,
+      *sledování* is the watch, two ordinary words where Polish had to qualify one. And ***kúra***
+      for a medication course (fallback *léčba*), which avoids Italian's *cura* collision because
+      care is *péče*.
+      ℹ️ ***Vynechána* comes off the banned list, and it refines §6's test rather than repeating
+      it.** Czech *vynechat* **does** have an intransitive life — *motor vynechává* — which by
+      Italian's rule alone would condemn it. But that reading takes a machine as its subject and
+      ***dávka vynechala* is not Czech**, so the chip has no agentless reading. The question is
+      the intransitive life **with this noun**, which is Portuguese's version of the test, and it
+      is now in the brief. `dose_status_given` is *Podána*; the fallback pair is *Přeskočena* /
+      *Podána*, and the two move together.
+      ℹ️ **Three traps priced, and one surprise.** §7.1's *Normal* costs **three** forms of six —
+      the romance count, in a language with seven cases — because ***normální*** is one of the
+      adjectives Czech does not inflect in the nominative singular, which is *Spanish's* reason.
+      The two that diverge are *Normálně* for the amount and *Pije normálně* for water. §7.1's
+      other rows split the way Polish's do (*Jméno* / *Jméno nebo název*, *Neznámé* / *Neví se*),
+      and ***Kontrolní vážení*** against plain *vážení* is the French weigh-in divergence found a
+      **fourth** time. §7.2's pre-inflection is Polish's exact locative technique, second Slavic
+      and fourth language overall. And `photo_import_partial` earns its plural for the sixth
+      language running, but only because the file **names the noun** (*%3$d soubor nešel přečíst*)
+      — the impersonal phrasing that came first would have collapsed all four items into one.
+      ⚠️ **Two breed rows sit one word apart and want a rabbit person, not a dictionary**:
+      **Flemish Giant → *Belgický obr*** against **Belgian Hare → *Belgický zajíc***, because the
+      Czech standard names the Flemish Giant after Belgium. Otherwise Czech has a national
+      standard (ČSCH) and so translates **more** rows than any earlier draft: the lop family is
+      *beran* (*Zakrslý beran*, *Anglický beran*, *Francouzský beran*) with **Holland Lop left in
+      English**, because *Zakrslý beran* is already the Dwarf Lop and mapping both onto it would
+      lose a breed; **Polish → *Hermelín***, a fifth language reaching the continental name;
+      **Himalayan → *Ruský***, French's and Italian's way; **Harlequin → *Japonský***, the
+      standard's name where pet shops write *Harlekýn*; **Tan → *Ohnivák***, **Rhinelander →
+      *Rýnský***, **Checkered Giant → *Německý obrovitý strakáč***, **Lionhead → *Lvíček***, and
+      **Mixed / unknown → *Kříženec / neznámé plemeno***.
 - [ ] Promote one language per commit, only after its native read-through: move into `res/`, add the
       `<locale>` line, the `AppLanguage` entry, and the endonym label.
 - [x] `AppLanguageTest` extended to compare resource directories too (`values-pt-rBR` vs `pt-BR` — two
