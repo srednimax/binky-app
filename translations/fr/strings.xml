@@ -313,6 +313,8 @@
     <!-- The endonyms are translatable="false" and deliberately absent: `Polski` is `Polski` on
          a French phone too. -->
     <string name="settings_language_help">Binky peut utiliser une autre langue que le reste du téléphone. Ce changement redémarre l’application.</string>
+    <string name="settings_language_report">Quelque chose sonne faux ?</string>
+    <string name="settings_language_report_help">Dis-moi si un mot ne va pas dans ta langue.</string>
     <!-- ADR-0027. Shown on Android 12 and newer only. -->
     <string name="settings_material_you">Les couleurs de ton fond d’écran</string>
     <string name="settings_material_you_help">Binky a ses propres couleurs. Active ceci et il les prendra dans ton fond d’écran, comme Android le fait pour ses propres écrans.</string>
@@ -965,6 +967,7 @@
     <string name="support_intro">Binky est fait par une seule personne. Un rapport de bug ou une idée lui arrive directement.</string>
     <string name="support_bug_button">Signaler un bug</string>
     <string name="support_bug_subject">Rapport de bug</string>
+    <string name="support_translation_subject">Problème de traduction</string>
     <string name="support_bug_prompt">(décris ici ce qui s’est passé)</string>
     <string name="support_diagnostics_title">Ce que contient un rapport de bug</string>
     <!-- Impersonal, and no "nous": the app is made by one person (the Polish read-through's

@@ -256,6 +256,8 @@
     <string name="settings_language_system">El del teléfono</string>
     <!-- The endonyms are translatable="false" and deliberately absent from this file (§4). -->
     <string name="settings_language_help">Binky puede usar un idioma distinto del resto del teléfono. Al cambiarlo, la app se reinicia.</string>
+    <string name="settings_language_report">¿Algo suena mal?</string>
+    <string name="settings_language_report_help">Dime si alguna palabra no está bien en tu idioma.</string>
     <!-- ADR-0027 -->
     <string name="settings_material_you">Colores de tu fondo de pantalla</string>
     <string name="settings_material_you_help">Binky tiene sus propios colores. Actívalo y los tomará de tu fondo de pantalla, como hace Android con sus propias pantallas.</string>
@@ -894,6 +896,7 @@
     <string name="support_intro">Binky la hace una sola persona. Un informe de fallo o una idea le llegan directamente.</string>
     <string name="support_bug_button">Informar de un fallo</string>
     <string name="support_bug_subject">Informe de fallo</string>
+    <string name="support_translation_subject">Problema de traducción</string>
     <string name="support_bug_prompt">(describe aquí lo que ha pasado)</string>
     <string name="support_diagnostics_title">Qué lleva un informe de fallo</string>
     <!-- Impersonal, and singular: the app is made by one person, so nothing here says "we"

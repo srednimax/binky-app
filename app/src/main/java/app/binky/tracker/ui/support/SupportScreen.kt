@@ -102,20 +102,7 @@ fun SupportScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // The **resolved** locale, not `currentAppLanguage()`: that one is null for "follow the phone",
-    // which is the ordinary state and would put a blank in the block for most senders. What a report
-    // needs is the locale the strings on screen were actually drawn from.
-    val locales = LocalResources.current.configuration.locales
-    val diagnostics =
-        SupportDiagnostics(
-            versionName = BuildConfig.VERSION_NAME,
-            versionCode = BuildConfig.VERSION_CODE,
-            isDebugBuild = BuildConfig.DEBUG,
-            androidRelease = Build.VERSION.RELEASE,
-            apiLevel = Build.VERSION.SDK_INT,
-            device = "${Build.MANUFACTURER} ${Build.MODEL}",
-            appLocale = locales[0].toLanguageTag(),
-        )
+    val diagnostics = currentSupportDiagnostics()
 
     // Resolved up here because the launches happen in ordinary lambdas, where `stringResource` is
     // not callable — the same shape as `CareReminderScreen`'s `calendarMissing`.
@@ -303,4 +290,33 @@ private fun RateCard(onRate: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+/**
+ * The six facts a bug report carries, read off the framework at composition time.
+ *
+ * Extracted from [SupportScreen] so the language picker can send the *same* report. A translation
+ * problem is a bug like any other and deserves the same build-and-device block behind it rather than
+ * a second, thinner one — and [SupportDiagnostics.appLocale] is what makes such a report
+ * self-identifying, because it names the locale the strings on screen were actually drawn from.
+ *
+ * Deliberately **not** `remember`ed and deliberately not named as if it were: every field is cheap,
+ * and the locale one is read from the current configuration, which is exactly the thing that must not
+ * be cached across a change.
+ */
+@Composable
+internal fun currentSupportDiagnostics(): SupportDiagnostics {
+    // The **resolved** locale, not `currentAppLanguage()`: that one is null for "follow the phone",
+    // which is the ordinary state and would put a blank in the block for most senders. What a report
+    // needs is the locale the strings on screen were actually drawn from.
+    val locales = LocalResources.current.configuration.locales
+    return SupportDiagnostics(
+        versionName = BuildConfig.VERSION_NAME,
+        versionCode = BuildConfig.VERSION_CODE,
+        isDebugBuild = BuildConfig.DEBUG,
+        androidRelease = Build.VERSION.RELEASE,
+        apiLevel = Build.VERSION.SDK_INT,
+        device = "${Build.MANUFACTURER} ${Build.MODEL}",
+        appLocale = locales[0].toLanguageTag(),
+    )
 }

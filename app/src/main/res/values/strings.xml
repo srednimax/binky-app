@@ -209,6 +209,8 @@
     <string name="settings_language_english" translatable="false">English</string>
     <string name="settings_language_polish" translatable="false">Polski</string>
     <string name="settings_language_help">Binky can use a different language from the rest of the phone. Changing this restarts the app.</string>
+    <string name="settings_language_report">Something read wrong?</string>
+    <string name="settings_language_report_help">Tell me if a word looks off in your language.</string>
     <!-- ADR-0027. The row is shown on Android 12 and newer only, where there is a wallpaper palette
          to take; below that the app has always used its own colours and there is nothing to offer. -->
     <string name="settings_material_you">Colours from your wallpaper</string>
@@ -901,6 +903,7 @@
     <string name="support_intro">Binky is made by one person. A bug report or an idea reaches them directly.</string>
     <string name="support_bug_button">Report a bug</string>
     <string name="support_bug_subject">Bug report</string>
+    <string name="support_translation_subject">Translation problem</string>
     <string name="support_bug_prompt">(describe what happened here)</string>
     <string name="support_diagnostics_title">What a bug report carries</string>
     <string name="support_diagnostics_explain">The app version, your Android version, the phone model and the app\'s language are added to the message. Nothing about your bunnies, and nothing is sent until you tap send in your mail app.</string>

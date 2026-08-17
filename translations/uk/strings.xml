@@ -303,6 +303,8 @@
     <string name="settings_language">Мова</string>
     <string name="settings_language_system">Як на телефоні</string>
     <string name="settings_language_help">Binky може працювати іншою мовою, ніж решта телефона. Зміна перезапускає застосунок.</string>
+    <string name="settings_language_report">Щось звучить не так?</string>
+    <string name="settings_language_report_help">Напиши, якщо якесь слово у твоїй мові виглядає неправильно.</string>
     <string name="settings_material_you">Кольори з твоїх шпалер</string>
     <string name="settings_material_you_help">У Binky власні кольори. Увімкни це — і кольори братимуться зі шпалер, як це робить сам Android.</string>
 
@@ -922,6 +924,7 @@
     <string name="support_intro">Binky робить одна людина. Повідомлення про помилку чи ідея потрапляє прямо до неї.</string>
     <string name="support_bug_button">Повідомити про помилку</string>
     <string name="support_bug_subject">Повідомлення про помилку</string>
+    <string name="support_translation_subject">Проблема з перекладом</string>
     <string name="support_bug_prompt">(опиши тут, що сталося)</string>
     <string name="support_diagnostics_title">Що несе в собі повідомлення про помилку</string>
     <string name="support_diagnostics_explain">До листа додається версія застосунку, версія Android, модель телефона та мова застосунку. Нічого про твоїх кроликів, і нічого не надсилається, доки ти не натиснеш «Надіслати» у своєму поштовому застосунку.</string>

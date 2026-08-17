@@ -62,6 +62,11 @@ import app.binky.tracker.ui.common.RowDivider
 import app.binky.tracker.ui.common.SectionHeader
 import app.binky.tracker.ui.common.SwitchRow
 import app.binky.tracker.ui.reminders.RemindersOptIn
+import app.binky.tracker.ui.support.SupportRequest
+import app.binky.tracker.ui.support.currentSupportDiagnostics
+import app.binky.tracker.ui.support.sendSupportMail
+import app.binky.tracker.ui.support.supportBody
+import app.binky.tracker.ui.support.supportSubject
 import app.binky.tracker.work.scheduleDebugReminder
 
 /**
@@ -244,6 +249,15 @@ private fun LanguageRow() {
     var chosen by remember { mutableStateOf(currentAppLanguage()) }
     var picking by remember { mutableStateOf(false) }
 
+    // The translation-report hand-off. Resolved here because the tap happens in an ordinary lambda,
+    // where `stringResource` is not callable — the same shape `SupportScreen` uses.
+    val context = LocalContext.current
+    val diagnostics = currentSupportDiagnostics()
+    val translationSubject = stringResource(R.string.support_translation_subject)
+    val bugPrompt = stringResource(R.string.support_bug_prompt)
+    val noMailApp = stringResource(R.string.support_no_mail_app)
+    var mailFailed by remember { mutableStateOf(false) }
+
     ListRow(
         title = stringResource(R.string.settings_language),
         subtitle = stringResource(R.string.settings_language_help),
@@ -304,6 +318,40 @@ private fun LanguageRow() {
                         )
                     }
                 }
+            }
+
+            // **The report path lives here and not only on Support**, because this is where an owner
+            // is standing at the moment a translation reads wrong. Seven of the nine languages ship
+            // without a native read-through, so this row is the mechanism that replaces one — and a
+            // channel nobody can find is the same as no channel.
+            //
+            // It sends an ordinary bug report: `SupportRequest.BUG`, so the one inbox filter that
+            // already covers every locale catches it, with a description of its own so the maintainer
+            // can still tell the two apart on sight. `supportBody` stamps the resolved locale into the
+            // block, which is what makes such a report self-identifying without asking the sender
+            // which language they are in.
+            HorizontalDivider()
+            ListRow(
+                title = stringResource(R.string.settings_language_report),
+                subtitle = stringResource(R.string.settings_language_report_help),
+                onClick = {
+                    val sent =
+                        context.sendSupportMail(
+                            subject = supportSubject(SupportRequest.BUG, translationSubject, diagnostics),
+                            body = supportBody(SupportRequest.BUG, bugPrompt, diagnostics),
+                        )
+                    // The dialog stays open on failure, which is why this screen needs no snackbar
+                    // host: a message behind a dismissed dialog is a message nobody reads.
+                    if (sent) picking = false else mailFailed = true
+                },
+            )
+            if (mailFailed) {
+                Text(
+                    text = noMailApp,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = Spacing.base),
+                )
             }
         }
     }
