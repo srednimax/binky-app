@@ -139,10 +139,10 @@ Two on-screen labels are worth naming separately because they are the ones owner
 - **"Lives with"** (`bunny_lives_with_label`) — the fluffle's on-screen name. Polish: *"Mieszka z"*.
 - **"Care & Meds"** (`destination_care`) — a bottom-navigation tab, so it must be **short**. Polish fits it
   as *"Opieka i leki"*. If your language cannot fit both halves, shorten rather than wrap. German,
-  Italian and Czech keep both (*Pflege & Medis*, *Cure e farmaci*, *Péče a léky* — fourteen characters
-  and eleven); Spanish, French and Portuguese drop the meds half rather than clip it (*Cuidados*,
-  *Soins*, *Cuidados*), because none of them has a short form for "meds". **Three of six drop it** —
-  say which you did and why.
+  Italian, Czech and Ukrainian keep both (*Pflege & Medis*, *Cure e farmaci*, *Péče a léky*,
+  *Догляд і ліки* — fourteen characters down to eleven); Spanish, French and Portuguese drop the meds
+  half rather than clip it (*Cuidados*, *Soins*, *Cuidados*), because none of them has a short form
+  for "meds". **Three of seven drop it** — say which you did and why.
 
 **The *Avoid* column is what English rejected, and once it has been the only natural word in a target
 language.** Brazilian Portuguese calls a vet appointment a *consulta* — the cognate of a word this table
@@ -184,7 +184,7 @@ anywhere else.
 | `it` | mancata, saltata, dimenticata, scaduta |
 | `pt-BR` | perdida, esquecida, atrasada, vencida — **not** *pulada*, see below |
 | `cs` | zmeškaná, opomenutá, po splatnosti — **not** *vynechaná*, see below |
-| `uk` | пропущена, забута, прострочена |
+| `uk` | пропущена, забута, прострочена — **and** *пропущено*, see below |
 
 `dose_status_skipped` — *"Skipped"* — is **not** in this family and must stay available: skipping is
 something the owner deliberately did and recorded. Keep it clearly distinct from anything meaning
@@ -218,6 +218,17 @@ But that reading takes a machine as its subject and ***dávka vynechala* is not 
 saltata la dose* is ordinary Italian. So the deciding test is the one Portuguese ran: not whether the
 verb can ever be passive, but whether **the sentence a status chip would be read as** has an
 agentless reading. `dose_status_skipped` is *Vynechána*, beside *Pominięta* and *Pulada*.
+
+**Ukrainian fails every candidate and answers with a construction instead, which is the move to
+know about when your language has no word that passes.** *Дозу пропущено* has exactly the agentless
+reading *è saltata la dose* has, so the whole *пропущ-* family goes on the list rather than only the
+adjective. What is left is not a better verb but a better **person**: the 3rd-person-plural
+impersonal (*Дали* / *Не давали*) always implies human agents in Ukrainian and inflects for nothing,
+so it carries the owner's agency without naming them. The same construction answers
+`observation_not_checked` (*Не перевіряли*), which sits under four fields of two genders and so
+cannot be a participle — Italian reached for a noun phrase there, Ukrainian for a verb with no
+subject. **Ask what your language does with an unnamed human agent before concluding the word does
+not exist.**
 
 ---
 
@@ -287,11 +298,19 @@ both a bare unit and a counted gap, so both gave the host up and made it a label
 Spanish's *Cada*, Italian's *Ogni* and Portuguese's *A cada* govern both and keep the sentence.
 Czech loses it for a third reason — not a missing preposition but **agreement**: *každý týden*, but
 *každé 2 týdny* and *každých 6 týdnů*, and the app cannot know which is coming, so `care_every` is
-*Opakování: %1$s*. **Three of six keep it and three lose it**, which makes neither answer the expected
+*Opakování: %1$s*. **Four of seven keep it and three lose it**, which makes neither answer the expected
 one. The question is which side your language falls on, and it is four strings deep by the time it
 shows.
 
-### 7.3 The app knows neither the owner's gender nor the bunny's
+**And ask it of your whole language, not of one word.** Ukrainian's *кожен* has Czech's agreement
+problem exactly — *кожен тиждень*, but *кожні 2 тижні* — so the label looked certain, and a different
+idiom saved it: ***Раз на %1$s*** governs the bare unit and the counted gap alike, because *на* takes
+a case in which all four units are spelled as the plurals already hold them. The useful question is
+therefore **"does any idiom of mine govern both"** rather than "does my word for *every* govern both".
+Three drafts reached for the label after asking only the narrow version, and at least one of them
+(*jednou za %1$s* in Czech) may have had the wider answer available.
+
+### 7.3 The app knows neither the owner's gender nor the bunny's — nor the vet's
 
 **This is the trap that costs the most strings, and English hides it completely.** Binky never asks the
 owner's gender and has nowhere to store it. It does store the bunny's `sex` — but that field is optional,
@@ -318,6 +337,20 @@ Two worked Polish rewrites:
 | --- | --- | --- |
 | *Prosiłeś(-aś) o przypomnienie.* | *Przypomnienie na Twoją prośbę.* | Noun phrase — nothing to inflect |
 | *…i sam(a) decydujesz…* | *…i to Ty decydujesz…* | Present tense carries no gender |
+
+**There is a third party, and six drafts read past it: the vet.** English hides them behind *they*.
+The app stores a vet's name and nothing else — no gender, and the word for the profession usually has
+a feminine form beside it (*ветеринар* / *ветеринарка*). Ukrainian found it in four strings:
+`med_editor_amount` (*if you were told*), `med_editor_amount_help` (*as the vet said it*),
+`visit_weight_label` (*if they weighed them*) and `vet_delete_body` (*every visit that named them*).
+The dodge is the same one the owner's half uses — an impersonal or a 3rd-person-plural that names
+nobody. Check every `visit_*`, `vet_*` and `med_*` string that has a human doing something in it.
+
+**And check whether your register choice is part of this decision.** In Ukrainian it is: the familiar
+*ти* makes the past tense agree with the addressee and so bans it outright, while the polite *ви*
+takes the **plural** past, which carries no gender at all and hands the tense back. That makes the
+address form a whole-file grammar decision rather than a matter of tone, and it belongs in your
+header where a reviewer can overrule it — not in the strings where they would have to infer it.
 
 ### 7.4 Names the app cannot touch
 
@@ -364,6 +397,12 @@ third is free: **check whether the name is the subject**, where the citation for
 *Kolik let má %1$s?* needed no work at all, and the English it translates — *"How old is %1$s?"* —
 looked like it would.
 
+**Ukrainian confirms all three and shows where each belongs.** The common noun does most of the work
+(*Про кролика %1$s*, *Фото кролика %1$s*, *Нагляд за кроликом %1$s завершився*); the colon is kept for
+the strings whose argument is a **joined list of names**, where a singular common noun would be wrong
+(*Разом: %1$s*, *Живе з: %1$s*); and *Скільки років має %1$s?* is free for Czech's reason. If your
+language declines, expect to use two of the three and to sort the strings by which.
+
 ### 7.5 Plurals
 
 Counts go through `<plurals>`, never through concatenation. **Your file must declare every category CLDR
@@ -392,7 +431,12 @@ the language wants (*0 stran*, *0 záznamů*). Nothing in that draft is knowingl
 **Two more things the table cannot tell you, both found in Czech.** First, **four categories does not
 mean four reachable ones**: `cs` declares *many* for *v != 0*, so it is the **fraction** form (*1,5
 dne*) and is as unreachable for this app's integer counts as the romance *many* — where `pl` and `uk`
-spend theirs on ordinary integers. Fill it with what a decimal would really take, and say so. Second,
+spend theirs on ordinary integers. Fill it with what a decimal would really take, and say so.
+⚠️ **Which category is the unreachable one differs between languages that look alike.** Ukrainian
+spends `other` on fractions and `many` on ordinary large integers — the mirror of Czech, in the same
+family, with the same four category names. So the fraction form cannot be found by analogy with a
+related language: **look your own row up**, and note in your header which category you filled with
+the decimal reading. Second,
 **the predicate agrees with the count as well as the noun**: *jsou 3 měsíce* against *je 6 měsíců*, and
 a sentence that substitutes a counted phrase has no plural table to fix it. `trend_flag_long_gap` is
 built on a verb whose singular and plural are spelled alike (*Ta dvě vážení **dělí** %1$s*). Every
@@ -415,6 +459,13 @@ to copy:
 `photo_import_partial` is a `<plurals>` whose two English items are **identical**. That is deliberate: the
 quantity governs the *unreadable* count, which inflects in Polish (*1 pliku* / *2 plików*) where English has
 nothing to vary. Do not collapse it to a `<string>`.
+
+**A set of identical items can also be the correct answer, and twice now it has been.** Czech's
+*vážení* does not inflect for number (a neuter noun in *-í*), so `weight_history_count` is one word
+four times; Ukrainian's *фото* does not inflect at all (an indeclinable borrowing), so
+`photo_import_added` is too. Both files say so in a comment, because four identical items look like a
+draft nobody finished. Note that the sentence **around** an invariant noun usually still inflects,
+which is why the plural stays a plural.
 
 ### 7.6 Format arguments
 

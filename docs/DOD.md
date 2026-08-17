@@ -577,9 +577,12 @@ in nine languages and having it read twice by nine native speakers.
       ℹ️ **The biggest trap was missing from the first draft**: the app knows **neither the owner's gender
       nor the bunny's**, which breaks second-person past tense and predicate adjectives in every remaining
       language. English hides it completely. Now §7.3, with both Polish rewrites as worked examples.
-- [ ] Draft `de es fr it pt-BR cs uk` into **`translations/<locale>/`, not `res/`** — `values-de/`
+- [x] Draft `de es fr it pt-BR cs uk` into **`translations/<locale>/`, not `res/`** — `values-de/`
       existing means every German phone gets it, reviewed or not. `locales_config.xml` is a *picker*
       list, **not** a delivery filter.
+      ✅ **All seven drafted, 2026-08-16 → 2026-08-17**, 685/685 each and mechanically green. What
+      is left of Phase 8's step 4 is nothing; what stands between here and nine shipped languages is
+      seven native read-throughs, which is the box below.
       🟡 **`de` drafted 2026-08-16** — 685/685, and the staging area itself now exists: `TranslationTest`
       holds a draft to every rule it holds a shipped file to (proven by breaking the German plural
       and the German format argument and watching both redden), `translations/` is a declared test
@@ -605,7 +608,7 @@ in nine languages and having it read twice by nine native speakers.
       same move Polish makes with *po terminie*. `dose_status_skipped` is *Ausgelassen*, agentive
       the way *Pominięta* is.
       🟡 **`es` drafted 2026-08-16** — 685/685, mechanically green, into `translations/es/`.
-      **One to go: `uk`.**
+      **All seven are in as of 2026-08-17.**
       ℹ️ **Spanish is the first language to pay §7.3 on the bunny's side rather than the
       owner's**, which is the reverse of German. The owner's half is free — the compound perfect
       with *haber* does not agree with its subject, so *has guardado* and *he mirado* carry no
@@ -887,6 +890,84 @@ in nine languages and having it read twice by nine native speakers.
       standard's name where pet shops write *Harlekýn*; **Tan → *Ohnivák***, **Rhinelander →
       *Rýnský***, **Checkered Giant → *Německý obrovitý strakáč***, **Lionhead → *Lvíček***, and
       **Mixed / unknown → *Kříženec / neznámé plemeno***.
+      🟢 **`uk` drafted 2026-08-17 — the seventh and last, so every shipped-language draft now
+      exists.** 685/685, mechanically green, into `translations/uk/`, and the harness re-proven able
+      to fail on it: dropping `few` from one Ukrainian plural reddens `TranslationTest`.
+      ✅ **The Slavic pair both come back clean on Portuguese's zero trap**, which is what the
+      question was for. `uk` puts 0 in **`many`** — *0 сторінок*, *0 записів*, *0 зображень* — the
+      genitive plural the language wants, so the three counts Portuguese recast as labels stay
+      sentences here too. Two checks, two clean answers, and the cost of asking was an hour against
+      a defect that renders in a rare state and reads as fluent.
+      ⚠️ **The two Slavic rows are not the same shape, and reading one off the other would have put
+      the genitive plural in the wrong slot.** Czech spends `many` on fractions; **Ukrainian spends
+      `other` on them**, as Polish does, and its `many` is an ordinary large-integer category. Four
+      categories, one unreachable, different one each time — §7.5's finding generalises, its
+      *instance* does not.
+      ✅ **`care_every` survives as a sentence, and not for the reason five drafts have been asking
+      about.** *Кожен* has exactly Czech's agreement problem (*кожен тиждень*, *кожні 2 тижні*,
+      *кожних 6 тижнів*), so the label looked certain — but **a different idiom governs both**:
+      *Раз на %1$s*, because *на* takes the accusative and all four units are spelled there as in the
+      nominative the plurals already hold. So the split is **four of seven keep it** (es, it, pt-BR,
+      uk) against three that lose it. ⚠️ **This is worth putting to the Czech reviewer**: *jednou za
+      %1$s* may be the same escape there, in which case that draft's label was avoidable. The
+      question a new language owes is not "does your word for *every* govern both" but **"does any
+      idiom of yours govern both"** — the brief asked the narrower one and got a label three times.
+      ⚠️ **A third unknown gender, and no earlier draft names it: the vet's.** English hides it
+      behind *they*. *Ветеринар* has *ветеринарка* beside it and the app never asks which, so
+      `med_editor_amount`, `med_editor_amount_help`, `visit_weight_label` and `vet_delete_body` all
+      take the **3rd-person-plural impersonal** (*якщо тобі сказали*, *якщо зважували*), which names
+      nobody and inflects for nothing. §7.3 has been read as owner + bunny for six drafts; it is
+      three parties, and the third only shows in a language that inflects the predicate.
+      ⚠️ **The address form and §7.3 are one decision here, which they are nowhere else.** *Ти* was
+      chosen for consistency with the other six, and it costs the past tense outright — so no
+      sentence in the file puts "you" in the past, exactly as in Czech. But **`ви` would buy the
+      tense back**, because the polite form takes the *plural* past, which carries no gender at all.
+      That makes the register a whole-file rewrite either way, and it is the first thing in front of
+      the reviewer rather than a preference to be noted afterwards.
+      ℹ️ **Czech's verb-agreement trap has a cheaper answer: the zero copula.** Where the count sits
+      inside a `<plurals>` the table carries the verb (`watch_days_left`, `delete_records_shared`
+      have four deliberately different predicates). Where a counted phrase is substituted into a
+      sentence, `trend_flag_long_gap` is built with **a dash instead of a verb** — *Між цими двома
+      зважуваннями — %1$s* — and a dash agrees with nothing. Czech reached for a verb spelled alike
+      in both numbers; removing the verb is the same fix one step earlier.
+      ⚠️ **Four decisions the native read-through has to confirm, not just read past:**
+      `destination_care` is ***Догляд і ліки*** at thirteen characters — **the meds half survives**,
+      four of seven now keeping it; the fallback is *Догляд* alone. ***Котяхи*** for droppings, the
+      *Köttel* / *cagarrutas* / *crottes* / *palline* / *bolinhas* / *bobky* decision a seventh time
+      (*кал* and *екскременти* are §5's clinical words, *какашки* §3's baby talk, fallback *кульки* —
+      pelleted food is *гранули*, so Spanish's collision does not arise). ***Нагляд*** for the watch,
+      where *спостереження* is the record type and *стеження* is surveillance of people — **the
+      second language after Czech where Polish's collision simply does not happen**. And
+      ***Кличка*** against ***Імʼя або назва***: Ukrainian has a separate word for an animal's name,
+      so §7.1's *Name* row splits **further apart** here than in any earlier draft rather than
+      collapsing.
+      ℹ️ **`dose_status_skipped` is answered with a construction rather than a word.** The whole
+      *пропущ-* family fails §6's test — *дозу пропущено* has an agentless reading exactly as *è
+      saltata la dose* does — so what is left is the 3rd-person-plural impersonal, which in Ukrainian
+      always implies human agents: ***Дали*** / ***Не давали***, moving together as Portuguese said
+      the pair must. Fallback *Дано* / *Свідомо не дано*. **The same construction answers
+      `observation_not_checked`** (*Не перевіряли*), which sits under four fields of two genders and
+      so cannot be a participle — Italian solved that one with a noun phrase, Ukrainian with a verb
+      that has no subject.
+      ℹ️ **Three traps priced.** §7.1's *Normal* costs **five** forms of six — Polish's count, the
+      most expensive of the seven, against Spanish's one. §7.2's pre-inflection is Polish's locative
+      technique in the accusative (*за останні 30 днів*), third Slavic and fifth language overall,
+      plus a miniature of it in the two weight-unit options. And `photo_import_partial` earns its
+      plural for the **seventh** language running, while ***`photo_import_added` does not*** — *фото*
+      is an **indeclinable borrowing**, so all four items are the same word, which is Czech's *vážení*
+      finding arriving through a loanword instead of a declension class.
+      ⚠️ **The breed list changes script, which is a decision no earlier draft had to make.** "Keep
+      the registered name" is invisible in a Latin-script language and glaring in Cyrillic, so the
+      obscure rows are **transliterated** (*Беверен*, *Британія петіт*, *Тан*, *Тріанта*) rather than
+      left in Latin — Ukrainian breeders write them that way, and a Cyrillic list with Latin islands
+      reads as untranslated. The lop family is ***баран***. **Himalayan → *Гімалайський***, not the
+      continental standards' *російський горностаєвий*, going Spanish's and Portuguese's way against
+      French's and Italian's *Russe* / *Russo* — and in Ukrainian that is not only a naming
+      convention. **Polish → *Гермелін***, a sixth language reaching the continental name.
+      **Flemish Giant → *Фландр***, which incidentally avoids Czech's near-collision: *Бельгійський
+      заєць* stands alone. ⚠️ **The row to read twice is Dutch (*Голландський*) against Holland Lop
+      (*Голландський баран*)** — one word apart, where Netherland Dwarf stays clear as
+      *Нідерландський карликовий*.
 - [ ] Promote one language per commit, only after its native read-through: move into `res/`, add the
       `<locale>` line, the `AppLanguage` entry, and the endonym label.
 - [x] `AppLanguageTest` extended to compare resource directories too (`values-pt-rBR` vs `pt-BR` — two
