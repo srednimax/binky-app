@@ -36,8 +36,10 @@ import java.util.Locale
  * reason for it is the rest of this comment.
  *
  * **3i set out to remove a gate and ended up moving it.** The gate was there because the probe was
- * `fr`, `fr` is not in `locales_config.xml`, and the platform declines an app locale the app does
- * not declare, so 34 and 36 never resolved against it while the backport applied it regardless.
+ * `fr`, which at the time was not in `locales_config.xml`, and the platform declines an app locale
+ * the app does not declare, so 34 and 36 never resolved against it while the backport applied it
+ * regardless. (Phase 8 ships French, so `fr` is declared now and no longer stands for an undeclared
+ * locale anywhere in this file — see `UNSHIPPED_PROBE`.)
  * Declaring `pl` fixed exactly that, and 36 went green. Then it went red, on a run whose only
  * change was a comment — one test, the same ten-second wait, `last seen 'en'`. **So the platform
  * legs are not deterministic here**: 34 fails almost always, 36 intermittently, 26 never. Applying
@@ -174,16 +176,28 @@ class LocaleBackportTest {
 
     @Test
     fun anUnshippedLanguageFallsBackToEnglishRatherThanFailingToResolve() {
-        // Through a configuration context rather than an app locale: `fr` is not in
-        // `locales_config.xml`, and 13+ declines to apply an app locale the app does not declare
-        // (see the class comment). Resource *resolution* is not gated that way, so this is the same
-        // fallback a French phone gets, asked directly and on every leg.
-        val french = contextIn(Locale.FRENCH)
+        // Through a configuration context rather than an app locale: 13+ declines to apply an app
+        // locale the app does not declare (see the class comment), and an unshipped language is
+        // undeclared by definition. Resource *resolution* is not gated that way, so this is the same
+        // fallback a Japanese phone gets, asked directly and on every leg.
+        //
+        // ⚠️ The probe was `fr` until Phase 8 shipped French, at which point this test was asserting
+        // that *French resolves to English* and reddened all four instrumented legs at once. The
+        // guard below is the actual fix: the probe's being unshipped is now a claim the test checks
+        // rather than a fact a comment asserts, so the day Binky ships Japanese this says exactly
+        // what to change instead of failing on two strings that look unrelated to the release.
+        assertTrue(
+            "$UNSHIPPED_PROBE is a shipped language now, so it cannot stand for one that is not — " +
+                "point UNSHIPPED_PROBE at a tag Binky does not ship",
+            AppLanguage.entries.none { it.tag == UNSHIPPED_PROBE },
+        )
 
-        // Binky has no `values-fr`, so its own strings fall back to the default folder — plain
+        val unshipped = contextIn(Locale.forLanguageTag(UNSHIPPED_PROBE))
+
+        // Binky has no `values-ja`, so its own strings fall back to the default folder — plain
         // English, rather than an empty string or a resource-not-found crash.
-        assertEquals("Settings", french.getString(R.string.settings_title))
-        assertTrue(french.getString(R.string.settings_language_help).isNotEmpty())
+        assertEquals("Settings", unshipped.getString(R.string.settings_title))
+        assertTrue(unshipped.getString(R.string.settings_language_help).isNotEmpty())
     }
 
     @Test
@@ -302,6 +316,16 @@ class LocaleBackportTest {
     private companion object {
         /** The declared language that is not the base one — see the class comment for why it matters. */
         const val PROBE = "pl"
+
+        /**
+         * A language Binky does **not** ship, for the fallback case.
+         *
+         * Deliberately far from the shipped set and in another script: if `values-ja` ever appeared,
+         * the fallback assertion would fail on a visibly Japanese string rather than on something
+         * that could be mistaken for an English one. [anUnshippedLanguageFallsBackToEnglishRatherThanFailingToResolve]
+         * asserts this really is unshipped rather than trusting this comment.
+         */
+        const val UNSHIPPED_PROBE = "ja"
         const val POLL_INTERVAL_MS = 100L
     }
 }
