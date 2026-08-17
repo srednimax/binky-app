@@ -31,7 +31,7 @@
     <string name="archived_banner_leave">Leave</string>
 
     <string name="action_back">Back</string>
-    <string name="action_save">Save</string>
+    <string name="action_save">Save changes</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_edit">Edit</string>
     <string name="action_archive">Archive</string>
