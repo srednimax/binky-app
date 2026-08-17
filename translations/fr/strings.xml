@@ -522,7 +522,7 @@
 
     <!-- Observations: the vocabularies (ADR-0010). Every one has a "not checked" that is a
          recorded fact in its own right — nobody looked — and never a polite word for "normal". -->
-    <string name="observation_not_checked">Pas regardé</string>
+    <string name="observation_not_checked">Aucune vérification</string>
 
     <!-- Agrees with "quantité", the question above it. -->
     <string name="droppings_amount_none">Aucune</string>
