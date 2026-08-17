@@ -622,9 +622,13 @@ in nine languages and having it read twice by nine native speakers.
       red-build rule the copy is translated against the draft wording and again after review reworded it,
       nine times over. The allowlist was dropped as unnecessary: it existed to make lag *visible*, and a
       gate that refuses the merge makes lag impossible. The gate catches **missing** (split by whether
-      this branch introduced them), **stale** (English moved here, translation did not) and **orphans**;
-      `--report` prints the same list and exits 0 for use mid-branch. **All three failure modes proven to
-      fire.**
+      this branch introduced them), **stale** (English moved here, translation did not), **orphans**, and
+      an **unusable comparison** (no merge base, so the stale check cannot run — added 2026-08-17);
+      `--report` prints the same list and exits 0 for use mid-branch. **All failure modes proven to fire
+      against CI itself**, one pushed commit each on PR #140. That is what caught the stale check being
+      dead in CI all along: the build job checked out the PR merge ref at depth 1 against a shallow
+      `main`, the two histories shared no ancestor, and `git merge-base` failing read as "nothing
+      changed". Fixed by `fetch-depth: 0`, and by making the gate fail rather than degrade.
 
 ---
 

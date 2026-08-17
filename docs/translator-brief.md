@@ -493,10 +493,22 @@ Escaping: apostrophes are `\'`, and `&` is `&amp;`. Newlines are `\n`.
 2. `TranslationTest` validates it in place: no orphans, format arguments, plural categories per CLDR.
    **Completeness is checked at the merge boundary instead**, by `scripts/translation-gate.py` — run
    `python3 scripts/translation-gate.py --report` any time to see what a language still owes.
-3. **A native speaker reads every screen** in the running app, with no English left behind. This is the gate.
-   A language ships on a person's word, because no test can hold tone.
+3. **It is audited, not read end to end** ([ADR-0030](adr/0030-a-language-ships-on-an-audit-not-a-native-read-through.md)).
+   This used to say a native speaker reads every screen and that a language ships on a person's word. Seven
+   native reviewers were not available and no plausible way of finding them was, so what gates a language now
+   is the half of that review which does not need one, done properly: an **ethics audit** of the
+   high-consequence resources against §2's three rules, a **back-translation and argument-role pass** over
+   every multi-argument string, and a **compile-and-render check** on a real device — a staged draft never
+   meets `aapt2`, and the first time seven of them did it found four clipped navigation labels that no green
+   test could have shown.
 4. Only then is it promoted into `res/`, with its `locales_config.xml` line, its `AppLanguage` entry and its
-   endonym label — four edits, one commit, one language.
+   endonym label — four edits, one commit, one language. Promotion is a **move**, not a copy: the draft
+   leaves `translations/`.
+5. **Fluency is not gated — it is reported.** What the read-through would have caught about register and
+   idiom now comes back as ordinary bug reports, one tap from the language picker, in the reader's own
+   language. A report is still checked against this brief before it is acted on: the reporter has the
+   fluency, the brief has the ADRs, and a plausible-sounding suggestion may not talk the app back across
+   §2's three rules.
 
 If a string cannot be translated well without breaking a rule in §2, **say so instead of translating it**.
 The English is allowed to change; the rules are not.

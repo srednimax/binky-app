@@ -146,10 +146,13 @@ lag to tolerate*, and the better answer is *where to ask*: **free while you work
 - The allowlist is unnecessary under this shape and was dropped: it existed to make lag *visible*, and a
   gate that refuses the merge makes lag impossible instead. Nothing to date, nothing to expire, no file
   admitting a debt.
-- The gate checks three things, and the second is the one no test could hold: resources **missing** from a
+- The gate checks four things, and the second is the one no test could hold: resources **missing** from a
   locale (split by whether this branch introduced them, so the list is the work rather than the debt),
-  translations gone **stale** because the English moved on this branch and they did not, and **orphans** a
-  rename left behind. `--report` prints the same list and exits 0, for use mid-branch.
+  translations gone **stale** because the English moved on this branch and they did not, **orphans** a
+  rename left behind, and — added 2026-08-17 — an **unusable comparison**: no merge base means no "before",
+  which does not make the stale check fail but makes it *disappear*, so the gate now refuses to pass rather
+  than silently dropping to the checks that still work. `--report` prints the same list and exits 0, for use
+  mid-branch.
 - Everything that must hold for whatever *is* translated — format arguments, plural categories per CLDR,
   orphans, untranslatable resources — stays in `TranslationTest` and stays green continuously.
 
@@ -207,7 +210,9 @@ there is no schema change and no media path.
    must be able to fail before there is anything to check. `PolishTranslationTest` → `TranslationTest`,
    the locale list read from `locales_config.xml` so a tenth language is one line of XML, and
    `CLDR_PLURALS` carrying all nine rows ready. Proven able to fail: dropping `few` from one Polish
-   plural reddens the build. `scripts/translation-gate.py` likewise, on all three of its failure modes.
+   plural reddens the build. `scripts/translation-gate.py` likewise, on each of its failure modes — and
+   re-proven **against CI itself** on 2026-08-17, one pushed commit per mode, which is how the stale check
+   was found to have been silently dead there.
 2. ✅ **Endonyms done 2026-08-16**, along with `app_name`'s general rule and `med_editor_name_placeholder`
    (a medicine brand name). The brief is [`translator-brief.md`](translator-brief.md); its per-language
    banned lists are drafts until each native reviewer confirms their own row.
