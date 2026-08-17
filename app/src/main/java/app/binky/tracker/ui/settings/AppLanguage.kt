@@ -27,6 +27,7 @@ enum class AppLanguage(
     ENGLISH("en", R.string.settings_language_english),
     POLISH("pl", R.string.settings_language_polish),
     CZECH("cs", R.string.settings_language_czech),
+    GERMAN("de", R.string.settings_language_german),
 }
 
 /**
