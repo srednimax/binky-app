@@ -192,7 +192,7 @@ there is no schema change and no media path.
    owed here is only that its needle table still resolves once seven locales exist. Every new needle is a
    claim that some resource still says what the table thinks it says.
 4. Draft all seven into `translations/`, validated by the test in place. 🟡 **`de`, `es` and `fr`
-   done 2026-08-16, `it` and `pt-BR` on 2026-08-17** — two to go, `cs` and `uk` —
+   done 2026-08-16, `it`, `pt-BR` and `cs` on 2026-08-17** — one to go, `uk` —
    along with the staging area this step assumed and nothing had yet built: `TranslationTest` reads
    `translations/<tag>/strings.xml` beside `values-<qualifier>/`, holds a draft to the same
    assertions, and rejects a tag that is both staged and shipped — promotion is a *move*, and two
@@ -237,6 +237,24 @@ there is no schema change and no media path.
    sentences. **Ask this of `cs` and `uk` before drafting them** — Slavic `one` excludes zero, so
    they should come back clean, and confirming that is cheaper than discovering it. Its own record
    is `DOD.md` §7.
+   **Czech was asked, and the answer held**: `one` is *i = 1*, zero lands in `other`, and the
+   genitive plural is what Czech wants there anyway, so all three of Portuguese's counts stay
+   ordinary sentences. What the same question turned up instead is that **four plural categories
+   are not four reachable ones** — `cs` spends its `many` on *fractions* (*1,5 dne*), where `pl`
+   and `uk` spend theirs on ordinary integers, so a Slavic row can be as unreachable as a romance
+   one. The table above counts categories and says nothing about which of them render; that gap is
+   now closed in the brief rather than here. And Czech adds the trap **no** plural table can
+   reach — *the predicate agrees with the count* (*jsou 3 měsíce* against *je 6 měsíců*), so a
+   sentence that substitutes a counted phrase has to be built on a verb that does not vary. Ask it
+   of `uk`, which has the same grammar and the same substitution list.
+   Czech is also the first draft to pay **§7.3 on both halves** — its past tense agrees with the
+   addressee, so no sentence in the file puts *you* in the past — and the most expensive **§7.4**
+   of the six, which is where it leaves something reusable: besides Polish's colon, **a declined
+   common noun in front of the name carries the case for it** (*fotky králíka %1$s*), and a name in
+   **subject** position needs nothing at all (*Kolik let má %1$s?*). Two of six languages now lose
+   `care_every`'s sentence for agreement rather than for a missing preposition, which makes the
+   split three and three: the label is neither the expected answer nor the exception. Its own
+   record is `DOD.md` §7.
 5. Promote one language at a time as its native read completes — four edits, one commit, one language.
 6. Listing text for the promoted set; screenshots later, driven by install data.
 
