@@ -138,10 +138,11 @@ Two on-screen labels are worth naming separately because they are the ones owner
 
 - **"Lives with"** (`bunny_lives_with_label`) — the fluffle's on-screen name. Polish: *"Mieszka z"*.
 - **"Care & Meds"** (`destination_care`) — a bottom-navigation tab, so it must be **short**. Polish fits it
-  as *"Opieka i leki"*. If your language cannot fit both halves, shorten rather than wrap. German and
-  Italian keep both (*Pflege & Medis*, *Cure e farmaci*, fourteen characters); Spanish, French and
-  Portuguese drop the meds half rather than clip it (*Cuidados*, *Soins*, *Cuidados*), because none of
-  them has a short form for "meds". **Three of five drop it** — say which you did and why.
+  as *"Opieka i leki"*. If your language cannot fit both halves, shorten rather than wrap. German,
+  Italian and Czech keep both (*Pflege & Medis*, *Cure e farmaci*, *Péče a léky* — fourteen characters
+  and eleven); Spanish, French and Portuguese drop the meds half rather than clip it (*Cuidados*,
+  *Soins*, *Cuidados*), because none of them has a short form for "meds". **Three of six drop it** —
+  say which you did and why.
 
 **The *Avoid* column is what English rejected, and once it has been the only natural word in a target
 language.** Brazilian Portuguese calls a vet appointment a *consulta* — the cognate of a word this table
@@ -182,7 +183,7 @@ anywhere else.
 | `fr` | manquée, oubliée, en retard *(outside the two permitted strings)*, dépassée |
 | `it` | mancata, saltata, dimenticata, scaduta |
 | `pt-BR` | perdida, esquecida, atrasada, vencida — **not** *pulada*, see below |
-| `cs` | zmeškaná, vynechaná, opomenutá, po splatnosti |
+| `cs` | zmeškaná, opomenutá, po splatnosti — **not** *vynechaná*, see below |
 | `uk` | пропущена, забута, прострочена |
 
 `dose_status_skipped` — *"Skipped"* — is **not** in this family and must stay available: skipping is
@@ -209,6 +210,14 @@ something the owner did — and the intransitive reading does not exist for it: 
 Portuguese**, where *è saltata la dose* is ordinary Italian. So `dose_status_skipped` is *Pulada*.
 Two languages, one image, opposite answers, decided by whether the verb has an intransitive life of its
 own. Ask that of your candidate, not whether a dictionary lists it as a synonym for "forgotten".
+
+**Czech sharpens the question one turn further: ask about the intransitive life *with this noun*.**
+*Vynechaná* was on the list above and came off it. Czech *vynechat* does have an intransitive
+existence — *motor vynechává*, a heart skips a beat — which by Italian's rule alone would condemn it.
+But that reading takes a machine as its subject and ***dávka vynechala* is not Czech**, where *è
+saltata la dose* is ordinary Italian. So the deciding test is the one Portuguese ran: not whether the
+verb can ever be passive, but whether **the sentence a status chip would be read as** has an
+agentless reading. `dose_status_skipped` is *Vynechána*, beside *Pominięta* and *Pulada*.
 
 ---
 
@@ -276,8 +285,11 @@ accusative differs, the unit plurals need the accusative form, because that is t
 both a bare unit and a counted gap, so both gave the host up and made it a label (*Rhythmus: %1$s*,
 *Rythme : %1$s*), which then decided the wording of `care_due_in` and `care_due_overdue` behind it.
 Spanish's *Cada*, Italian's *Ogni* and Portuguese's *A cada* govern both and keep the sentence.
-**Three of five keep it** — so the label is the minority answer, not the expected one. The question is
-which side your language falls on, and it is four strings deep by the time it shows.
+Czech loses it for a third reason — not a missing preposition but **agreement**: *každý týden*, but
+*každé 2 týdny* and *každých 6 týdnů*, and the app cannot know which is coming, so `care_every` is
+*Opakování: %1$s*. **Three of six keep it and three lose it**, which makes neither answer the expected
+one. The question is which side your language falls on, and it is four strings deep by the time it
+shows.
 
 ### 7.3 The app knows neither the owner's gender nor the bunny's
 
@@ -342,6 +354,16 @@ has a register where a name would take an article, a particle or a contraction, 
 it there** — it does not know the name's gender, number or initial sound until run time. Note which
 register you chose and why, or the next reader will think the question was never asked.
 
+**Czech is the expensive end of this, and it has three answers rather than one.** Reordering behind a
+colon is the first (*%1$s — informace*, *Smazat: %1$s?*), and it is Polish's. The second is cheaper and
+worth reaching for before rewriting anything: **put a declined common noun in front of the name and let
+it carry the case** — *fotky králíka %1$s*, *pro králíka %1$s*, *z dokumentu %2$s*. The name then sits in
+apposition, in its citation form, and the sentence keeps its shape; it is also what let
+`photo_gallery_empty_help` keep its argument in the job it actually has, which is §7.6's failure. The
+third is free: **check whether the name is the subject**, where the citation form is already correct.
+*Kolik let má %1$s?* needed no work at all, and the English it translates — *"How old is %1$s?"* —
+looked like it would.
+
 ### 7.5 Plurals
 
 Counts go through `<plurals>`, never through concatenation. **Your file must declare every category CLDR
@@ -363,7 +385,18 @@ shows.
 **And check zero, because for some languages CLDR puts it in `one`.** French and Portuguese both have
 *one: i = 0..1*, so a count of 0 renders the **singular** item. French is happy with that (*0 jour* is
 correct French); Brazilian Portuguese is not (*0 página* is simply wrong — it pluralises zero). Spanish
-and Italian put 0 in `other` and never see the problem, and the Slavic rows exclude it too.
+and Italian put 0 in `other` and never see the problem, and the Slavic rows exclude it too — **checked
+in Czech rather than assumed**, where *one* is *i = 1* and zero lands in `other` as the genitive plural
+the language wants (*0 stran*, *0 záznamů*). Nothing in that draft is knowingly wrong at zero.
+
+**Two more things the table cannot tell you, both found in Czech.** First, **four categories does not
+mean four reachable ones**: `cs` declares *many* for *v != 0*, so it is the **fraction** form (*1,5
+dne*) and is as unreachable for this app's integer counts as the romance *many* — where `pl` and `uk`
+spend theirs on ordinary integers. Fill it with what a decimal would really take, and say so. Second,
+**the predicate agrees with the count as well as the noun**: *jsou 3 měsíce* against *je 6 měsíců*, and
+a sentence that substitutes a counted phrase has no plural table to fix it. `trend_flag_long_gap` is
+built on a verb whose singular and plural are spelled alike (*Ta dvě vážení **dělí** %1$s*). Every
+sentence in §7.2's substitution list owes this check in an inflecting language.
 
 **When your language pluralises zero and CLDR does not, the plural table cannot save you** — the
 category is right and the language disagrees with it. So the question becomes one about the *code*:
