@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Czech — DRAFT, staged. Not in res/ on purpose (Phase 8): the moment values-cs/ exists, every
-    phone set to Czech gets these strings, reviewed or not. locales_config.xml is a picker list,
-    not a delivery filter. Promotion is four edits and one commit, and it happens only after a
-    native speaker has read every screen in the running app.
+    Czech — shipped, promoted from translations/ in Phase 8.
+
+    **It ships without a native read-through**, which is a decision rather than an
+    oversight: no native reviewer was available, and a gate that can never be satisfied is
+    worse than a different one. Three things stand in its place. An ethics audit against the
+    rules that outrank fluency — ADR-0026's blame words, ADR-0001's inference from silence,
+    and "observe, never advise" — which this file passed. An argument-role pass over every
+    format string, catching the one failure mode no test reaches: an argument that keeps its
+    slot and changes what it refers to. And the report row in the language picker, which is
+    what turns the people reading this into the reviewers it never had.
+
+    So the decisions listed below are not settled. They are the first things to put to the
+    first speaker who writes in, and each carries the fallback to move to if they object.
 
     Translated from English only, against docs/translator-brief.md.
 

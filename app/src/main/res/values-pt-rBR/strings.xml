@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Brazilian Portuguese — DRAFT, staged. Not in res/ on purpose (Phase 8): the moment
-    values-pt-rBR/ exists, every phone set to Brazilian Portuguese gets these strings, reviewed
-    or not. locales_config.xml is a picker list, not a delivery filter. Promotion is four edits
-    and one commit, and it happens only after a native speaker has read every screen in the
-    running app.
+    Brazilian Portuguese — shipped, promoted from translations/ in Phase 8.
+
+    **It ships without a native read-through**, which is a decision rather than an
+    oversight: no native reviewer was available, and a gate that can never be satisfied is
+    worse than a different one. Three things stand in its place. An ethics audit against the
+    rules that outrank fluency — ADR-0026's blame words, ADR-0001's inference from silence,
+    and "observe, never advise" — which this file passed. An argument-role pass over every
+    format string, catching the one failure mode no test reaches: an argument that keeps its
+    slot and changes what it refers to. And the report row in the language picker, which is
+    what turns the people reading this into the reviewers it never had.
+
+    So the decisions listed below are not settled. They are the first things to put to the
+    first speaker who writes in, and each carries the fallback to move to if they object.
 
     Note the two spellings of one locale: the BCP-47 tag is **pt-BR** (this directory,
     locales_config.xml, AppLanguage) and the resource qualifier is **values-pt-rBR** — the `r`
@@ -213,7 +221,7 @@
       Havana, Jersey Wooly, Lilac, Mini Rex, Palomino, Rex, Satin, Silver, Silver Fox, Silver
       Marten, Tan, Thrianta, Velveteen Lop — stay exactly as they are.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- app_name, settings_language_* and med_editor_name_placeholder are translatable="false"
          and deliberately absent: a copy of them here would resolve fine, render the same words
          and cost a line per language forever. A test fails if they appear. -->
@@ -783,22 +791,30 @@
          the unit plurals below stay in the citation form. -->
     <string name="care_every">A cada %1$s</string>
 
-    <plurals name="care_unit_days">
+    <!-- The four unit plurals below carry no %d on purpose, and lint's ImpliedQuantity is a
+         false positive on exactly this shape. They are bare agreeing words: the count is rendered
+         beside them by the editor's own number field, or is absent entirely in care_every. The
+         rule assumes a plural spells its own number ("%d pages"), which is true of every other
+         plural in this file and not of these. Ukrainian `one` covers 21, 31, 41 …, and "21 день"
+         is exactly the singular the language wants; French and Portuguese `one` covers 0, which a
+         care interval can never be. Suppressed per-resource rather than project-wide, so a real
+         ImpliedQuantity in a future plural still reddens the build. -->
+    <plurals name="care_unit_days" tools:ignore="ImpliedQuantity">
         <item quantity="one">dia</item>
         <item quantity="many">dias</item>
         <item quantity="other">dias</item>
     </plurals>
-    <plurals name="care_unit_weeks">
+    <plurals name="care_unit_weeks" tools:ignore="ImpliedQuantity">
         <item quantity="one">semana</item>
         <item quantity="many">semanas</item>
         <item quantity="other">semanas</item>
     </plurals>
-    <plurals name="care_unit_months">
+    <plurals name="care_unit_months" tools:ignore="ImpliedQuantity">
         <item quantity="one">mês</item>
         <item quantity="many">meses</item>
         <item quantity="other">meses</item>
     </plurals>
-    <plurals name="care_unit_years">
+    <plurals name="care_unit_years" tools:ignore="ImpliedQuantity">
         <item quantity="one">ano</item>
         <item quantity="many">anos</item>
         <item quantity="other">anos</item>

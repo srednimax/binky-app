@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Ukrainian — DRAFT, staged. Not in res/ on purpose (Phase 8): the moment values-uk/ exists, every
-    phone set to Ukrainian gets these strings, reviewed or not. locales_config.xml is a picker list,
-    not a delivery filter. Promotion is four edits and one commit, and it happens only after a
-    native speaker has read every screen in the running app.
+    Ukrainian — shipped, promoted from translations/ in Phase 8.
+
+    **It ships without a native read-through**, which is a decision rather than an
+    oversight: no native reviewer was available, and a gate that can never be satisfied is
+    worse than a different one. Three things stand in its place. An ethics audit against the
+    rules that outrank fluency — ADR-0026's blame words, ADR-0001's inference from silence,
+    and "observe, never advise" — which this file passed. An argument-role pass over every
+    format string, catching the one failure mode no test reaches: an argument that keeps its
+    slot and changes what it refers to. And the report row in the language picker, which is
+    what turns the people reading this into the reviewers it never had.
+
+    So the decisions listed below are not settled. They are the first things to put to the
+    first speaker who writes in, and each carries the fallback to move to if they object.
 
     Translated from English only, against docs/translator-brief.md.
 
@@ -133,7 +142,7 @@
       and Holland Lop (*Голландський баран*) share a word** and are the row a rabbit person should
       read twice; Netherland Dwarf stays apart as *Нідерландський карликовий*.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Bottom-navigation destinations -->
     <string name="destination_home">Головна</string>
@@ -664,25 +673,33 @@
 
     <string name="care_every">Раз на %1$s</string>
 
-    <plurals name="care_unit_days">
+    <!-- The four unit plurals below carry no %d on purpose, and lint's ImpliedQuantity is a
+         false positive on exactly this shape. They are bare agreeing words: the count is rendered
+         beside them by the editor's own number field, or is absent entirely in care_every. The
+         rule assumes a plural spells its own number ("%d pages"), which is true of every other
+         plural in this file and not of these. Ukrainian `one` covers 21, 31, 41 …, and "21 день"
+         is exactly the singular the language wants; French and Portuguese `one` covers 0, which a
+         care interval can never be. Suppressed per-resource rather than project-wide, so a real
+         ImpliedQuantity in a future plural still reddens the build. -->
+    <plurals name="care_unit_days" tools:ignore="ImpliedQuantity">
         <item quantity="one">день</item>
         <item quantity="few">дні</item>
         <item quantity="many">днів</item>
         <item quantity="other">дня</item>
     </plurals>
-    <plurals name="care_unit_weeks">
+    <plurals name="care_unit_weeks" tools:ignore="ImpliedQuantity">
         <item quantity="one">тиждень</item>
         <item quantity="few">тижні</item>
         <item quantity="many">тижнів</item>
         <item quantity="other">тижня</item>
     </plurals>
-    <plurals name="care_unit_months">
+    <plurals name="care_unit_months" tools:ignore="ImpliedQuantity">
         <item quantity="one">місяць</item>
         <item quantity="few">місяці</item>
         <item quantity="many">місяців</item>
         <item quantity="other">місяця</item>
     </plurals>
-    <plurals name="care_unit_years">
+    <plurals name="care_unit_years" tools:ignore="ImpliedQuantity">
         <item quantity="one">рік</item>
         <item quantity="few">роки</item>
         <item quantity="many">років</item>
