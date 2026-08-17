@@ -396,6 +396,8 @@
     <string name="settings_language">Idioma</string>
     <string name="settings_language_system">O mesmo do celular</string>
     <string name="settings_language_help">O Binky pode usar um idioma diferente do resto do celular. Alterar isto reinicia o app.</string>
+    <string name="settings_language_report">Alguma coisa soa errada?</string>
+    <string name="settings_language_report_help">Me conta se alguma palavra não está certa no seu idioma.</string>
     <!-- ADR-0027, Android 12+ only. -->
     <string name="settings_material_you">Cores do seu papel de parede</string>
     <string name="settings_material_you_help">O Binky tem cores próprias. Ative isto e ele passa a tirá-las do seu papel de parede, como o Android faz nas próprias telas.</string>
@@ -1046,6 +1048,7 @@
     <string name="support_intro">O Binky é feito por uma pessoa só. Um relato de problema ou uma ideia chega direto a ela.</string>
     <string name="support_bug_button">Relatar um problema</string>
     <string name="support_bug_subject">Relato de problema</string>
+    <string name="support_translation_subject">Problema de tradução</string>
     <string name="support_bug_prompt">(descreva aqui o que aconteceu)</string>
     <string name="support_diagnostics_title">O que um relato de problema leva junto</string>
     <!-- Impersonal, and no "we": the app is made by one person (§1, and Polish's fix here). -->

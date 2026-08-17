@@ -931,6 +931,16 @@ SCENES = [
     # --- detail routes: own TopAppBar with back, shell chrome hidden --------------------------
     Scene("settings", "detail", [("tap", "More"), ("tap", "Settings")]),
     Scene("settings-scrolled", "detail", [("tap", "More"), ("tap", "Settings"), ("swipe_up", "")]),
+    # The language picker, which is also the translation-report path: seven of the nine languages
+    # ship without a native read-through, so this dialog is the mechanism that replaces one. It is
+    # the one scene that must be legible in *every* locale, since an owner who has landed somewhere
+    # they cannot read is exactly who needs it — which is why the needle is the row rather than the
+    # dialog title, the two being the same string.
+    Scene(
+        "language-picker",
+        "detail",
+        [("tap", "More"), ("tap", "Settings"), ("tap_text", "Language")],
+    ),
     Scene("backup", "detail", [("tap", "More"), ("tap", "Settings"), ("tap", "Backup & restore")]),
     Scene(
         "backup-scrolled",

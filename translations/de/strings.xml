@@ -210,6 +210,8 @@
     <string name="settings_language">Sprache</string>
     <string name="settings_language_system">Wie auf diesem Handy</string>
     <string name="settings_language_help">Binky kann eine andere Sprache verwenden als der Rest des Handys. Eine Änderung startet die App neu.</string>
+    <string name="settings_language_report">Klingt etwas falsch?</string>
+    <string name="settings_language_report_help">Schreib mir, wenn ein Wort in deiner Sprache nicht stimmt.</string>
     <!-- ADR-0027 -->
     <string name="settings_material_you">Farben von deinem Hintergrundbild</string>
     <string name="settings_material_you_help">Binky hat eigene Farben. Wenn du das einschaltest, nimmt es stattdessen die Farben deines Hintergrundbilds, so wie Android es bei seinen eigenen Bildschirmen macht.</string>
@@ -823,6 +825,7 @@
     <string name="support_intro">Binky wird von einer einzelnen Person gemacht. Eine Fehlermeldung oder eine Idee kommt direkt an.</string>
     <string name="support_bug_button">Fehler melden</string>
     <string name="support_bug_subject">Fehlermeldung</string>
+    <string name="support_translation_subject">Übersetzungsproblem</string>
     <string name="support_bug_prompt">(hier beschreiben, was passiert ist)</string>
     <string name="support_diagnostics_title">Was eine Fehlermeldung mitschickt</string>
     <string name="support_diagnostics_explain">Die App-Version, deine Android-Version, das Handymodell und die Sprache der App werden der Nachricht hinzugefügt. Nichts über deine Kaninchen, und nichts wird gesendet, bevor du in deiner Mail-App auf Senden tippst.</string>

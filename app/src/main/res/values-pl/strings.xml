@@ -221,6 +221,8 @@
          of untranslatable. See the comment on them there. -->
 
     <string name="settings_language_help">Binky może działać w innym języku niż reszta telefonu. Zmiana tego ustawienia uruchamia aplikację ponownie.</string>
+    <string name="settings_language_report">Coś brzmi nie tak?</string>
+    <string name="settings_language_report_help">Napisz, jeśli jakieś słowo wygląda źle w twoim języku.</string>
     <!-- ADR-0027 -->
     <string name="settings_material_you">Kolory z tapety</string>
     <string name="settings_material_you_help">Binky ma własne kolory. Po włączeniu tej opcji bierze je z Twojej tapety, tak jak Android koloruje własne ekrany.</string>
@@ -862,6 +864,7 @@
     <string name="support_intro">Binky robi jedna osoba. Zgłoszenie błędu albo pomysł trafia prosto do niej.</string>
     <string name="support_bug_button">Zgłoś błąd</string>
     <string name="support_bug_subject">Zgłoszenie błędu</string>
+    <string name="support_translation_subject">Problem z tłumaczeniem</string>
     <string name="support_bug_prompt">(opisz tutaj, co się stało)</string>
     <string name="support_diagnostics_title">Co trafia do zgłoszenia błędu</string>
     <!-- Impersonal, not „dopisujemy”: support_intro two lines up says Binky is made by one person,

@@ -402,6 +402,8 @@
     <string name="settings_language">Jazyk</string>
     <string name="settings_language_system">Stejný jako v telefonu</string>
     <string name="settings_language_help">Binky může mít jiný jazyk než zbytek telefonu. Po změně se aplikace restartuje.</string>
+    <string name="settings_language_report">Zní něco špatně?</string>
+    <string name="settings_language_report_help">Napiš mi, jestli je nějaké slovo ve tvém jazyce špatně.</string>
     <!-- ADR-0027. Shown on Android 12 and newer only. -->
     <string name="settings_material_you">Barvy podle tapety</string>
     <string name="settings_material_you_help">Binky má vlastní barvy. Když tohle zapneš, vezme si je z tapety — tak, jak Android barví svoje vlastní obrazovky.</string>
@@ -1086,6 +1088,7 @@
     <string name="support_intro">Binky dělá jeden člověk. Hlášení chyby nebo nápad se k němu dostane přímo.</string>
     <string name="support_bug_button">Nahlásit chybu</string>
     <string name="support_bug_subject">Hlášení chyby</string>
+    <string name="support_translation_subject">Problém s překladem</string>
     <string name="support_bug_prompt">(sem popiš, co se stalo)</string>
     <string name="support_diagnostics_title">Co s sebou hlášení nese</string>
     <!-- "We" would claim a team where there is one person — the Polish read-through's finding. -->
