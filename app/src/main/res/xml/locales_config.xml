@@ -21,4 +21,5 @@
     <locale android:name="it" />
     <locale android:name="pt-BR" />
     <locale android:name="uk" />
+    <locale android:name="nl" />
 </locale-config>
