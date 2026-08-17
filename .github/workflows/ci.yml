@@ -21,7 +21,16 @@ jobs:
     name: Build, unit tests, lint
     runs-on: ubuntu-latest
     steps:
+      # fetch-depth: 0 because both gates below compare this branch against `main`, and a
+      # comparison needs a common ancestor. The default depth-1 checkout of the PR *merge ref*
+      # against a depth-50 fetch of `main` gives two shallow histories that share no reachable
+      # ancestor: `git merge-base HEAD origin/main` exits 1, translation-gate.py reads that as
+      # "no previous", and its stale check silently becomes a no-op. Probed on PR #140 — a
+      # reworded English string whose translation had not followed passed CI green while the
+      # same command failed locally. A full clone is the cheap fix at this repo's size.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -44,7 +53,8 @@ jobs:
       - name: Schema gate
         run: |
           base="${{ github.base_ref || github.event.repository.default_branch }}"
-          git fetch --depth=50 origin "$base"
+          # No --depth: it would re-shallow the full clone above and put the bug back.
+          git fetch origin "$base"
           python3 scripts/schema-gate.py "origin/$base"
 
       # A branch merges with every shipped language complete, and not before. This is deliberately a
@@ -55,7 +65,8 @@ jobs:
       - name: Translation gate
         run: |
           base="${{ github.base_ref || github.event.repository.default_branch }}"
-          git fetch --depth=50 origin "$base"
+          # No --depth: it would re-shallow the full clone above and put the bug back.
+          git fetch origin "$base"
           python3 scripts/translation-gate.py "origin/$base"
 
       - name: Build debug APK
