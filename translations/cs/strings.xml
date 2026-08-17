@@ -1,0 +1,1402 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Czech — DRAFT, staged. Not in res/ on purpose (Phase 8): the moment values-cs/ exists, every
+    phone set to Czech gets these strings, reviewed or not. locales_config.xml is a picker list,
+    not a delivery filter. Promotion is four edits and one commit, and it happens only after a
+    native speaker has read every screen in the running app.
+
+    Translated from English only, against docs/translator-brief.md.
+
+    The decisions a reviewer should confirm first, because everything else follows from them:
+
+    · **Address form is *ty* (tykání)**, as du/tú/tu/tu/você in the other five drafts. Czech makes
+      that a bigger commitment than any of them: the past tense agrees with the addressee's gender
+      (*uložil* / *uložila*), so **no sentence in this file puts "you" in the past**. Imperatives
+      (*Přidej*, *Zapiš*, *Vyber*), the present (*můžeš*, *zapisuješ*) and impersonal passives
+      (*zapsáno*, *nepodařilo se*) carry no gender and do all the work. §7.3's parenthesised
+      suffix — *uložil(a)* — appears nowhere, which is the rule that actually matters.
+    · **Králík, masculine generic, for the bunny**, stated here rather than hidden. Czech has no
+      bunny/rabbit pair worth having: *králíček* is the baby talk §3 forbids. Genderless wording is
+      used wherever it is equally natural — `bunny_lives_with_alone` is *Nemá spolubydlící* (a verb,
+      not the adjective *sám/sama*), `bunny_archived_name` is *%1$s (v archivu)*, `archived_on` is
+      the impersonal *Archivováno %1$s*, and the graded chips agree with their **field noun**
+      (*chuť*, *nálada*, *aktivita* are all feminine) rather than with the animal. Where a form
+      about the animal is unavoidable it leans on the common noun *králík*, whose masculine is a
+      fact about the word and not a guess about the rabbit.
+    · ⚠️ **Binky is never the subject of a verb that has to agree with it.** The app's name has no
+      settled gender in Czech — *Binky nemohl* / *nemohlo* are both defensible — so the file uses
+      the present tense (*Binky nemůže*, *Binky nekontroluje*), or swaps in the feminine common noun
+      *aplikace* where an agreeing form is unavoidable (`backup_restored_close_help`). This is the
+      same dodge as *il coniglio*, pointed at the app instead of the animal.
+
+    · ⚠️ **§7.5: Czech has four plural categories and only three of them can ever render.** CLDR
+      gives `cs` *one: i=1 and v=0*, *few: i=2..4 and v=0*, ***many: v!=0*** and *other* for
+      everything else. **`many` is the fraction form** — *1,5 dne*, *2,5 týdne* — not Polish's and
+      Ukrainian's large-integer category, and this app produces only `Int` counts, so it is
+      unreachable exactly the way the romance `many` is. It is declared anyway, because Android
+      resolves against the declaration. Where the plural is a bare count phrase it carries the
+      **genitive singular** the fraction would actually take (*%d dne*, *%d týdne*, *%d roku*),
+      which is the correct answer if one ever arrives; where the item is a whole sentence a
+      fractional count is nonsense, so `many` repeats `other` verbatim. Say so rather than leave a
+      reviewer guessing why two items are identical.
+    · ✅ **The Portuguese zero trap does not exist here, and that was worth checking rather than
+      assuming.** Czech `one` is *i=1*, so **0 resolves to `other`** — *0 stran*, *0 záznamů*,
+      *0 obrázků* — which is the genitive plural Czech actually wants at zero. So the three counts
+      the Portuguese draft had to recast as labels (`backup_restored_overlaid`,
+      `delete_records_sole_owned`, `document_page_count`) stay ordinary sentences here, and nothing
+      in this file is knowingly wrong at zero. The Slavic rows come back clean, as phase-8.md
+      predicted; `uk` should too, for the same reason.
+    · ⚠️ **Czech's own plural trap is the verb, not the noun**, and no plural table can see it: the
+      predicate agrees with the count as well (*jsou 3 měsíce* against *je 6 měsíců*).
+      `trend_flag_long_gap` substitutes a gap phrase and would have needed both, so it is built on
+      ***dělí*** — *Ta dvě vážení dělí %1$s* — a verb whose 3rd person singular and plural are
+      spelled the same. Any future sentence that substitutes a counted phrase owes this check.
+    · ℹ️ **Several plural sets are four identical items and that is not an oversight.** Neuter nouns
+      in *-í* do not inflect for number: *vážení* is one weighing, three weighings and five
+      weighings alike, so `weight_history_count` is the same word four times. The sentence around it
+      still inflects, which is why `weight_collision_body` has three distinct forms (*zapsané* /
+      *zapsaná* / *zapsaných*) of a noun that never changes.
+
+    · ⚠️ **`care_every` cannot survive as a sentence: it is *Opakování: %1$s*.** *Každý* has to
+      agree with the substituted phrase — *každý týden*, but *každé 2 týdny* and *každých 6 týdnů* —
+      and the app cannot know which is coming. This is German's and French's problem in a language
+      that has cases instead of articles, so Czech joins the label side: **three of six keep the
+      sentence** (es, it, pt-BR) and **three lose it** (de, fr, cs). The unit plurals therefore stay
+      in the citation form, and the two strings behind the label follow: `care_due_in` is *Za %1$s*
+      (the accusative after *za* is spelled like the nominative the plurals already hold — Polish's
+      coincidence, re-checked here) and `care_due_overdue` is *%1$s po termínu*.
+      ℹ️ The four `backup_reminder_*` intervals are fixed text, not substitutions, so they keep the
+      real agreement (*Každý týden*, *Každé dva týdny*) — which is exactly why the substituted one
+      cannot.
+    · **§7.2's pre-inflection is paid in Polish's own coin, and Czech pays it identically.** The
+      chart windows land inside *v %1$s*, which governs the locative, so the fragments carry it:
+      ***posledních 30 dnech***, *posledních 90 dnech*, *posledním roce*, *celé historii*. Both
+      hosts are worded to take them bare (*V %1$s je jen jedno vážení…*, *V %1$s není žádné
+      vážení.*). Fourth language for the technique, second Slavic; a third host with a different
+      preposition breaks all four at once.
+      The other §7.2 dodge is here too: `backup_restore_confirm_body` and `backup_restored_scope`
+      **quote** the scope name — *Záloha „%1$s“ z %2$s* — so a run-time value never has to decline.
+
+    · ⚠️ **§7.4 is expensive in Czech, and it has two different answers.** Names are typed by the
+      owner and the app can inflect nothing, while Czech puts almost every noun into a case. Two
+      techniques, used deliberately:
+        · **The colon, which turns the name into a citation form.** *%1$s — informace*,
+          *Fotky: %1$s*, *Smazat: %1$s?*, *Do archivu: %1$s?*, *Sledování skončilo: %1$s*,
+          *Spolubydlící: %1$s*, *Zdravý den zapsán: %1$s.* — Polish's shape, for Polish's reason.
+        · **The declined common noun in front of the name, which carries the case for it.**
+          *fotky králíka %1$s*, *pro králíka %1$s*, *z dokumentu %2$s* — the noun takes the
+          genitive or accusative and the name rides along in apposition. This is the one Czech has
+          that French did not: it keeps `photo_gallery_empty_help`'s argument in its real job (the
+          photos are *of* the bunny), which is §7.6's trap and §7.4's in one string.
+      ℹ️ **`trend_flag_ask_age` needed neither.** *Kolik let má %1$s?* puts the name in the
+      **subject** position, where the citation form is already correct — the cheapest answer of all,
+      and worth looking for before reordering anything.
+    · ⚠️ **"Lives with" becomes a noun: *Spolubydlící*.** *Bydlí s %1$s* would need the
+      instrumental (*s Alicí*), which the app cannot produce, and a label ending in a bare
+      preposition reads as a bug. So the fluffle's on-screen name is the housemates themselves —
+      *Spolubydlící* / *Spolubydlící: %1$s* / *Nemá spolubydlící* — which is genderless as a bonus.
+
+    · **§7.1's *Normal* costs three forms of six**, the romance count, and for Spanish's reason
+      rather than Polish's: ***normální*** is one of the adjectives Czech does not inflect in the
+      nominative singular, so it serves the size, appetite, mood and activity alike. The two that
+      diverge are ***Normálně*** for the amount (an adverb answering *kolik*) and ***Pije
+      normálně*** for water, whose neighbouring chips are verbs (*Nepije*, *Pije méně*). A
+      heavily-inflected Slavic language landing on Spanish's count rather than Polish's five is the
+      surprise of this draft.
+    · **§7.1's other rows split the way Polish's do.** *Name* is **Jméno** for the bunny and
+      **Jméno nebo název** for the vet, because a Czech practice has a *název* and a person has a
+      *jméno*. *Unknown* is **Neznámé** for the sex (agreeing with the neuter *pohlaví*) and
+      **Neví se** for neutering, which answers a yes/no question instead of qualifying a noun. And
+      *What is it?* is **Čeho se to týká?** for the care kind against **Co to je?** for the
+      medicine — Polish's split exactly, reached from the English.
+    · **Kontrolní vážení** for the weigh-in *reminder*, against plain *vážení* for one weighing.
+      French found this divergence, Italian and Portuguese confirmed it, and Czech is the fourth:
+      without the split `care_history_weight_help` would read *vážení se počítají jako vážení*.
+
+    · ⚠️ ***Vynechána* is used for `dose_status_skipped`, and it comes off the banned list.**
+      §6's draft list has *vynechaná*; the test the brief actually sets is whether the word can
+      describe something that happened *to* the owner, and for a dose it cannot. *Vynechal jsem
+      dávku* is agentive and transitive; ***dávka vynechala* is not Czech** — the intransitive
+      *vynechávat* belongs to engines and heartbeats, never to a dose. That is Polish's *pominięta*
+      and Portuguese's *pulada*, not Italian's *saltata*, and the deciding question is the same one:
+      does the verb have an intransitive life **with this noun**. `dose_status_given` is **Podána**;
+      the pair shares a register and moves together, and the fallback if a reviewer disagrees is
+      *Přeskočena* / *Podána*. *Zmeškaná*, *opomenutá* and *po splatnosti* appear nowhere.
+      ℹ️ `backup_folder_forget` is ***Odebrat tuhle složku***, not *Zapomenout*, for the reason
+      Italian avoided *Dimentica*: a gate that greps for banned words reads the file, not the sense.
+    · **The two permitted late strings state timing and judge nothing**: `care_due_overdue` is
+      *%1$s po termínu* and `care_notification_overdue` is *%1$s — termín už uplynul.* Polish's
+      *po terminie* move, in Czech.
+
+    · **`destination_care` keeps both halves: *Péče a léky*, eleven characters.** German and Italian
+      kept theirs at fourteen; Spanish, French and Portuguese dropped the meds half for want of a
+      short form. Czech has one — *léky* is the ordinary word, not an abbreviation — so **three of
+      six keep it**. The fallback, if the tab still clips on the narrowest screen, is *Péče* alone.
+    · **Bobky** for droppings — what Czech rabbit owners actually say, where *trus* and *výkaly*
+      are the clinical words §5 rejects and *bobečky* is the baby talk §3 rejects. Spanish rejected
+      *bolitas* for colliding with pelleted food; Czech has no such collision, because pelleted
+      food here is *granule*. The choice fixes ten appearance chips at masculine-inanimate plural
+      (*Kulaté*, *Suché nebo tvrdé*, *Měkké*). Cecotropes are **cékotrofy** and the litter tray is
+      **toaleta** (*záchodek* is the fallback; *podestýlka* is the bedding, not the tray).
+    · **Sledování** for the watch, and Czech is the first language where §5's own collision does
+      *not* happen. Polish uses one word — *obserwacja* — for both the record type and the watch,
+      and had to disambiguate the two strings where they meet; Czech keeps *pozorování* for the
+      record and *sledování* for the watch, two ordinary words. *Dohled* and *dozor* carry the
+      alarm ADR-0001 forbids, *monitorování* is the clinical register.
+    · **Kúra** for a medication course, *péče* for care, so §7.1's Italian collision (*cura*
+      wanting to be both) does not arise. `med_heading` is *Kúry*; the fallback is *Léčba*, and it
+      would move every `med_*` string that names the thing.
+    · **Záloha** for backup, throughout — the ordinary Czech word, which is what Android's own
+      settings say, so the Portuguese draft's *Backup*-in-English question has no Czech twin.
+    · **Quotation is „ “** (Czech low-open, high-close), the same pair German uses. The file needs
+      **no apostrophes at all** except the two inside the registered breed names *Champagne
+      d\'Argent* and *Crème d\'Argent*, where the base file's escape is kept exactly — a staged
+      draft is never compiled, so a missed `\'` would not surface until promotion, and there is
+      nothing here to miss.
+    · **`photo_import_partial` earns its plural for the sixth language running.** The quantity
+      governs the *unreadable* count, so the file names the noun to let it inflect — *%3$d soubor
+      nešel přečíst* / *soubory nešly* / *souborů nešlo* — where an impersonal phrasing would have
+      collapsed all four items into one. The *added* count sits on the same string and the wrong
+      plural axis, so it is a labelled noun (*Přidáno: %1$d z %2$d*), which is French's, Italian's
+      and Portuguese's dodge.
+    · **`age_*` and `gap_*` are word-for-word identical in Czech**, and stay separate resources.
+      English distinguishes *3 years* from *3 years old*; Czech says *3 roky* for both, with the
+      distinction carried by the sentence around it. Identical values, deliberately.
+
+    Breed rows that are mappings rather than translations, and want a rabbit person's eye. Czech has
+    a full national standard (ČSCH), so more rows have a real Czech name here than in any earlier
+    draft — and two of them are traps:
+
+    · ⚠️ **Flemish Giant → *Belgický obr*, and Belgian Hare → *Belgický zajíc*.** The Czech name for
+      the Flemish Giant is built on *Belgian*, so the two rows sit one word apart and a careless
+      mapping swaps them. This is the row to check first.
+    · **Polish → *Hermelín***, joining German's *Hermelin*, French's *Hermine*, Italian's
+      *Ermellino* and Portuguese's *Arminho* — the same breed under the name every continental
+      standard uses. Fifth language, same answer.
+    · **Himalayan → *Ruský***, going French's and Italian's way (*Russe*, *Russo*) rather than
+      Spanish's and Portuguese's *Himalayo* / *Himalaio*: the Czech standard calls it Russian.
+    · **Dutch → *Holandský*** against **Netherland Dwarf → *Barevný zakrslý***, kept apart the way
+      French and Portuguese keep them, where Spanish collides them.
+    · **The lop family is *beran*** — *Zakrslý beran* (Dwarf Lop), *Anglický beran*, *Francouzský
+      beran* — the Czech standard's own name, as *belier* / *bélier* / *ariete* are in the romance
+      drafts. **Holland Lop stays English**, because Czech *Zakrslý beran* is already the Dwarf Lop
+      and mapping both onto it would lose a breed; *Mini Lop*, *American Fuzzy Lop* and *Velveteen
+      Lop* stay English for the same reason.
+    · **Harlequin → *Japonský***, which is the ČSCH name, exactly as German's standards say
+      *Japaner*. *Harlekýn* is what pet shops write; the standard wins, and the reviewer may not
+      agree.
+    · **Tan → *Ohnivák***, **Rhinelander → *Rýnský***, **Silver → *Stříbřitý***, **Checkered Giant →
+      *Německý obrovitý strakáč***, **English Spot → *Anglický strakáč***, **Blanc de Hotot →
+      *Hototský bílý***, **Dwarf Hotot → *Zakrslý hototský***, **Lionhead → *Lvíček***, **Chinchilla
+      → *Činčila americká / velká / malá***, **Californian → *Kalifornský***, **New Zealand →
+      *Novozélandský***, **Continental Giant → *Kontinentální obr***, **Mini Rex → *Zakrslý rex***.
+    · **Satin stays English across its three rows** (*Angorský (satin)*, *Mini Satin*, *Satin*), so
+      the breed is spelled one way; *Saténový* would translate one of them and mismatch the others.
+    · **Mixed / unknown → *Kříženec / neznámé plemeno***, the commonest true answer, first in the
+      list rather than sorted there.
+    · The registered names with no Czech form — American, American Fuzzy Lop, American Sable,
+      Beveren, Britannia Petite, Champagne d\'Argent, Cinnamon, Crème d\'Argent, Florida White,
+      Havana, Jersey Wooly, Lilac, Mini Lop, Mini Satin, Palomino, Rex, Satin, Silver Fox, Silver
+      Marten, Thrianta, Velveteen Lop — stay exactly as they are.
+-->
+<resources>
+    <!-- app_name, settings_language_* and med_editor_name_placeholder are translatable="false"
+         and deliberately absent: a copy of them here would resolve fine, render the same words
+         and cost a line per language forever. A test fails if they appear. -->
+
+    <!-- Bottom-navigation destinations (ADR-0015) -->
+    <string name="destination_home">Domů</string>
+    <string name="destination_weight">Váha</string>
+    <string name="destination_observations">Pozorování</string>
+    <!-- Both halves survive at eleven characters — see the header. *léky* is the ordinary Czech
+         word for medicines, not an abbreviation, which is what German needed *Medis* for. -->
+    <string name="destination_care">Péče a léky</string>
+    <string name="destination_more">Více</string>
+
+    <!-- The bunny switcher -->
+    <string name="switcher_open">Vyber, kterého králíka zobrazit</string>
+    <string name="switcher_all_bunnies">Všichni králíci</string>
+    <string name="switcher_add_bunny">Přidat králíka</string>
+    <string name="switcher_no_bunnies">Zatím žádní králíci</string>
+
+    <!-- The read-only scope onto an archived bunny. Built on the noun *archiv*: the participle
+         *archivovaný* would guess the animal's gender, and *lze číst* agrees with nothing. -->
+    <string name="archived_banner">V archivu. Záznamy lze číst, ne měnit.</string>
+    <string name="archived_banner_leave">Odejít</string>
+
+    <string name="action_back">Zpět</string>
+    <string name="action_save">Uložit</string>
+    <string name="action_cancel">Zrušit</string>
+    <string name="action_edit">Upravit</string>
+    <string name="action_archive">Archivovat</string>
+    <string name="action_unarchive">Vrátit z archivu</string>
+    <string name="action_delete">Smazat</string>
+    <string name="action_ok">OK</string>
+    <string name="action_done">Hotovo</string>
+    <!-- Not the bare *Zpět*, which is action_back: Czech needs the pair kept apart, where English
+         has two different words already. -->
+    <string name="action_undo">Vrátit zpět</string>
+    <string name="action_change">Změnit</string>
+    <string name="action_clear">Vymazat</string>
+    <string name="add_a_bunny_first">Nejdřív přidej králíka.</string>
+
+    <!-- The shared "when did this happen" field, used by weighings and observations alike. -->
+    <string name="recorded_at_pick_date">Změnit datum</string>
+    <string name="recorded_at_pick_time">Změnit čas</string>
+
+    <!-- The searchable picker, shared by symptoms and breed (ADR-0010). -->
+    <string name="picker_search_label">Hledat</string>
+    <string name="picker_no_matches">Nic tomu neodpovídá.</string>
+    <string name="picker_add_symptom">Přidat „%1$s“ jako příznak</string>
+    <string name="picker_use_breed">Použít „%1$s“</string>
+
+    <!-- Home -->
+    <string name="home_empty_title">Zatím žádní králíci</string>
+    <string name="home_empty_body">Přidej prvního králíka a můžeš začít zapisovat.</string>
+    <string name="home_all_bunnies_stub">Klepni na králíka a otevře se.</string>
+    <!-- §7.4: *O %1$s* would need the locative of a name the owner typed, so the name goes first
+         and the sentence becomes a heading. Polish's shape, for Polish's reason. -->
+    <string name="home_about_bunny">%1$s — informace</string>
+    <string name="home_last_weight_label">Poslední vážení</string>
+    <string name="home_last_weight_value">%1$s dne %2$s</string>
+    <string name="home_last_observation_label">Poslední pozorování</string>
+    <!-- Two statements about the record, never about the bunny: silence means nobody looked,
+         not that all was well (ADR-0001). -->
+    <string name="home_no_weighings">Zatím nic zapsáno</string>
+    <string name="home_no_observations">Zatím nic zapsáno</string>
+
+    <!-- Weight -->
+    <string name="weight_pick_a_bunny">Váha se zapisuje pro každého králíka zvlášť. Vyber králíka v přepínači nahoře a uvidíš jeho historii.</string>
+    <string name="weight_add">Zapsat vážení</string>
+    <string name="weight_chart_section">Váha v čase</string>
+    <string name="weight_history_section">Historie</string>
+    <!-- Four identical items on purpose: *vážení* is a neuter -í noun and does not inflect for
+         number. The sentence around it does — see weight_collision_body. -->
+    <plurals name="weight_history_count">
+        <item quantity="one">%d vážení</item>
+        <item quantity="few">%d vážení</item>
+        <item quantity="many">%d vážení</item>
+        <item quantity="other">%d vážení</item>
+    </plurals>
+    <string name="weight_history_empty">Zatím není zapsané žádné vážení. Než se dá posoudit trend, jsou potřeba aspoň tři.</string>
+    <string name="weight_delete_title">Smazat toto vážení?</string>
+    <string name="weight_delete_body">%1$s ze dne %2$s zmizí z historie a trend se spočítá znovu bez něj.</string>
+
+    <!-- The chart's range selector (ADR-0022). Display-only. -->
+    <string name="weight_chart_range_30d">30 dní</string>
+    <string name="weight_chart_range_90d">90 dní</string>
+    <string name="weight_chart_range_1y">1 rok</string>
+    <string name="weight_chart_range_all">Vše</string>
+
+    <!-- §7.2: pre-inflected into the locative, because both hosts put the fragment after *v*.
+         Polish's technique in a second Slavic language; a third host with another preposition
+         breaks all four at once. -->
+    <string name="weight_chart_window_30d">posledních 30 dnech</string>
+    <string name="weight_chart_window_90d">posledních 90 dnech</string>
+    <string name="weight_chart_window_1y">posledním roce</string>
+    <string name="weight_chart_window_all">celé historii</string>
+
+    <!-- Three empty states, not two. The third names the date of the last weighing rather than
+         claiming nothing was recorded (ADR-0001). -->
+    <string name="weight_chart_no_weighings">Zatím není co vykreslit. Graf potřebuje aspoň dvě vážení.</string>
+    <string name="weight_chart_single_point">Zatím jen jedno vážení. Druhé dá grafu čáru.</string>
+    <string name="weight_chart_single_in_range">V %1$s je jen jedno vážení, takže není z čeho nakreslit čáru. Starší jsou zapsaná.</string>
+    <string name="weight_chart_none_in_range">V %1$s není žádné vážení. Poslední bylo %2$s.</string>
+    <string name="weight_chart_show_all">Zobrazit všechna vážení</string>
+
+    <!-- Adding or editing a weighing. Entry is always in grams (house rule). -->
+    <string name="weight_entry_add_title">Zapsat vážení</string>
+    <string name="weight_entry_edit_title">Upravit vážení</string>
+    <string name="weight_grams_help">Váha v gramech. Celé gramy, jak je ukazuje váha.</string>
+    <string name="weight_recent">Poslední vážení: %1$s.</string>
+    <string name="weight_grams_required">Zadej váhu v gramech.</string>
+    <string name="weight_grams_as_kilograms">To je %1$s.</string>
+    <!-- *byl* agrees with the common noun *králík*, which is a fact about the word and not a guess
+         about the animal — the one place a past tense is safe here. -->
+    <string name="weight_recorded_at_label">Kdy byl králík na váze</string>
+    <string name="weight_backdating_help">Výchozí je teď. Klidně važ ráno a zapiš to večer — platí čas, který nastavíš.</string>
+    <string name="weight_future_rejected">To je v budoucnosti. Vážení, které se ještě nestalo, zapsat nelze.</string>
+
+    <!-- The exact-timestamp collision prompt (ADR-0021). The noun never changes and the adjective
+         does: zapsané / zapsaná / zapsaných. -->
+    <string name="weight_collision_title">V tu chvíli už je zapsané jedno vážení</string>
+    <plurals name="weight_collision_body">
+        <item quantity="one">Tenhle králík už má na přesně stejné datum a čas zapsané %d vážení. Když ho nahradíš, zůstane pro ten okamžik jedno čtení; když přidáš druhé, zůstanou obě.</item>
+        <item quantity="few">Tenhle králík už má na přesně stejné datum a čas zapsaná %d vážení. Když je nahradíš, zůstane pro ten okamžik jedno čtení; když přidáš další, zůstanou všechna.</item>
+        <item quantity="many">Tenhle králík už má na přesně stejné datum a čas zapsaných %d vážení. Když je nahradíš, zůstane pro ten okamžik jedno čtení; když přidáš další, zůstanou všechna.</item>
+        <item quantity="other">Tenhle králík už má na přesně stejné datum a čas zapsaných %d vážení. Když je nahradíš, zůstane pro ten okamžik jedno čtení; když přidáš další, zůstanou všechna.</item>
+    </plurals>
+    <string name="weight_collision_replace">Nahradit ho</string>
+    <string name="weight_collision_add_second">Přidat druhé</string>
+    <string name="weight_collision_visit_body">Vážení, které je v tu chvíli zapsané, pochází z návštěvy veterináře. Binky ho nepřepíše — přidej druhé čtení, nebo číslo oprav přímo u návštěvy.</string>
+    <string name="weight_row_from_visit">%1$s · z návštěvy</string>
+    <string name="weight_open_visit">Otevřít návštěvu</string>
+    <string name="weight_visit_owned">Tohle vážení bylo zapsáno při návštěvě veterináře, takže se mění tam. O tom, kdy bylo pořízeno, rozhoduje datum návštěvy.</string>
+
+    <!-- How a stored weight is rendered. Changes are ALWAYS in grams. -->
+    <string name="weight_in_kilograms">%1$s kg</string>
+    <string name="weight_in_grams">%1$s g</string>
+    <string name="weight_change_down">−%1$s g</string>
+    <string name="weight_change_up">+%1$s g</string>
+    <string name="weight_change_none">beze změny</string>
+    <string name="weight_change_first">první</string>
+
+    <!-- The trend flag (ADR-0001). Framed "worth a closer look", never as a diagnosis.
+         *má o %2$s méně* is the present tense on purpose: the past *zhubl/zhubla* would guess the
+         bunny's gender from a name the app cannot read. -->
+    <string name="trend_flag_title">Stojí za bližší pohled</string>
+    <string name="trend_flag_drop">%1$s má od %3$s o %2$s méně.</string>
+    <string name="trend_flag_rise">%1$s má od %3$s o %2$s více.</string>
+    <string name="trend_flag_readings">Tehdy %1$s, teď %2$s.</string>
+    <!-- *dělí* is spelled the same in the 3rd person singular and plural, which is what lets a
+         substituted count phrase land here at all — see the header. -->
+    <string name="trend_flag_long_gap">Ta dvě vážení dělí %1$s, takže jde o změnu za delší dobu, ne o náhlou.</string>
+    <string name="trend_flag_not_advice">Tohle je poznámka k číslům, ne diagnóza. Pokud máš obavy, zeptej se veterináře.</string>
+    <string name="trend_flag_vet_diet">Je to dieta podle veterináře? Pak je tenhle úbytek přesně to, oč jde, a tyhle poznámky můžeš přejít.</string>
+    <string name="trend_flag_vet_gain">Je to výživový plán podle veterináře? Pak je tenhle přírůstek přesně to, oč jde, a tyhle poznámky můžeš přejít.</string>
+    <!-- *Viděl(a) jsem* is exactly the parenthesis §7.3 forbids; this is the present tense. -->
+    <string name="trend_flag_acknowledge">Beru na vědomí</string>
+    <!-- §7.4's cheapest answer: the name is the subject here, and the subject is the citation
+         form already. Nothing had to be reordered. -->
+    <string name="trend_flag_ask_age">Kolik let má %1$s?</string>
+    <string name="trend_flag_acknowledged">Viděno %1$s.</string>
+    <string name="trend_flag_close">Zavřít</string>
+
+    <!-- How far apart two weighings are. `many` is the fraction form — 1,5 roku — and unreachable
+         for the integer counts this app produces. -->
+    <plurals name="gap_years">
+        <item quantity="one">%d rok</item>
+        <item quantity="few">%d roky</item>
+        <item quantity="many">%d roku</item>
+        <item quantity="other">%d let</item>
+    </plurals>
+    <plurals name="gap_months">
+        <item quantity="one">%d měsíc</item>
+        <item quantity="few">%d měsíce</item>
+        <item quantity="many">%d měsíce</item>
+        <item quantity="other">%d měsíců</item>
+    </plurals>
+    <plurals name="gap_weeks">
+        <item quantity="one">%d týden</item>
+        <item quantity="few">%d týdny</item>
+        <item quantity="many">%d týdne</item>
+        <item quantity="other">%d týdnů</item>
+    </plurals>
+    <plurals name="gap_days">
+        <item quantity="one">%d den</item>
+        <item quantity="few">%d dny</item>
+        <item quantity="many">%d dne</item>
+        <item quantity="other">%d dní</item>
+    </plurals>
+
+    <!-- Settings -->
+    <string name="settings_title">Nastavení</string>
+    <!-- Not *Zobrazovat váhu v*: a label ending in a preposition would govern the chip below it,
+         and the chips are citation forms. The noun asks the same question and governs nothing. -->
+    <string name="settings_weight_unit">Jednotka váhy</string>
+    <string name="settings_unit_kilograms">Kilogramy</string>
+    <string name="settings_unit_grams">Gramy</string>
+    <string name="settings_weight_unit_help">Mění to, jak se váha zobrazuje, ne jak se zadává — zadává se vždy v gramech a změny se vždy ukazují v gramech.</string>
+    <string name="settings_backup">Zálohy a obnovení</string>
+    <string name="settings_backup_summary">Ulož si záznamy do souboru, obnov je z něj a podívej se na kopie uložené v tomhle telefonu.</string>
+    <string name="settings_language">Jazyk</string>
+    <string name="settings_language_system">Stejný jako v telefonu</string>
+    <string name="settings_language_help">Binky může mít jiný jazyk než zbytek telefonu. Po změně se aplikace restartuje.</string>
+    <!-- ADR-0027. Shown on Android 12 and newer only. -->
+    <string name="settings_material_you">Barvy podle tapety</string>
+    <string name="settings_material_you_help">Binky má vlastní barvy. Když tohle zapneš, vezme si je z tapety — tak, jak Android barví svoje vlastní obrazovky.</string>
+
+    <!-- First-run setup (ADR-0006). -->
+    <string name="setup_step">Krok %1$d z %2$d</string>
+    <string name="setup_continue">Pokračovat</string>
+    <string name="setup_back">O krok zpět</string>
+    <!-- *Vítej* would be fine, but *Vítá tě Binky* is warmer and equally genderless — the first
+         screen an owner ever sees is the last place to guess who they are. -->
+    <string name="setup_bunny_title">Vítá tě Binky</string>
+    <string name="setup_bunny_body">Binky drží zdravotní historii tvých králíků v tomhle telefonu — váhu, pozorování a fotky. Žádný účet, žádný server: nic, co sem zapíšeš, se nikam neposílá.\n\nTři rychlé otázky a je to tvoje.</string>
+    <string name="setup_bunny_action">Přidat prvního králíka</string>
+    <string name="setup_bunny_add_another">Přidat dalšího králíka</string>
+    <string name="setup_bunny_skip">Zatím přeskočit</string>
+    <string name="setup_bunny_added_one">%1$s — hotovo. Další králíky můžeš kdykoli přidat v přepínači nahoře.</string>
+    <string name="setup_bunny_added_many">Králíci jsou zapsaní. Další můžeš kdykoli přidat v přepínači nahoře.</string>
+    <string name="setup_backup_title">Jak udržet záznamy v bezpečí</string>
+    <string name="setup_backup_body">Všechno je v tomhle telefonu, takže ztracený telefon znamená ztracenou historii, pokud to něco nekopíruje. Umí to dvě různé věci a ani jedna nepokryje všechno.</string>
+    <string name="setup_backup_auto_ask">Binky nepozná, jestli je zapnutá, a nemůže ji za tebe zapnout. Teď je dobrá chvíle to zkontrolovat.</string>
+    <string name="setup_backup_changeable">Všechno tohle jde kdykoli změnit v Nastavení › Zálohy a obnovení.</string>
+    <string name="setup_finish">Dokončit nastavení</string>
+
+    <!-- Reminders (ADR-0003, ADR-0006, ADR-0024). The three delivery states are the load-bearing
+         copy in this app: "blocked" is a certainty, "best-effort" is a real hedge, "armed" is the
+         only one that promises anything. None may overstate what the phone will do. -->
+    <string name="reminders_title">Připomínky</string>
+    <string name="reminders_body">Binky umí připomínat opakovanou péči — stříhání drápků každých šest týdnů, každoroční očkování, týdenní vážení. Připomínky chodí jednou denně, jen v tomhle telefonu, a ty si vybereš, čeho se týkají.</string>
+    <string name="reminders_enable_action">Zapnout připomínky</string>
+    <string name="reminders_state_blocked">Oznámení jsou vypnutá, takže se připomínky objeví jen uvnitř aplikace.</string>
+    <string name="reminders_state_best_effort">Připomínky jsou zapnuté. Tenhle telefon je ale může zdržet nebo zahodit, když Binky běží na pozadí — spraví to nastavení níž.</string>
+    <string name="reminders_state_armed">Připomínky jsou zapnuté a tenhle telefon je nechá projít.</string>
+    <string name="reminders_denied_once">Nic se neděje. Můžeš je zapnout, kdykoli budeš chtít.</string>
+    <string name="reminders_permanently_denied">Android se už nezeptá, takže tohle je potřeba zapnout v nastavení telefonu.</string>
+    <string name="reminders_open_settings_action">Otevřít nastavení oznámení</string>
+    <string name="reminders_battery_title">Ještě jedna věc, jinak připomínky nemusí dorazit</string>
+    <string name="reminders_battery_body">Android uspává aplikace, které považuje za nečinné, a uspaná Binky nemůže připomínku poslat. Výjimka z optimalizace baterie je to, co pustí připomínku v devět ráno po noci, kterou telefon prospal.</string>
+    <string name="reminders_battery_action">Otevřít nastavení baterie</string>
+    <string name="reminders_battery_dismiss">Teď ne</string>
+    <string name="reminders_autostart_help">Některé telefony — hlavně Xiaomi — mají navíc vlastní seznam automatického spouštění. Binky do něj nevidí, takže neumí říct, jestli je nastavený; tohle je jen cesta k němu.</string>
+    <string name="reminders_autostart_action">Otevřít nastavení automatického spouštění</string>
+
+    <!-- Dose delivery (ADR-0003, ADR-0025, ADR-0026). Nothing here says anything about the
+         medication itself, and nothing says a dose was late. -->
+    <string name="doses_state_blocked">Oznámení jsou vypnutá, takže se připomínky dávek objeví jen uvnitř aplikace.</string>
+    <string name="doses_state_best_effort_exact">Připomínky dávek jsou zapnuté, ale Android nedovolí Binky nastavit je na minutu přesně — čekej je do pár minut od daného času, ne přesně v něm.</string>
+    <string name="doses_state_best_effort_battery">Připomínky dávek jsou zapnuté a nastavené na minutu přesně. Tenhle telefon je ale může zdržet, když Binky běží na pozadí.</string>
+    <string name="doses_exact_alarm_action">Otevřít nastavení budíků</string>
+    <string name="reminders_caveat_notifications_title">Oznámení jsou vypnutá</string>
+    <string name="reminders_caveat_exact_title">Připomínky mohou dorazit později</string>
+    <string name="reminders_caveat_battery_title">Tenhle telefon může připomínky zdržet</string>
+
+    <!-- Debug builds only, and never shown in a release build. -->
+    <string name="settings_sample_data">Ukázková data</string>
+    <string name="settings_debug_header">Jen ladicí sestavení</string>
+    <string name="settings_sample_data_help">Přidá dva spřátelené králíky, rok nepravidelných zpětně zapsaných vážení a hrst pozorování, aby šel graf, poznámka k trendu i časová osa projít na skutečné historii.</string>
+    <string name="settings_sample_data_action">Přidat ukázková data</string>
+    <string name="settings_sample_data_seeded">Ukázková data přidána.</string>
+    <string name="settings_sample_data_present">Ukázkoví králíci už tu jsou.</string>
+    <string name="settings_debug_reminder">Doručení připomínky</string>
+    <string name="settings_debug_reminder_help">Pošle jedno oznámení za dvě minuty, vlastní cestou mimo denní kontrolu — takže jde ověřit kanál, oprávnění i doručení, aniž by existovala jediná připomínka.</string>
+    <string name="settings_debug_reminder_settings_action">Nastavení připomínek</string>
+    <string name="settings_debug_reminder_action">Připomeň mi to za dvě minuty</string>
+    <string name="settings_debug_reminder_scheduled">Zkušební připomínka dorazí za dvě minuty. Zamkni telefon a počkej.</string>
+    <string name="debug_reminder_notification_title">Zkušební připomínka</string>
+    <!-- Impersonal: *naplánoval jsi* would gender the owner, and "we" would claim a team where
+         there is one person (the Polish read-through's finding). -->
+    <string name="debug_reminder_notification_text">Takhle bude vypadat připomínka péče. Nic není na řadě — tahle připomínka byla naplánovaná ručně z Nastavení.</string>
+
+    <!-- A dose notification: the medicine is the title, this is the line under it (ADR-0002,
+         ADR-0026). §7.4: the declined common noun carries the case the name cannot take. -->
+    <string name="dose_notification_amount">%1$s pro králíka %2$s</string>
+    <string name="dose_notification_no_amount">Pro králíka %1$s</string>
+
+    <!-- Notification channels: the owner's only per-kind control, so a daily watch nudge and an
+         annual vaccination must never share one. -->
+    <string name="channel_care_name">Připomínky péče</string>
+    <string name="channel_care_description">Stříhání drápků, očkování, vážení a cokoli dalšího, k čemu je nastavená opakovaná připomínka.</string>
+    <string name="channel_watch_name">Kontroly při sledování</string>
+    <string name="channel_watch_description">Jednou denně pobídka podívat se na králíka, kterého sleduješ zblízka. Jen po dobu sledování.</string>
+    <string name="channel_backup_name">Připomínky záloh</string>
+    <string name="channel_backup_description">Občasná pobídka vyexportovat záznamy, v intervalu, který je nastavený. S králíky to nemá nic společného.</string>
+    <string name="channel_doses_name">Dávky léků</string>
+    <string name="channel_doses_description">Připomínka v čase dávky, kterou máš naplánovanou. Jen po dobu kúry.</string>
+
+    <!-- Backup and restore (ADR-0005). -->
+    <string name="backup_title">Zálohy a obnovení</string>
+
+    <!-- The automatic net, stated in all three states. Absence is spelled out rather than left
+         blank: an empty line would read as a working net. -->
+    <string name="backup_auto_title">Automatická záloha</string>
+    <string name="backup_auto_help">Android zálohuje Binky na tvůj účet Google podle vlastního rozvrhu — když je telefon nečinný, nabíjí se a je online. Binky to nemůže zapnout ani ověřit.</string>
+    <string name="backup_auto_never">V tomhle telefonu není zaznamenaná žádná automatická záloha.</string>
+    <string name="backup_auto_recorded">Poslední automatická záloha: %1$s.</string>
+    <string name="backup_auto_stale">Poslední automatická záloha byla %1$s — víc než před dvěma týdny. Něco ji možná vyplo.</string>
+    <string name="backup_auto_photos">Zahrnuje záznamy, nastavení a profilové fotky králíků. Galerie fotek v ní není.</string>
+    <!-- The verb agrees with the count as well as the noun: nevešel / nevešly / nevešlo. -->
+    <plurals name="backup_auto_excluded">
+        <item quantity="one">Do zálohy se nevešel %d dokument nebo fotka toalety. Ruční export je udrží.</item>
+        <item quantity="few">Do zálohy se nevešly %d dokumenty nebo fotky toalety. Ruční export je udrží.</item>
+        <item quantity="many">Do zálohy se nevešlo %d dokumentů nebo fotek toalety. Ruční export je udrží.</item>
+        <item quantity="other">Do zálohy se nevešlo %d dokumentů nebo fotek toalety. Ruční export je udrží.</item>
+    </plurals>
+    <string name="backup_auto_settings_action">Otevřít nastavení záloh Androidu</string>
+
+    <string name="backup_excluded_notification_title">Některé dokumenty a fotky toalety nejsou v záloze</string>
+    <plurals name="backup_excluded_notification_text">
+        <item quantity="one">Automatická záloha Androidu nezvládla pojmout %d dokument nebo fotku toalety. Ulož si kopii ručním exportem.</item>
+        <item quantity="few">Automatická záloha Androidu nezvládla pojmout %d dokumenty nebo fotky toalety. Ulož si kopii ručním exportem.</item>
+        <item quantity="many">Automatická záloha Androidu nezvládla pojmout %d dokumentů nebo fotek toalety. Ulož si kopii ručním exportem.</item>
+        <item quantity="other">Automatická záloha Androidu nezvládla pojmout %d dokumentů nebo fotek toalety. Ulož si kopii ručním exportem.</item>
+    </plurals>
+
+    <string name="backup_scope_title">Co export obsahuje</string>
+    <string name="backup_scope_essential">Základ</string>
+    <string name="backup_scope_records">Záznamy</string>
+    <string name="backup_scope_everything">Všechno</string>
+    <string name="backup_scope_essential_help">Záznamy, nastavení a profilové fotky králíků. Nejmenší užitečná záloha.</string>
+    <string name="backup_scope_records_help">Všechno ze Základu a k tomu naskenované dokumenty a fotky toalety — všechno, co se může ještě hodit.</string>
+    <string name="backup_scope_everything_help">Všechno ze Záznamů a k tomu galerie fotek. Mnohem větší, a jediná záloha, kterou fotky kdy dostanou.</string>
+    <string name="backup_photos_warning">Fotky jsou v Binky to nejméně chráněné. Automatická záloha Androidu galerii nezahrnuje a Základ ani Záznamy ji taky neberou. Export „Všechno“ je jediná kopie, kterou fotky kdy budou mít.</string>
+    <string name="backup_export_action">Exportovat zálohu</string>
+    <string name="backup_exporting">Záloha se vytváří…</string>
+    <string name="backup_export_share">Sdílet tuhle zálohu</string>
+
+    <!-- The remembered export folder (ADR-0005, PLAN 4e). Every failure here ends with the backup
+         shared instead — the path that worked before a folder was ever remembered. -->
+    <string name="backup_folder_title">Kam exporty míří</string>
+    <string name="backup_folder_help">Export normálně jde do nabídky sdílení a ty si vybereš, co s ním. Můžeš taky vybrat složku — v telefonu nebo v cloudové aplikaci jako Disk — a Binky bude zapisovat rovnou tam.</string>
+    <string name="backup_folder_none">Není vybraná žádná složka. Exporty jdou do nabídky sdílení.</string>
+    <string name="backup_folder_chosen">Exporty mohou jít rovnou do „%1$s“.</string>
+    <string name="backup_folder_unavailable">Binky už do vybrané složky nemůže zapisovat. Mohla se přesunout nebo smazat, nebo jí bylo odebráno oprávnění. Vyber ji znovu, nebo dál používej nabídku sdílení.</string>
+    <string name="backup_folder_choose">Vybrat složku</string>
+    <string name="backup_folder_change">Vybrat jinou složku</string>
+    <!-- Not *Zapomenout*: the gate greps this file for the banned list, not for the sense, and
+         Italian made the same swap for the same reason. -->
+    <string name="backup_folder_forget">Odebrat tuhle složku</string>
+    <string name="backup_folder_export">Exportovat do téhle složky</string>
+    <string name="backup_folder_saved">Uloženo jako „%1$s“.</string>
+    <!-- Never blames the owner, and ends with what is still true (§3). -->
+    <string name="backup_folder_refused">Do té složky se nepodařilo zapsat, takže se záloha místo toho nasdílela — nic se neztratilo. Pokud se to bude opakovat, vyber složku přímo v telefonu.</string>
+    <string name="backup_folder_not_remembered">Tenhle telefon nedovolil Binky podržet si přístup ke složce, takže se žádná složka neuložila. Exporty pořád jdou do nabídky sdílení.</string>
+    <string name="backup_folder_no_picker">V tomhle telefonu není správce souborů, který by šel otevřít, takže exporty jdou do nabídky sdílení.</string>
+
+    <!-- The recurring export reminder (ADR-0005). A prompt about the owner's export — never a
+         claim that their data is unsafe. -->
+    <string name="backup_reminder_title">Připomínat export</string>
+    <string name="backup_reminder_help">Pobídka udělat export, chodí ve stejnou denní dobu jako ostatní připomínky. Je to pobídka k zálohám, ne signál, že je něco špatně.</string>
+    <string name="backup_reminder_switch">Připomínat</string>
+    <string name="backup_reminder_off">Vypnuto. Binky se ptát nebude.</string>
+    <string name="backup_reminder_next">Další připomínka: %1$s.</string>
+    <string name="backup_reminder_blocked">Oznámení jsou pro Binky vypnutá nebo jsou ztlumené připomínky záloh, takže tahle dorazit nemůže.</string>
+    <!-- Fixed text, not a substitution, so *každý* can agree properly here. That is exactly why
+         care_every — where the phrase arrives at run time — could not keep the same shape. -->
+    <string name="backup_reminder_weekly">Každý týden</string>
+    <string name="backup_reminder_fortnightly">Každé dva týdny</string>
+    <string name="backup_reminder_monthly">Každý měsíc</string>
+    <string name="backup_reminder_quarterly">Každé tři měsíce</string>
+    <string name="export_notification_title">Čas zálohovat záznamy?</string>
+    <!-- A noun phrase, because *požádal jsi* genders the owner in a notification — the same
+         rewrite Polish made for *Prosiłeś(-aś)*. -->
+    <string name="export_notification_text">Připomínka na tvé přání. Otevři Zálohy a obnovení a udělej čerstvý export — je to pár klepnutí.</string>
+
+    <string name="backup_restore_title">Obnovení</string>
+    <string name="backup_restore_help">Obnovení nahradí všechno, co Binky teď drží, tím, co je v souboru. Kopie současných záznamů se nejdřív uloží do telefonu, takže jde obnovení vzít zpět.</string>
+    <string name="backup_restore_action">Obnovit ze souboru</string>
+    <string name="backup_restore_confirm_title">Obnovit tuhle zálohu?</string>
+    <!-- §7.2's quoting dodge: the scope name is a run-time value and cannot decline, so the
+         quotation marks turn it into a name the sentence does not have to agree with. -->
+    <string name="backup_restore_confirm_body">Záloha „%1$s“ z %2$s.\n\nVšechno, co Binky teď drží, bude nahrazeno. Kopie současných záznamů se nejdřív uloží do telefonu.</string>
+    <string name="backup_restore_confirm_action">Nahradit všechno</string>
+    <string name="backup_restoring">Obnovuje se…</string>
+
+    <string name="backup_refused_title">Nic se neobnovilo</string>
+    <string name="backup_refused_not_a_backup">Tenhle soubor není záloha Binky. V telefonu se nic nezměnilo.</string>
+    <string name="backup_refused_newer">Tuhle zálohu udělala novější verze Binky, kterou tahle přečíst neumí. Byla uložena ve verzi %1$d a tahle aplikace čte do verze %2$d. V telefonu se nic nezměnilo.</string>
+    <string name="backup_refused_too_large">Na zálohu Binky je tenhle soubor mnohonásobně moc velký. V telefonu se nic nezměnilo.</string>
+    <string name="backup_refused_unreadable">Záznamy uvnitř téhle zálohy nešly otevřít, takže se nic nezměnilo. Soubor může být poškozený.</string>
+
+    <string name="backup_restored_title">Obnovení dokončeno</string>
+    <string name="backup_restored_scope">Obnovena záloha „%1$s“ z %2$s.</string>
+    <!-- Zero lands in `other` in Czech — *0 obrázků* — so this stays an ordinary sentence where
+         the Portuguese draft had to recast it as a label. -->
+    <plurals name="backup_restored_overlaid">
+        <item quantity="one">Ze zálohy přišel %d obrázek.</item>
+        <item quantity="few">Ze zálohy přišly %d obrázky.</item>
+        <item quantity="many">Ze zálohy přišlo %d obrázků.</item>
+        <item quantity="other">Ze zálohy přišlo %d obrázků.</item>
+    </plurals>
+    <plurals name="backup_restored_kept">
+        <item quantity="one">%d obrázek, který už v telefonu byl, byl mimo rozsah téhle zálohy a zůstal.</item>
+        <item quantity="few">%d obrázky, které už v telefonu byly, byly mimo rozsah téhle zálohy a zůstaly.</item>
+        <item quantity="many">%d obrázků, které už v telefonu byly, bylo mimo rozsah téhle zálohy a zůstalo.</item>
+        <item quantity="other">%d obrázků, které už v telefonu byly, bylo mimo rozsah téhle zálohy a zůstalo.</item>
+    </plurals>
+    <string name="backup_restored_snapshot">Stav před tímhle obnovením se uložil jako %1$s v části „Kopie uložené v telefonu“.</string>
+    <string name="backup_restored_close">Zavřít Binky</string>
+    <!-- *aplikace* stands in for the app's name here: Binky has no settled gender in Czech and
+         this sentence needs one. See the header. -->
+    <string name="backup_restored_close_help">Aplikaci je potřeba zavřít, aby se otevřela nad obnovenými záznamy. Spusť ji znovu z domovské obrazovky.</string>
+
+    <!-- The two occupants of preserved/: shared by the Backup screen and by ADR-0023's
+         schema-mismatch screen. -->
+    <string name="preserved_title">Kopie uložené v telefonu</string>
+    <string name="preserved_help">Binky uloží kopii pokaždé, než se něco chystá nahradit záznamy. Nic z toho se nikdy nemaže automaticky.</string>
+    <string name="preserved_empty">V tomhle telefonu není uložená žádná kopie.</string>
+    <string name="preserved_detail">Uloženo %1$s · %2$s · %3$s</string>
+    <plurals name="preserved_files">
+        <item quantity="one">%d soubor</item>
+        <item quantity="few">%d soubory</item>
+        <item quantity="many">%d souboru</item>
+        <item quantity="other">%d souborů</item>
+    </plurals>
+    <string name="preserved_undated">datum neznámé</string>
+    <string name="preserved_share">Sdílet tuhle kopii</string>
+    <string name="preserved_delete_title">Smazat tuhle kopii?</string>
+    <string name="preserved_delete_body">%1$s z tohohle telefonu nadobro zmizí. Pokud není nasdílená někde jinde, je pryč.</string>
+    <string name="preserved_kind_wipe">Uloženo předtím, než aktualizace smazala záznamy</string>
+    <string name="preserved_kind_snapshot">Uloženo před obnovením</string>
+    <string name="preserved_not_restorable">Zapsáno starší verzí Binky, takže to jde jen sdílet — ne načíst zpátky.</string>
+    <string name="preserved_restore">Obnovit tuhle kopii</string>
+
+    <!-- Observations: the vocabularies (ADR-0010). Every one of them has a "not checked" that is a
+         recorded fact in its own right — nobody looked — and never a polite word for "normal".
+         The impersonal *Nekontrolováno* is also what keeps it a fact about the record: the four
+         fields it sits under are all feminine, so a participle would have worked, and a noun-free
+         impersonal says the right thing instead of the agreeing one. -->
+    <string name="observation_not_checked">Nekontrolováno</string>
+
+    <!-- §7.1's biggest row: *Normálně* here (an adverb answering *kolik*), *Normální* for the four
+         that qualify a noun, *Pije normálně* for water. Three forms of six. -->
+    <string name="droppings_amount_none">Žádné</string>
+    <string name="droppings_amount_few">Málo</string>
+    <string name="droppings_amount_normal">Normálně</string>
+    <string name="droppings_amount_many">Hodně</string>
+
+    <string name="droppings_size_small">Malé</string>
+    <string name="droppings_size_normal">Normální</string>
+    <string name="droppings_size_large">Velké</string>
+
+    <!-- All ten agree with *bobky*, masculine inanimate plural. "with fur" is load-bearing —
+         mucus looks the same — and "or tarry" is the distinctive half of the dark one. -->
+    <string name="droppings_appearance_round">Kulaté</string>
+    <string name="droppings_appearance_misshapen">Deformované</string>
+    <string name="droppings_appearance_doubled">Zdvojené nebo slepené</string>
+    <string name="droppings_appearance_dry">Suché nebo tvrdé</string>
+    <string name="droppings_appearance_strung_together">Navlečené na srsti</string>
+    <string name="droppings_appearance_mucus">Hlen nebo sliz</string>
+    <string name="droppings_appearance_soft">Měkké</string>
+    <string name="droppings_appearance_diarrhoea">Průjem</string>
+    <string name="droppings_appearance_very_dark">Velmi tmavé nebo dehtovité</string>
+    <string name="droppings_appearance_blood">Krev</string>
+
+    <string name="cecotropes_eaten">Snědené</string>
+    <string name="cecotropes_left_uneaten">Nesnědené</string>
+    <string name="cecotropes_excess">Hodně nesnědených</string>
+
+    <!-- The four graded fields agree with their own noun — *chuť*, *nálada*, *aktivita* are
+         feminine — which is what keeps them off the animal's gender entirely. -->
+    <string name="appetite_none">Žádná</string>
+    <string name="appetite_reduced">Snížená</string>
+    <string name="appetite_normal">Normální</string>
+    <string name="appetite_eager">Velká</string>
+
+    <string name="mood_withdrawn">Uzavřená</string>
+    <string name="mood_subdued">Utlumená</string>
+    <string name="mood_normal">Normální</string>
+    <string name="mood_bright">Veselá</string>
+
+    <string name="activity_lethargic">Malátná</string>
+    <string name="activity_quiet">Klidná</string>
+    <string name="activity_normal">Normální</string>
+    <string name="activity_active">Čilá</string>
+
+    <!-- Water is the one row built on verbs, so *Normální* would be the only non-verb in it. -->
+    <string name="water_none">Nepije</string>
+    <string name="water_less">Pije méně</string>
+    <string name="water_normal">Pije normálně</string>
+    <string name="water_more">Pije více</string>
+
+    <!-- The built-in symptoms (ADR-0010): each is something an owner can SEE, worded as the thing
+         observed and never as the condition it might mean. The verb forms are 3rd person present
+         and the rest are nouns, so none of them guesses the animal's gender. -->
+    <string name="symptom_head_tilt">Nakloněná hlava</string>
+    <string name="symptom_drooling_or_wet_chin">Slintání nebo mokrá brada</string>
+    <string name="symptom_sneezing_or_nasal_discharge">Kýchání nebo výtok z nosu</string>
+    <string name="symptom_eye_discharge">Výtok nebo krusty u očí</string>
+    <string name="symptom_dirty_bottom">Špinavý zadek</string>
+    <!-- "Loud" is deliberate: rabbits purr by grinding their teeth softly. -->
+    <string name="symptom_loud_teeth_grinding">Hlasité skřípání zubů</string>
+    <string name="symptom_hunched_posture">Sedí nahrbeně</string>
+    <string name="symptom_laboured_breathing">Ztížené dýchání</string>
+    <string name="symptom_not_drinking">Nepije</string>
+    <string name="symptom_limping">Kulhání</string>
+    <string name="symptom_ear_scratching">Škrábání uší</string>
+    <string name="symptom_blood_in_urine">Krev v moči</string>
+    <string name="symptom_hiding_more_than_usual">Schovává se víc než jindy</string>
+
+    <!-- Recording an observation. *Kdy ses díval* would gender the owner, so both the label and
+         its help ask about the moment rather than about the person (§7.3). -->
+    <string name="observation_add_title">Zapsat pozorování</string>
+    <string name="observation_edit_title">Upravit pozorování</string>
+    <string name="observation_recorded_at_label">Kdy to bylo</string>
+    <string name="observation_backdating_help">Výchozí je teď. Kontrola proběhla ráno a zapisuješ ji večer? Nastav čas, kdy to bylo — platí ten.</string>
+    <string name="observation_future_rejected">To je v budoucnosti. Pozorování, které se ještě nestalo, zapsat nelze.</string>
+
+    <!-- Who the observation covers (ADR-0008). Bonded bunnies share a tray, so the tray facts are
+         recorded once for all of them. -->
+    <string name="observation_participants_label">Koho se to týká</string>
+    <string name="observation_participants_help">Králíci, kteří sdílejí toaletu, jsou zaškrtnutí. Odškrtni každého, na koho tohle nesedí.</string>
+    <string name="observation_participants_required">Vyber aspoň jednoho králíka.</string>
+    <!-- The common noun *králíka* stands where English has "them": it carries the case and says
+         nothing about the animal's sex. -->
+    <string name="observation_excluded_archived">%1$s je v archivu, takže tohle pozorování králíka nezahrne.</string>
+    <string name="observation_excluded_watch">%1$s — probíhá sledování, zapiš to zvlášť.</string>
+
+    <string name="observation_tray_heading">Toaleta</string>
+    <string name="observation_tray_shared_help">Zapisuje se jednou pro všechny, koho se to týká — sdílenou toaletu nejde rozdělit podle králíků.</string>
+    <string name="observation_droppings_amount_label">Kolik bobků</string>
+    <string name="observation_droppings_size_label">Velikost</string>
+    <string name="observation_droppings_appearance_label">Vzhled</string>
+    <string name="observation_cecotropes_label">Cékotrofy</string>
+    <string name="observation_tray_photo_label">Fotka toalety</string>
+    <!-- About the light, not about the camera. -->
+    <string name="observation_tray_photo_help">Rovnoměrné nepřímé světlo ukáže tvar nejlíp — bobky ve stínu se pak čtou špatně.</string>
+    <string name="observation_tray_photo_description">Toaleta</string>
+    <string name="observation_tray_photo_unreadable">Tenhle obrázek nešel přečíst, takže se nic nepřipojilo.</string>
+
+    <string name="observation_individual_heading">Tenhle králík</string>
+    <string name="observation_individual_heading_named">%1$s</string>
+    <string name="observation_appetite_label">Chuť k jídlu</string>
+    <string name="observation_mood_label">Nálada</string>
+    <string name="observation_activity_label">Aktivita</string>
+    <string name="observation_water_label">Voda</string>
+
+    <string name="observation_symptoms_label">Příznaky</string>
+    <string name="observation_symptoms_none_selected">Nic nevybráno</string>
+    <string name="observation_symptoms_pick">Vybrat příznaky</string>
+    <!-- "Looked, none seen" is the one state an empty list cannot express, and it is the more
+         useful of the two records (ADR-0010, ADR-0001). Impersonal, because *díval jsem se*
+         genders the owner. -->
+    <string name="observation_symptoms_checked">Kontrola proběhla — nic z tohohle</string>
+    <string name="observation_symptoms_checked_help">Stojí za zaškrtnutí. Prázdný seznam sám o sobě znamená jen to, že nikdo nekontroloval.</string>
+
+    <string name="observation_note_label">Cokoli dalšího</string>
+    <!-- *Co jsi viděl* would gender the owner; *co* is neuter and *zaujalo* agrees with it. -->
+    <string name="observation_note_placeholder">Co tě zaujalo, vlastními slovy</string>
+
+    <!-- The timeline -->
+    <string name="observations_empty">Zatím není zapsané žádné pozorování. Cokoli si všimneš — toaleta, nálada, příznak — patří sem.</string>
+    <string name="observation_with">Společně: %1$s</string>
+    <!-- The lone survivor: it still reads as shared and deliberately names nobody (ADR-0008). -->
+    <string name="observation_observed_together_alone">Pozorováno společně</string>
+    <string name="observation_tray_section">Toaleta</string>
+    <string name="observation_tray_section_shared">Sdílené — toaleta</string>
+    <string name="observation_no_symptoms_seen">Kontrola příznaků — žádné</string>
+    <string name="observation_delete_title">Smazat tohle pozorování?</string>
+    <string name="observation_delete_body">Pozorování zapsané %1$s zmizí.</string>
+    <string name="observation_delete_body_shared">Tohle pozorování se týkalo: %1$s. Smazáním zmizí pro všechny z nich.</string>
+    <string name="observation_which_bunny">Kterého králíka se to týká?</string>
+
+    <!-- The healthy-day shortcut: everything normal, recorded in one tap, with an Undo rather than
+         a confirmation. The chips are named through their own fields — *nálada veselá*, *aktivita
+         čilá* — so nothing here agrees with the animal. -->
+    <string name="healthy_day_action">Zapsat zdravý den</string>
+    <string name="healthy_day_help">Zapíše obyčejný den: bobky normální, žere a pije jako jindy, nálada veselá a aktivita čilá.</string>
+    <string name="healthy_day_which_bunny">Čí to byl den?</string>
+    <string name="healthy_day_logged">Zdravý den zapsán: %1$s.</string>
+    <!-- A flagged bunny is still offered and named, not withheld (ADR-0001, ADR-0008). -->
+    <string name="healthy_day_name_flagged">%1$s (poznámka k váze)</string>
+    <plurals name="healthy_day_excluded_watch">
+        <item quantity="one">%1$s — probíhá sledování, zapiš to zvlášť.</item>
+        <item quantity="few">%1$s — u nich probíhá sledování, zapiš to zvlášť.</item>
+        <item quantity="many">%1$s — u nich probíhá sledování, zapiš to zvlášť.</item>
+        <item quantity="other">%1$s — u nich probíhá sledování, zapiš to zvlášť.</item>
+    </plurals>
+
+    <!-- Care reminders (ADR-0018). A reminder is {label, interval, optional type}: the three
+         presets carry a type and translate, a custom one is the owner's own words and does not. -->
+    <string name="care_empty">Zatím nic naplánovaného. Připomínka péče je práce, která se vrací — stříhání drápků, každoroční očkování, týdenní vážení.</string>
+    <string name="care_pick_a_bunny">Péče se vede pro každého králíka zvlášť. Pro kterého?</string>
+    <string name="care_choose_bunny">Vyber králíka</string>
+    <string name="care_add">Přidat připomínku</string>
+
+    <string name="care_type_nail_trim">Stříhání drápků</string>
+    <string name="care_type_vaccination">Očkování</string>
+    <!-- §7.1, found by the French draft and confirmed by Italian and Portuguese: the *reminder* is
+         a *kontrolní vážení*, one weighing is a *vážení*. Without the split
+         care_history_weight_help would read "vážení se počítají jako vážení". -->
+    <string name="care_type_weigh_in">Kontrolní vážení</string>
+    <string name="care_type_custom">Něco jiného</string>
+
+    <!-- The next date in words rather than as a bare date. *Za %1$s* takes the accusative, which
+         for all four units is spelled like the nominative the gap plurals already hold. -->
+    <string name="care_due_today">Termín dnes</string>
+    <string name="care_due_tomorrow">Termín zítra</string>
+    <string name="care_due_yesterday">Termín byl včera</string>
+    <string name="care_due_in">Za %1$s</string>
+    <!-- One of the two strings ADR-0026 permits to say a thing is late. It states the timing and
+         judges nothing — Polish's *po terminie*, not *zmeškaná*. -->
+    <string name="care_due_overdue">%1$s po termínu</string>
+
+    <!-- §7.2: *každý* has to agree with whatever is substituted (*každý týden*, *každé 2 týdny*,
+         *každých 6 týdnů*) and the app cannot know which is coming, so the host gives up being a
+         sentence. German's and French's answer, reached for Czech's own reason. -->
+    <string name="care_every">Opakování: %1$s</string>
+
+    <!-- The unit on its own, in the citation form. No %d: the number is beside it. -->
+    <plurals name="care_unit_days">
+        <item quantity="one">den</item>
+        <item quantity="few">dny</item>
+        <item quantity="many">dne</item>
+        <item quantity="other">dní</item>
+    </plurals>
+    <plurals name="care_unit_weeks">
+        <item quantity="one">týden</item>
+        <item quantity="few">týdny</item>
+        <item quantity="many">týdne</item>
+        <item quantity="other">týdnů</item>
+    </plurals>
+    <plurals name="care_unit_months">
+        <item quantity="one">měsíc</item>
+        <item quantity="few">měsíce</item>
+        <item quantity="many">měsíce</item>
+        <item quantity="other">měsíců</item>
+    </plurals>
+    <plurals name="care_unit_years">
+        <item quantity="one">rok</item>
+        <item quantity="few">roky</item>
+        <item quantity="many">roku</item>
+        <item quantity="other">let</item>
+    </plurals>
+
+    <!-- Completion. Back-datable: the next occurrence is scheduled from the day it happened. -->
+    <string name="care_complete_title">Označit jako hotové</string>
+    <string name="care_complete_when">Kdy to bylo hotové?</string>
+    <string name="care_complete_help">Dnes, pokud neřekneš jinak. Další termín se počítá ode dne, kdy se to opravdu stalo, takže pozdní stříhání interval posune místo toho, aby ho dlužilo.</string>
+    <string name="care_complete_future">Ten den ještě nenastal.</string>
+    <string name="care_complete_note">Poznámka, jestli chceš</string>
+    <string name="care_complete_action">Zapsat</string>
+
+    <!-- A weigh-in is done by weighing, so this one opens the weight form. -->
+    <string name="care_weigh_in_action">Zapsat váhu</string>
+    <string name="care_weigh_in_help">Tuhle připomínku splní vážení, takže se otevře formulář váhy. Počítá se každé vážení, kdykoli ho zapíšeš.</string>
+
+    <string name="care_history_title">Co už bylo hotové</string>
+    <string name="care_history_empty">Zatím nic zapsáno. Zápis o hotové péči je to, co posune další termín.</string>
+    <string name="care_history_weight">Zváženo %1$s</string>
+    <string name="care_history_weight_help">Vážení se počítají jako kontrolní vážení. Upravují a mažou se na obrazovce Váha, ne tady.</string>
+    <string name="care_event_edit_title">Opravit tenhle záznam</string>
+    <string name="care_event_delete_title">Smazat tenhle záznam?</string>
+    <string name="care_event_delete_body">Smazání záznamu z %1$s posune každý další termín.</string>
+
+    <!-- Add to calendar (ADR-0014): one-way, and the app does not own what it hands over. -->
+    <string name="care_calendar_add">Přidat do kalendáře</string>
+    <string name="care_calendar_added">Přidáno do kalendáře</string>
+    <string name="care_calendar_help">Předá tohle opakování jednou do kalendáře, kde přežije i nový telefon. Binky pak už oba nedrží v souladu — úprava připomínky tady v kalendáři nic nezmění.</string>
+    <string name="care_calendar_none">V tomhle telefonu není kalendář, kterému by to šlo předat.</string>
+
+    <string name="care_editor_add_title">Nová připomínka</string>
+    <string name="care_editor_edit_title">Upravit připomínku</string>
+    <!-- §7.1: two different questions. This one picks a *kind* of care task; med_editor_name asks
+         the medicine's name. Polish splits them the same way. -->
+    <string name="care_editor_kind">Čeho se to týká?</string>
+    <string name="care_editor_label">Jak tomu říkáš?</string>
+    <string name="care_editor_label_help">Tvoje vlastní slova, takže tahle zůstane přesně tak, jak ji napíšeš, ať je Binky v jakémkoli jazyce.</string>
+    <string name="care_editor_label_required">Pojmenuj ji, ať víš, o co jde.</string>
+    <string name="care_editor_interval">Jak často?</string>
+    <string name="care_editor_interval_required">Aspoň jedna.</string>
+    <string name="care_editor_first_due">Kdy je to příště na řadě?</string>
+    <string name="care_editor_first_due_help">Ne kdy to bylo naposledy — kdy to příště přijde na řadu, což je to, co říká očkovací průkaz. Pokud víš, kdy to bylo naposledy, zapiš to níž jako hotovou péči.</string>
+
+    <string name="care_delete_title">Smazat tuhle připomínku?</string>
+    <string name="care_delete_body">%1$s zmizí i se všemi záznamy o hotové péči. Vážení se to nedotkne.</string>
+
+    <!-- What the daily sweep posts. The reminder's name is the title, and it is owner-typed, so
+         both of these put it first rather than into a case it cannot take (§7.4). -->
+    <string name="care_notification_due">%1$s — dnes je termín.</string>
+    <string name="care_notification_overdue">%1$s — termín už uplynul.</string>
+    <plurals name="care_summary_title">
+        <item quantity="one">%d připomínka péče je na řadě</item>
+        <item quantity="few">%d připomínky péče jsou na řadě</item>
+        <item quantity="many">%d připomínky péče je na řadě</item>
+        <item quantity="other">%d připomínek péče je na řadě</item>
+    </plurals>
+
+    <!-- Vet visits on the Care tab (ADR-0017). A health record, never an expense: nothing here
+         asks what it cost. *Návštěva* is the ordinary Czech word, so §5's Avoid column needed no
+         argument this time. -->
+    <string name="care_reminders_heading">Běžná péče</string>
+    <string name="visits_heading">Návštěvy veterináře</string>
+    <string name="visits_empty">Zatím není zapsaná žádná návštěva. Návštěva je zdravotní záznam: den, čeho se týkala, a váha, pokud ji veterinář změřil.</string>
+    <string name="visit_add">Přidat návštěvu</string>
+    <string name="visit_row_weighed">Zváženo %1$s</string>
+    <string name="row_pair">%1$s · %2$s</string>
+
+    <string name="visit_editor_add_title">Nová návštěva</string>
+    <string name="visit_editor_edit_title">Upravit návštěvu</string>
+    <string name="visit_date_label">Kdy to bylo?</string>
+    <string name="visit_future_rejected">Ten den ještě nenastal.</string>
+    <string name="visit_reason_label">Čeho se týkala?</string>
+    <string name="visit_reason_required">Napiš, čeho se týkala, ať záznam za rok pořád něco znamená.</string>
+    <string name="visit_notes_label">Poznámky, jestli chceš</string>
+    <string name="visit_vet_label">Veterinář</string>
+    <string name="visit_vet_none">Nezapsáno</string>
+    <string name="visit_vet_choose">Vybrat</string>
+    <string name="visit_vet_clear">Vymazat</string>
+    <string name="visit_vet_picker_title">Který veterinář?</string>
+    <string name="visit_vet_add_typed">Přidat „%1$s“ jako nového veterináře</string>
+    <!-- Optional, and empty is the ordinary case. "Once" because it is one row in the weight
+         history, not a second copy of the number. -->
+    <string name="visit_weight_label">Váha v gramech, pokud vážili</string>
+    <string name="visit_weight_help">Nepovinné. Zapíše se jednou, jako vážení tohohle králíka pro ten den.</string>
+    <string name="visit_weight_invalid">Celé gramy, nebo nech prázdné.</string>
+
+    <string name="visit_delete_title">Smazat tuhle návštěvu?</string>
+    <string name="visit_delete_body">Návštěva z %1$s zmizí i s poznámkami.</string>
+    <!-- The choice is stated rather than guessed: a weighing outlives the visit perfectly well. -->
+    <string name="visit_delete_weighing">Bylo u ní zapsané vážení %1$s.</string>
+    <string name="visit_delete_keep_weighing">Nechat vážení samostatně</string>
+    <string name="visit_delete_remove_weighing">Smazat i vážení</string>
+
+    <!-- The vet directory, reached from More. App-wide, and it outlives the visits that name it
+         (ADR-0017). §7.1: a vet may be a person (*jméno*) or a practice (*název*). -->
+    <string name="vets_title">Veterináři</string>
+    <string name="vets_empty">Zatím žádní veterináři. Přidej ordinaci, kam chodíš, a každá návštěva ji může pojmenovat — nebo přidej veterináře rovnou při psaní návštěvy.</string>
+    <string name="vet_add">Přidat veterináře</string>
+    <string name="vet_editor_add_title">Nový veterinář</string>
+    <string name="vet_editor_edit_title">Upravit veterináře</string>
+    <string name="vet_name_label">Jméno nebo název</string>
+    <string name="vet_name_required">Zadej jméno, ať ho zase najdeš.</string>
+    <string name="vet_clinic_label">Ordinace, pokud nějaká je</string>
+    <string name="vet_phone_label">Telefon, pokud nějaký je</string>
+    <string name="vet_notes_label">Poznámky, jestli chceš</string>
+    <string name="vet_delete_title">Odebrat tohohle veterináře?</string>
+    <string name="vet_delete_body">%1$s zmizí ze seznamu. Každá návštěva, která ho jmenovala, zůstane přesně tak, jak je, jen bez jména.</string>
+
+    <!-- Medications (PLAN 5e). The closest the app comes to medical advice, so the rule is on
+         screen as well as in an ADR: it records what the owner was told to give and reasons about
+         none of it (ADR-0026). Nothing here says a dose was missed — there is no such status in
+         the database and none in this file. -->
+    <string name="med_heading">Kúry</string>
+    <string name="med_today_heading">Dnes</string>
+    <string name="med_dose_due">Termín %1$s</string>
+    <string name="med_add_course">Přidat kúru</string>
+    <string name="med_empty">Žádné léky nejsou zapsané. Kúra je to, co předepsal veterinář — co to je, kolik toho a v jakou denní dobu, pokud nějakou určil.</string>
+    <!-- The one permanent line the phase owes the owner, who cannot read an ADR. Impersonal: the
+         second person past would gender them. -->
+    <string name="med_disclaimer">To, co předepsal veterinář, tak jak je to zapsané. Binky nikdy nekontroluje dávky ani interakce.</string>
+
+    <string name="med_dose_answered">%1$s v %2$s</string>
+    <!-- Both agree with *dávka*, which is grammatical gender and not a claim about anybody. See
+         the header for why *Vynechána* came off the banned list. -->
+    <string name="dose_status_given">Podána</string>
+    <string name="dose_status_skipped">Vynechána</string>
+
+    <string name="med_schedule_none">Bez rozvrhu — dávky se zapisují ručně</string>
+    <string name="med_schedule_once">Jednou denně v %1$s</string>
+    <string name="med_schedule_times">%1$s každý den</string>
+    <!-- The day is relative and the time is not: the clock time is what the vet actually said. -->
+    <string name="med_next_today">Další dávka v %1$s</string>
+    <string name="med_next_tomorrow">Další dávka zítra v %1$s</string>
+    <string name="med_next_later">Další dávka %1$s v %2$s</string>
+    <string name="med_next_not_started">Začíná %1$s</string>
+    <string name="med_next_ended">Skončila %1$s</string>
+    <string name="med_next_done">Nic dalšího naplánováno</string>
+    <string name="med_range_open">Od %1$s</string>
+    <string name="med_range_closed">%1$s až %2$s</string>
+
+    <string name="med_delete_title">Smazat tuhle kúru?</string>
+    <string name="med_delete_body">%1$s zmizí i s rozvrhem.</string>
+    <plurals name="med_delete_doses">
+        <item quantity="one">Smaže to i %d zapsanou dávku.</item>
+        <item quantity="few">Smaže to i %d zapsané dávky.</item>
+        <item quantity="many">Smaže to i %d zapsaných dávek.</item>
+        <item quantity="other">Smaže to i %d zapsaných dávek.</item>
+    </plurals>
+    <string name="med_delete_end_help">Ukončení zachová každou dávku a jen zastaví rozvrh ode dneška.</string>
+    <string name="med_delete_end_action">Radši kúru ukončit</string>
+
+    <string name="med_history_title">Zapsané dávky</string>
+    <string name="med_history_empty">Zatím nic zapsáno.</string>
+    <string name="med_history_row">%1$s · %2$s v %3$s</string>
+    <!-- An ad-hoc dose says so rather than showing a blank (ADR-0002). -->
+    <string name="med_history_ad_hoc">Mimo naplánovaný čas</string>
+    <string name="med_history_for_slot">K dávce v %1$s</string>
+    <string name="med_end_action">Ukončit kúru</string>
+    <string name="med_end_help">Nastaví konec na dnešek. Každá už zapsaná dávka zůstane.</string>
+    <string name="med_dose_delete_title">Smazat tuhle dávku?</string>
+    <string name="med_dose_delete_body">Záznam zmizí. Pokud odpovídal naplánovanému času, ten se vrátí mezi nezodpovězené.</string>
+
+    <string name="med_record_title">Zapsat dávku</string>
+    <string name="med_record_edit_title">Upravit tuhle dávku</string>
+    <string name="med_record_status">Co se stalo?</string>
+    <string name="med_record_when">Kdy?</string>
+    <string name="med_record_when_help">Výchozí je teď. Zapiš to zpětně, pokud to píšeš později.</string>
+    <string name="med_record_future">To je později než teď.</string>
+    <string name="med_record_for_slot">k dávce v %1$s</string>
+    <string name="med_record_note">Poznámka, jestli chceš</string>
+    <string name="med_record_action">Zapsat</string>
+
+    <string name="med_editor_add_title">Nová kúra</string>
+    <string name="med_editor_edit_title">Upravit kúru</string>
+    <string name="med_editor_section_medication">Lék</string>
+    <string name="med_editor_section_when">Kdy</string>
+    <string name="med_editor_name">Co to je?</string>
+    <string name="med_editor_name_required">Napiš název z krabičky, ať záznam za rok pořád něco znamená.</string>
+    <!-- Free text and never required: an owner told "one syringe, morning and night" has nothing
+         to type in a number field (ADR-0002). -->
+    <string name="med_editor_amount">Kolik, pokud ti to řekli</string>
+    <!-- A number, not a brand: the decimal separator is a comma in Czech. Its neighbour in the
+         base file — Metacam — is translatable="false" and absent here for the opposite reason. -->
+    <string name="med_editor_amount_placeholder">0,3 ml</string>
+    <string name="med_editor_amount_help">Přesně jak to řekl veterinář — „0,3 ml“, „půl tablety“. Binky to nikdy nečte.</string>
+    <string name="med_editor_start">Začátek</string>
+    <string name="med_editor_pick_start">Změnit datum začátku</string>
+    <string name="med_editor_ongoing">Průběžně</string>
+    <string name="med_editor_ongoing_help">Zapni u kúry, která zatím nemá konec. Vypni a nastav poslední den.</string>
+    <string name="med_editor_end">Konec</string>
+    <string name="med_editor_pick_end">Změnit datum konce</string>
+    <string name="med_editor_end_before_start">To je před začátkem kúry.</string>
+    <string name="med_editor_schedule">Denní časy</string>
+    <string name="med_editor_schedule_help">Nepovinné. Nech prázdné u kúry, kde dávky zapisuješ ručně.</string>
+    <string name="med_editor_add_time">Přidat čas</string>
+    <string name="med_editor_remove_time">Odebrat %1$s</string>
+    <string name="med_editor_reminders">Připomínat v těchhle časech</string>
+    <string name="med_editor_reminders_help">Binky nastaví jeden budík, na nejbližší dávku napříč všemi kúrami. Řádek nahoře na kartě říká, co s ním tenhle telefon opravdu udělá.</string>
+    <string name="med_editor_notes">Poznámky, jestli chceš</string>
+
+    <!-- The watch (ADR-0001): opt-in, time-boxed, and framed about the owner's checking rather
+         than about the bunny. Nothing here may read as a claim that anything is wrong.
+         *Sledování* keeps it clear of *pozorování*, the record type — the collision Polish had to
+         live with does not exist in Czech. -->
+    <string name="watch_start">Začít sledování</string>
+    <string name="watch_start_title">Sledovat zblízka: %1$s?</string>
+    <string name="watch_start_body">Binky se každé ráno zeptá, jestli byla kontrola. Cokoli zapsaného pro toho králíka den uzavře — zdravý den se počítá. Samo to skončí, až vyprší čas.</string>
+    <string name="watch_duration_question">Na jak dlouho?</string>
+    <plurals name="watch_duration_days">
+        <item quantity="one">%1$d den</item>
+        <item quantity="few">%1$d dny</item>
+        <item quantity="many">%1$d dne</item>
+        <item quantity="other">%1$d dní</item>
+    </plurals>
+    <string name="watch_start_action">Spustit</string>
+    <plurals name="watch_days_left">
+        <item quantity="one">zbývá %1$d den</item>
+        <item quantity="few">zbývají %1$d dny</item>
+        <item quantity="many">zbývá %1$d dne</item>
+        <item quantity="other">zbývá %1$d dní</item>
+    </plurals>
+    <string name="watch_active_line">Sledování běží · %1$s</string>
+    <string name="watch_close">Ukončit</string>
+    <string name="watch_expired_title">Sledování skončilo: %1$s</string>
+    <string name="watch_expired_body">Už se neptá. Prodluž ho, jestli dál dáváš pozor, nebo ho ukonči.</string>
+    <string name="watch_expired_weight">Poslední vážení %1$s, dne %2$s.</string>
+    <string name="watch_expired_no_weight">Nic není zváženo, takže není ani trend, který by šlo ukázat.</string>
+    <string name="watch_expired_extend">Prodloužit</string>
+    <!-- Name first, and the check is the subject: *zkontroloval jsi* would gender the owner in a
+         notification, which is where the Polish read-through found the same mistake. -->
+    <string name="watch_notification_title">%1$s — byla dnes kontrola?</string>
+    <string name="watch_notification_text">Probíhá sledování. Cokoli je vidět, stojí za zápis — zdravý den se počítá.</string>
+
+    <!-- More -->
+    <string name="more_archived_bunnies">Králíci v archivu</string>
+    <string name="more_archived_bunnies_summary">Králíci, kteří jsou v archivu. Jejich záznamy zůstávají.</string>
+    <string name="more_photos">Fotky</string>
+    <string name="more_photos_summary">Obrázky jednoho králíka, uložené v tomhle telefonu.</string>
+    <string name="more_documents">Dokumenty</string>
+    <string name="more_documents_summary">Naskenované papíry jednoho králíka, uložené v tomhle telefonu.</string>
+    <string name="more_vets">Veterináři</string>
+    <string name="more_vets_summary">Jména a čísla, společná pro všechny králíky.</string>
+    <string name="more_settings">Nastavení</string>
+    <string name="more_settings_summary">Jednotky váhy, jazyk, zálohy a obnovení.</string>
+    <string name="more_support">Podpora</string>
+    <string name="more_support_summary">Nahlásit chybu, navrhnout funkci, ohodnotit aplikaci.</string>
+    <!-- The subtitle a row wears while it is inert, in place of its summary (ADR-0001). -->
+    <string name="more_needs_bunny">Nejdřív přidej králíka.</string>
+
+    <!-- Support: the two mail hand-offs, the Play listing, the privacy policy and this build's
+         version. The app's only About-shaped screen. -->
+    <string name="support_title">Podpora</string>
+    <string name="support_intro">Binky dělá jeden člověk. Hlášení chyby nebo nápad se k němu dostane přímo.</string>
+    <string name="support_bug_button">Nahlásit chybu</string>
+    <string name="support_bug_subject">Hlášení chyby</string>
+    <string name="support_bug_prompt">(sem popiš, co se stalo)</string>
+    <string name="support_diagnostics_title">Co s sebou hlášení nese</string>
+    <!-- "We" would claim a team where there is one person — the Polish read-through's finding. -->
+    <string name="support_diagnostics_explain">Ke zprávě se připojí verze aplikace, verze Androidu, model telefonu a jazyk aplikace. Nic o tvých králících, a nic se neodešle, dokud v poštovní aplikaci neklepneš na odeslat.</string>
+    <string name="support_feature_button">Navrhnout funkci</string>
+    <string name="support_feature_subject">Návrh funkce</string>
+    <string name="support_email_label">Nebo napiš na:</string>
+    <!-- Names the address's position on screen rather than repeating the address. -->
+    <string name="support_no_mail_app">V tomhle telefonu není poštovní aplikace. Adresu nahoře jde zkopírovat.</string>
+    <string name="support_rate_button">Ohodnotit Binky na Google Play</string>
+    <string name="support_rate_help">Binky je zdarma a bez reklam. Hodnocení je jediné, oč si říká.</string>
+    <string name="support_no_store_app">Google Play se v tomhle telefonu nepodařilo otevřít.</string>
+    <string name="support_privacy_button">Zásady ochrany soukromí</string>
+    <string name="support_no_browser">V tomhle telefonu není prohlížeč, který by stránku otevřel.</string>
+    <string name="support_licences_button">Licence open source</string>
+    <string name="support_version_label">Verze</string>
+
+    <!-- Open-source licence attribution. The list itself is generated at build time and is not
+         translatable content — a translated Apache-2.0 is not Apache-2.0. These seven are. -->
+    <string name="licences_title">Licence open source</string>
+    <string name="licences_intro">Binky stojí na knihovnách níž. Seznam pochází přímo ze sestavení, takže jmenuje všechno, co tahle kopie aplikace opravdu obsahuje.</string>
+    <string name="licences_read">Přečíst licenci</string>
+    <string name="licences_open_terms">Otevřít podmínky</string>
+    <!-- Both describe a broken build rather than anything an owner did, so they say what is
+         missing and stop. -->
+    <string name="licences_unavailable">Seznam licencí se z tohohle sestavení nepodařilo přečíst.</string>
+    <string name="licences_text_missing">Text téhle licence není součástí aplikace.</string>
+
+    <!-- The photo gallery: one bunny's pictures, reached from More -->
+    <string name="photo_which_bunny">Čí fotky?</string>
+    <string name="photo_gallery_title">Fotky: %1$s</string>
+    <string name="photo_gallery_empty">Zatím žádné fotky.</string>
+    <!-- §7.4 and §7.6 in one string: the declined common noun *králíka* carries the genitive, so
+         the argument keeps its real job — the photos are OF the bunny, not IN a folder named
+         after it. That drift is what the Polish read-through caught here. -->
+    <string name="photo_gallery_empty_help">Přidej fotky králíka %1$s z galerie nebo z fotoaparátu. Zůstanou v tomhle telefonu.</string>
+    <string name="photo_add">Přidat fotky</string>
+    <string name="photo_add_choose">Vybrat z galerie</string>
+    <string name="photo_add_take">Vyfotit</string>
+    <string name="photo_import_progress">Přidávání %1$d z %2$d…</string>
+    <plurals name="photo_import_added">
+        <item quantity="one">%d fotka přidána.</item>
+        <item quantity="few">%d fotky přidány.</item>
+        <item quantity="many">%d fotek přidáno.</item>
+        <item quantity="other">%d fotek přidáno.</item>
+    </plurals>
+    <!-- Reported once at the end of an import, never once per bad file. The quantity governs the
+         *unreadable* count, so the noun is named to let it inflect — an impersonal phrasing would
+         have collapsed all four items into one, and the plural exists to carry this. The added
+         count sits on the wrong axis for it, so it is a label. -->
+    <plurals name="photo_import_partial">
+        <item quantity="one">Přidáno: %1$d z %2$d, %3$d soubor nešel přečíst.</item>
+        <item quantity="few">Přidáno: %1$d z %2$d, %3$d soubory nešly přečíst.</item>
+        <item quantity="many">Přidáno: %1$d z %2$d, %3$d souborů nešlo přečíst.</item>
+        <item quantity="other">Přidáno: %1$d z %2$d, %3$d souborů nešlo přečíst.</item>
+    </plurals>
+    <string name="photo_description">Fotka: %1$s</string>
+    <string name="photo_close">Zavřít</string>
+    <!-- "Taken" only when the picture's own metadata said so; anything else is dated by when it
+         arrived here. -->
+    <string name="photo_taken_on">Vyfoceno %1$s</string>
+    <string name="photo_added_on">Přidáno %1$s</string>
+    <string name="photo_caption_label">Popisek</string>
+    <string name="photo_caption_none">Bez popisku</string>
+    <string name="photo_caption_add">Přidat</string>
+    <string name="photo_caption_edit">Upravit</string>
+    <string name="photo_delete">Smazat fotku</string>
+    <string name="photo_delete_body">Smazat tuhle fotku? Z tohohle telefonu zmizí nadobro.</string>
+
+    <!-- Documents: one bunny's scanned paperwork, reached from More (ADR-0017, ADR-0009) -->
+    <string name="document_which_bunny">Čí dokumenty?</string>
+    <string name="documents_title">Dokumenty: %1$s</string>
+    <string name="documents_empty">Zatím žádné dokumenty.</string>
+    <string name="documents_empty_help">Naskenuj očkovací průkaz, výsledek z laboratoře nebo propouštěcí zprávu. Zůstanou v tomhle telefonu.</string>
+    <string name="document_scan">Naskenovat dokument</string>
+    <!-- Written into the database when a scan lands, so it is read in the owner's language at that
+         moment and never re-translated afterwards (ADR-0013). -->
+    <string name="document_default_title">Naskenovaný dokument</string>
+    <!-- A document whose pages were all removed really can show zero here, and Czech puts zero in
+         `other` — *0 stran* — so this stays an ordinary plural. The Portuguese draft had to leave
+         its version knowingly wrong; Czech's rule spares it. -->
+    <plurals name="document_page_count">
+        <item quantity="one">%d strana</item>
+        <item quantity="few">%d strany</item>
+        <item quantity="many">%d strany</item>
+        <item quantity="other">%d stran</item>
+    </plurals>
+    <!-- Names what the result lacks rather than what the phone lacks (ADR-0009). -->
+    <string name="document_scan_camera_used">Naskenováno fotoaparátem — bez automatického oříznutí a detekce stránky.</string>
+    <string name="document_scan_failed">Tenhle sken se nepodařilo uložit. Zkus to znovu.</string>
+    <!-- "Dated" is the date printed on the page; "Scanned" is when it arrived here. -->
+    <string name="document_dated_on">Datováno %1$s</string>
+    <string name="document_scanned_on">Naskenováno %1$s</string>
+    <string name="document_no_date">Na papíře není datum</string>
+    <string name="document_from_visit">Z návštěvy %1$s — %2$s</string>
+    <string name="document_actions">Akce dokumentu</string>
+    <string name="document_rename">Přejmenovat</string>
+    <string name="document_title_label">Název</string>
+    <string name="document_set_date">Nastavit datum na papíře</string>
+    <string name="document_clear_date">Vymazat datum</string>
+    <string name="document_date_label">Datum na papíře</string>
+    <string name="document_attach_visit">Připojit k návštěvě</string>
+    <string name="document_attach_none">Ne z návštěvy</string>
+    <string name="document_attach_no_visits">Pro tohohle králíka zatím není zapsaná žádná návštěva.</string>
+    <string name="document_add_page">Přidat stranu</string>
+    <string name="document_manage_pages">Přeuspořádat nebo odebrat strany</string>
+    <string name="document_page_number">Strana %1$d</string>
+    <string name="document_page_position">Strana %1$d z %2$d</string>
+    <!-- §7.4: the second argument is an owner-typed document title, so the common noun
+         *dokumentu* takes the genitive and the title stays in its citation form. -->
+    <string name="document_page_description">Strana %1$d z dokumentu %2$s</string>
+    <string name="document_page_up">Nahoru</string>
+    <string name="document_page_down">Dolů</string>
+    <string name="document_no_pages">Tenhle dokument nemá žádné strany.</string>
+    <string name="document_no_pages_help">Název a datum zůstávají. Přidej stranu, nebo dokument smaž.</string>
+    <string name="document_delete">Smazat dokument</string>
+    <string name="document_delete_body">Smazat „%1$s“? Každá strana z tohohle telefonu zmizí nadobro.</string>
+    <!-- The visit editor's documents section: paperwork usually comes *from* a visit (ADR-0017) -->
+    <string name="visit_documents_label">Dokumenty</string>
+    <string name="visit_documents_save_first">Nejdřív ulož návštěvu, potom naskenuj nebo připoj papíry.</string>
+    <string name="visit_documents_none">K téhle návštěvě není nic připojené.</string>
+    <string name="visit_documents_attach_existing">Připojit ten, který už máš</string>
+    <string name="visit_documents_none_free">Každý dokument tohohle králíka už patří k nějaké návštěvě. Nejdřív ho tam odpoj.</string>
+    <string name="visit_documents_detach">Odpojit</string>
+
+    <!-- The archived list (ADR-0004): reachable, with unarchive, delete, and a read-only scope.
+         *Archivováno* is the impersonal passive — the participle *archivovaný* would have to guess
+         the animal's gender from a name the app cannot read. -->
+    <string name="archived_title">Králíci v archivu</string>
+    <string name="archived_empty">V archivu nic není. Archivace schová králíka z přepínače a zachová každý záznam.</string>
+    <string name="archived_on">Archivováno %1$s</string>
+    <string name="archived_open">Otevřít</string>
+
+    <!-- Bunny profile -->
+    <string name="bunny_editor_add_title">Přidat králíka</string>
+    <string name="bunny_editor_edit_title">Upravit králíka</string>
+    <string name="bunny_editor_section_details">Údaje</string>
+    <string name="bunny_name_label">Jméno</string>
+    <string name="bunny_name_required">Králík potřebuje jméno.</string>
+    <string name="bunny_avatar_take">Vyfotit</string>
+    <string name="bunny_avatar_choose">Vybrat fotku</string>
+    <string name="bunny_avatar_remove">Odebrat fotku</string>
+    <string name="bunny_avatar_failed">Tenhle obrázek nešel přečíst. Zkus jiný.</string>
+    <string name="bunny_avatar_description">Fotka: %1$s</string>
+    <string name="bunny_avatar_placeholder">Zatím bez fotky</string>
+    <string name="bunny_birthdate_label">Narozeniny</string>
+    <string name="bunny_birthdate_none">Neznámé</string>
+    <string name="bunny_birthdate_set">Nastavit narozeniny</string>
+    <string name="bunny_birthdate_clear">Vymazat narozeniny</string>
+    <string name="bunny_birthdate_approximate">Přibližné</string>
+    <string name="bunny_birthdate_approximate_help">Králíci z útulku často přicházejí s odhadnutým věkem. Přibližné narozeniny se ukazují jako věk, nikdy jako datum.</string>
+    <string name="bunny_sex_label">Pohlaví</string>
+    <string name="sex_male">Samec</string>
+    <string name="sex_female">Samice</string>
+    <!-- §7.1: this one qualifies the neuter *pohlaví*, the next answers a yes/no question. Polish
+         splits the same pair the same way. -->
+    <string name="sex_unknown">Neznámé</string>
+    <string name="bunny_neutered_label">Kastrace</string>
+    <string name="neutered_yes">Ano</string>
+    <string name="neutered_no">Ne</string>
+    <string name="neutered_unknown">Neví se</string>
+    <string name="bunny_breed_label">Plemeno</string>
+    <string name="bunny_breed_none">Nenastaveno</string>
+    <string name="bunny_breed_choose">Vybrat plemeno</string>
+    <string name="bunny_breed_clear">Vymazat plemeno</string>
+    <string name="bunny_colour_label">Barva a znaky</string>
+    <!-- The fluffle's on-screen name. *Bydlí s %1$s* would need the instrumental of a name the app
+         cannot inflect, so the label becomes the housemates themselves — see the header. -->
+    <string name="bunny_lives_with_label">Spolubydlící</string>
+    <string name="bunny_lives_with_alone">Nemá spolubydlící</string>
+    <string name="bunny_lives_with_nobody_yet">Přidej druhého králíka a půjde zapsat, s kým bydlí.</string>
+    <string name="bunny_lives_with_help">Spřátelení králíci sdílejí toaletu, takže jedno pozorování může pokrýt všechny.</string>
+    <string name="bunny_lives_with_value">Spolubydlící: %1$s</string>
+    <string name="bunny_archived_name">%1$s (v archivu)</string>
+    <!-- The tail of a capped housemates line. Never rendered at one, but declared because Android
+         resolves against the declaration. -->
+    <plurals name="bunny_lives_with_others">
+        <item quantity="one">%1$d další</item>
+        <item quantity="few">%1$d další</item>
+        <item quantity="many">%1$d dalšího</item>
+        <item quantity="other">%1$d dalších</item>
+    </plurals>
+
+    <!-- ADR-0007's consent half. The copy has already been taken by the time this shows, so the
+         screen states what is going and where the copy is rather than pretending there is a
+         choice. -->
+    <string name="wipe_title">Tahle aktualizace musí smazat záznamy v telefonu</string>
+    <string name="wipe_body">Binky se pořád staví a tahle verze změnila způsob, jak se záznamy ukládají. Nedokáže přečíst to, co je v telefonu, takže to musí pryč.</string>
+    <string name="wipe_versions">Záznamy v telefonu: formát %1$d. Tahle verze: formát %2$d.</string>
+    <string name="wipe_copy_taken">Kopie je uložená v telefonu ještě předtím, než se cokoli smaže:</string>
+    <string name="wipe_copy_reach">Kopii nejde načíst zpátky automaticky — převod starých záznamů do nového formátu je práce, kterou je potřeba napsat ručně. Než přijdou zálohy, měj váhy, na kterých ti záleží, poznamenané i jinde.</string>
+    <string name="wipe_continue">Smazat záznamy a pokračovat</string>
+
+    <!-- ADR-0023's release half of the same screen. Nothing is deleted here: the app refuses to
+         open records it cannot read, so this variant names the copy and offers to share it. -->
+    <string name="schema_refused_title">Tahle verze neumí otevřít záznamy v tomhle telefonu</string>
+    <string name="schema_refused_body">Záznamy v tomhle telefonu uložila jiná verze Binky a tahle je neumí přečíst. Nic se nesmazalo.</string>
+    <string name="schema_refused_copy_taken">Kopie je uložená v tomhle telefonu a zůstává tam:</string>
+    <string name="schema_refused_reach">Nainstalovat verzi, která je uložila, by tě mělo pustit zpátky. Do té doby si kopii ulož někam do bezpečí — je jediná.</string>
+
+    <!-- Joining names into a list, never concatenated in code (ADR-0008, ADR-0013). -->
+    <string name="list_join_pair">%1$s a %2$s</string>
+    <string name="list_join_more">%1$s, %2$s</string>
+
+    <!-- Age. A tilde is not universal shorthand for "about" — Czech writes it out. The three sets
+         below are word-for-word identical to gap_*, because Czech says *3 roky* for both an age
+         and a gap; they stay separate resources all the same (ADR-0016). -->
+    <string name="age_approximate">asi %1$s</string>
+    <plurals name="age_years">
+        <item quantity="one">%d rok</item>
+        <item quantity="few">%d roky</item>
+        <item quantity="many">%d roku</item>
+        <item quantity="other">%d let</item>
+    </plurals>
+    <plurals name="age_months">
+        <item quantity="one">%d měsíc</item>
+        <item quantity="few">%d měsíce</item>
+        <item quantity="many">%d měsíce</item>
+        <item quantity="other">%d měsíců</item>
+    </plurals>
+    <plurals name="age_weeks">
+        <item quantity="one">%d týden</item>
+        <item quantity="few">%d týdny</item>
+        <item quantity="many">%d týdne</item>
+        <item quantity="other">%d týdnů</item>
+    </plurals>
+
+    <!-- Archiving asks once and says plainly that nothing is lost (ADR-0004). Both titles put the
+         name after a colon: *Archivovat %1$s?* would need the accusative (§7.4). -->
+    <string name="archive_dialog_title">Do archivu: %1$s?</string>
+    <string name="archive_dialog_body">Každý záznam zůstane a dál se dá číst v sekci Více. %1$s zmizí z přepínače králíků a kdykoli ho můžeš vrátit zpátky.</string>
+
+    <!-- Deleting is the explicit escape hatch. A second dialog appears only when there is history
+         to destroy — an avatar is not history (ADR-0004). -->
+    <string name="delete_dialog_title">Smazat: %1$s?</string>
+    <string name="delete_dialog_body">Tím králík z aplikace zmizí. Archivace místo toho zachová všechno a jen ho schová.</string>
+    <string name="delete_dialog_avatar_note">Fotka králíka se z tohohle telefonu smaže taky.</string>
+    <string name="delete_dialog_second_title">Smazat: %1$s i se záznamy?</string>
+    <string name="delete_dialog_second_body">Tohle nejde vzít zpět.</string>
+    <!-- This line renders whenever the second dialog opens, and DeleteConfirmation.kt opens it
+         when *either* count is above zero — so zero is reachable here. Czech puts zero in `other`
+         (*0 záznamů … bude zničeno*), which is correct, so no recast was needed. -->
+    <plurals name="delete_records_sole_owned">
+        <item quantity="one">%d záznam vedený jen pro tohohle králíka bude zničen.</item>
+        <item quantity="few">%d záznamy vedené jen pro tohohle králíka budou zničeny.</item>
+        <item quantity="many">%d záznamů vedených jen pro tohohle králíka bude zničeno.</item>
+        <item quantity="other">%d záznamů vedených jen pro tohohle králíka bude zničeno.</item>
+    </plurals>
+    <plurals name="delete_records_shared">
+        <item quantity="one">%d sdílený zápis zůstane, pro ostatní králíky, kterých se týkal.</item>
+        <item quantity="few">%d sdílené zápisy zůstanou, pro ostatní králíky, kterých se týkaly.</item>
+        <item quantity="many">%d sdílených zápisů zůstane, pro ostatní králíky, kterých se týkaly.</item>
+        <item quantity="other">%d sdílených zápisů zůstane, pro ostatní králíky, kterých se týkaly.</item>
+    </plurals>
+
+    <!-- Breed suggestions, not a closed vocabulary. Same length and same order as the base file, a
+         test asserts it, and "Kříženec" stays first because it is the commonest true answer.
+         Descriptive names translate, registered ones do not — see the header for the mappings a
+         rabbit person should check, starting with Belgický obr / Belgický zajíc. -->
+    <string-array name="built_in_breeds">
+        <item>Kříženec / neznámé plemeno</item>
+        <item>American</item>
+        <item>American Fuzzy Lop</item>
+        <item>American Sable</item>
+        <item>Angorský (anglický)</item>
+        <item>Angorský (francouzský)</item>
+        <item>Angorský (obří)</item>
+        <item>Angorský (satin)</item>
+        <item>Belgický zajíc</item>
+        <item>Beveren</item>
+        <item>Hototský bílý</item>
+        <item>Britannia Petite</item>
+        <item>Kalifornský</item>
+        <item>Champagne d\'Argent</item>
+        <item>Německý obrovitý strakáč</item>
+        <item>Činčila americká</item>
+        <item>Činčila velká</item>
+        <item>Činčila malá</item>
+        <item>Cinnamon</item>
+        <item>Kontinentální obr</item>
+        <item>Crème d\'Argent</item>
+        <item>Holandský</item>
+        <item>Zakrslý hototský</item>
+        <item>Zakrslý beran</item>
+        <item>Anglický beran</item>
+        <item>Anglický strakáč</item>
+        <item>Belgický obr</item>
+        <item>Florida White</item>
+        <item>Francouzský beran</item>
+        <item>Japonský</item>
+        <item>Havana</item>
+        <item>Ruský</item>
+        <item>Holland Lop</item>
+        <item>Jersey Wooly</item>
+        <item>Lilac</item>
+        <item>Lvíček</item>
+        <item>Mini Lop</item>
+        <item>Zakrslý rex</item>
+        <item>Mini Satin</item>
+        <item>Barevný zakrslý</item>
+        <item>Novozélandský</item>
+        <item>Palomino</item>
+        <item>Hermelín</item>
+        <item>Rex</item>
+        <item>Rýnský</item>
+        <item>Satin</item>
+        <item>Stříbřitý</item>
+        <item>Silver Fox</item>
+        <item>Silver Marten</item>
+        <item>Ohnivák</item>
+        <item>Thrianta</item>
+        <item>Velveteen Lop</item>
+    </string-array>
+</resources>
