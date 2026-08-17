@@ -138,7 +138,18 @@ Two on-screen labels are worth naming separately because they are the ones owner
 
 - **"Lives with"** (`bunny_lives_with_label`) — the fluffle's on-screen name. Polish: *"Mieszka z"*.
 - **"Care & Meds"** (`destination_care`) — a bottom-navigation tab, so it must be **short**. Polish fits it
-  as *"Opieka i leki"*. If your language cannot fit both halves, shorten rather than wrap.
+  as *"Opieka i leki"*. If your language cannot fit both halves, shorten rather than wrap. German and
+  Italian keep both (*Pflege & Medis*, *Cure e farmaci*, fourteen characters); Spanish, French and
+  Portuguese drop the meds half rather than clip it (*Cuidados*, *Soins*, *Cuidados*), because none of
+  them has a short form for "meds". **Three of five drop it** — say which you did and why.
+
+**The *Avoid* column is what English rejected, and once it has been the only natural word in a target
+language.** Brazilian Portuguese calls a vet appointment a *consulta* — the cognate of a word this table
+rejects — where *visita* means somebody coming to see *you*. The draft used *consulta* and said so, and
+carried the vocabulary's real intent (a health record, never an expense) in the copy instead: nothing in
+`visit_*` mentions money. Do the same if a row's *Avoid* entry is your language's only ordinary word —
+**name it in your file's header rather than translating around it**, because a stilted word on every
+screen costs more than the distinction the row was protecting.
 
 ---
 
@@ -170,7 +181,7 @@ anywhere else.
 | `es` | perdida, olvidada, atrasada, vencida |
 | `fr` | manquée, oubliée, en retard *(outside the two permitted strings)*, dépassée |
 | `it` | mancata, saltata, dimenticata, scaduta |
-| `pt-BR` | perdida, esquecida, atrasada, vencida |
+| `pt-BR` | perdida, esquecida, atrasada, vencida — **not** *pulada*, see below |
 | `cs` | zmeškaná, vynechaná, opomenutá, po splatnosti |
 | `uk` | пропущена, забута, прострочена |
 
@@ -191,6 +202,13 @@ no subject to disambiguate it. So *saltata* stays on the list and `dose_status_s
 beside Spanish's *Omitida*, French's *Sautée* and German's *Ausgelassen*. **A word that is agentive
 in one construction and passive in another fails the test**; the question is not whether the word
 *can* mean the owner did it.
+
+**Portuguese ran it on the same metaphor and kept the word**, which is what makes the test a test
+rather than a rule about jumping. *Pular uma dose* is transitive and agentive — *pulei a dose* is
+something the owner did — and the intransitive reading does not exist for it: ***a dose pulou* is not
+Portuguese**, where *è saltata la dose* is ordinary Italian. So `dose_status_skipped` is *Pulada*.
+Two languages, one image, opposite answers, decided by whether the verb has an intransitive life of its
+own. Ask that of your candidate, not whether a dictionary lists it as a synonym for "forgotten".
 
 ---
 
@@ -257,8 +275,9 @@ accusative differs, the unit plurals need the accusative form, because that is t
 **And check whether the sentence survives at all.** German and French have no preposition that governs
 both a bare unit and a counted gap, so both gave the host up and made it a label (*Rhythmus: %1$s*,
 *Rythme : %1$s*), which then decided the wording of `care_due_in` and `care_due_overdue` behind it.
-Spanish's *Cada* and Italian's *Ogni* govern both and keep the sentence. **Two of four either way** —
-so the question is which side your language falls on, and it is four strings deep by the time it shows.
+Spanish's *Cada*, Italian's *Ogni* and Portuguese's *A cada* govern both and keep the sentence.
+**Three of five keep it** — so the label is the minority answer, not the expected one. The question is
+which side your language falls on, and it is four strings deep by the time it shows.
 
 ### 7.3 The app knows neither the owner's gender nor the bunny's
 
@@ -315,6 +334,14 @@ are all correct as they stand (*ad* is a style choice, never a rule), and no art
 name. Not one string was reordered. Say so explicitly when it happens, with the strings you read to
 get there; an unremarked §7.4 is indistinguishable from a skipped one.
 
+**Portuguese answers "nothing" too, and shows what that answer is worth checking against**: it neither
+declines nor elides in the *written* standard, so *Sobre Alice* and *Foto de Alice* stand — but spoken
+Brazilian Portuguese puts an article before a first name (*a Alice*), and *de* + *a* contracts to *da*.
+The trap is one register away, and the file stays out of its reach by staying written. If your language
+has a register where a name would take an article, a particle or a contraction, **the app cannot follow
+it there** — it does not know the name's gender, number or initial sound until run time. Note which
+register you chose and why, or the next reader will think the question was never asked.
+
 ### 7.5 Plurals
 
 Counts go through `<plurals>`, never through concatenation. **Your file must declare every category CLDR
@@ -332,6 +359,25 @@ against CLDR when your language starts**; this table is written from the rules, 
 
 Check your plurals on a real **1, 2, 5 and 22** of something. That is where a wrong `few`/`many` split
 shows.
+
+**And check zero, because for some languages CLDR puts it in `one`.** French and Portuguese both have
+*one: i = 0..1*, so a count of 0 renders the **singular** item. French is happy with that (*0 jour* is
+correct French); Brazilian Portuguese is not (*0 página* is simply wrong — it pluralises zero). Spanish
+and Italian put 0 in `other` and never see the problem, and the Slavic rows exclude it too.
+
+**When your language pluralises zero and CLDR does not, the plural table cannot save you** — the
+category is right and the language disagrees with it. So the question becomes one about the *code*:
+**which of these counts can actually be zero?** Read the call sites rather than guessing; most are
+guarded at one or more. The Portuguese draft found three that are not — `backup_restored_overlaid`,
+`delete_records_sole_owned` and `document_page_count` — and answered them two ways, which is the pattern
+to copy:
+
+- **Where zero is ordinary, recast the string as a label** so nothing has to agree with the number:
+  *Imagens vindas do backup: %d* is right at 0, 1 and 2 alike. Both plural items then hold the same
+  text, deliberately, exactly as `photo_import_partial`'s two English items do.
+- **Where zero is rare and a label would read badly** — `document_page_count` is a list-row subtitle —
+  leave the singular and **say so in your file's header**. Knowingly wrong in a rare state beats stilted
+  in the common one, but it has to be a decision a reviewer can overrule, not an oversight.
 
 `photo_import_partial` is a `<plurals>` whose two English items are **identical**. That is deliberate: the
 quantity governs the *unreadable* count, which inflects in Polish (*1 pliku* / *2 plików*) where English has

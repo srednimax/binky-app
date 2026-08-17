@@ -605,7 +605,7 @@ in nine languages and having it read twice by nine native speakers.
       same move Polish makes with *po terminie*. `dose_status_skipped` is *Ausgelassen*, agentive
       the way *Pominięta* is.
       🟡 **`es` drafted 2026-08-16** — 685/685, mechanically green, into `translations/es/`.
-      **Three to go: `pt-BR cs uk`.**
+      **Two to go: `cs uk`.**
       ℹ️ **Spanish is the first language to pay §7.3 on the bunny's side rather than the
       owner's**, which is the reverse of German. The owner's half is free — the compound perfect
       with *haber* does not agree with its subject, so *has guardado* and *he mirado* carry no
@@ -739,6 +739,77 @@ in nine languages and having it read twice by nine native speakers.
       under four fields of two genders — *appetito* and *umore* masculine, *attività* and *acqua*
       feminine — so any participle is wrong on half the screen. It is *Nessun controllo*, a noun
       phrase, which is also what keeps it a fact about the record (ADR-0001).
+      🟡 **`pt-BR` drafted 2026-08-17** — 685/685, mechanically green, into `translations/pt-BR/`.
+      Brazilian throughout, not European: *celular*, *tela*, *arquivo*, and the gerund
+      (*está comendo*, never *está a comer*). pt-PT would be a second locale, not an edit to this
+      one.
+      ⚠️ **Portuguese's own trap is the plural category `one`, and it is the first one no other
+      language's record warns about.** CLDR gives `pt` *one: i = 0..1* — French's rule, not
+      Italian's — so **a count of 0 renders the singular item**. In French that is correct
+      (*0 jour*); in Brazilian Portuguese it is wrong, because nobody writes *0 página*. **No
+      plural table can fix it**: the category is right and the language disagrees with it, so the
+      only question is whether a given count can actually be zero. The code was read for it and
+      **three can**: `backup_restored_overlaid` renders unconditionally (an Essential-scope backup
+      of a bunny with no avatar restores none), `delete_records_sole_owned` renders whenever the
+      second delete dialog opens and `DeleteConfirmation.kt` opens it when *either* count is above
+      zero, and `document_page_count` can be zero for a document whose pages were all removed. The
+      first two are recast as labels — *Imagens vindas do backup: %d* — which is right at 0, 1 and
+      2 alike; **the third is left wrong knowingly**, because a label reads badly in a list row and
+      the state is rare. Everything else is guarded at ≥ 1, checked one by one. **Every future
+      plural in this app now owes this question.**
+      ⚠️ **Four decisions the native read-through has to confirm, not just read past:**
+      ***consulta*** for a vet visit, which is §5's *Avoid* column overruled on purpose — the brief
+      rejects *consultation*, and in Brazil *consulta* is simply what the appointment is called
+      while *visita* means somebody coming to see **you**; the vocabulary's intent survives in the
+      copy instead, since nothing in `visit_*` mentions money. ***Backup*** left in English, the
+      one word where ADR-0013's "no English left behind" and ordinary Brazilian usage disagree
+      (*cópia de segurança* reads as Portugal) — roughly thirty strings if the ruling goes the
+      other way, and note `destination_home` went the other direction as ***Início***.
+      `destination_care` is ***Cuidados*** alone, since *Cuidados e remédios* is nineteen
+      characters and there is no short BR form for *meds* — **three of five now drop the meds
+      half**. And ***bolinhas*** for droppings, the *Köttel* / *cagarrutas* / *crottes* /
+      *palline* decision a fifth time: Spanish rejected *bolitas* for colliding with food pellets
+      and Portuguese has no such collision, because pelleted food here is *ração*. Cecotropes are
+      *cecotrofos*, the tray is a *caixa de areia*, and the watch is ***acompanhamento***
+      (*vigilância* carries ADR-0001's alarm, *observação* collides with the record type).
+      ℹ️ **`dose_status_skipped` is *Pulada*, and it is Italian's finding with the opposite
+      answer.** Same metaphor, §6's same test: *pulei a dose* is agentive and *a dose pulou* is
+      not Portuguese at all, where *è saltata la dose* **is** ordinary Italian — which is exactly
+      why *saltata* stays banned there and *pulada* passes here. The fallback pair, if a reviewer
+      finds it too colloquial, is *Omitida* / *Administrada*, and it moves together with
+      `dose_status_given` (*Dada*): the two have to share a register.
+      ℹ️ **Three traps priced, and two questions closed.** §7.2's `care_every` is ***A cada %1$s***
+      and governs a bare unit and a counted gap alike, so **three of five keep the sentence** —
+      German's and French's label is now the minority shape, not the expected one. §7.2's
+      *pre-inflection* is paid in full, in Italian's coin: *em* + *os* is **nos**, so the chart
+      windows carry the contraction (*nos últimos 30 dias*, *no último ano*) and both hosts take
+      them bare — third language for the technique. §7.1's *Normal* costs **three** forms of six
+      (*Normal*, ***Normais*** for the droppings' size, ***Bebendo normalmente*** for water, whose
+      neighbouring chips are gerunds), and §7.1's other rows cost **nothing**: *Nome* serves both
+      the bunny and the vet, *Não se sabe* serves both *Unknown*s — identical on purpose, and the
+      second is also the only genderless option. ***Controle de peso*** for the weigh-in reminder
+      against *pesagem* for one weighing, the French/Italian divergence found a **third** time.
+      §7.3's owner half is nearly free (the simple past does not agree), paid twice:
+      *Boas-vindas ao Binky* and *Você pediu este lembrete*.
+      ℹ️ **§7.4 comes back empty for the second time, and this one has a caveat worth keeping.**
+      Portuguese neither declines nor elides, so *Sobre Alice* and *Foto de Alice* stand and not
+      one string was reordered — **but the trap exists one register away**: spoken Brazilian
+      Portuguese puts an article before a first name (*a Alice*) and *de* + *a* contracts to *da*.
+      The file stays in the written standard, which takes no article, and that is what keeps the
+      contraction out of reach. A reviewer who prefers the spoken register **cannot have it** —
+      the app cannot know a name's gender, so *da/do* is unproduceable.
+      ⚠️ **The breed rows go the other way from every earlier draft.** Brazil's pet-rabbit
+      vocabulary follows ARBA rather than the European standards, so **the whole lop family stays
+      in English** (*Mini Lop*, *Holland Lop*, *French Lop*, *English Lop*, *Dwarf Lop*, *American
+      Fuzzy Lop*) where Spanish, French and Italian each had a native name (*belier*, *bélier*,
+      *ariete*) — the single row most likely to be wrong, and one for a Brazilian breeder rather
+      than a dictionary. The same lean argues *Polonês* for the UK **Polish**, and it is
+      ***Arminho*** anyway, joining *Hermelin* / *Hermine* / *Ermellino*, with the choice handed to
+      the reviewer. **Himalayan → *Himalaio*** goes Spanish's way against French's and Italian's
+      *Russe* / *Russo*; **Dutch → *Holandês*** stays apart from **Netherland Dwarf → *Anão
+      holandês***; **Lionhead → *Cabeça de leão*** is genuinely current here unlike the English
+      names around it; and **Mixed / unknown → *Sem raça definida***, Brazil's real idiom (SRD),
+      which is why it earns first place rather than being sorted there.
 - [ ] Promote one language per commit, only after its native read-through: move into `res/`, add the
       `<locale>` line, the `AppLanguage` entry, and the endonym label.
 - [x] `AppLanguageTest` extended to compare resource directories too (`values-pt-rBR` vs `pt-BR` — two

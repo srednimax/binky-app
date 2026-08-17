@@ -192,7 +192,7 @@ there is no schema change and no media path.
    owed here is only that its needle table still resolves once seven locales exist. Every new needle is a
    claim that some resource still says what the table thinks it says.
 4. Draft all seven into `translations/`, validated by the test in place. 🟡 **`de`, `es` and `fr`
-   done 2026-08-16, `it` on 2026-08-17** — three to go —
+   done 2026-08-16, `it` and `pt-BR` on 2026-08-17** — two to go, `cs` and `uk` —
    along with the staging area this step assumed and nothing had yet built: `TranslationTest` reads
    `translations/<tag>/strings.xml` beside `values-<qualifier>/`, holds a draft to the same
    assertions, and rejects a tag that is both staged and shipped — promotion is a *move*, and two
@@ -224,6 +224,19 @@ there is no schema change and no media path.
    coin — *in* + the article contracts (*negli*, *nell’*) and the app cannot do it at run time, so
    the chart windows are pre-inflected exactly as Polish's are. **The technique generalises past
    the language it was written for; the trap it answers does not.** Its own record is `DOD.md` §7.
+   **Portuguese settles the `care_every` question and opens one nothing had looked at.** *A cada*
+   governs both, so the split is **three of five** and German's and French's label is the minority
+   shape rather than the expected one; §7.2's pre-inflection is paid in Italian's coin (*em* + *os*
+   → *nos*), §7.4 comes back empty a second time, and the divergence French found between
+   *weigh-in* and *weighing* shows up a third. What is new is a **plural** trap, and it is the
+   first thing in four drafts that no earlier record could have warned about: CLDR gives `pt`
+   *one: i = 0..1*, so **a count of zero renders the singular item** — correct in French, wrong in
+   Brazilian Portuguese, and unfixable from the plural table because the category is right and the
+   language disagrees with it. That turns the check into a question about **the code**, not the
+   copy: which counts can actually be zero? Three can, and two were recast as labels rather than
+   sentences. **Ask this of `cs` and `uk` before drafting them** — Slavic `one` excludes zero, so
+   they should come back clean, and confirming that is cheaper than discovering it. Its own record
+   is `DOD.md` §7.
 5. Promote one language at a time as its native read completes — four edits, one commit, one language.
 6. Listing text for the promoted set; screenshots later, driven by install data.
 
