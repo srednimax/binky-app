@@ -191,8 +191,8 @@ there is no schema change and no media path.
 3. **Re-prove the locale-aware capture driver** — built in Phase 7.5 and proven there on `pl`, so what is
    owed here is only that its needle table still resolves once seven locales exist. Every new needle is a
    claim that some resource still says what the table thinks it says.
-4. Draft all seven into `translations/`, validated by the test in place. 🟡 **`de`, `es` and `fr`
-   done 2026-08-16, `it`, `pt-BR` and `cs` on 2026-08-17** — one to go, `uk` —
+4. Draft all seven into `translations/`, validated by the test in place. ✅ **Done 2026-08-17** —
+   `de`, `es` and `fr` on 2026-08-16, `it`, `pt-BR`, `cs` and `uk` the next day, 685/685 each —
    along with the staging area this step assumed and nothing had yet built: `TranslationTest` reads
    `translations/<tag>/strings.xml` beside `values-<qualifier>/`, holds a draft to the same
    assertions, and rejects a tag that is both staged and shipped — promotion is a *move*, and two
@@ -255,6 +255,24 @@ there is no schema change and no media path.
    `care_every`'s sentence for agreement rather than for a missing preposition, which makes the
    split three and three: the label is neither the expected answer nor the exception. Its own
    record is `DOD.md` §7.
+   **Ukrainian closes the step and answers three of the questions the six before it left open.**
+   Portuguese's zero trap comes back clean a second time, so both Slavic rows are confirmed rather
+   than assumed — but the pair is **not** the same shape underneath: `cs` spends `many` on fractions
+   where `uk` spends `other` on them, so a draft written off the other Slavic row would have put the
+   genitive plural in the wrong slot. Czech's verb-agreement trap is real here too and has a cheaper
+   answer, **the zero copula** — *Між цими двома зважуваннями — %1$s*, a dash where Czech needed a
+   verb spelled alike in both numbers. And `care_every` **survives**, which nothing predicted:
+   *кожен* has exactly Czech's agreement problem, but *Раз на %1$s* governs a bare unit and a counted
+   gap alike, so the split is four of seven keeping the sentence. That reframes the question the last
+   five drafts were asked — not *does your word for "every" govern both*, but **does any idiom of
+   yours** — and it is worth putting back to the Czech reviewer, since *jednou za %1$s* may be the
+   same escape there.
+   What Ukrainian adds that no earlier record could have warned about is a **third unknown gender:
+   the vet's**. §7.3 has been read as the owner and the bunny for six drafts; English hides the third
+   behind *they*, and four strings needed the impersonal plural for it. It also makes the **address
+   form and §7.3 one decision** — *ти* costs the past tense outright, where *ви* would buy it back,
+   because the polite form takes the genderless plural past. Both are whole-file choices, and both
+   are the reviewer's. Its own record is `DOD.md` §7.
 5. Promote one language at a time as its native read completes — four edits, one commit, one language.
 6. Listing text for the promoted set; screenshots later, driven by install data.
 

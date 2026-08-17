@@ -1,0 +1,1207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Ukrainian — DRAFT, staged. Not in res/ on purpose (Phase 8): the moment values-uk/ exists, every
+    phone set to Ukrainian gets these strings, reviewed or not. locales_config.xml is a picker list,
+    not a delivery filter. Promotion is four edits and one commit, and it happens only after a
+    native speaker has read every screen in the running app.
+
+    Translated from English only, against docs/translator-brief.md.
+
+    The decisions a reviewer should confirm first, because everything else follows from them:
+
+    · **Address form is *ти***, as du/tú/tu/tu/você/ty in the other six drafts — and in Ukrainian
+      that choice is entangled with §7.3 in a way it is in no other language so far. The past tense
+      agrees with the addressee (*зберіг* / *зберегла*), so **no sentence in this file puts "you" in
+      the past**: imperatives (*Додай*, *Запиши*, *Обери*), the present and the future (*можеш*,
+      *вкажеш*) and impersonal forms (*записано*, *не вдалося*, *перевіряли*) carry no gender and do
+      all the work. ⚠️ **Switching to *ви* is a whole-file rewrite, not a preference** — but it would
+      make the past tense available again, because the polite *ви* takes the **plural** past, which
+      carries no gender at all (*ви зберегли*). If the reviewer wants *ви*, they are also buying back
+      a tense; if they keep *ти*, the ban above has to keep holding.
+    · **Кролик, masculine generic, for the bunny**, stated here rather than hidden. Ukrainian has no
+      bunny/rabbit pair worth having: *кроленя* and *зайчик* are the baby talk §3 forbids and the
+      wrong animal besides. Genderless wording is used wherever it is equally natural —
+      `bunny_lives_with_alone` is *Живе без сусідів* (a noun, not the adjective *сам/сама*),
+      `bunny_archived_name` is *%1$s (в архіві)*, `archived_on` is the impersonal *Заархівовано %1$s*,
+      and the graded chips agree with their **field noun** (*апетит* and *настрій* masculine,
+      *активність* and *вода* feminine) rather than with the animal.
+    · ⚠️ **There is a third unknown gender, and no earlier draft names it: the vet’s.** English hides
+      it behind *they*. *Ветеринар* has *ветеринарка* beside it, and the app never asks which, so
+      `med_editor_amount` is *Скільки, якщо тобі сказали* and `med_editor_amount_help` is *Дослівно
+      так, як сказали* — the 3rd-person-plural impersonal, which names no one and inflects for
+      nothing. `visit_weight_label` (*якщо зважували*) and `vet_delete_body` (*де вказано це імʼя*)
+      take the same dodge. Where a professional noun is unavoidable it is the masculine generic, on
+      the same terms as *кролик*: a fact about the word, not a claim about the person.
+    · ℹ️ **Binky may be a subject here, unlike in Czech, and the reason is worth keeping.** Only the
+      **past** tense agrees with its subject in Ukrainian, so *Binky не може* and *Binky не перезапише*
+      are simply correct where a past form would have to guess. There is no past-tense Binky in this
+      file, and `settings_material_you_help` was rewritten (*кольори братимуться*) rather than lean on
+      *він*.
+
+    · ⚠️ **§7.5: Ukrainian declares four categories and the unreachable one is `other`.** CLDR gives
+      `uk` *one: i%10=1 and i%100!=11*, *few: i%10=2..4 and i%100!=12..14*, *many: i%10=0, 5..9 or
+      i%100=11..14*, and ***other: v!=0*** — the **fraction** form. So `many` is an ordinary
+      large-integer category here, as in Polish, where **Czech spends its `many` on fractions
+      instead**: the two Slavic rows are not the same shape, and reading one off the other would have
+      put the genitive plural in the wrong slot. `other` carries the **genitive singular** a decimal
+      would really take (*%d дня*, *%d тижня*, *%d сторінки*); where the item is a whole sentence a
+      fractional count is nonsense and it repeats the singular reading.
+    · ✅ **The Portuguese zero trap does not exist here either, for Czech’s reason.** `uk` puts 0 in
+      `many` — *0 сторінок*, *0 записів*, *0 зображень* — the genitive plural Ukrainian actually
+      wants. So the three counts the Portuguese draft had to recast as labels
+      (`backup_restored_overlaid`, `delete_records_sole_owned`, `document_page_count`) stay ordinary
+      sentences, and nothing in this file is knowingly wrong at zero. Both Slavic rows came back
+      clean, which is what phase-8.md predicted and what it cost two checks to confirm.
+    · ℹ️ **Czech’s verb-agreement trap exists here and has a cheaper answer: the zero copula.**
+      The predicate does agree with the count (*залишилося 5 днів* against *залишився 1 день*), and
+      where the count sits inside a `<plurals>` the table carries it — see `watch_days_left` and
+      `delete_records_shared`, whose verbs differ per category on purpose. Where a counted phrase is
+      **substituted into a sentence** no table can reach it, so `trend_flag_long_gap` is built with a
+      **dash instead of a verb** — *Між цими двома зважуваннями — %1$s* — and a dash agrees with
+      nothing. Czech reached for a verb spelled alike in both numbers; this is the same problem
+      solved by removing the verb.
+    · ℹ️ **`photo_import_added` is four identical items and that is not an oversight.** *Фото* is an
+      indeclinable borrowing — one, three and five фото alike — which is Czech’s *vážení* finding
+      arriving through a loanword rather than through a declension class. `photo_import_partial` still
+      earns its plural, because the count it governs is of *files* (*%3$d файл* / *файли* / *файлів*),
+      and that word does inflect.
+
+    · ✅ **`care_every` survives as a sentence, and not because Ukrainian has a preposition the
+      others lack.** *Кожен* has exactly Czech’s agreement problem — *кожен тиждень*, but *кожні 2
+      тижні* and *кожні 6 тижнів* — so the expected answer was German’s and Czech’s label. What saves
+      it is a **different idiom**: *Раз на %1$s* governs the bare unit and the counted gap alike
+      (*раз на тиждень*, *раз на 2 тижні*, *раз на 6 тижнів*), because *на* takes the accusative and
+      every one of these units is spelled there as it is in the nominative the plurals already hold.
+      So the split is **four of seven keep the sentence** (es, it, pt-BR, uk) and three lose it
+      (de, fr, cs). ⚠️ **Worth putting to the Czech reviewer**: *jednou za %1$s* may be the same
+      escape in Czech, in which case that draft’s label was avoidable and the count is three of
+      seven. The lesson for a new language is not "does your word for *every* govern both" but
+      **"does any idiom of yours govern both"**.
+      Behind the label the two due strings follow: `care_due_in` is *Через %1$s* (accusative again,
+      spelled like the nominative) and `care_due_overdue` is *%1$s після терміну* — Polish’s and
+      German’s move, stating the timing and judging nothing.
+    · ⚠️ **§7.4 is expensive here, and it is Czech’s answer that pays for it rather than Polish’s.**
+      Ukrainian declines, so *Про %1$s* cannot be written — but **a declined common noun in front of
+      the name carries the case and lets the name stand in its citation form**: *Про кролика %1$s*,
+      *Фото кролика %1$s*, *Видалити кролика %1$s?*, *Нагляд за кроликом %1$s завершився*, *для
+      кролика %1$s*. Reordering behind a colon is kept for the strings where a common noun would be
+      wrong — `observation_with` and `bunny_lives_with_value` substitute a **joined list of names**,
+      so they are *Разом: %1$s* and *Живе з: %1$s*. And the third answer is free: *Скільки років має
+      %1$s?* needed nothing, because the name is the subject.
+    · ⚠️ **Apostrophes are typographic (’), and here that is not a typographic preference.** Ukrainian
+      writes the apostrophe **inside ordinary words** — *п’є*, *ім’я*, *здоров’я*, *зв’язок* — so the
+      straight `'` would need escaping as `\'` dozens of times in the middle of vocabulary rather
+      than in a handful of contractions, and **a missed escape would not surface until promotion**,
+      because a staged draft is never compiled. French met this with elision; Ukrainian meets it with
+      spelling. A later edit must not "fix" them back.
+
+    · ⚠️ **Four decisions the native read-through has to confirm, not just read past:**
+      **`destination_care` is *Догляд і ліки*** — thirteen characters, so the meds half survives, as
+      in de/it/cs; the fallback is *Догляд* alone. ***Котяхи*** for droppings, the *Köttel* /
+      *cagarrutas* / *crottes* / *palline* / *bolinhas* decision a sixth time: *екскременти* and *кал*
+      are the clinical words §5 rejects, *какашки* the baby talk §3 rejects, and *кульки* would be the
+      fallback — pelleted food is *гранули*, so Spanish’s objection to *bolitas* does not carry over.
+      ***Нагляд*** for the watch, where *стеження* is surveillance of people and *спостереження*
+      collides with the record type — **the collision Polish could not avoid, Ukrainian can**, as
+      Czech could. And ***Кличка*** for `bunny_name_label` against ***Імʼя або назва*** for
+      `vet_name_label`: Ukrainian has a separate word for an animal’s name, so §7.1’s *Name* row
+      splits further apart here than in any earlier draft.
+    · ⚠️ **`dose_status_skipped` is answered with a construction rather than a word, and *пропущено*
+      stays banned.** §6’s test asks whether the sentence a status chip is read as has an agentless
+      reading: *дозу пропущено* has one, exactly as *è saltata la dose* does, so the whole *пропущ-*
+      family is out along with the banned *пропущена*. What is left is the **3rd-person-plural
+      impersonal**, which in Ukrainian always implies human agents and carries no gender: the pair is
+      ***Дали*** / ***Не давали***, and it moves together — Portuguese’s point that the two have to
+      share a register. The fallback pair, if a reviewer finds it too colloquial, is *Дано* /
+      *Свідомо не дано*. The same construction answers `observation_not_checked` (*Не перевіряли*),
+      which sits under four fields of two genders and so cannot be a participle.
+    · ℹ️ **§7.1’s *Normal* costs five forms of six — Polish’s count, the most expensive so far.**
+      *Норма* for the droppings’ amount (beside *Мало* and *Багато*), *Нормальні* for their size,
+      *Нормальний* for appetite and for mood, *Нормальна* for activity, and *Пʼє як завжди* for
+      water, whose neighbouring chips are verbs. Spanish paid one, French/Italian/Portuguese/Czech
+      three, Polish and Ukrainian five.
+    · ⚠️ **The breed list changes script, which no earlier draft had to decide.** "Keep the
+      registered name" is invisible in a Latin-script language and glaring in Cyrillic, so the
+      obscure rows are **transliterated** (*Беверен*, *Британія петіт*, *Тан*, *Тріанта*) rather than
+      left in Latin, which is what Ukrainian breeders write. The lop family is ***баран***, the
+      established name here. **Himalayan is *Гімалайський*** and not the continental standards’
+      *російський горностаєвий* — Spanish’s and Portuguese’s choice rather than French’s and
+      Italian’s *Russe* / *Russo*, and in Ukrainian that is not only a naming convention. The UK
+      **Polish** is ***Гермелін***, joining *Hermelin* / *Hermine* / *Hermelín* / *Arminho*.
+      **Flemish Giant is *Фландр***, which incidentally avoids Czech’s near-collision: *Бельгійський
+      заєць* stands alone rather than one word from a *Бельгійський велетень*. **Dutch (*Голландський*)
+      and Holland Lop (*Голландський баран*) share a word** and are the row a rabbit person should
+      read twice; Netherland Dwarf stays apart as *Нідерландський карликовий*.
+-->
+<resources>
+
+    <!-- Bottom-navigation destinations -->
+    <string name="destination_home">Головна</string>
+    <string name="destination_weight">Вага</string>
+    <string name="destination_observations">Спостереження</string>
+    <string name="destination_care">Догляд і ліки</string>
+    <string name="destination_more">Ще</string>
+
+    <!-- The bunny switcher -->
+    <string name="switcher_open">Обери, якого кролика показати</string>
+    <string name="switcher_all_bunnies">Усі кролики</string>
+    <string name="switcher_add_bunny">Додати кролика</string>
+    <string name="switcher_no_bunnies">Кроликів ще немає</string>
+
+    <!-- The read-only scope onto an archived bunny -->
+    <string name="archived_banner">В архіві. Записи можна читати, але не змінювати.</string>
+    <string name="archived_banner_leave">Вийти</string>
+
+    <string name="action_back">Назад</string>
+    <string name="action_save">Зберегти</string>
+    <string name="action_cancel">Скасувати</string>
+    <string name="action_edit">Змінити</string>
+    <string name="action_archive">До архіву</string>
+    <string name="action_unarchive">З архіву</string>
+    <string name="action_delete">Видалити</string>
+    <string name="action_ok">Гаразд</string>
+    <string name="action_done">Готово</string>
+    <string name="action_undo">Скасувати дію</string>
+    <string name="action_change">Змінити</string>
+    <string name="action_clear">Очистити</string>
+    <string name="add_a_bunny_first">Спершу додай кролика.</string>
+
+    <string name="recorded_at_pick_date">Змінити дату</string>
+    <string name="recorded_at_pick_time">Змінити час</string>
+
+    <string name="picker_search_label">Пошук</string>
+    <string name="picker_no_matches">Нічого не знайдено.</string>
+    <string name="picker_add_symptom">Додати «%1$s» як симптом</string>
+    <string name="picker_use_breed">Взяти «%1$s»</string>
+
+    <!-- Home. §7.4: "про" governs the accusative, so the common noun carries the case and the
+         owner-typed name stands in apposition. -->
+    <string name="home_empty_title">Кроликів ще немає</string>
+    <string name="home_empty_body">Додай першого кролика, щоб почати вести записи.</string>
+    <string name="home_all_bunnies_stub">Торкнися кролика, щоб відкрити його.</string>
+    <string name="home_about_bunny">Про кролика %1$s</string>
+    <string name="home_last_weight_label">Останнє зважування</string>
+    <string name="home_last_weight_value">%1$s, %2$s</string>
+    <string name="home_last_observation_label">Останнє спостереження</string>
+    <string name="home_no_weighings">Записів ще немає</string>
+    <string name="home_no_observations">Записів ще немає</string>
+
+    <!-- Weight -->
+    <string name="weight_pick_a_bunny">Вага ведеться окремо для кожного кролика. Обери кролика в перемикачі, щоб побачити його історію.</string>
+    <string name="weight_add">Записати зважування</string>
+    <string name="weight_chart_section">Вага з часом</string>
+    <string name="weight_history_section">Історія</string>
+    <plurals name="weight_history_count">
+        <item quantity="one">%d зважування</item>
+        <item quantity="few">%d зважування</item>
+        <item quantity="many">%d зважувань</item>
+        <item quantity="other">%d зважування</item>
+    </plurals>
+    <string name="weight_history_empty">Зважувань ще не записано. Щоб узагалі говорити про тенденцію, потрібні три.</string>
+    <string name="weight_delete_title">Видалити це зважування?</string>
+    <string name="weight_delete_body">%1$s (%2$s) зникне з історії, а тенденцію буде обчислено заново без нього.</string>
+
+    <string name="weight_chart_range_30d">30 днів</string>
+    <string name="weight_chart_range_90d">90 днів</string>
+    <string name="weight_chart_range_1y">1 рік</string>
+    <string name="weight_chart_range_all">Усе</string>
+
+    <!-- §7.2: pre-inflected for their two hosts, both of which put the phrase after "за"
+         (accusative). Adding a third host with another preposition would break all four at once. -->
+    <string name="weight_chart_window_30d">останні 30 днів</string>
+    <string name="weight_chart_window_90d">останні 90 днів</string>
+    <string name="weight_chart_window_1y">останній рік</string>
+    <string name="weight_chart_window_all">увесь час</string>
+
+    <string name="weight_chart_no_weighings">Поки нічого малювати. Для графіка потрібні хоча б два зважування.</string>
+    <string name="weight_chart_single_point">Поки одне зважування. Друге дасть графіку лінію.</string>
+    <string name="weight_chart_single_in_range">За %1$s є лише одне зважування, тож лінію малювати нема з чого. Раніші є.</string>
+    <string name="weight_chart_none_in_range">За %1$s зважувань немає. Останнє було %2$s.</string>
+    <string name="weight_chart_show_all">Показати всі зважування</string>
+
+    <string name="weight_entry_add_title">Записати зважування</string>
+    <string name="weight_entry_edit_title">Змінити зважування</string>
+    <string name="weight_grams_help">Вага в грамах. Цілі грами, як показують ваги.</string>
+    <string name="weight_recent">Останні зважування: %1$s.</string>
+    <string name="weight_grams_required">Введи вагу в грамах.</string>
+    <string name="weight_grams_as_kilograms">Це %1$s.</string>
+    <string name="weight_recorded_at_label">Коли кролик був на вагах</string>
+    <string name="weight_backdating_help">За замовчуванням — зараз. Зваж уранці, а запиши ввечері, якщо так зручніше: рахується той час, який ти вкажеш.</string>
+    <string name="weight_future_rejected">Це в майбутньому. Зважування, якого ще не було, записати не можна.</string>
+
+    <string name="weight_collision_title">На цей час зважування вже є</string>
+    <plurals name="weight_collision_body">
+        <item quantity="one">У цього кролика вже є %d зважування, записане рівно на цю дату й час. Заміна залишить одне значення на цю мить; додавання збереже обидва.</item>
+        <item quantity="few">У цього кролика вже є %d зважування, записані рівно на цю дату й час. Заміна залишить одне значення на цю мить; додавання збереже всі.</item>
+        <item quantity="many">У цього кролика вже є %d зважувань, записаних рівно на цю дату й час. Заміна залишить одне значення на цю мить; додавання збереже всі.</item>
+        <item quantity="other">У цього кролика вже є %d зважування, записаного рівно на цю дату й час. Заміна залишить одне значення на цю мить; додавання збереже всі.</item>
+    </plurals>
+    <string name="weight_collision_replace">Замінити</string>
+    <string name="weight_collision_add_second">Додати друге</string>
+    <string name="weight_collision_visit_body">Зважування, яке вже стоїть на цей час, записано під час візиту до ветеринара. Binky його не перезапише — додай друге значення або виправ число в самому візиті.</string>
+    <string name="weight_row_from_visit">%1$s · з візиту</string>
+    <string name="weight_open_visit">Відкрити візит</string>
+    <string name="weight_visit_owned">Це зважування записано під час візиту до ветеринара, тож і змінюється воно там. Дата візиту вирішує, коли його зроблено.</string>
+
+    <!-- SI symbols are not invariant: the brief names this row for Ukrainian specifically. -->
+    <string name="weight_in_kilograms">%1$s кг</string>
+    <string name="weight_in_grams">%1$s г</string>
+    <string name="weight_change_down">−%1$s г</string>
+    <string name="weight_change_up">+%1$s г</string>
+    <string name="weight_change_none">без змін</string>
+    <string name="weight_change_first">перше</string>
+
+    <!-- The trend flag (ADR-0001). "важить … менше" is the present tense on purpose: the past would
+         have to agree with a bunny whose sex the app does not consult. -->
+    <string name="trend_flag_title">Варто придивитися</string>
+    <string name="trend_flag_drop">%1$s важить на %2$s менше, ніж %3$s.</string>
+    <string name="trend_flag_rise">%1$s важить на %2$s більше, ніж %3$s.</string>
+    <string name="trend_flag_readings">Тоді %1$s, зараз %2$s.</string>
+    <string name="trend_flag_long_gap">Між цими двома зважуваннями — %1$s, тож ідеться про зміну за тривалий час, а не про раптову.</string>
+    <string name="trend_flag_not_advice">Це спостереження про числа, а не діагноз. Якщо це тебе непокоїть, спитай ветеринара.</string>
+    <string name="trend_flag_vet_diet">Це дієта за призначенням ветеринара? Тоді така втрата — саме те, чого ти прагнеш, і ці позначки можна не брати до уваги.</string>
+    <string name="trend_flag_vet_gain">Це план відгодівлі за призначенням ветеринара? Тоді такий набір — саме те, чого ти прагнеш, і ці позначки можна не брати до уваги.</string>
+    <string name="trend_flag_acknowledge">Зрозуміло</string>
+    <string name="trend_flag_ask_age">Скільки років має %1$s?</string>
+    <string name="trend_flag_acknowledged">Переглянуто %1$s.</string>
+    <string name="trend_flag_close">Закрити</string>
+
+    <plurals name="gap_years">
+        <item quantity="one">%d рік</item>
+        <item quantity="few">%d роки</item>
+        <item quantity="many">%d років</item>
+        <item quantity="other">%d року</item>
+    </plurals>
+    <plurals name="gap_months">
+        <item quantity="one">%d місяць</item>
+        <item quantity="few">%d місяці</item>
+        <item quantity="many">%d місяців</item>
+        <item quantity="other">%d місяця</item>
+    </plurals>
+    <plurals name="gap_weeks">
+        <item quantity="one">%d тиждень</item>
+        <item quantity="few">%d тижні</item>
+        <item quantity="many">%d тижнів</item>
+        <item quantity="other">%d тижня</item>
+    </plurals>
+    <plurals name="gap_days">
+        <item quantity="one">%d день</item>
+        <item quantity="few">%d дні</item>
+        <item quantity="many">%d днів</item>
+        <item quantity="other">%d дня</item>
+    </plurals>
+
+    <!-- Settings. The two unit options are pre-inflected for their label ("Показувати вагу в …"),
+         which is §7.2 in miniature; they appear nowhere else. -->
+    <string name="settings_title">Налаштування</string>
+    <string name="settings_weight_unit">Показувати вагу в</string>
+    <string name="settings_unit_kilograms">Кілограмах</string>
+    <string name="settings_unit_grams">Грамах</string>
+    <string name="settings_weight_unit_help">Це змінює те, як вага показується, а не те, як її вводять: вводиться завжди в грамах, і зміни завжди показуються в грамах.</string>
+    <string name="settings_backup">Резервні копії та відновлення</string>
+    <string name="settings_backup_summary">Експортуй записи у файл, віднови їх із файлу та переглянь копії, збережені на цьому телефоні.</string>
+    <string name="settings_language">Мова</string>
+    <string name="settings_language_system">Як на телефоні</string>
+    <string name="settings_language_help">Binky може працювати іншою мовою, ніж решта телефона. Зміна перезапускає застосунок.</string>
+    <string name="settings_material_you">Кольори з твоїх шпалер</string>
+    <string name="settings_material_you_help">У Binky власні кольори. Увімкни це — і кольори братимуться зі шпалер, як це робить сам Android.</string>
+
+    <!-- First-run setup (ADR-0006) -->
+    <string name="setup_step">Крок %1$d з %2$d</string>
+    <string name="setup_continue">Далі</string>
+    <string name="setup_back">На крок назад</string>
+    <string name="setup_bunny_title">Ласкаво просимо до Binky</string>
+    <string name="setup_bunny_body">Binky тримає історію здоровʼя твоїх кроликів на цьому телефоні — вагу, спостереження та фото. Немає ні облікового запису, ні сервера: ніщо із записаного тут нікуди не надсилається.\n\nТри швидкі питання — і застосунок твій.</string>
+    <string name="setup_bunny_action">Додай першого кролика</string>
+    <string name="setup_bunny_add_another">Додати ще кролика</string>
+    <string name="setup_bunny_skip">Поки пропустити</string>
+    <string name="setup_bunny_added_one">%1$s уже в застосунку. Додати ще кроликів можна будь-коли через перемикач угорі екрана.</string>
+    <string name="setup_bunny_added_many">Твої кролики вже в застосунку. Додати ще можна будь-коли через перемикач угорі екрана.</string>
+    <string name="setup_backup_title">Щоб записи були в безпеці</string>
+    <string name="setup_backup_body">Усе живе на цьому телефоні, а отже втрачений телефон — це втрачена історія, якщо ніщо її не копіює. Копіювати можуть дві різні речі, і жодна з них не охоплює всього.</string>
+    <string name="setup_backup_auto_ask">Binky не може дізнатися, чи це ввімкнено, і не може ввімкнути це замість тебе. Зараз слушна мить перевірити.</string>
+    <string name="setup_backup_changeable">Усе це лишається змінним у розділі «Налаштування › Резервні копії та відновлення».</string>
+    <string name="setup_finish">Завершити налаштування</string>
+
+    <!-- Reminders (ADR-0003, ADR-0006, ADR-0024). The three delivery states are the load-bearing
+         copy in this app and none of them may overstate what the phone will do. -->
+    <string name="reminders_title">Нагадування</string>
+    <string name="reminders_body">Binky може нагадувати про регулярний догляд — підстригання кігтів раз на шість тижнів, щорічне щеплення, щотижневе зважування. Нагадування приходять раз на день, лише на цьому телефоні, і про що вони — вирішуєш ти.</string>
+    <string name="reminders_enable_action">Увімкнути нагадування</string>
+    <string name="reminders_state_blocked">Сповіщення вимкнено, тож нагадування зʼявлятимуться лише всередині застосунку.</string>
+    <string name="reminders_state_best_effort">Нагадування ввімкнено. Цей телефон усе одно може затримати або відкинути їх, поки Binky у фоні, — саме це виправляє налаштування нижче.</string>
+    <string name="reminders_state_armed">Нагадування ввімкнено, і цей телефон налаштовано їх пропускати.</string>
+    <string name="reminders_denied_once">Гаразд. Увімкнути їх можна будь-коли.</string>
+    <string name="reminders_permanently_denied">Android більше не питатиме, тож це доведеться ввімкнути в налаштуваннях телефона.</string>
+    <string name="reminders_open_settings_action">Відкрити налаштування сповіщень</string>
+    <string name="reminders_battery_title">Ще одне, інакше нагадування можуть не прийти</string>
+    <string name="reminders_battery_body">Android присипляє застосунки, які вважає бездіяльними, а приспаний Binky не може надіслати нагадування. Виняток в оптимізації батареї — це те, що пропускає нагадування о девʼятій ранку після цілої ночі сну телефона.</string>
+    <string name="reminders_battery_action">Відкрити налаштування батареї</string>
+    <string name="reminders_battery_dismiss">Не зараз</string>
+    <string name="reminders_autostart_help">Деякі телефони — передусім Xiaomi — мають ще й власний список автозапуску. Binky не може його прочитати, тож і сказати, чи все там гаразд, не може; це просто шлях туди.</string>
+    <string name="reminders_autostart_action">Відкрити налаштування автозапуску</string>
+
+    <!-- Dose delivery (ADR-0003, ADR-0025, ADR-0026). Nothing here says anything about the
+         medication itself. -->
+    <string name="doses_state_blocked">Сповіщення вимкнено, тож нагадування про дози зʼявлятимуться лише всередині застосунку.</string>
+    <string name="doses_state_best_effort_exact">Нагадування про дози ввімкнено, але Android не дає Binky ставити їх точно на хвилину — чекай нагадування в межах кількох хвилин від часу, а не рівно в час.</string>
+    <string name="doses_state_best_effort_battery">Нагадування про дози ввімкнено й поставлено точно на хвилину. Цей телефон усе одно може затримати їх, поки Binky у фоні.</string>
+    <string name="doses_exact_alarm_action">Відкрити налаштування будильників</string>
+    <string name="reminders_caveat_notifications_title">Сповіщення вимкнено</string>
+    <string name="reminders_caveat_exact_title">Нагадування можуть приходити із запізненням</string>
+    <string name="reminders_caveat_battery_title">Цей телефон може притримувати нагадування</string>
+
+    <!-- Debug builds only -->
+    <string name="settings_sample_data">Демонстраційні дані</string>
+    <string name="settings_debug_header">Лише для складань debug</string>
+    <string name="settings_sample_data_help">Додає двох кроликів, які живуть разом, рік нерівномірних зважувань заднім числом і кілька спостережень, щоб графік, позначку ваги та стрічку можна було переглянути на справжній історії.</string>
+    <string name="settings_sample_data_action">Додати демонстраційні дані</string>
+    <string name="settings_sample_data_seeded">Демонстраційні дані додано.</string>
+    <string name="settings_sample_data_present">Демонстраційні кролики вже тут.</string>
+    <string name="settings_debug_reminder">Доставка нагадувань</string>
+    <string name="settings_debug_reminder_help">Надсилає одне сповіщення за дві хвилини, власним шляхом, а не через щоденний обхід, — тож канал, дозвіл і доставку можна перевірити, коли жодного нагадування ще не існує.</string>
+    <string name="settings_debug_reminder_settings_action">Налаштування нагадувань</string>
+    <string name="settings_debug_reminder_action">Нагадати за дві хвилини</string>
+    <string name="settings_debug_reminder_scheduled">Тестове нагадування прийде за дві хвилини. Заблокуй телефон і зачекай.</string>
+    <string name="debug_reminder_notification_title">Тестове нагадування</string>
+    <string name="debug_reminder_notification_text">Ось як виглядатиме нагадування про догляд. Нічого не заплановано — це нагадування поставлено вручну з налаштувань.</string>
+
+    <!-- A dose notification. §7.4: "для" governs the genitive, so the common noun carries it. -->
+    <string name="dose_notification_amount">%1$s для кролика %2$s</string>
+    <string name="dose_notification_no_amount">Для кролика %1$s</string>
+
+    <!-- Notification channels -->
+    <string name="channel_care_name">Нагадування про догляд</string>
+    <string name="channel_care_description">Підстригання кігтів, щеплення, зважування і все інше, для чого налаштовано регулярне нагадування.</string>
+    <string name="channel_watch_name">Нагадування про нагляд</string>
+    <string name="channel_watch_description">Раз на день — підказка зазирнути до кролика, за яким ти пильно наглядаєш. Лише поки триває нагляд.</string>
+    <string name="channel_backup_name">Нагадування про резервні копії</string>
+    <string name="channel_backup_description">Час від часу — підказка експортувати записи, з обраним тобою інтервалом. Жодного стосунку до кроликів.</string>
+    <string name="channel_doses_name">Дози ліків</string>
+    <string name="channel_doses_description">Нагадування в час запланованої тобою дози. Лише поки триває курс лікування.</string>
+
+    <!-- Backup and restore (ADR-0005) -->
+    <string name="backup_title">Резервні копії та відновлення</string>
+
+    <string name="backup_auto_title">Автоматичне резервне копіювання</string>
+    <string name="backup_auto_help">Android копіює Binky до твого облікового запису Google за власним розкладом — коли телефон не використовується, заряджається й має мережу. Binky не може ні ввімкнути це, ні перевірити замість тебе.</string>
+    <string name="backup_auto_never">На цьому телефоні не зафіксовано жодного автоматичного копіювання.</string>
+    <string name="backup_auto_recorded">Останнє автоматичне копіювання: %1$s.</string>
+    <string name="backup_auto_stale">Останнє автоматичне копіювання було %1$s — понад два тижні тому. Можливо, його щось вимкнуло.</string>
+    <string name="backup_auto_photos">Воно охоплює твої записи, налаштування та фото кроликів у профілі. Твоєї галереї фото в ньому немає.</string>
+    <plurals name="backup_auto_excluded">
+        <item quantity="one">%d документ або фото лотка не вмістився в копію. Збережи його ручним експортом.</item>
+        <item quantity="few">%d документи та фото лотка не вмістилися в копію. Збережи їх ручним експортом.</item>
+        <item quantity="many">%d документів і фото лотка не вмістилося в копію. Збережи їх ручним експортом.</item>
+        <item quantity="other">%d документа або фото лотка не вмістилося в копію. Збережи його ручним експортом.</item>
+    </plurals>
+    <string name="backup_auto_settings_action">Відкрити налаштування копіювання Android</string>
+
+    <string name="backup_excluded_notification_title">Деякі документи та фото лотка не потрапили до копії</string>
+    <plurals name="backup_excluded_notification_text">
+        <item quantity="one">Автоматичне копіювання Android не вмістило %d документ або фото лотка. Зроби ручний експорт, щоб зберегти копію.</item>
+        <item quantity="few">Автоматичне копіювання Android не вмістило %d документи та фото лотка. Зроби ручний експорт, щоб зберегти копію.</item>
+        <item quantity="many">Автоматичне копіювання Android не вмістило %d документів і фото лотка. Зроби ручний експорт, щоб зберегти копію.</item>
+        <item quantity="other">Автоматичне копіювання Android не вмістило %d документа або фото лотка. Зроби ручний експорт, щоб зберегти копію.</item>
+    </plurals>
+
+    <!-- §7.2: the three scope names are substituted into two sentences, so they are quoted there
+         and the sentence stops caring about their case. -->
+    <string name="backup_scope_title">Що входить в експорт</string>
+    <string name="backup_scope_essential">Основне</string>
+    <string name="backup_scope_records">Записи</string>
+    <string name="backup_scope_everything">Усе</string>
+    <string name="backup_scope_essential_help">Твої записи, налаштування та фото кроликів у профілі. Найменша корисна копія.</string>
+    <string name="backup_scope_records_help">Усе з «Основного», а ще скановані документи та фото лотка — усе, що може знадобитися знову.</string>
+    <string name="backup_scope_everything_help">Усе із «Записів», а ще твоя галерея фото. Значно більше за обсягом і єдина копія, яку взагалі отримують фото.</string>
+    <string name="backup_photos_warning">Твої фото — найменш захищене, що є в Binky. Автоматичне копіювання Android галерею не бере, і «Основне» та «Записи» теж. Експорт «Усе» — єдина копія, яку колись матимуть твої фото.</string>
+    <string name="backup_export_action">Експортувати копію</string>
+    <string name="backup_exporting">Створення копії…</string>
+    <string name="backup_export_share">Поділитися цією копією</string>
+
+    <!-- The remembered export folder (ADR-0005). "обраної папки" is a participle agreeing with
+         "папка", not with the owner: §7.3 forbids "яку ти обрав". -->
+    <string name="backup_folder_title">Куди йдуть експорти</string>
+    <string name="backup_folder_help">Зазвичай експорт іде в меню «Поділитися», і ти вибираєш, що з ним робити. Можна також обрати папку — на цьому телефоні або в хмарному застосунку на кшталт Drive — і Binky писатиме одразу туди.</string>
+    <string name="backup_folder_none">Папку не обрано. Експорти йдуть у меню «Поділитися».</string>
+    <string name="backup_folder_chosen">Експорти можуть іти одразу до «%1$s».</string>
+    <string name="backup_folder_unavailable">Binky більше не може писати до обраної папки. Можливо, її перенесли чи видалили або відкликали дозвіл. Обери її знову або далі користуйся меню «Поділитися».</string>
+    <string name="backup_folder_choose">Обрати папку</string>
+    <string name="backup_folder_change">Обрати іншу папку</string>
+    <string name="backup_folder_forget">Прибрати цю папку</string>
+    <string name="backup_folder_export">Експортувати в цю папку</string>
+    <string name="backup_folder_saved">Збережено як «%1$s».</string>
+    <string name="backup_folder_refused">Binky не зміг записати в ту папку, тож копією поділено натомість — нічого не втрачено. Якщо це повторюється, обери папку на цьому телефоні.</string>
+    <string name="backup_folder_not_remembered">Цей телефон не дав Binky зберегти доступ до тієї папки, тож папку не збережено. Експорти й далі йдуть у меню «Поділитися».</string>
+    <string name="backup_folder_no_picker">На цьому телефоні немає файлового провідника, який Binky міг би відкрити, тож експорти йдуть у меню «Поділитися».</string>
+
+    <!-- The recurring export reminder. These four intervals are fixed text rather than
+         substitutions, so they keep the real agreement — which is exactly why care_every, whose
+         phrase arrives at run time, cannot. -->
+    <string name="backup_reminder_title">Нагадувати про експорт</string>
+    <string name="backup_reminder_help">Підказка зробити експорт, що приходить у той самий час доби, що й інші нагадування. Це підказка про твої копії, а не ознака, що щось не так.</string>
+    <string name="backup_reminder_switch">Нагадувати</string>
+    <string name="backup_reminder_off">Вимкнено. Binky не питатиме.</string>
+    <string name="backup_reminder_next">Наступне нагадування: %1$s.</string>
+    <string name="backup_reminder_blocked">Сповіщення для Binky вимкнено або нагадування про копії заглушено, тож це нагадування не зможе прийти.</string>
+    <string name="backup_reminder_weekly">Щотижня</string>
+    <string name="backup_reminder_fortnightly">Раз на два тижні</string>
+    <string name="backup_reminder_monthly">Щомісяця</string>
+    <string name="backup_reminder_quarterly">Раз на три місяці</string>
+    <string name="export_notification_title">Час зробити копію записів?</string>
+    <string name="export_notification_text">Нагадування на твій запит. Відкрий «Резервні копії та відновлення», щоб зробити свіжий експорт — це кілька дотиків.</string>
+
+    <string name="backup_restore_title">Відновлення</string>
+    <string name="backup_restore_help">Відновлення замінює все, що Binky зараз тримає, вмістом файлу. Копію поточних записів спершу буде збережено на цьому телефоні, тож відновлення можна скасувати.</string>
+    <string name="backup_restore_action">Відновити з файлу</string>
+    <string name="backup_restore_confirm_title">Відновити цю копію?</string>
+    <string name="backup_restore_confirm_body">Копія «%1$s» від %2$s.\n\nУсе, що Binky зараз тримає, буде замінено. Копію поточних записів спершу буде збережено на цьому телефоні.</string>
+    <string name="backup_restore_confirm_action">Замінити все</string>
+    <string name="backup_restoring">Відновлення…</string>
+
+    <string name="backup_refused_title">Нічого не відновлено</string>
+    <string name="backup_refused_not_a_backup">Це не копія Binky. На цьому телефоні нічого не змінено.</string>
+    <string name="backup_refused_newer">Цю копію зроблено новішою версією Binky, якої ця прочитати не може. Її збережено у форматі версії %1$d, а цей застосунок читає до версії %2$d. На цьому телефоні нічого не змінено.</string>
+    <string name="backup_refused_too_large">Цей файл завеликий, щоб бути копією Binky. На цьому телефоні нічого не змінено.</string>
+    <string name="backup_refused_unreadable">Binky не зміг відкрити записи всередині цієї копії, тож нічого не змінено. Можливо, файл пошкоджено.</string>
+
+    <string name="backup_restored_title">Відновлення завершено</string>
+    <string name="backup_restored_scope">Відновлено копію «%1$s» від %2$s.</string>
+    <plurals name="backup_restored_overlaid">
+        <item quantity="one">З копії надійшло %d зображення.</item>
+        <item quantity="few">З копії надійшло %d зображення.</item>
+        <item quantity="many">З копії надійшло %d зображень.</item>
+        <item quantity="other">З копії надійшло %d зображення.</item>
+    </plurals>
+    <plurals name="backup_restored_kept">
+        <item quantity="one">%d зображення, що вже було на телефоні, лишилося поза обсягом цієї копії — його збережено.</item>
+        <item quantity="few">%d зображення, що вже були на телефоні, лишилися поза обсягом цієї копії — їх збережено.</item>
+        <item quantity="many">%d зображень, що вже були на телефоні, лишилося поза обсягом цієї копії — їх збережено.</item>
+        <item quantity="other">%d зображення, що вже було на телефоні, лишилося поза обсягом цієї копії — його збережено.</item>
+    </plurals>
+    <string name="backup_restored_snapshot">Те, що Binky тримав до цього відновлення, збережено як %1$s, у розділі «Копії на цьому телефоні».</string>
+    <string name="backup_restored_close">Закрити Binky</string>
+    <string name="backup_restored_close_help">Binky має закритися, щоб відкритися вже з відновленими записами. Запусти застосунок знову з головного екрана.</string>
+
+    <!-- The two occupants of preserved/ -->
+    <string name="preserved_title">Копії на цьому телефоні</string>
+    <string name="preserved_help">Binky зберігає копію перед усім, що замінило б твої записи. Ніщо тут ніколи не видаляється автоматично.</string>
+    <string name="preserved_empty">На цьому телефоні не збережено жодної копії.</string>
+    <string name="preserved_detail">Збережено %1$s · %2$s · %3$s</string>
+    <plurals name="preserved_files">
+        <item quantity="one">%d файл</item>
+        <item quantity="few">%d файли</item>
+        <item quantity="many">%d файлів</item>
+        <item quantity="other">%d файла</item>
+    </plurals>
+    <string name="preserved_undated">дата невідома</string>
+    <string name="preserved_share">Поділитися цією копією</string>
+    <string name="preserved_delete_title">Видалити цю копію?</string>
+    <string name="preserved_delete_body">%1$s зникне з цього телефона назавжди. Якщо копією не поділено кудись іще, її більше не буде.</string>
+    <string name="preserved_kind_wipe">Збережено перед тим, як оновлення очистило записи</string>
+    <string name="preserved_kind_snapshot">Збережено перед відновленням</string>
+    <string name="preserved_not_restorable">Записано старішою версією Binky, тож нею можна лише поділитися — завантажити назад не вийде.</string>
+    <string name="preserved_restore">Відновити цю копію</string>
+
+    <!-- Observations: the vocabularies (ADR-0010). "Не перевіряли" is the 3rd-person-plural
+         impersonal: one resource sits under four fields of two genders (апетит and настрій
+         masculine, активність and вода feminine), so a participle would be wrong on half the
+         screen. It is a fact about the record and never a polite word for "normal". -->
+    <string name="observation_not_checked">Не перевіряли</string>
+
+    <!-- §7.1's biggest row: five distinct forms of "Normal" across the six chips below. -->
+    <string name="droppings_amount_none">Немає</string>
+    <string name="droppings_amount_few">Мало</string>
+    <string name="droppings_amount_normal">Норма</string>
+    <string name="droppings_amount_many">Багато</string>
+
+    <string name="droppings_size_small">Малі</string>
+    <string name="droppings_size_normal">Нормальні</string>
+    <string name="droppings_size_large">Великі</string>
+
+    <!-- What the droppings looked like. No advice anywhere, and "зі шерстю" is load-bearing. -->
+    <string name="droppings_appearance_round">Круглі</string>
+    <string name="droppings_appearance_misshapen">Неправильної форми</string>
+    <string name="droppings_appearance_doubled">Здвоєні або злиплі</string>
+    <string name="droppings_appearance_dry">Сухі або тверді</string>
+    <string name="droppings_appearance_strung_together">Нанизані на шерсть</string>
+    <string name="droppings_appearance_mucus">Слиз</string>
+    <string name="droppings_appearance_soft">Мʼякі</string>
+    <string name="droppings_appearance_diarrhoea">Пронос</string>
+    <string name="droppings_appearance_very_dark">Дуже темні або дьогтеподібні</string>
+    <string name="droppings_appearance_blood">Кров</string>
+
+    <string name="cecotropes_eaten">Зʼїдені</string>
+    <string name="cecotropes_left_uneaten">Лишилися незʼїденими</string>
+    <string name="cecotropes_excess">Багато лишилося незʼїденими</string>
+
+    <string name="appetite_none">Не їсть</string>
+    <string name="appetite_reduced">Їсть менше</string>
+    <string name="appetite_normal">Нормальний</string>
+    <string name="appetite_eager">Жадібний</string>
+
+    <string name="mood_withdrawn">Замкнений</string>
+    <string name="mood_subdued">Пригнічений</string>
+    <string name="mood_normal">Нормальний</string>
+    <string name="mood_bright">Бадьорий</string>
+
+    <string name="activity_lethargic">Млява</string>
+    <string name="activity_quiet">Спокійна</string>
+    <string name="activity_normal">Нормальна</string>
+    <string name="activity_active">Висока</string>
+
+    <string name="water_none">Не пʼє</string>
+    <string name="water_less">Пʼє менше</string>
+    <string name="water_normal">Пʼє як завжди</string>
+    <string name="water_more">Пʼє більше</string>
+
+    <!-- The built-in symptoms (ADR-0010): what an owner can see, never the condition it might
+         mean. "Гучне" is deliberate — rabbits grind their teeth softly when content. -->
+    <string name="symptom_head_tilt">Нахил голови</string>
+    <string name="symptom_drooling_or_wet_chin">Слинотеча або мокре підборіддя</string>
+    <string name="symptom_sneezing_or_nasal_discharge">Чхання або виділення з носа</string>
+    <string name="symptom_eye_discharge">Виділення або кірочки на очах</string>
+    <string name="symptom_dirty_bottom">Брудний зад</string>
+    <string name="symptom_loud_teeth_grinding">Гучне скреготіння зубами</string>
+    <string name="symptom_hunched_posture">Сидить згорбившись</string>
+    <string name="symptom_laboured_breathing">Утруднене дихання</string>
+    <string name="symptom_not_drinking">Не пʼє</string>
+    <string name="symptom_limping">Кульгає</string>
+    <string name="symptom_ear_scratching">Чухає вуха</string>
+    <string name="symptom_blood_in_urine">Кров у сечі</string>
+    <string name="symptom_hiding_more_than_usual">Ховається більше, ніж зазвичай</string>
+
+    <!-- Recording an observation. "перевірено … дивилися" is impersonal throughout: §7.3 forbids
+         a second-person past. -->
+    <string name="observation_add_title">Записати спостереження</string>
+    <string name="observation_edit_title">Змінити спостереження</string>
+    <string name="observation_recorded_at_label">Коли дивилися</string>
+    <string name="observation_backdating_help">За замовчуванням — зараз. Лоток перевірено вранці, а запис робиться ввечері? Постав час, коли дивилися: саме він і рахується.</string>
+    <string name="observation_future_rejected">Це в майбутньому. Спостереження, якого ще не було, записати не можна.</string>
+
+    <!-- Who the observation covers (ADR-0008) -->
+    <string name="observation_participants_label">Кого це стосується</string>
+    <string name="observation_participants_help">Кроликів, які ділять один лоток, уже позначено. Зніми позначку з тих, кого це не стосується.</string>
+    <string name="observation_participants_required">Обери хоча б одного кролика.</string>
+    <string name="observation_excluded_archived">%1$s — в архіві, тож цей запис не може охопити цього кролика.</string>
+    <string name="observation_excluded_watch">%1$s — під наглядом; веди запис окремо.</string>
+
+    <string name="observation_tray_heading">Лоток</string>
+    <string name="observation_tray_shared_help">Записується один раз, для всіх, кого це стосується: спільний лоток неможливо розділити за кроликами.</string>
+    <string name="observation_droppings_amount_label">Скільки котяхів</string>
+    <string name="observation_droppings_size_label">Розмір</string>
+    <string name="observation_droppings_appearance_label">Вигляд</string>
+    <string name="observation_cecotropes_label">Цекотрофи</string>
+    <string name="observation_tray_photo_label">Фото лотка</string>
+    <string name="observation_tray_photo_help">Рівне розсіяне світло найкраще показує форму — котяхи в тіні потім важко розібрати.</string>
+    <string name="observation_tray_photo_description">Лоток</string>
+    <string name="observation_tray_photo_unreadable">Binky не зміг прочитати це зображення, тож нічого не долучено.</string>
+
+    <string name="observation_individual_heading">Цей кролик</string>
+    <string name="observation_individual_heading_named">%1$s</string>
+    <string name="observation_appetite_label">Апетит</string>
+    <string name="observation_mood_label">Настрій</string>
+    <string name="observation_activity_label">Активність</string>
+    <string name="observation_water_label">Вода</string>
+
+    <string name="observation_symptoms_label">Симптоми</string>
+    <string name="observation_symptoms_none_selected">Нічого не обрано</string>
+    <string name="observation_symptoms_pick">Обрати симптоми</string>
+    <string name="observation_symptoms_checked">Перевірено — нічого з цього немає</string>
+    <string name="observation_symptoms_checked_help">Варто позначити. Порожній список сам собою означає лише те, що ніхто не перевіряв.</string>
+
+    <string name="observation_note_label">Що ще</string>
+    <string name="observation_note_placeholder">Що ти помічаєш, своїми словами</string>
+
+    <!-- The timeline. §7.4: observation_with substitutes a joined list of names, so it is the
+         colon rather than a common noun. -->
+    <string name="observations_empty">Спостережень ще не записано. Усе, що ти помічаєш — лоток, настрій, симптом, — має бути тут.</string>
+    <string name="observation_with">Разом: %1$s</string>
+    <string name="observation_observed_together_alone">Спостереження разом</string>
+    <string name="observation_tray_section">Лоток</string>
+    <string name="observation_tray_section_shared">Спільний — лоток</string>
+    <string name="observation_no_symptoms_seen">Симптоми шукали, не побачили жодного</string>
+    <string name="observation_delete_title">Видалити це спостереження?</string>
+    <string name="observation_delete_body">Спостереження, записане %1$s, буде прибрано.</string>
+    <string name="observation_delete_body_shared">Це спостереження стосувалося: %1$s. Видалення прибере його для всіх них.</string>
+    <string name="observation_which_bunny">Про якого кролика це?</string>
+
+    <!-- The healthy-day shortcut -->
+    <string name="healthy_day_action">Записати звичайний день</string>
+    <string name="healthy_day_help">Записує звичайний день: котяхи в нормі, їсть і пʼє як завжди, бадьорий і активний.</string>
+    <string name="healthy_day_which_bunny">Чий це був день?</string>
+    <string name="healthy_day_logged">Звичайний день записано: %1$s.</string>
+    <string name="healthy_day_name_flagged">%1$s (позначка ваги)</string>
+    <plurals name="healthy_day_excluded_watch">
+        <item quantity="one">%1$s — під наглядом; веди запис окремо.</item>
+        <item quantity="few">%1$s — під наглядом; веди записи окремо.</item>
+        <item quantity="many">%1$s — під наглядом; веди записи окремо.</item>
+        <item quantity="other">%1$s — під наглядом; веди записи окремо.</item>
+    </plurals>
+
+    <!-- Care reminders (ADR-0018). §7.2: "Раз на %1$s" governs the bare unit and the counted gap
+         alike, because "на" takes the accusative and all four units are spelled there as in the
+         nominative the plurals below hold. "Кожен" would have had to agree and could not. -->
+    <string name="care_empty">Поки нічого не заплановано. Нагадування про догляд — це справа, яка повертається: підстригання кігтів, щорічне щеплення, щотижневе зважування.</string>
+    <string name="care_pick_a_bunny">Догляд ведеться окремо для кожного кролика. Для якого?</string>
+    <string name="care_choose_bunny">Обери кролика</string>
+    <string name="care_add">Додати нагадування</string>
+
+    <string name="care_type_nail_trim">Підстригання кігтів</string>
+    <string name="care_type_vaccination">Щеплення</string>
+    <string name="care_type_weigh_in">Контроль ваги</string>
+    <string name="care_type_custom">Щось інше</string>
+
+    <!-- ADR-0026 permits "late" in exactly two strings, and neither reaches for the banned
+         "прострочено": both state the timing and judge nothing. -->
+    <string name="care_due_today">Заплановано сьогодні</string>
+    <string name="care_due_tomorrow">Заплановано завтра</string>
+    <string name="care_due_yesterday">Було заплановано вчора</string>
+    <string name="care_due_in">Через %1$s</string>
+    <string name="care_due_overdue">%1$s після терміну</string>
+
+    <string name="care_every">Раз на %1$s</string>
+
+    <plurals name="care_unit_days">
+        <item quantity="one">день</item>
+        <item quantity="few">дні</item>
+        <item quantity="many">днів</item>
+        <item quantity="other">дня</item>
+    </plurals>
+    <plurals name="care_unit_weeks">
+        <item quantity="one">тиждень</item>
+        <item quantity="few">тижні</item>
+        <item quantity="many">тижнів</item>
+        <item quantity="other">тижня</item>
+    </plurals>
+    <plurals name="care_unit_months">
+        <item quantity="one">місяць</item>
+        <item quantity="few">місяці</item>
+        <item quantity="many">місяців</item>
+        <item quantity="other">місяця</item>
+    </plurals>
+    <plurals name="care_unit_years">
+        <item quantity="one">рік</item>
+        <item quantity="few">роки</item>
+        <item quantity="many">років</item>
+        <item quantity="other">року</item>
+    </plurals>
+
+    <!-- Completion -->
+    <string name="care_complete_title">Позначити як зроблене</string>
+    <string name="care_complete_when">Коли це зробили?</string>
+    <string name="care_complete_help">Сьогодні, якщо не вказати інше. Наступний раз планується від дня, коли це справді зробили, тож пізнє підстригання зсуває інтервал, а не лишається боргом.</string>
+    <string name="care_complete_future">Цього дня ще не було.</string>
+    <string name="care_complete_note">Нотатка, якщо потрібна</string>
+    <string name="care_complete_action">Записати</string>
+
+    <string name="care_weigh_in_action">Записати вагу</string>
+    <string name="care_weigh_in_help">Це нагадування закривається зважуванням, тож відкриється форма ваги. Годиться будь-яке зважування, коли б його не записали.</string>
+
+    <string name="care_history_title">Зроблено раніше</string>
+    <string name="care_history_empty">Поки нічого не записано. Саме запис про виконання зсуває наступну дату.</string>
+    <string name="care_history_weight">Зважено: %1$s</string>
+    <string name="care_history_weight_help">Зважування зараховуються як контроль ваги. Змінюють і видаляють їх на екрані ваги, а не тут.</string>
+    <string name="care_event_edit_title">Виправити цей запис</string>
+    <string name="care_event_delete_title">Видалити цей запис про виконання?</string>
+    <string name="care_event_delete_body">Якщо прибрати виконання, записане %1$s, зсунуться всі наступні рази.</string>
+
+    <!-- Add to calendar (ADR-0014): one-way, and the copy has to say so or it reads as syncing. -->
+    <string name="care_calendar_add">Додати в календар</string>
+    <string name="care_calendar_added">Додано у твій календар</string>
+    <string name="care_calendar_help">Передає це повторення твоєму календарю один раз, і там воно переживе новий телефон. Далі Binky не тримає їх у злагоді: зміна нагадування тут нічого там не змінює.</string>
+    <string name="care_calendar_none">На цьому телефоні немає календаря, якому це можна передати.</string>
+
+    <string name="care_editor_add_title">Нове нагадування</string>
+    <string name="care_editor_edit_title">Змінити нагадування</string>
+    <string name="care_editor_kind">Що це за нагадування?</string>
+    <string name="care_editor_label">Як його називати?</string>
+    <string name="care_editor_label_help">Своїми словами, тож ця назва залишиться такою, як ти її введеш, хай якою мовою працює Binky.</string>
+    <string name="care_editor_label_required">Дай назву, щоб знати, про що це.</string>
+    <string name="care_editor_interval">Як часто?</string>
+    <string name="care_editor_interval_required">Хоча б один.</string>
+    <string name="care_editor_first_due">Коли наступний раз?</string>
+    <string name="care_editor_first_due_help">Не коли це робили востаннє, а коли це потрібно зробити наступного разу — саме це пише ветеринарна картка. Якщо відомо, коли це робили востаннє, запиши це нижче як виконання.</string>
+
+    <string name="care_delete_title">Видалити це нагадування?</string>
+    <string name="care_delete_body">%1$s зникне разом з усіма записами про виконання. Зважувань це не торкається.</string>
+
+    <string name="care_notification_due">Сьогодні за планом для кролика %1$s.</string>
+    <string name="care_notification_overdue">Термін для кролика %1$s минув.</string>
+    <plurals name="care_summary_title">
+        <item quantity="one">%d нагадування про догляд сьогодні</item>
+        <item quantity="few">%d нагадування про догляд сьогодні</item>
+        <item quantity="many">%d нагадувань про догляд сьогодні</item>
+        <item quantity="other">%d нагадування про догляд сьогодні</item>
+    </plurals>
+
+    <!-- Vet visits (ADR-0017). A health record, never an expense: nothing here asks what it cost. -->
+    <string name="care_reminders_heading">Регулярний догляд</string>
+    <string name="visits_heading">Візити до ветеринара</string>
+    <string name="visits_empty">Візитів ще не записано. Візит — це запис про здоровʼя: день, із чим приходили, і вага, якщо її брали.</string>
+    <string name="visit_add">Додати візит</string>
+    <string name="visit_row_weighed">Зважено: %1$s</string>
+    <string name="row_pair">%1$s · %2$s</string>
+
+    <string name="visit_editor_add_title">Новий візит</string>
+    <string name="visit_editor_edit_title">Змінити візит</string>
+    <string name="visit_date_label">Коли це було?</string>
+    <string name="visit_future_rejected">Цього дня ще не було.</string>
+    <string name="visit_reason_label">Із чим приходили?</string>
+    <string name="visit_reason_required">Напиши, із чим це було, щоб запис і за рік щось означав.</string>
+    <string name="visit_notes_label">Нотатки, якщо потрібні</string>
+    <string name="visit_vet_label">Ветеринар</string>
+    <string name="visit_vet_none">Не записано</string>
+    <string name="visit_vet_choose">Обрати</string>
+    <string name="visit_vet_clear">Очистити</string>
+    <string name="visit_vet_picker_title">Який ветеринар?</string>
+    <string name="visit_vet_add_typed">Додати «%1$s» як нового ветеринара</string>
+    <!-- "якщо зважували" is the impersonal plural: the app knows the vet's gender no better than
+         the owner's. -->
+    <string name="visit_weight_label">Вага в грамах, якщо зважували</string>
+    <string name="visit_weight_help">Необовʼязково. Записується один раз, як зважування цього кролика за той день.</string>
+    <string name="visit_weight_invalid">Цілі грами або залиш порожнім.</string>
+
+    <string name="visit_delete_title">Видалити цей візит?</string>
+    <string name="visit_delete_body">Візит %1$s зникне разом із нотатками.</string>
+    <string name="visit_delete_weighing">На ньому записано зважування: %1$s.</string>
+    <string name="visit_delete_keep_weighing">Залишити зважування окремо</string>
+    <string name="visit_delete_remove_weighing">Видалити й зважування</string>
+
+    <!-- The vet directory (ADR-0017) -->
+    <string name="vets_title">Ветеринари</string>
+    <string name="vets_empty">Ветеринарів ще немає. Додай клініку, до якої ходиш, і будь-який візит зможе її назвати — або додай ветеринара просто під час запису візиту.</string>
+    <string name="vet_add">Додати ветеринара</string>
+    <string name="vet_editor_add_title">Новий ветеринар</string>
+    <string name="vet_editor_edit_title">Змінити ветеринара</string>
+    <string name="vet_name_label">Імʼя або назва</string>
+    <string name="vet_name_required">Дай назву, щоб потім знайти.</string>
+    <string name="vet_clinic_label">Клініка, якщо є</string>
+    <string name="vet_phone_label">Телефон, якщо є</string>
+    <string name="vet_notes_label">Нотатки, якщо потрібні</string>
+    <string name="vet_delete_title">Прибрати цього ветеринара?</string>
+    <string name="vet_delete_body">%1$s зникне з довідника. Кожен візит, де вказано це імʼя, лишиться точно таким, як є, тільки без імені.</string>
+
+    <!-- Medications. The closest the app comes to medical advice, so ADR-0026's rule is on screen
+         as well as in an ADR: nothing here may say a dose was missed, warn or suggest. -->
+    <string name="med_heading">Курси</string>
+    <string name="med_today_heading">Сьогодні</string>
+    <string name="med_dose_due">За планом о %1$s</string>
+    <string name="med_add_course">Додати курс</string>
+    <string name="med_empty">Ліків не записано. Курс — це те, що призначив ветеринар: що це, скільки і в які години, якщо години є.</string>
+    <string name="med_disclaimer">Те, що призначив ветеринар, у твоєму власному записі. Binky ніколи не перевіряє ні доз, ні взаємодій.</string>
+
+    <!-- §6: "пропущено" has an agentless reading and stays banned with "пропущена". The pair below
+         is the 3rd-person-plural impersonal, which implies human agents and carries no gender; the
+         two move together, because they share a register. -->
+    <string name="med_dose_answered">%1$s о %2$s</string>
+    <string name="dose_status_given">Дали</string>
+    <string name="dose_status_skipped">Не давали</string>
+
+    <string name="med_schedule_none">Без розкладу — дози записуються вручну</string>
+    <string name="med_schedule_once">Раз на день о %1$s</string>
+    <string name="med_schedule_times">%1$s щодня</string>
+    <string name="med_next_today">Наступна доза о %1$s</string>
+    <string name="med_next_tomorrow">Наступна доза завтра о %1$s</string>
+    <string name="med_next_later">Наступна доза %1$s о %2$s</string>
+    <string name="med_next_not_started">Початок %1$s</string>
+    <string name="med_next_ended">Завершено %1$s</string>
+    <string name="med_next_done">Далі нічого не заплановано</string>
+    <string name="med_range_open">Від %1$s</string>
+    <string name="med_range_closed">%1$s — %2$s</string>
+
+    <string name="med_delete_title">Видалити цей курс?</string>
+    <string name="med_delete_body">%1$s зникне разом із розкладом.</string>
+    <plurals name="med_delete_doses">
+        <item quantity="one">Разом із цим буде видалено %d записану дозу.</item>
+        <item quantity="few">Разом із цим буде видалено %d записані дози.</item>
+        <item quantity="many">Разом із цим буде видалено %d записаних доз.</item>
+        <item quantity="other">Разом із цим буде видалено %d записаної дози.</item>
+    </plurals>
+    <string name="med_delete_end_help">Якщо завершити курс, усі дози залишаться, а розклад просто зупиниться від сьогодні.</string>
+    <string name="med_delete_end_action">Краще завершити курс</string>
+
+    <string name="med_history_title">Записані дози</string>
+    <string name="med_history_empty">Поки нічого не записано.</string>
+    <string name="med_history_row">%1$s · %2$s о %3$s</string>
+    <string name="med_history_ad_hoc">Не за запланованим часом</string>
+    <string name="med_history_for_slot">За дозу о %1$s</string>
+    <string name="med_end_action">Завершити курс</string>
+    <string name="med_end_help">Ставить кінець на сьогодні. Кожна вже записана доза лишається.</string>
+    <string name="med_dose_delete_title">Видалити цю дозу?</string>
+    <string name="med_dose_delete_body">Запис зникне. Якщо він відповідав запланованому часу, той час знову стане без відповіді.</string>
+
+    <string name="med_record_title">Записати дозу</string>
+    <string name="med_record_edit_title">Змінити цю дозу</string>
+    <string name="med_record_status">Що сталося?</string>
+    <string name="med_record_when">Коли?</string>
+    <string name="med_record_when_help">За замовчуванням — зараз. Постав давнішу дату, якщо записуєш це пізніше.</string>
+    <string name="med_record_future">Це пізніше, ніж зараз.</string>
+    <string name="med_record_for_slot">за дозу о %1$s</string>
+    <string name="med_record_note">Нотатка, якщо потрібна</string>
+    <string name="med_record_action">Записати</string>
+
+    <string name="med_editor_add_title">Новий курс</string>
+    <string name="med_editor_edit_title">Змінити курс</string>
+    <string name="med_editor_section_medication">Ліки</string>
+    <string name="med_editor_section_when">Коли</string>
+    <string name="med_editor_name">Що це за ліки?</string>
+    <string name="med_editor_name_required">Впиши назву з упаковки, щоб запис і за рік щось означав.</string>
+    <!-- "якщо тобі сказали" and "як сказали": the vet is a third unknown gender, and the impersonal
+         plural names nobody. -->
+    <string name="med_editor_amount">Скільки, якщо тобі сказали</string>
+    <string name="med_editor_amount_placeholder">0,3 мл</string>
+    <string name="med_editor_amount_help">Дослівно так, як сказали: «0,3 мл», «півтаблетки». Binky ніколи цього не читає.</string>
+    <string name="med_editor_start">Початок</string>
+    <string name="med_editor_pick_start">Змінити дату початку</string>
+    <string name="med_editor_ongoing">Триває</string>
+    <string name="med_editor_ongoing_help">Увімкни для курсу, кінця якого поки не видно. Вимкни, щоб поставити останній день.</string>
+    <string name="med_editor_end">Кінець</string>
+    <string name="med_editor_pick_end">Змінити дату кінця</string>
+    <string name="med_editor_end_before_start">Це раніше, ніж курс починається.</string>
+    <string name="med_editor_schedule">Години</string>
+    <string name="med_editor_schedule_help">Необовʼязково. Залиш порожнім для курсу, дози якого записуються вручну.</string>
+    <string name="med_editor_add_time">Додати час</string>
+    <string name="med_editor_remove_time">Прибрати %1$s</string>
+    <string name="med_editor_reminders">Нагадувати в ці години</string>
+    <string name="med_editor_reminders_help">Binky ставить один будильник — на наступну дозу з усіх курсів. Рядок угорі вкладки каже, що саме цей телефон із ним зробить.</string>
+    <string name="med_editor_notes">Нотатки, якщо потрібні</string>
+
+    <!-- The watch (ADR-0001): opt-in, time-boxed, framed about the owner's checking rather than
+         about the bunny. "Нагляд" rather than "спостереження", which is the record type, or
+         "стеження", which is surveillance. §7.4 is paid with the common noun throughout. -->
+    <string name="watch_start">Встановити нагляд</string>
+    <string name="watch_start_title">Наглядати за кроликом %1$s?</string>
+    <string name="watch_start_body">Щоранку Binky питатиме, чи вдалося вже зазирнути до цього кролика. Будь-який запис для цього кролика закриває день — звичайний день теж рахується. Нагляд зупиниться сам, коли час вийде.</string>
+    <string name="watch_duration_question">Наскільки довго?</string>
+    <plurals name="watch_duration_days">
+        <item quantity="one">%1$d день</item>
+        <item quantity="few">%1$d дні</item>
+        <item quantity="many">%1$d днів</item>
+        <item quantity="other">%1$d дня</item>
+    </plurals>
+    <string name="watch_start_action">Почати</string>
+    <!-- The predicate agrees with the count as well as the noun, and here the plural table can
+         carry it: the verb is inside the item. Where a counted phrase is substituted into a
+         sentence instead, no table reaches it — see trend_flag_long_gap. -->
+    <plurals name="watch_days_left">
+        <item quantity="one">Залишився %1$d день</item>
+        <item quantity="few">Залишилося %1$d дні</item>
+        <item quantity="many">Залишилося %1$d днів</item>
+        <item quantity="other">Залишилося %1$d дня</item>
+    </plurals>
+    <string name="watch_active_line">Нагляд триває · %1$s</string>
+    <string name="watch_close">Завершити</string>
+    <string name="watch_expired_title">Нагляд за кроликом %1$s завершився</string>
+    <string name="watch_expired_body">Питати вже перестало. Продовж, якщо ти й далі пильнуєш, або заверши нагляд.</string>
+    <string name="watch_expired_weight">Останнє зважування %1$s, %2$s.</string>
+    <string name="watch_expired_no_weight">Нічого не зважували, тож і тенденції немає — ні в один бік, ні в інший.</string>
+    <string name="watch_expired_extend">Продовжити</string>
+    <string name="watch_notification_title">Чи вдалося сьогодні перевірити кролика %1$s?</string>
+    <string name="watch_notification_text">Триває нагляд. Усе, що впадає в око, варто записати — звичайний день теж рахується.</string>
+
+    <!-- More -->
+    <string name="more_archived_bunnies">Кролики в архіві</string>
+    <string name="more_archived_bunnies_summary">Кролики, яких відправлено до архіву. Їхні записи зберігаються.</string>
+    <string name="more_photos">Фото</string>
+    <string name="more_photos_summary">Фото одного кролика, збережені на цьому телефоні.</string>
+    <string name="more_documents">Документи</string>
+    <string name="more_documents_summary">Скановані папери одного кролика, збережені на цьому телефоні.</string>
+    <string name="more_vets">Ветеринари</string>
+    <string name="more_vets_summary">Імена й номери, спільні для всіх кроликів.</string>
+    <string name="more_settings">Налаштування</string>
+    <string name="more_settings_summary">Одиниці ваги, мова, резервні копії та відновлення.</string>
+    <string name="more_support">Підтримка</string>
+    <string name="more_support_summary">Повідомити про помилку, запропонувати функцію, оцінити застосунок.</string>
+    <string name="more_needs_bunny">Спершу додай кролика.</string>
+
+    <!-- Support. The #bug / #feature tag is a Kotlin constant addressed to the maintainer and is
+         deliberately not a resource. "додається" is impersonal: the app is made by one person and
+         never says "we". -->
+    <string name="support_title">Підтримка</string>
+    <string name="support_intro">Binky робить одна людина. Повідомлення про помилку чи ідея потрапляє прямо до неї.</string>
+    <string name="support_bug_button">Повідомити про помилку</string>
+    <string name="support_bug_subject">Повідомлення про помилку</string>
+    <string name="support_bug_prompt">(опиши тут, що сталося)</string>
+    <string name="support_diagnostics_title">Що несе в собі повідомлення про помилку</string>
+    <string name="support_diagnostics_explain">До листа додається версія застосунку, версія Android, модель телефона та мова застосунку. Нічого про твоїх кроликів, і нічого не надсилається, доки ти не натиснеш «Надіслати» у своєму поштовому застосунку.</string>
+    <string name="support_feature_button">Запропонувати функцію</string>
+    <string name="support_feature_subject">Пропозиція функції</string>
+    <string name="support_email_label">Або напиши на:</string>
+    <string name="support_no_mail_app">На цьому телефоні немає поштового застосунку. Адресу вище можна скопіювати.</string>
+    <string name="support_rate_button">Оцінити Binky в Google Play</string>
+    <string name="support_rate_help">Binky безкоштовний і без реклами. Оцінка — єдине, про що він просить.</string>
+    <string name="support_no_store_app">Не вдалося відкрити Google Play на цьому телефоні.</string>
+    <string name="support_privacy_button">Політика конфіденційності</string>
+    <string name="support_no_browser">На цьому телефоні немає браузера, щоб відкрити сторінку.</string>
+    <string name="support_licences_button">Ліцензії з відкритим кодом</string>
+    <string name="support_version_label">Версія</string>
+
+    <!-- Open-source licence attribution. The list itself is generated at build time and is not
+         translatable content: a translated Apache-2.0 is not Apache-2.0. -->
+    <string name="licences_title">Ліцензії з відкритим кодом</string>
+    <string name="licences_intro">Binky побудовано на бібліотеках нижче. Список береться із самого складання, тож він називає все, що справді містить ця копія застосунку.</string>
+    <string name="licences_read">Прочитати ліцензію</string>
+    <string name="licences_open_terms">Відкрити умови</string>
+    <string name="licences_unavailable">Не вдалося прочитати список ліцензій із цього складання.</string>
+    <string name="licences_text_missing">Текст цієї ліцензії не вкладено в застосунок.</string>
+
+    <!-- The photo gallery. §7.6: the argument keeps its job — the photos are of the bunny, not of
+         a folder — and the common noun in front of it carries the genitive. -->
+    <string name="photo_which_bunny">Чиї фото?</string>
+    <string name="photo_gallery_title">Фото: %1$s</string>
+    <string name="photo_gallery_empty">Фото ще немає.</string>
+    <string name="photo_gallery_empty_help">Додай фото кролика %1$s з галереї або з камери. Вони залишаться на цьому телефоні.</string>
+    <string name="photo_add">Додати фото</string>
+    <string name="photo_add_choose">Обрати з галереї</string>
+    <string name="photo_add_take">Зробити фото</string>
+    <string name="photo_import_progress">Додавання %1$d з %2$d…</string>
+    <!-- "Фото" is indeclinable, so all four items are the same word: this is not an oversight. -->
+    <plurals name="photo_import_added">
+        <item quantity="one">Додано %d фото.</item>
+        <item quantity="few">Додано %d фото.</item>
+        <item quantity="many">Додано %d фото.</item>
+        <item quantity="other">Додано %d фото.</item>
+    </plurals>
+    <!-- The quantity governs the *unreadable* count, which is of files and does inflect — which is
+         why this plural still earns its keep where photo_import_added does not. The added count is
+         carried by the impersonal "Додано", so it needs no agreement of its own. -->
+    <plurals name="photo_import_partial">
+        <item quantity="one">Додано %1$d з %2$d, не вдалося прочитати %3$d файл.</item>
+        <item quantity="few">Додано %1$d з %2$d, не вдалося прочитати %3$d файли.</item>
+        <item quantity="many">Додано %1$d з %2$d, не вдалося прочитати %3$d файлів.</item>
+        <item quantity="other">Додано %1$d з %2$d, не вдалося прочитати %3$d файла.</item>
+    </plurals>
+    <string name="photo_description">Фото кролика %1$s</string>
+    <string name="photo_close">Закрити</string>
+    <string name="photo_taken_on">Знято %1$s</string>
+    <string name="photo_added_on">Додано %1$s</string>
+    <string name="photo_caption_label">Підпис</string>
+    <string name="photo_caption_none">Без підпису</string>
+    <string name="photo_caption_add">Додати</string>
+    <string name="photo_caption_edit">Змінити</string>
+    <string name="photo_delete">Видалити фото</string>
+    <string name="photo_delete_body">Видалити це фото? Знімок зникне з цього телефона назавжди.</string>
+
+    <!-- Documents (ADR-0017, ADR-0009). §7.4: a document's title is owner-typed too, so
+         document_page_description quotes it rather than declining it. -->
+    <string name="document_which_bunny">Чиї документи?</string>
+    <string name="documents_title">Документи: %1$s</string>
+    <string name="documents_empty">Документів ще немає.</string>
+    <string name="documents_empty_help">Скануй картку щеплень, результат аналізу чи виписку. Вони залишаться на цьому телефоні.</string>
+    <string name="document_scan">Сканувати документ</string>
+    <string name="document_default_title">Сканований документ</string>
+    <plurals name="document_page_count">
+        <item quantity="one">%d сторінка</item>
+        <item quantity="few">%d сторінки</item>
+        <item quantity="many">%d сторінок</item>
+        <item quantity="other">%d сторінки</item>
+    </plurals>
+    <string name="document_scan_camera_used">Відскановано камерою — без автообрізання та розпізнавання сторінки на цьому телефоні.</string>
+    <string name="document_scan_failed">Це сканування не вдалося зберегти. Спробуй ще раз.</string>
+    <string name="document_dated_on">Дата на сторінці: %1$s</string>
+    <string name="document_scanned_on">Відскановано %1$s</string>
+    <string name="document_no_date">На сторінці немає дати</string>
+    <string name="document_from_visit">З візиту %1$s — %2$s</string>
+    <string name="document_actions">Дії з документом</string>
+    <string name="document_rename">Перейменувати</string>
+    <string name="document_title_label">Назва</string>
+    <string name="document_set_date">Поставити дату зі сторінки</string>
+    <string name="document_clear_date">Очистити дату</string>
+    <string name="document_date_label">Дата на сторінці</string>
+    <string name="document_attach_visit">Прикріпити до візиту</string>
+    <string name="document_attach_none">Не з візиту</string>
+    <string name="document_attach_no_visits">Для цього кролика візитів ще не записано.</string>
+    <string name="document_add_page">Додати сторінку</string>
+    <string name="document_manage_pages">Переставити або прибрати сторінки</string>
+    <string name="document_page_number">Сторінка %1$d</string>
+    <string name="document_page_up">Вгору</string>
+    <string name="document_page_down">Вниз</string>
+    <string name="document_page_position">Сторінка %1$d з %2$d</string>
+    <string name="document_page_description">Сторінка %1$d з документа «%2$s»</string>
+    <string name="document_no_pages">У цьому документі немає сторінок.</string>
+    <string name="document_no_pages_help">Його назва й дата зберігаються. Додай сторінку або видали документ.</string>
+    <string name="document_delete">Видалити документ</string>
+    <string name="document_delete_body">Видалити «%1$s»? Кожна сторінка зникне з цього телефона назавжди.</string>
+    <string name="visit_documents_label">Документи</string>
+    <string name="visit_documents_save_first">Спершу збережи візит, а тоді скануй або прикріплюй його папери.</string>
+    <string name="visit_documents_none">До цього візиту нічого не прикріплено.</string>
+    <string name="visit_documents_attach_existing">Прикріпити наявний</string>
+    <string name="visit_documents_none_free">Кожен документ цього кролика вже належить якомусь візиту. Спершу відкріпи його там.</string>
+    <string name="visit_documents_detach">Відкріпити</string>
+
+    <!-- The archived list (ADR-0004). "Заархівовано" is impersonal: an adjective would have to
+         guess the bunny's gender. -->
+    <string name="archived_title">Кролики в архіві</string>
+    <string name="archived_empty">В архіві нічого немає. Архівування ховає кролика з перемикача й зберігає кожен запис.</string>
+    <string name="archived_on">Заархівовано %1$s</string>
+    <string name="archived_open">Відкрити</string>
+
+    <!-- Bunny profile. §7.1: Ukrainian has a separate word for an animal's name, so bunny and vet
+         diverge further here than in any earlier draft. -->
+    <string name="bunny_editor_add_title">Додати кролика</string>
+    <string name="bunny_editor_edit_title">Змінити кролика</string>
+    <string name="bunny_editor_section_details">Подробиці</string>
+    <string name="bunny_name_label">Кличка</string>
+    <string name="bunny_name_required">Кролику потрібна кличка.</string>
+    <string name="bunny_avatar_take">Зробити фото</string>
+    <string name="bunny_avatar_choose">Обрати фото</string>
+    <string name="bunny_avatar_remove">Прибрати фото</string>
+    <string name="bunny_avatar_failed">Це зображення не вдалося прочитати. Спробуй інше.</string>
+    <string name="bunny_avatar_description">Фото кролика %1$s</string>
+    <string name="bunny_avatar_placeholder">Фото ще немає</string>
+    <string name="bunny_birthdate_label">День народження</string>
+    <string name="bunny_birthdate_none">Невідомо</string>
+    <string name="bunny_birthdate_set">Поставити день народження</string>
+    <string name="bunny_birthdate_clear">Очистити день народження</string>
+    <string name="bunny_birthdate_approximate">Приблизно</string>
+    <string name="bunny_birthdate_approximate_help">Кролики з притулку часто приходять із приблизним віком. Приблизний день народження показується як вік, а не як дата.</string>
+    <string name="bunny_sex_label">Стать</string>
+    <string name="sex_male">Самець</string>
+    <string name="sex_female">Самиця</string>
+    <!-- §7.1: one qualifies a feminine noun, the other answers a yes/no question. -->
+    <string name="sex_unknown">Невідома</string>
+    <string name="bunny_neutered_label">Стерилізований</string>
+    <string name="neutered_yes">Так</string>
+    <string name="neutered_no">Ні</string>
+    <string name="neutered_unknown">Невідомо</string>
+    <string name="bunny_breed_label">Порода</string>
+    <string name="bunny_breed_none">Не вказано</string>
+    <string name="bunny_breed_choose">Обрати породу</string>
+    <string name="bunny_breed_clear">Очистити породу</string>
+    <string name="bunny_colour_label">Забарвлення й позначки</string>
+    <string name="bunny_lives_with_label">Живе з</string>
+    <!-- A noun phrase, not the adjective "сам/сама", which would have to pick a gender. -->
+    <string name="bunny_lives_with_alone">Живе без сусідів</string>
+    <string name="bunny_lives_with_nobody_yet">Додай другого кролика, щоб записати, з ким він живе.</string>
+    <string name="bunny_lives_with_help">Кролики, які живуть разом, ділять один лоток, тож одне спостереження може охопити їх усіх.</string>
+    <string name="bunny_lives_with_value">Живе з: %1$s</string>
+    <string name="bunny_archived_name">%1$s (в архіві)</string>
+    <plurals name="bunny_lives_with_others">
+        <item quantity="one">ще %1$d кролик</item>
+        <item quantity="few">ще %1$d кролики</item>
+        <item quantity="many">ще %1$d кроликів</item>
+        <item quantity="other">ще %1$d кролика</item>
+    </plurals>
+
+    <!-- ADR-0007's consent half. One forward button, no cancel. -->
+    <string name="wipe_title">Це оновлення мусить очистити записи на цьому телефоні</string>
+    <string name="wipe_body">Binky ще будується, і ця версія змінила спосіб зберігання записів. Прочитати те, що вже є на цьому телефоні, вона не може, тож це має зникнути.</string>
+    <string name="wipe_versions">Записи на цьому телефоні: формат %1$d. Ця версія: формат %2$d.</string>
+    <string name="wipe_copy_taken">Копію вже збережено на цьому телефоні, перш ніж щось видаляти:</string>
+    <string name="wipe_copy_reach">Завантажити копію назад автоматично не вийде: читання старих записів у новий формат — це перетворення, яке треба писати руками. Тримай вагу, яка тобі важлива, записаною ще десь, доки не зʼявиться резервне копіювання.</string>
+    <string name="wipe_continue">Очистити записи й продовжити</string>
+
+    <!-- ADR-0023's release half of the same screen: a dead end that names the copy, with no
+         forward button, because there is nowhere forward to go. -->
+    <string name="schema_refused_title">Ця версія не може відкрити записи на цьому телефоні</string>
+    <string name="schema_refused_body">Записи на цьому телефоні збережено іншою версією Binky, і ця прочитати їх не може. Нічого не видалено.</string>
+    <string name="schema_refused_copy_taken">Їхню копію збережено на цьому телефоні, і вона там лишається:</string>
+    <string name="schema_refused_reach">Встановлення тієї версії, яка їх зберегла, має пустити тебе назад. А доти збережи копію десь у безпечному місці — вона єдина.</string>
+
+    <string name="list_join_pair">%1$s і %2$s</string>
+    <string name="list_join_more">%1$s, %2$s</string>
+
+    <!-- A tilde is not universal shorthand for "about". -->
+    <string name="age_approximate">бл. %1$s</string>
+    <plurals name="age_years">
+        <item quantity="one">%d рік</item>
+        <item quantity="few">%d роки</item>
+        <item quantity="many">%d років</item>
+        <item quantity="other">%d року</item>
+    </plurals>
+    <plurals name="age_months">
+        <item quantity="one">%d місяць</item>
+        <item quantity="few">%d місяці</item>
+        <item quantity="many">%d місяців</item>
+        <item quantity="other">%d місяця</item>
+    </plurals>
+    <plurals name="age_weeks">
+        <item quantity="one">%d тиждень</item>
+        <item quantity="few">%d тижні</item>
+        <item quantity="many">%d тижнів</item>
+        <item quantity="other">%d тижня</item>
+    </plurals>
+
+    <!-- Archiving asks once and says plainly that nothing is lost (ADR-0004) -->
+    <string name="archive_dialog_title">Заархівувати кролика %1$s?</string>
+    <string name="archive_dialog_body">Кожен запис зберігається й лишається доступним у розділі «Ще». %1$s зникне з перемикача кроликів, і повернути його можна будь-коли.</string>
+
+    <!-- Deleting is the explicit escape hatch (ADR-0004) -->
+    <string name="delete_dialog_title">Видалити кролика %1$s?</string>
+    <string name="delete_dialog_body">Це прибирає кролика із застосунку. Архівування натомість зберігає все й лише ховає його.</string>
+    <string name="delete_dialog_avatar_note">Його фото теж буде видалено з цього телефона.</string>
+    <string name="delete_dialog_second_title">Видалити кролика %1$s разом із записами?</string>
+    <string name="delete_dialog_second_body">Це не можна скасувати.</string>
+    <plurals name="delete_records_sole_owned">
+        <item quantity="one">Буде знищено %d запис, що стосується лише цього кролика.</item>
+        <item quantity="few">Буде знищено %d записи, що стосуються лише цього кролика.</item>
+        <item quantity="many">Буде знищено %d записів, що стосуються лише цього кролика.</item>
+        <item quantity="other">Буде знищено %d запису, що стосується лише цього кролика.</item>
+    </plurals>
+    <plurals name="delete_records_shared">
+        <item quantity="one">Залишиться %d спільний запис — для інших кроликів, яких він охоплював.</item>
+        <item quantity="few">Залишаться %d спільні записи — для інших кроликів, яких вони охоплювали.</item>
+        <item quantity="many">Залишиться %d спільних записів — для інших кроликів, яких вони охоплювали.</item>
+        <item quantity="other">Залишиться %d спільного запису — для інших кроликів, яких він охоплював.</item>
+    </plurals>
+
+    <!-- Breeds. The descriptive names are translated and the registered ones kept — but Ukrainian
+         changes script, so "kept" would read as untranslated: the obscure rows are transliterated,
+         which is what Ukrainian breeders write. The list keeps English's length and order, and
+         "Мішана / невідома" stays first. -->
+    <string-array name="built_in_breeds">
+        <item>Мішана / невідома</item>
+        <item>Американський</item>
+        <item>Американський пухнастий баран</item>
+        <item>Американський соболиний</item>
+        <item>Ангора (англійська)</item>
+        <item>Ангора (французька)</item>
+        <item>Ангора (гігантська)</item>
+        <item>Ангора (сатинова)</item>
+        <item>Бельгійський заєць</item>
+        <item>Беверен</item>
+        <item>Блан де Ото</item>
+        <item>Британія петіт</item>
+        <item>Каліфорнійський</item>
+        <item>Шампань дʼАржан</item>
+        <item>Строкатий велетень</item>
+        <item>Шиншила (американська)</item>
+        <item>Шиншила (гігантська)</item>
+        <item>Шиншила (стандартна)</item>
+        <item>Цинамон</item>
+        <item>Континентальний велетень</item>
+        <item>Крем дʼАржан</item>
+        <item>Голландський</item>
+        <item>Карликовий ото</item>
+        <item>Карликовий баран</item>
+        <item>Англійський баран</item>
+        <item>Англійський метелик</item>
+        <item>Фландр</item>
+        <item>Флоридський білий</item>
+        <item>Французький баран</item>
+        <item>Арлекін</item>
+        <item>Гавана</item>
+        <item>Гімалайський</item>
+        <item>Голландський баран</item>
+        <item>Джерсі вуллі</item>
+        <item>Бузковий</item>
+        <item>Левова голова</item>
+        <item>Міні-баран</item>
+        <item>Міні-рекс</item>
+        <item>Міні-сатин</item>
+        <item>Нідерландський карликовий</item>
+        <item>Новозеландський</item>
+        <item>Паломіно</item>
+        <item>Гермелін</item>
+        <item>Рекс</item>
+        <item>Рейнський</item>
+        <item>Сатиновий</item>
+        <item>Сріблястий</item>
+        <item>Срібляста лисиця</item>
+        <item>Срібляста куниця</item>
+        <item>Тан</item>
+        <item>Тріанта</item>
+        <item>Оксамитовий баран</item>
+    </string-array>
+</resources>
