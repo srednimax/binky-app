@@ -213,12 +213,14 @@ All three land in **one sitting** once the count clears, in this order:
       schema, same migrations, and uploading both spends a release cycle to prove nothing extra. If the
       count has cleared, production becomes available for the first time — whether 1.3 takes it is an
       ADR-0009 decision made then.
-- [ ] **Screenshots for both listings** (EN + PL), owed for the screens 1.1 and 1.2 both added.
-      **No longer blocked on anything of ours**: §2's tap blocker was fixed at 6c, and Phase 7 closed on
-      2026-08-13, so the screens are final and a set taken now will not be stale. The **English** set can
-      be taken today — `~/binky-screenshots/phase-7/after/` already holds 63 scenes in light and dark, so
-      the listing shots are a *selection* from it rather than a new run. **Polish waits on §7's
-      locale-aware driver**, which is the same blocker as the Polish after set.
+- [ ] **Screenshots for all nine listings**, owed for the screens 1.1 and 1.2 both added.
+      **Nothing of ours blocks this any more.** §2's tap blocker was fixed at 6c, Phase 7 closed on
+      2026-08-13 so the screens are final, and §7's locale-aware driver was re-proved against every
+      shipped locale on 2026-08-18 — `screenshots.py --locale <tag>` now runs all nine, Brazilian
+      Portuguese included. The **English** set is a *selection* from
+      `~/binky-screenshots/phase-7/after/`'s 63 scenes rather than a new run; the other eight are ~2 h of
+      device time, deliberately not spent yet because **Play falls back to the default listing's
+      screenshots** and the tracks are still on 1.0.0 / 1.3, where the 1.6 copy cannot go up anyway.
 - [ ] **The field upgrade proof: 1.0.0 → 1.3**, real bunny history intact. The Xiaomi's Play build is on
       **1.0.0**, not the 1.0.1 4h assumed, so the chain crosses *both* hand-written migrations. It cannot
       run locally — the installed build is Play-signed and a local APK is refused on signature mismatch —
@@ -484,174 +486,43 @@ not working it.
 
 ---
 
-## 7 — Phase 8: nine languages 🟡 nine shipped and nine listings written; the driver re-proof is all
-that is left
+## 7 — Phase 8: nine languages ✅ closed 2026-08-18, ships as 1.6
 
-Design in **[`phase-8.md`](phase-8.md)**. **Runs after Phases 6 and 7** — translating a string set about
-to gain a Support screen, and then to have its copy rewritten by a redesign, means translating it twice
-in nine languages and having it read twice by nine native speakers.
+**Done.** Nine languages shipped, nine listings written. The record is [`phase-8.md`](phase-8.md) — a
+block per drafted language with the traps it priced, each ending in the pre-decided fallbacks that stand
+in for a native read-through under
+[ADR-0030](adr/0030-a-language-ships-on-an-audit-not-a-native-read-through.md).
 
-- [x] **The English base re-read end to end** ✅ **2026-08-16**, before anything was translated from it.
-      **689 resources, zero orphans, zero hardcoded owner-visible strings** — ADR-0013's rule holds, and
-      the only bare literals in `main/` are a file path, a `require()` message and debug-only sample data.
-      No string says *missed*; the only two saying *overdue* are Phase 4 care reminders, where ADR-0026
-      permits it. Three resources became `translatable="false"` — the two endonyms and
-      `med_editor_name_placeholder` (*Metacam* is a brand name, and Polish had already left it alone).
-      ⚠️ **Four look untranslatable and are not**, which is the half a machine draft gets wrong:
-      `0.3 ml` (Polish writes `0,3 ml`), `%1$s kg` / `%1$s g` (Ukrainian writes **кг**, **г**), `~%1$s`,
-      and the breed array — where the rule is *translate the descriptive names, keep the registered ones*.
-- [x] **Polish re-read end to end** ✅ **2026-08-16**, the base for nothing but worth the same pass.
-      Mechanically exact (655 = 659 − 4 untranslatable, all 29 plurals with four categories, no English
-      left behind). **Seven defects fixed**, none of which any test could see:
-      ⚠️ **Two broke the file's own stated rule 1** — `Prosiłeś(-aś)` and `sam(a)` are gendered second
-      person behind a parenthesis, which is the workaround that rule exists to forbid; one of them was in
-      a **notification**. Rewritten impersonally.
-      ⚠️ **`photo_gallery_empty_help` had drifted in meaning while keeping its format argument** — `%1$s`
-      moved from the thing the photos are *of* to the gallery they land *in*, describing a folder that
-      does not exist. **This is the failure mode no mechanical check reaches**, and the reason a language
-      ships on a person's word.
-      ⚠️ **Two droppings chips had lost information**: *Suche **i** twarde* for English's "or", and
-      *Bardzo ciemne* with "or tarry" dropped — tarry being the distinctive half.
-      Plus `med_empty` grammar and `support_diagnostics_explain`'s *dopisujemy* ("we", against an app
-      made by one person).
-      ℹ️ **Polish uses one word — *obserwacja* — for both *Observation* and *Watch***, which CONTEXT.md
-      keeps apart. **Decided 2026-08-16: keep the word**, since every alternative is worse in a pet-health
-      app, and disambiguate only the two strings where they collide *on the observation form* (now
-      *baczna obserwacja*, the qualifier the file already used).
-- [x] Generalise `PolishTranslationTest` → `TranslationTest`, parameterised over the locale table, with
-      **per-language plural categories from CLDR** (not a hardcoded set of four). Do this **first**, on
-      `en` + `pl`, so it can fail before there is anything to check. ✅ **Done 2026-08-16.** The locale
-      list is read from `locales_config.xml`, so a tenth language is one line of XML; `CLDR_PLURALS`
-      carries all nine rows ready. **Proven able to fail** — dropping `few` from one Polish plural
-      reddens the build.
-      ⚠️ **It had not been able to fail at all, and neither had the old one.** Both translation tests read
-      `res/` off disk as plain files, invisible to Gradle's up-to-date check, so editing a translation and
-      re-running `test` printed `:app:test UP-TO-DATE` and a green build **having checked nothing**. Fixed
-      by declaring `src/main/res` as a test input in `app/build.gradle.kts`.
-- [x] ⤷ **The locale-aware capture driver is built and proven — in Phase 7.5 (§6.5), on `en` + `pl`.**
-      What this phase owed was the **re-proof**: that the needle table resolves now that seven more
-      locales exist, and that needles naming resources the drafts reworded still find them. A needle is a
-      claim about what some string says, and this phase changed eight files of strings. The reasoning, the
-      two driver facts that paid for it (DND suppressing the seed's 20:00 dose banner; the return-to-Home
-      isolation step) and the Polish after set are §6.5's record and are not repeated here.
-      ✅ **Re-proved 2026-08-18.** 45 needles over 74 scenes: in **all nine locales 39 resolve, zero
-      ambiguous**, and the six that fall through to the literal are all sample data — `Bijou`, `Juniper`,
-      `Pip`, `Rosemary` from the seed variants, plus `Metacam` and `Vaccination record`. Then on the
-      phone, the full suite in `de` and `uk` (66 scenes each) and a twelve-scene set in
-      `es fr it pt-BR cs pl`: **every locale walked end to end with no failed tap.**
-      ⚠️ **It found that Brazilian Portuguese could not be driven at all, in either spelling.** `--locale`
-      is documented as a BCP-47 tag and was handed straight to both `cmd locale` *and* the resource path,
-      so `--locale pt-BR` died looking for `values-pt-BR/`. The obvious workaround is worse than the
-      crash: the phone **accepts** `--locales pt-rBR` and stores the language as `rbr`, so the app comes
-      up in English while the needle table is Portuguese and the run reports on a language it never
-      displayed. Fixed with `resource_qualifier()` — `TranslationTest.qualifier`'s third copy, and the
-      shape of mistake this phase named in advance — plus a `require_bcp47()` guard that refuses the
-      resource spelling outright. `screenshots.py` imports both from the driver, so the store-screenshot
-      run inherits the fix.
-      ℹ️ **No locale introduces an edge-to-edge finding English does not already have.** The two
-      `drawn`-tier ones are Phase 7.5's known pair, and the measurements rule out copy length as a cause:
-      `reminders-sheet` overlaps 48 px in `en`, `pl` **and** `uk` and only **39 px in `de`** — shorter,
-      not longer — while `document-viewer` is 13 px in all four. Everything else is the `touch` tier,
-      an unlabelled hit area inflated by `minimumInteractiveComponentSize`.
-      ℹ️ A `language-picker` scene was added to `scripts/edge-to-edge.py` with the report row.
-      ℹ️ **`scripts/aab-locale.py` checked `pl` and only `pl`** — the script that exists *because* 1.0.1
-      shipped without Polish reaching the artifact. At nine languages that is eight going to the tracks
-      unverified against the very failure it was written for. It now reads `locales_config.xml`, takes
-      BCP-47 tags, and checks every shipped locale before exiting; `RELEASING.md` invokes it bare.
-- [x] `settings_language_*` → `translatable="false"` — endonyms are locale-invariant, and this removes
-      81 duplicated entries at nine languages. ✅ **Done 2026-08-16**, with a general assertion behind it
-      rather than `app_name`'s specific one.
-- [x] Translator brief + per-language banned-word lists (ADR-0026's *missed*/*overdue*, ADR-0001's
-      inference-from-silence, `CONTEXT.md`'s vocabulary and its *Avoid* lists).
-      ✅ **[`translator-brief.md`](translator-brief.md) written 2026-08-16.** Carries the three rules that
-      outrank fluency, the vocabulary with its *Avoid* column, the do-not-translate table **and its
-      inverse**, and the traps — which are the part that had never been written down anywhere.
-      ⚠️ **The banned lists are drafts until each native reviewer confirms their own row**, and Polish
-      proved why: *pominięta* was on the draft list and came off it. `pominąć` is **agentive** — the thing
-      the owner deliberately did — where *przegapiona* and *zapomniana* carry the passive sense ADR-0026
-      forbids. `dose_status_skipped` is *Pominięta* and is correct.
-      ℹ️ **The biggest trap was missing from the first draft**: the app knows **neither the owner's gender
-      nor the bunny's**, which breaks second-person past tense and predicate adjectives in every remaining
-      language. English hides it completely. Now §7.3, with both Polish rewrites as worked examples.
-- [x] Draft `de es fr it pt-BR cs uk` into **`translations/<locale>/`, not `res/`** — `values-de/`
-      existing means every German phone gets it, reviewed or not. `locales_config.xml` is a *picker*
-      list, **not** a delivery filter.
-      ✅ **All seven drafted 2026-08-16 → 2026-08-17**, 685/685 each and mechanically green.
-      **The per-language record now lives in [`phase-8.md`](phase-8.md)** rather than here — seven blocks
-      of traps priced, techniques found and decisions taken. Each ends in *"four decisions the native
-      read-through has to confirm"* with a **named fallback**, and under
-      [ADR-0030](adr/0030-a-language-ships-on-an-audit-not-a-native-read-through.md) there is no
-      read-through, so those fallbacks are the pre-decided answers waiting for the first user report that
-      touches one. That is why they moved instead of being deleted with this section.
-- [x] Promote one language per commit — move into `res/`, add the `<locale>` line, the `AppLanguage`
-      entry, and the endonym label. ✅ **All seven promoted 2026-08-17**, one commit each. `translations/`
-      no longer exists, and the gate reads **688 × 8, complete**.
-      ⚠️ **This box used to end "only after its native read-through", and that gate is gone.** No native
-      reviewer was available for any of the seven and none was findable, so the gate as written had one
-      outcome: seven finished, mechanically green drafts sitting unshipped indefinitely while eight of nine
-      markets read the app in English. Replaced, per
-      **[ADR-0030](adr/0030-a-language-ships-on-an-audit-not-a-native-read-through.md)**, by the half of a
-      read-through that needs no native speaker plus a channel for the half that does — an **ethics audit**
-      (~24 high-consequence resources × 7, plus a blame- and alarm-word scan over all 685 × 8: **zero rule
-      violations**, one wording changed), a **back-translation and argument-role pass** (all 25
-      multi-argument strings, the name-substituting single-argument class, and the pre-inflection invariant
-      checked against *both* hosts: **no drift**), and a **report row in the language picker** wired to the
-      existing support hand-off, proven on the phone end to end into a Gmail draft.
-      ⚠️ **Promotion was rehearsed before it was committed, and the throwaway compile found three things no
-      draft could have.** A staged draft is never compiled, so this was the first time any of the seven met
-      `aapt2`; all seven compiled, which was not a given — French carries ~200 typographic apostrophes.
-      **Four navigation labels clipped**: `destination_observations` in de/es/uk and `destination_care` in
-      de/it. Fixed by `TextAutoSize.StepBased(8sp, 11sp)` on the label, **not** by shortening the strings —
-      with no reviewer, prefer the fix that needs no vocabulary judgement, and *Beobachtung* /
-      *observación* / *спостереження* are `CONTEXT.md`'s concept rather than a phrasing. Wrapping stays
-      rejected for 1.0's reason (`Navigation.kt`'s comment). Consequence: **six of nine keep the meds
-      half** of the Care tab. On branch `fix/nav-label-autosize`, off `main`, to be merged first.
-      **`ImpliedQuantity` lint warnings** in fr/pt-BR/uk on the four `care_unit_*` plurals — genuine false
-      positives (bare agreeing unit words, the count rendered elsewhere), suppressed with `tools:ignore`.
-      ⚠️ **Attribute order is load-bearing**: the gate matches `<plurals name=` with `name` first, so
-      `tools:ignore` written ahead of it reads as four missing resources. It fails safe, and it cost a
-      debug cycle. And **stale `DRAFT` headers** left in the promoted files.
-- [x] `AppLanguageTest` extended to compare resource directories too (`values-pt-rBR` vs `pt-BR` — two
-      spellings of one locale in two files). ✅ **Done 2026-08-16**, though it landed in `TranslationTest`
-      rather than `AppLanguageTest`: the BCP-47 → qualifier conversion is a single function there, so the
-      two spellings cannot be written independently and then compared. `AppLanguageTest` keeps its own
-      job, which is the enum against the XML.
-- [x] **Play listing title + short + full description in all nine** ✅ **Written 2026-08-17**, in
-      [`store-listing.md`](store-listing.md), all 27 fields measured against Play's 30 / 80 / 4000 limits.
-      Screenshots may lag, because Play falls back to the default listing's and they need the driver
-      re-proof above; **discovery has no fallback**, so the text did not wait on them.
-      ⚠️ **The English description was cut at 1.0 and had to be rewritten first.** It described an app
-      with no care reminders, no watch, no vet visits, no medications and no documents — 1.0 was the only
-      build a listing had ever been written for. Translating *that* into seven languages would have been
-      the one thing this phase's whole ordering argument exists to prevent: translating twice. So the
-      English was brought to 1.6 scope, Polish brought level with it, and the seven written from there.
-      ⚠️ **The copy must not go up before the build it describes is on the track.** Play treats
-      "advertises features the app does not have" as a listing violation, and the tracks are still on
-      1.0.0 / 1.3 (§4). Listing and release go up together.
-      ⚠️ **French and Italian have no headroom** — 3992 and 3993 of 4000, where English is 3628. French
-      came in at 4134 and needed thirteen trims. A future English paragraph cannot simply be translated
-      into those two; something has to come out first.
-      ℹ️ Each locale uses **its own keywords and the vocabulary its own draft settled on** — *Köttel*,
-      *cagarrutas*, *crottes*, *palline*, *bolinhas*, *bobky*, *котяхи* — rather than being a translation
-      of the English. A listing using the clinical word for what the app calls something else reads as a
-      different app. All nine carry ADR-0001's closing *"a record, not a diagnosis"* paragraph.
-      ℹ️ **Release notes for 1.1 → 1.6 are owed and deliberately not drafted** — they are written at
-      upload time against what that build changes. Nine per release from 1.6 on.
-- [x] **Decide the lagging-translation policy** when the test is generalised — strict red build, or a
-      dated `translations-pending` allowlist. ✅ **Answered 2026-08-16, and it was neither.** Both options
-      ask *how much lag to tolerate*; the answer is *where to ask*. **Completeness moved out of the test
-      into `scripts/translation-gate.py`**, which CI runs on every pull request beside the schema gate:
-      **free while you work, strict before it merges.** The point is translating **once** — under a
-      red-build rule the copy is translated against the draft wording and again after review reworded it,
-      nine times over. The allowlist was dropped as unnecessary: it existed to make lag *visible*, and a
-      gate that refuses the merge makes lag impossible. The gate catches **missing** (split by whether
-      this branch introduced them), **stale** (English moved here, translation did not), **orphans**, and
-      an **unusable comparison** (no merge base, so the stale check cannot run — added 2026-08-17);
-      `--report` prints the same list and exits 0 for use mid-branch. **All failure modes proven to fire
-      against CI itself**, one pushed commit each on PR #140. That is what caught the stale check being
-      dead in CI all along: the build job checked out the PR merge ref at depth 1 against a shallow
-      `main`, the two histories shared no ancestor, and `git merge-base` failing read as "nothing
-      changed". Fixed by `fetch-depth: 0`, and by making the gate fail rather than degrade.
+The last box was the **capture driver's re-proof**, and it closed on what it found rather than on what it
+went looking for. The needle table survived eight files of reworded strings intact: 39 of 45 resolve in
+all nine locales, zero ambiguous, and the six literals are all sample data. The defect was in the driver.
+`--locale` fed one spelling of a locale to two things that spell it differently, so `pt-BR` crashed —
+and the workaround is worse than the crash, because `cmd locale` **accepts** `pt-rBR` and stores the
+language as `rbr`, which would have driven an English app against a Portuguese needle table and called it
+a pass. **The failure mode of a two-spelling locale is not a crash, it is a green run on the wrong
+language**, so the guard belongs where the tag is taken rather than where it is used.
+
+Three claims that needed a device rather than a test are proven, and one of them became a test anyway:
+
+- **The switcher**, tapped through all nine, each landing in its own language. An endonym bound to the
+  wrong enum entry is green in every test in this repo and ships two wrong languages.
+- **The fallback** for a language Binky does not ship: `nl` pinned, strings back from `values/`,
+  `gap_days` rendered through English's own rule. Numbers and dates stay local, which is correct.
+- **Plural selection at 1, 2, 5 and 22** — now `PluralSelectionTest`, instrumented, because CLDR's rules
+  live in the platform and `TranslationTest` can only prove a category is *declared*. Czech's `many` is
+  for fractions alone, so `5 dní` is right where `5 dne` looks right.
+
+**No locale introduces an edge-to-edge finding English does not already have**, and copy length is ruled
+out by measurement rather than argued: the one varying overlap is *smaller* in German (39 px) than in
+English, Polish or Ukrainian (48 px).
+
+⚠️ **`scripts/aab-locale.py` checked `pl` and only `pl`** — the script that exists because 1.0.1 shipped
+without Polish reaching the artifact at all. At nine languages that is eight going to the tracks
+unverified against the exact failure it was written for. It now reads `locales_config.xml` and checks
+every shipped locale; `RELEASING.md` invokes it bare.
+
+**What outlived the phase is in §4** — the nine listings' screenshots, and the rule that listing copy and
+the build it describes go up together.
 
 ---
 

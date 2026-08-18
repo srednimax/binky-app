@@ -836,4 +836,25 @@ convention. **Polish → *Гермелін***, a sixth language reaching the con
 
 ## When it closes
 
-Write the results here, tick **Phase 8** in `PLAN.md`'s status list, and empty §7 of `DOD.md`.
+✅ **Closed 2026-08-18.** Nine languages ship, nine listings are written, and every gate line above is
+ticked. `PLAN.md` ticks Phase 8; `DOD.md` §7 is condensed to a closed record.
+
+**What the phase cost, and where it went.** Nine drafts, seven of them written here, and the per-language
+record above is the durable half — the traps each language priced and the fallbacks pre-decided for the
+read-through that ADR-0030 retired. The mechanical half held throughout: `TranslationTest` on the
+nine-row table, `scripts/translation-gate.py` at the merge boundary, and both of them proven able to fail
+before they were trusted.
+
+**What the phase taught that outlives it.** The two-spelling locale was named in this file as the shape
+of mistake to expect, and then arrived from a direction the file had not considered: not in `AppLanguage`
+where it was predicted, but in the capture driver, where `--locale` handed one spelling to two consumers
+that disagree about it. It did not present as a crash. `cmd locale` accepts `pt-rBR` and stores `rbr`, so
+the shape of the bug is **a green run on the wrong language** — which is why `require_bcp47` refuses the
+tag at the point it is taken rather than converting it silently. The same reasoning found
+`scripts/aab-locale.py` still checking Polish alone, eight languages after that stopped being the list.
+
+**What is owed and deliberately unspent**: the nine listings' screenshots, tracked in `DOD.md` §4. They
+are no longer blocked on anything of ours — the driver runs every locale — but Play falls back to the
+default listing's shots and the tracks are on 1.0.0 / 1.3, so the ~2 h of device time waits for the
+release that carries the copy. Release notes for 1.1 → 1.6 are written at upload time, nine per release
+from 1.6 on.
