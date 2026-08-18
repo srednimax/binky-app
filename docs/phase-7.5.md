@@ -1,9 +1,9 @@
 # Phase 7.5 — The interlude — ships as 1.5
 
-**Status: in progress.** Opened 2026-08-14; every item is built and device-proven, and step 1's two hand
-items closed on 2026-08-15 and 2026-08-16. **The one thing left is the full English matrix run with the
-20:00 dose live.** Boxes in [`DOD.md`](DOD.md) §6.5; this file is the reasoning. Finished
-phases are in [`PLAN.md`](PLAN.md) and are not needed to build this one.
+**Status: closed 2026-08-18.** Opened 2026-08-14; every item built and device-proven by 2026-08-16 and
+released as **`v1.5.0`** that day, at schema **7**. This file is the record and the reasoning — the closing
+note is at the end, and [`DOD.md`](DOD.md) §6.5 is its summary. Finished phases are in
+[`PLAN.md`](PLAN.md) and are not needed to build one.
 
 **Why a phase and not a pile of chores.** Four unrelated-looking items share one property: each is cheaper
 *now* than after Phase 8, and three of them get more expensive every week they wait.
@@ -1090,6 +1090,44 @@ now has three (the gain card, a five-bunny fluffle, a tray photo).
 
 ## When it closes
 
-Write the results here, tick **Phase 7.5** in `PLAN.md`'s status list, and empty §6.5 of `DOD.md` along
-with the sections it borrowed — §3, §5, §8, §9 and §7's driver box all close with it. Phase 8
-starts from a driver that already speaks Polish.
+✅ **Closed 2026-08-18**, on work finished 2026-08-16 and released as **`v1.5.0`** the same day, at schema
+**7** frozen and tagged (`schema-7` → `ddb430a`). `PLAN.md` ticks Phase 7.5; `DOD.md` §6.5 is condensed to a
+closed record, along with the sections this phase borrowed — §3, §5, §8 and §7's capture-driver box all
+close with it, and §9 closes down to the one box that outlived it. Phase 8 started from a driver that
+already speaks Polish, and closed on that same driver two days later.
+
+**The close is two days late, and that is worth recording.** 1.5 was cut on 2026-08-16 and Phase 8 shipped
+nine languages, wrote nine listings and closed on top of it while this file still read *planned* and
+`PLAN.md` still showed the phase unticked. **A phase that ends on a release rather than on a box is the easy
+one to leave open** — nothing here was outstanding, only unwritten. The tag is the thing to close it
+against.
+
+**What the phase cost, and where it went.** Six items, five of them built and device-proven in one day
+(2026-08-14) — the gain signal, multi-valued droppings with the tray photo, licence attribution, the healthy
+day behind the `+`, the housemates cap — and then two days of *evidence* rather than code: the schema-6
+fixture written by the `v1.4.0` tag's own container, the Polish run at 146/146, the English matrix at 292
+cells, and the upgrade watched twice on a real database. The build was the cheap half. **Nothing was cut**,
+so §7's release valve — drop the tray photo if the phase runs long — is unspent.
+
+**What it taught that outlives it.** Three things, in the order they cost the most.
+
+- **Every proof of a migration opened the database directly**, and so walked past the guard standing in
+  front of the door. The launch gate refused *any* version mismatch, which meant 1.5 met a 1.4.0 phone with
+  a dead end and `MIGRATION_6_7` never ran — a shape that had shipped since 1.1 under three green
+  migration suites. It took a real schema-6 database on a real phone to see it, which the fixture chore is
+  the only reason existed. `DOD.md`'s standing gate now carries a fifth item for exactly this, and it is the
+  one no test can satisfy.
+- **A seed variant photographs a state the sample data hides.** Two defects — the gain card's action row
+  crushing *Start a watch* to one character wide, and the housemates line at five bunnies — were states no
+  screenshot in the project had ever held. The default seed is load-bearing for 58 scenes and stays
+  untouched; the variants are how a new state earns a permanent scene rather than one hand-check.
+- **A needle is a claim about what the UI says**, so a redraw invalidates it silently. `tap_text` exists
+  because reusing `healthy_day_action` on the FAB *and* on the sheet row made `find` take the smaller node
+  and dismiss the sheet on its own scrim; `photos` had been shooting the bunny switcher in Polish for the
+  same reason. Both were caught by a loud failure on the *next* step, which is luck, and is the argument for
+  structural steps over text matching wherever a structure exists.
+
+**What is owed and deliberately unspent**: `v1.5.0` is tagged and on no track. The tracks are still on
+1.0.0 / 1.3, so the launch-gate fix — the one thing here an existing owner would have met head-on — is in
+the repo rather than on a phone. That is `DOD.md` §4's box, behind §1's overnight run, and it is now two
+releases deep.
