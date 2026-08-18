@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.6.0](https://github.com/srednimax/binky-app/compare/v1.5.0...v1.6.0) (2026-08-18)
+
+
+### Features
+
+* **i18n:** put the translation-report path in the language picker ([b34b3fc](https://github.com/srednimax/binky-app/commit/b34b3fc1a40486021b6c453b14ddafb120fc06a0))
+* **i18n:** ship Brazilian Portuguese, where zero is a singular ([0f945bd](https://github.com/srednimax/binky-app/commit/0f945bd2f3320bc892ee4cd46a867cb6bb2acf8c))
+* **i18n:** ship Czech, where zero lands where the language wants it ([7e973b4](https://github.com/srednimax/binky-app/commit/7e973b461cbfc79ba91d7c9130c78e4414e6a81a))
+* **i18n:** ship French, where the name trap is elision rather than case ([e797e7a](https://github.com/srednimax/binky-app/commit/e797e7a03e02e8f67f8efc48c756a3c1286da7ff))
+* **i18n:** ship German, which pays nothing to the gender trap ([72b1a42](https://github.com/srednimax/binky-app/commit/72b1a42050b499efbab9872657edcea5fb181487))
+* **i18n:** ship Italian, where the name trap is nothing at all ([210572d](https://github.com/srednimax/binky-app/commit/210572d0c6f535b96385dbddaa23c51bdb06cb0e))
+* **i18n:** ship Spanish, where the gender trap moves to the bunny ([ec9dbdc](https://github.com/srednimax/binky-app/commit/ec9dbdcb330956c47ebb35dd3028caf71934a3f1))
+* **i18n:** ship Ukrainian, and with it all nine languages ([5dcbd25](https://github.com/srednimax/binky-app/commit/5dcbd250b9bb97f0c1e27560a8d195ea18a077a7))
+
+
+### Bug Fixes
+
+* **build:** let the test task run when nothing is staged for translation ([5e395c2](https://github.com/srednimax/binky-app/commit/5e395c29b7207a84259525ec96f2c167290be8e9))
+* **i18n:** give French a status chip no gendered field can contradict ([408264b](https://github.com/srednimax/binky-app/commit/408264b0fcab0b791f7f3c11311a182f6b243f9a))
+* **i18n:** say what the promoted files are, and quiet one false-positive rule ([2fe36f3](https://github.com/srednimax/binky-app/commit/2fe36f3c92d945f3a379e684c98793843a7bad6a))
+* **release:** check every shipped locale reached the bundle, not just Polish ([0b30e43](https://github.com/srednimax/binky-app/commit/0b30e43606305d4a9868604d14526745e71965ae))
+* **scripts:** give the capture driver both spellings of a locale ([fb0dd8c](https://github.com/srednimax/binky-app/commit/fb0dd8cae509428e59d3f09b11662e9cd511e00c))
+* **test:** stop using French to stand for a language Binky does not ship ([f0e76bc](https://github.com/srednimax/binky-app/commit/f0e76bc5be999a364e6a09872aa2f79efbaef11d))
+* **ui:** let a navigation label shrink where four languages clipped it ([9b46f41](https://github.com/srednimax/binky-app/commit/9b46f41061a8c59764fa5370cd538bf99607454e))
+
 ## [1.5.0](https://github.com/srednimax/binky-app/compare/v1.4.0...v1.5.0) (2026-08-16)
 
 
