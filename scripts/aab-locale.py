@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Assert a locale's translated strings actually reached the bundle.
 
-    python3 scripts/aab-locale.py [locale] [path/to/app-release.aab]
+    python3 scripts/aab-locale.py [locale ...] [path/to/app-release.aab]
+
+With no locale named it checks every language `locales_config.xml` ships.
 
 Why this exists: 1.0.1 was the release that fixed *Polish not reaching a shipped
 artifact at all*. `values-pl/strings.xml` was complete, `PolishTranslationTest`
@@ -23,6 +25,8 @@ import zipfile
 import xml.etree.ElementTree as ET
 
 RES = "app/src/main/res"
+LOCALES_CONFIG = f"{RES}/xml/locales_config.xml"
+ANDROID_NAME = "{http://schemas.android.com/apk/res/android}name"
 
 # Android's own backslash escapes, which aapt resolves on the way in — the XML
 # holds \' but the resource table holds '. Entities like &amp; are already
@@ -74,20 +78,34 @@ def strings_from(path):
     return values
 
 
-def main():
-    locale = sys.argv[1] if len(sys.argv) > 1 else "pl"
-    path = sys.argv[2] if len(sys.argv) > 2 else "app/build/outputs/bundle/release/app-release.aab"
+def qualifier(tag):
+    """The `values-` qualifier for a BCP-47 tag: `pl` -> `pl`, `pt-BR` -> `pt-rBR`.
 
-    try:
-        with zipfile.ZipFile(path) as bundle:
-            table = bundle.read("base/resources.pb")
-    except FileNotFoundError:
-        sys.exit(f"no such bundle: {path}\nRun ./gradlew bundleRelease first.")
-    except KeyError:
-        sys.exit(f"{path} has no base/resources.pb — is it an AAB?")
+    Two spellings of one locale. `locales_config.xml` carries the tag and the resource directory
+    carries the qualifier, so anything that reads the first to find the second needs this —
+    `TranslationTest.qualifier` is the same function on the Kotlin side.
+    """
+    parts = tag.split("-")
+    return f"{parts[0]}-r{parts[1]}" if len(parts) == 2 else tag
 
-    translated = strings_from(f"{RES}/values-{locale}/strings.xml")
-    default = strings_from(f"{RES}/values/strings.xml")
+
+def shipped_locales():
+    """Every translated locale, read from the file the language picker itself reads.
+
+    A hardcoded `pl` was the whole list when this script was written for 1.0.1. At nine it is how
+    eight languages reach the tracks unchecked — and "a locale did not reach the artifact" is the
+    one failure this script exists to catch. Read rather than repeated, so a tenth language is one
+    line of XML here as everywhere else.
+    """
+    root = ET.parse(LOCALES_CONFIG).getroot()
+    tags = [node.get(ANDROID_NAME) for node in root]
+    return [tag for tag in tags if tag and tag != "en"]
+
+
+def check(locale, table, default):
+    """One locale against the resource table. 0 if every string of it is in the bundle."""
+    print()
+    translated = strings_from(f"{RES}/values-{qualifier(locale)}/strings.xml")
 
     # A string identical to its English counterpart ("OK", a bunny's name) proves
     # nothing about the translation having shipped — it would be present either
@@ -105,7 +123,7 @@ def main():
 
     checked = len([v for v in translated.values() if v])
     print(f"locale       {locale}")
-    print(f"checked      {checked} strings from values-{locale}/strings.xml")
+    print(f"checked      {checked} strings from values-{qualifier(locale)}/strings.xml")
     print(f"distinct     {distinct} differ from values/strings.xml")
 
     if missing:
@@ -128,7 +146,41 @@ def main():
         )
         return 1
 
-    print(f"\nall {checked} {locale} strings are present in base/resources.pb")
+    print(f"all {checked} {locale} strings are present in base/resources.pb")
+    return 0
+
+
+def main():
+    args = sys.argv[1:]
+    path = "app/build/outputs/bundle/release/app-release.aab"
+    locales = []
+    for arg in args:
+        # The bundle is recognised by its extension rather than by position, so the locales stay
+        # optional and variable in number without the two arguments having to be ordered.
+        if arg.endswith(".aab"):
+            path = arg
+        else:
+            locales.append(arg)
+    locales = locales or shipped_locales()
+
+    try:
+        with zipfile.ZipFile(path) as bundle:
+            table = bundle.read("base/resources.pb")
+    except FileNotFoundError:
+        sys.exit(f"no such bundle: {path}\nRun ./gradlew bundleRelease first.")
+    except KeyError:
+        sys.exit(f"{path} has no base/resources.pb — is it an AAB?")
+
+    default = strings_from(f"{RES}/values/strings.xml")
+
+    # Every locale is checked before anything exits, because "which languages made it" is the
+    # question, and stopping at the first failure answers it for one.
+    failed = [locale for locale in locales if check(locale, table, default)]
+    print()
+    if failed:
+        print(f"FAILED: {', '.join(failed)} — do not upload this artifact.", file=sys.stderr)
+        return 1
+    print(f"all {len(locales)} shipped locales are present in {path}: {', '.join(locales)}")
     return 0
 
 
