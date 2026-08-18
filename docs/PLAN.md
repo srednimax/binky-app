@@ -13,7 +13,8 @@ its *result* is written back into the checkpoint below and its detail deleted fr
 working on it costs the phase rather than the whole history. It moves in here, or simply stops being
 read, once it closes. Phases 0–5 are finished and live below; **Phases 6 and 7 are finished and stay in
 [`phase-6.md`](phase-6.md) and [`phase-7.md`](phase-7.md)** rather than being copied in, and **Phases 7.5
-and 8 are in [`phase-7.5.md`](phase-7.5.md) and [`phase-8.md`](phase-8.md)**.
+and 8 are in [`phase-7.5.md`](phase-7.5.md) and [`phase-8.md`](phase-8.md)**. **Phase 9 is the one still
+open**, in [`phase-9.md`](phase-9.md).
 
 ## Status
 
@@ -58,6 +59,16 @@ and 8 are in [`phase-7.5.md`](phase-7.5.md) and [`phase-8.md`](phase-8.md)**.
   the rules that outrank fluency, checked without a native speaker — plus an in-app report row for the
   fluency half, per
   [ADR-0030](adr/0030-a-language-ships-on-an-audit-not-a-native-read-through.md).*)
+- [ ] **Phase 9** — Ship it — **ships as 1.7** — record in [`phase-9.md`](phase-9.md), not here
+  *(opened 2026-08-18. **Not a build phase**: everything through Phase 8 is built, device-proven and
+  tagged at `v1.6.0`, schema **7** — and the tracks are still on 1.0.0 / 1.3, so none of it has reached an
+  owner's phone. Phase 9 closes the evidence Phase 5 never finished (the overnight Doze run and the seven
+  items parked behind it), does the Console sitting that has been blocked on Play's 12-testers count, and
+  fixes the two things a first-time visitor actually meets — a 404 where the project's front door should
+  be, and a fluffle line that names two bunnies out of five. One `feat:` is what makes it 1.7 rather than
+  1.6.1. **Schema stays at 7 on purpose**: the release that finally crosses 1.0.0 → 1.7 on a real owner's
+  phone should carry no migration of its own, so if anything goes wrong the suspect list is the three
+  already proven rather than a fourth written the same week. Boxes in [`DOD.md`](DOD.md) §10)*
 
 The rule is **no release before the data is safe**, which Phase 3 satisfies (ADR-0019). It replaces the
 former blanket ban on shipping before every phase was complete — a rule that held the weight trend flag,

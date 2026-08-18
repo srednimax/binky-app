@@ -30,11 +30,14 @@ evidence half open. Status read 2026-08-05 20:30. Phases **6** (1.3), **7** (1.4
 **8** (1.6) are **closed**, each with its record in its own phase file; §5, §6, §6.5 and §7 below are their
 closing notes and hold no work.
 
-**So what is actually open is evidence and Play, not code**: §1's overnight run and the gate items parked
-behind it (§2), the Console half (§4), and one reply owed to a tester (§9). Everything since 1.2 is built,
-device-proven and either tagged or ready to tag — `v1.5.0` was cut 2026-08-16, and Phase 8's nine languages
-sit on `main` waiting for the 1.6 cut — but **the tracks are still on 1.0.0 / 1.3**, so none of it has
-reached an owner's phone yet. Closing that gap is §4, and §1 is what stands in front of it.
+**So what is actually open is evidence and Play, not code** — and as of 2026-08-18 that work has a phase
+of its own: **Phase 9**, record in [`phase-9.md`](phase-9.md), **ships as 1.7**. Everything through Phase 8
+is built, device-proven and tagged — `v1.6.0` was cut 2026-08-18 at schema **7** — but **the tracks are
+still on 1.0.0 / 1.3**, so none of it has reached an owner's phone. Closing that gap is what Phase 9 is.
+
+**§10 is Phase 9's index**: it maps each of 9a–9j to the section that holds its boxes, and carries in full
+the four that are new (9d, 9e, 9f, 9g). The older sections keep their numbers because they also keep the
+device state and the traps, which is the expensive half to rewrite.
 
 ---
 
@@ -192,29 +195,85 @@ written.
 
 ---
 
-## 4 — The Console half of 5j 🟡 blocked on Play, not on us
+## 4 — 9h: The Console sitting 🟠 production access applied for, awaiting Google's decision
 
-Play's 12-testers / 14-day count was still running on 2026-08-05. Nothing here is work we are holding.
-All three land in **one sitting** once the count clears, in this order:
+**The count has cleared.** Closed testing ended and the production-access request went in on
+**2026-08-18**. Google's answer — approve or reject — is now the gate, and it is still the one item in
+this file that nothing in the repo can move. Internal and closed tracks never needed it and still don't.
 
-- [ ] Upload **1.3** to the **internal** track, then **closed** — not 1.2.0, per §5's closing note: same
-      schema, same migrations, and uploading both spends a release cycle to prove nothing extra. If the
-      count has cleared, production becomes available for the first time — whether 1.3 takes it is an
-      ADR-0009 decision made then.
-- [ ] **Screenshots for all nine listings**, owed for the screens 1.1 and 1.2 both added.
-      **Nothing of ours blocks this any more.** §2's tap blocker was fixed at 6c, Phase 7 closed on
-      2026-08-13 so the screens are final, and §7's locale-aware driver was re-proved against every
-      shipped locale on 2026-08-18 — `screenshots.py --locale <tag>` now runs all nine, Brazilian
-      Portuguese included. The **English** set is a *selection* from
-      `~/binky-screenshots/phase-7/after/`'s 63 scenes rather than a new run; the other eight are ~2 h of
-      device time, deliberately not spent yet because **Play falls back to the default listing's
-      screenshots** and the tracks are still on 1.0.0 / 1.3, where the 1.6 copy cannot go up anyway.
-- [ ] **The field upgrade proof: 1.0.0 → 1.3**, real bunny history intact. The Xiaomi's Play build is on
-      **1.0.0**, not the 1.0.1 4h assumed, so the chain crosses *both* hand-written migrations. It cannot
-      run locally — the installed build is Play-signed and a local APK is refused on signature mismatch —
-      so the update must **arrive from a track**, downstream of the upload above.
+⚠️ **Do not touch the public listing while the request is under review.** The nine-language copy in
+[`store-listing.md`](store-listing.md) describes **1.6** scope; the closed track is on **1.3** — no
+redesign, no multi-valued droppings, and seven of the nine languages are not in that build at all.
+Pasting it now would put nine localised descriptions and a feature list in front of a reviewer whose job
+is to check the app against exactly that, for a build that does not carry them. That is
+`store-listing.md`'s standing rule — *the listing and the build go up together* — meeting the worst
+possible week to break it. Same for the screenshots: prepare them (9g), upload nothing.
 
----
+### What the review does not block
+
+Everything in this file except the paste. The review looks at the app on the track and at the closed
+test that has already happened; it is not a freeze on the repo. So the phase's long pole is still
+**§1's overnight run**, which costs a night and can be started tonight — the review clock and the Doze
+clock run in parallel, and §1 is the item most likely to still be open when the decision lands.
+
+ℹ️ **Uploading 1.7 to *internal* during the review is a judgement call, not a rule.** Internal is not
+the track under review and a new build there is ordinary Console traffic. Held here anyway until the
+decision, for one reason: if the answer is *reject*, the reason will name something, and knowing what it
+named before changing the artifact is worth more than a few days saved.
+
+### Record the decision here when it lands
+
+- [ ] **Approved** → production becomes available for the first time, and the sitting below runs in full.
+      Whether 1.7 takes production immediately is an ADR-0009 decision made then, not now.
+- [ ] **Rejected** → write the stated reason into [`phase-9.md`](phase-9.md) verbatim before acting on it.
+      A re-application answers the reason given; the common ones are tester engagement and app
+      completeness, and which one it is changes whether the fix is Console work or app work.
+
+⚠️ **This section said "upload 1.3" until 2026-08-18, and it had been stale for four releases.** The build
+that goes up is **1.7** — Phase 9's own, carrying everything from 1.4 through 1.7. Every downstream claim
+moves with it, most importantly the upgrade proof. Uploading an intermediate version first spends a
+release cycle to prove nothing 1.7 would not.
+
+**The listing and the build go up together.** `store-listing.md`'s copy describes 1.6-scope features;
+putting it on a track still serving 1.0.0 is a listing violation, not a rounding error.
+
+### Before the AAB goes up
+
+- [ ] **Release notes ×9**, written at upload time against what *this* build changes. None has ever been
+      needed since 1.0.1, so 1.7 owes the first — and a locale with a listing and no note falls back to
+      the default language's, which is worse than terse.
+- [ ] **Title / short / full description ×9** — paste-ready in [`store-listing.md`](store-listing.md),
+      written at Phase 8 and never yet entered. ⚠️ French and Italian sit at **3992 and 3993 of 4000**
+      characters: a paragraph added to English cannot simply be translated into those two.
+- [ ] **Screenshots ×9** (9g below). Min 2, max 8, **1526×2713** padded from the native 1220×2712 with
+      `#121318`, because Play's aspect limit is 2:1 and the raw capture is 2.22:1.
+- [ ] **Feature graphic** 1024×500 and **icon** 512², both already in [`art/`](../art/).
+- [ ] **Store settings**: category **Lifestyle**; contact email **`binky.support@gmail.com`** — the
+      per-app address, *not* the account-level developer one, because `SupportHandoff.kt` hardcodes it and
+      the privacy policy defers to it; **Website** ← the URL 9e creates.
+- [ ] **App content, all ten sections** — answers are paste-ready in
+      [`play-app-content.md`](play-app-content.md). Data safety must still agree with the privacy policy;
+      Play cross-checks the two and a mismatch is its own rejection reason.
+- [ ] **Artifact checks** ([`RELEASING.md`](RELEASING.md)): `aab-version.py`, `aab-permissions.py`,
+      `aab-locale.py` — which now reads `locales_config.xml` and checks **all nine** locales where it
+      checked only `pl` until Phase 8 — and `keytool` on the bundle. All three exit non-zero rather than
+      leaving you to read; each exists because the corresponding claim was once wrong in a shipped
+      artifact while every source-side check was green.
+
+### The sitting itself
+
+- [ ] Upload **1.7** to **internal**, verify, promote to **closed**.
+- [ ] Countries/regions, pricing (free), ads declaration (none).
+- [ ] Production, **if** the count has cleared — whether 1.7 takes it is an ADR-0009 decision made then.
+
+### 9i — then, and only then, the field upgrade proof
+
+- [ ] **1.0.0 → 1.7**, real bunny history intact. The Xiaomi's Play build is on **1.0.0**, not the 1.0.1
+      4h assumed, so the chain crosses **all three** hand-written migrations — `MIGRATION_4_5`,
+      `MIGRATION_5_6`, `MIGRATION_6_7` — and the launch gate ADR-0023's Phase 7.5 amendment rewrote. It
+      cannot run locally: the installed build is Play-signed and a local APK is refused on signature
+      mismatch, so the update must **arrive from a track**, downstream of the upload above. This is the
+      standing gate's item 5, on the release it matters most for.
 
 ## 5 — Phase 6: the support contact ✅ closed 2026-08-16, ships as 1.3
 
@@ -362,10 +421,90 @@ because gain is chronic where loss is acute; the copy states a fact about the nu
 verdict about the rabbit (ADR-0026, ADR-0001 — *health features observe, they never advise*). `TrendDrop`
 became `TrendChange` and carries a direction. Reasoning in [`phase-7.5.md`](phase-7.5.md) §1.
 
-- [ ] **The tester's reply is still owed**, and it is not the feature. Their *"5 kg plus"* was a **number,
+- [ ] **9j — the tester's reply is still owed**, and it is not the feature. Their *"5 kg plus"* was a **number,
       not a change**: a Flemish Giant is legitimately 6–10 kg, so any absolute weight is wrong for some
       breed and Binky will never call a weight too high — only say that it moved, by how much, since a date.
       Saying so is better than letting them find out.
+
+---
+
+## 10 — Phase 9's index, and the four items that are new
+
+[`phase-9.md`](phase-9.md) is the reasoning; these are the boxes. **Ships as 1.7, schema stays 7** — no
+entity changes, so the standing gate at the top of this file does not fire in this phase.
+
+| | What | Boxes |
+| --- | --- | --- |
+| **9a** | The overnight Doze run 🔴 | §1 |
+| **9b** | The seven gate items parked behind it | §2 |
+| **9c** | The 73-scene edge-to-edge re-run | §2, last bullet |
+| **9d** | Close Phase 5 | below |
+| **9e** | The Pages front door | below |
+| **9f** | Seeing the whole fluffle | below |
+| **9g** | Nine locales of screenshots | below |
+| **9h** | The Console sitting 🟡 | §4 |
+| **9i** | The field upgrade proof 1.0.0 → 1.7 | §4 |
+| **9j** | The tester's reply | §9 |
+
+**Three edges must not be reordered**, and everything else is free: **9a before 9b and 9c**, because both
+disturb the armed course and the run costs a night; **9f before 9g**, because 9g photographs a screen 9f
+changes; **9g and the listing copy before 9h before 9i**, because the upgrade proof needs an update that
+arrives from a track.
+
+### 9d — Close Phase 5
+
+- [ ] Write 9a's and 9b's results into [`PLAN.md`](PLAN.md)'s 5a / 5i / 5j entries and **tick Phase 5**.
+      It has been the one unticked box since 2026-08-05 while four later phases closed around it.
+
+### 9e — The front door
+
+`docs/` is served by Pages from `main` and **has no `index.md`**, so the site root is a 404. Probed
+2026-08-18: `/` → **404**, `/privacy-policy.html` → **200**, `/PLAN.html` → **200**, `/DOD.html` → **200**.
+Nothing is broken; Play's privacy-policy link has always worked. There is simply no page at the root, and
+the root is what anyone types.
+
+- [ ] **`docs/index.md`** with front matter: what Binky is, the privacy policy, the support address, a
+      link to the repo. Not a site. It is also the URL for the listing's empty **Website** field (§4).
+- [ ] **Correct `_config.yml`'s comment.** It claims a Markdown file without front matter is "copied
+      verbatim rather than rendered", and offers that as the reason planning documents are safe to leave
+      in a published directory. Pages injects default front matter, so **every `.md` in `docs/` renders as
+      a themed, crawlable page** — `PLAN.html` and `DOD.html` above are the proof. The repo is public so
+      nothing leaks, but a comment that explains why something is safe is exactly the kind that gets
+      trusted rather than re-checked. Correct it; don't delete it.
+
+### 9f — Seeing the whole fluffle
+
+`housematesLabel` names **two** and folds the rest into "& N others" (`BunnyLabels.kt:60`, from four up).
+The cap is right — it exists because the line grew the card without bound — but with five housemates the
+owner **cannot see who three of them are, anywhere in the app**.
+
+- [ ] **Tap the "Lives with" line on Home's profile header** (`HomeScreen.kt:212`) → a modal bottom sheet
+      titled *Lives with*, one row per housemate — avatar, name, `(archived)` where it applies — and
+      tapping a row switches to that bunny through the switcher's existing navigation.
+- [ ] **Leave the other two sites alone.** The all-bunnies list card (`HomeScreen.kt:457`) is already one
+      click target that switches bunny, so a tap there is spoken for; the archived list
+      (`ArchivedBunniesScreen.kt:171`) is not where you go to navigate a fluffle.
+- [ ] **A test that the sheet lists *every* housemate, archived included** — the claim the line cannot
+      make. `capHousemates`' JVM table is unchanged: the sheet has no cap to test.
+
+**A sheet, not a tooltip**, and not for style: M3's `TooltipBox` is long-press-only on touch so the
+affordance is invisible, dismisses on any touch elsewhere, cannot scroll at eight housemates, cannot be
+**tapped through** to the bunny, and is the one element the capture harness could not photograph — it
+would ship with no screenshot evidence in any of the four configurations. Expanding the line in place
+re-introduces exactly the unbounded card growth the cap was written to stop.
+
+⚠️ **Aim for zero new strings.** The sheet title is `R.string.bunny_lives_with_label` and the archived
+suffix `R.string.bunny_archived_name`, both already translated in all nine. A phase that adds no English
+string owes the translation gate nothing; if one turns out to be needed it ships in all nine.
+
+### 9g — Nine locales of screenshots
+
+- [ ] **~2 h of device time** through `screenshots.py --locale <tag>`, re-proved across every shipped
+      locale on 2026-08-18 — Brazilian Portuguese included, the one that crashed in both spellings until
+      the guard moved to where the tag is taken. **English is a selection**, not a run: the 63 scenes in
+      `~/binky-screenshots/phase-7/after/` are already the final screens. This improves the listing rather
+      than unblocking it — Play falls back to the default listing's set — which is why it waited until the
+      tracks could carry the build it describes.
 
 ---
 
@@ -382,4 +521,9 @@ audit — all checked on the device at 5i.
 ## Closing the phase
 
 When every box above is ticked: write the results into `PLAN.md`'s 5a / 5i / 5j entries, tick **Phase 5**
-in its checklist at the top, and empty this file down to the next phase's open items.
+*and* **Phase 9** in the checklist at the top, and empty this file down to the standing schema gate.
+
+**Both at once, because they are the same boxes.** Phase 5's evidence half is what Phase 9 §1 and §2 are;
+9d is the tick. At that point every phase in the project is closed and 1.7 is on Play in nine languages —
+the first time both sentences are true at once — and what is open stops being a release checklist and
+starts being whatever owners report.
