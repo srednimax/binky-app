@@ -31,12 +31,21 @@ and 8 are in [`phase-7.5.md`](phase-7.5.md) and [`phase-8.md`](phase-8.md)**.
   *(closed 2026-08-13 on the sweep, the 244-scene matrix, lint at 0/0 and the before/after comparison; the
   **Polish capture moved to Phase 8**, which owns the locale-aware driver it needs — see
   [`DOD.md`](DOD.md) §7)*
-- [ ] **Phase 7.5** — The interlude: the gain signal, droppings, licence attribution, the downsample answer
-  and the locale-aware capture driver — **ships as 1.5**, at **schema 7** — planned in
+- [x] **Phase 7.5** — The interlude: the gain signal, droppings, licence attribution, the downsample answer
+  and the locale-aware capture driver — **ships as 1.5**, at **schema 7** — record in
   [`phase-7.5.md`](phase-7.5.md), not here
   *(opened 2026-08-14 as an ordering over items already open in [`DOD.md`](DOD.md), each cheaper before nine
   languages than after; four owner-facing findings arrived the same day and one of them, multi-valued
-  droppings, is what takes it from migration-free to `MIGRATION_6_7`)*
+  droppings, is what took it from migration-free to `MIGRATION_6_7`.*
+  ***Closed 2026-08-18** on work finished 2026-08-16 and released as `v1.5.0` the same day, at schema 7
+  frozen and tagged. Everything above shipped — nothing was cut, so ADR-0029's release valve is unspent —
+  and the capture driver went from English-only to **146/146 in Polish** (the after set Phase 7 carried out)
+  and **292 cells, zero errors** in English. **Its most valuable hour was not on its own list**: asking what
+  a 1.4.0 phone meets when 1.5 arrives found the launch gate refusing every schema-bumping update, a shape
+  that had shipped since 1.1 — now `schemaGateDecision`, with ADR-0023 amended and both live upgrade paths,
+  1.4.0 → 1.5 and the skipped-version 1.1.0 → 1.5, watched on the phone with zero differing rows on common
+  columns. The tester's reply that §9 owes is the one thing that left the phase rather than closing in it —
+  see [`DOD.md`](DOD.md) §9)*
 - [x] **Phase 8** — Nine languages — **ships as 1.6** — record in [`phase-8.md`](phase-8.md), not here
   *(retargeted from 1.5 on 2026-08-14: Phase 7.5 adds functionality, so `release-please` cuts 1.5 there.*
   ***All nine languages are promoted and shipping as of 2026-08-17** — 688 translatable resources × 8

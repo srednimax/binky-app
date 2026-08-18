@@ -26,25 +26,15 @@ phase. Whenever `BUNNY_SCHEMA_VERSION` changes, all five hold before the release
 that caught the refusal screen 1.5 would otherwise have shipped to every existing owner.
 
 **Phase 5** (vet, medications, documents, dose reminders — ships as 1.2) — software half **done**,
-evidence half open. Status read 2026-08-05 20:30. **Phase 6** (the support contact — ships as 1.3) is
-built, device-tested and documented as of 2026-08-06 and **closed 2026-08-16**, when the last of §5's two
-hand items landed; 1.3.0 is waiting on a release PR. **Phase 7** (the redesign — ships as 1.4) **closed 2026-08-13**; §6 is its
-closing note, and the one thing it carried out is §7's first box.
+evidence half open. Status read 2026-08-05 20:30. Phases **6** (1.3), **7** (1.4), **7.5** (1.5) and
+**8** (1.6) are **closed**, each with its record in its own phase file; §5, §6, §6.5 and §7 below are their
+closing notes and hold no work.
 
-**Phase 7.5** (the interlude — ships as **1.5**, opened 2026-08-14) collects what was scattered here and
-**owns §3, §5, §8, §9 and §7's capture-driver box**, plus three owner-facing findings from 2026-08-14 that
-live only in §6.5. **It bumps the schema to 7** — added 2026-08-14 with the droppings work, so it is no
-longer the migration-free interlude it was drafted as.
-Its reasoning is [`phase-7.5.md`](phase-7.5.md); §6.5
-below is its summary. **Phase 8 retargets to 1.6** — two phases cannot both claim 1.5, and `release-please`
-answers to commit subjects rather than to this file.
-
-**So what is actually open is evidence, then one short phase of code**: §1's overnight run and the gate
-items behind it, and Play's own count (§4). **Phase 7.5's own boxes are all ticked as of 2026-08-16** —
-§5's two hand items (2026-08-15 and 2026-08-16) and the driver's English matrix (292 cells, zero errors).
-Everything that touches the app's own code is done and
-device-proven; the schema bump, its migration and its instrumented run are green. What is left of the
-phase is closing it: `PLAN.md`, emptying §6.5 and the sections it borrowed, and the 1.5 cut. Then Phase 8.
+**So what is actually open is evidence and Play, not code**: §1's overnight run and the gate items parked
+behind it (§2), the Console half (§4), and one reply owed to a tester (§9). Everything since 1.2 is built,
+device-proven and either tagged or ready to tag — `v1.5.0` was cut 2026-08-16, and Phase 8's nine languages
+sit on `main` waiting for the 1.6 cut — but **the tracks are still on 1.0.0 / 1.3**, so none of it has
+reached an owner's phone yet. Closing that gap is §4, and §1 is what stands in front of it.
 
 ---
 
@@ -186,17 +176,15 @@ All deliberately after it, because each would disturb the armed course.
 
 ---
 
-## 3 — The document downsample spec 🟢 answered 2026-08-14
+## 3 — The document downsample spec ✅ answered 2026-08-14, closed with Phase 7.5
 
-Phase 5's intro called this *"a deliverable and not an assumption"*. Judged on the phone against a real
-scan, not the fixture.
-
-- [x] **`Document` stays `LongEdge(maxEdge = 3000, quality = 92)`.** A4 of dense 9 pt text stored
-      **2129×3000, 1.29 MiB**; legible at 1:1 with no ringing or blocking. Quality 92 sits just above the
-      knee — 85 costs fourteen times the damage to save 18% of the file. The "unverified" comment is gone
-      and the measurement is in its place.
-- [x] Same sitting settled §6.5's new **`MediaKind.Observation` = `LongEdge(2048, quality = 88)`**, which
-      **disproved** the "closer to `Document`" hypothesis. Reasoning in phase-7.5.md §2 and §7.
+**Done, on the phone against a real scan rather than the fixture.** `Document` stays
+`LongEdge(maxEdge = 3000, quality = 92)`: A4 of dense 9 pt text stored **2129×3000, 1.29 MiB**, legible at
+1:1 with no ringing or blocking, and quality 92 sits just above the knee — 85 costs fourteen times the
+damage to save 18 % of the file. The same sitting settled Phase 7.5's new
+**`MediaKind.Observation` = `LongEdge(2048, quality = 88)`** and **disproved** the "closer to `Document`"
+hypothesis. The "unverified" comment in `MediaFiles.kt` is gone and the measurement stands in its place.
+Reasoning in [`phase-7.5.md`](phase-7.5.md) §2 and §7.
 
 Both were taken **before** real documents piled up, which was the point: `MediaFiles` re-encodes at write
 time and keeps no original, so every scan already taken is permanent at the spec in force when it was
@@ -228,34 +216,23 @@ All three land in **one sitting** once the count clears, in this order:
 
 ---
 
-## 5 — Phase 6: the support contact ✅ closed 2026-08-16
+## 5 — Phase 6: the support contact ✅ closed 2026-08-16, ships as 1.3
 
-Built, driven on the device and written up — **6a, 6b, 6c and 6d are all done**. The record is
-[`phase-6.md`](phase-6.md), and `PLAN.md`'s status list ticks Phase 6 on the build and the documents.
-`release-please` already has **1.3.0** waiting on PR #93; merging it is the cut.
+**Done** — 6a, 6b, 6c and 6d built, driven on the device and written up. The record is
+[`phase-6.md`](phase-6.md); `PLAN.md` ticks Phase 6 and `v1.3.0` is tagged. The two boxes that outlived the
+code were the oldest in the project and shut a day apart: Play's **per-app contact email** (2026-08-15), so
+the app, the listing and the privacy policy name one inbox; and a **support mail read after it arrived**
+(2026-08-16), landing in the inbox proper with the diagnostics block **visible** rather than collapsed
+behind Gmail's signature `…`, which was the whole claim and only a delivered message could prove it.
 
-Two boxes outlived the code, and neither was work a build could do. **Both are closed** — the oldest open
-boxes in the project, shut a day apart:
-
-- [x] Set `binky.support@gmail.com` as Play's **per-app contact email** in *Store settings*. ✅ **Done
-      2026-08-15.** The app, the listing and the privacy policy's *Contact* section now name one inbox.
-- [x] **Read a support mail that actually arrived**, carried from 6c's gate. ✅ **Done 2026-08-16.** A bug
-      report sent from the phone lands in the **inbox proper** and the diagnostics block is **visible** —
-      not collapsed behind Gmail's signature `…`. That was the whole claim: the block is separated by a
-      blank line and never `-- ` for exactly this reason, and only a delivered message could prove it.
-      Everything up to the send was already verified in both locales.
-      ✅ **Delivery was proven first (2026-08-15)** — the `mailto:` hand-off, recipient, subject and body
-      all reach a real inbox.
-      ⚠️ **That first one landed in Spam**, which is silent on both ends: the sender sees a sent message
-      and the maintainer sees an empty inbox. **Fixed by a filter on the receiving account** —
-      `subject:bug OR subject:feature` → *Never send it to Spam*, applied 2026-08-15. It works in every
-      locale because the `#bug` tag is a Kotlin constant rather than a string resource
-      (`SupportHandoff.kt`), so **one rule covers all nine of Phase 8's languages** — and the filter is
-      what put the settling report in front of the eye that read it.
+⚠️ **The first delivered mail was filed as Spam**, which is silent on both ends — the sender sees a sent
+message and the maintainer an empty inbox. Fixed by a `subject:bug OR subject:feature` → *Never send it to
+Spam* filter on the receiving account, and **one rule covers all nine languages** because the `#bug` tag is
+a Kotlin constant rather than a string resource (`SupportHandoff.kt`).
 
 **1.3 supersedes 1.2.0 on the tracks — do not upload both.** Same schema 6, same two hand-written
 migrations, so §4's field-upgrade proof retargets to **1.0.0 → 1.3** and still crosses `MIGRATION_4_5` and
-`MIGRATION_5_6`. Uploading 1.2.0 first buys a second release cycle and proves nothing 1.3 would not.
+`MIGRATION_5_6`. Uploading 1.2.0 first buys a release cycle and proves nothing 1.3 would not.
 
 ---
 
@@ -275,214 +252,41 @@ taken twice. The screens they photograph are now final.
 
 ---
 
-## 6.5 — Phase 7.5: the interlude 🟢 planned, ships as 1.5
+## 6.5 — Phase 7.5: the interlude ✅ closed 2026-08-18, ships as 1.5
 
-Design in **[`phase-7.5.md`](phase-7.5.md)**. It owns no boxes of its own — it is the *order* over five
-that are already written down elsewhere in this file. Each is cheaper before nine languages than after, and
-three get more expensive with time. **Both ADRs are made** — ADR-0028 and
-[ADR-0029](adr/0029-droppings-are-multi-valued-and-the-tray-is-worth-a-photo.md), grilled and written
-2026-08-14, so nothing here is waiting on a decision. **Every box below is ticked as of 2026-08-16** — the
-second hand item that morning, the English matrix that afternoon — so what remains is closing the phase,
-not working it.
+**Done and released.** `v1.5.0` was cut 2026-08-16 at schema **7**, frozen and tagged (`schema-7` →
+`ddb430a`). The record is [`phase-7.5.md`](phase-7.5.md). The phase owned no boxes of its own — it was the
+*order* over five that were already open here, and all five close with it: §3, §5, §8, §9 and §7's
+capture-driver box.
 
-- [x] **The launch gate refused every schema-bumping update — fixed 2026-08-16, and it blocked 1.5.**
-      `BinkyApplication` treated *any* version mismatch as a reason to show the blocking screen, so a
-      release build met an owner's 1.4.0 database with *"This version cannot open the records on this
-      phone"* and a dead end — `MIGRATION_6_7` never ran, because the gate returns before Room is
-      constructed. Nothing was deleted (the file is untouched, a copy lands in `preserved/`), but the app
-      was unusable, and the same shape shipped at 1.1 and 1.2. Every existing proof of the migrations
-      opens the database *directly* and so walks past the gate entirely.
-      **The fix** is `schemaGateDecision` (`SchemaGate.kt`): a pure `Open`/`Consent`/`Refuse` over the
-      on-disk version, this build's version, the migrations *actually registered*, and whether the
-      fallback is armed — with `destructiveAllowed` asked first, or a debug build would skip its own
-      consent screen. `SchemaGateTest` is the truth table. ADR-0023 carries the reasoning.
-      **Proven on the phone**: a real 1.4.0-written schema-6 database, a release-shaped build installed
-      over it, refusal screen before / app open after, `user_version` 6 → **7**, and every count intact —
-      44 weighings, 5 observations, 2 vets, 3 visits, 3 courses, 14 doses, 4 documents over 7 pages, the
-      droppings in their join tables, `trayPhotoPath` null throughout.
-      **Both live upgrade paths watched on the phone (2026-08-16)**, on the app's own database rather
-      than through the staged restore path — a 1.4.0 seed taken to 1.5, and a **1.1.0 seed taken
-      straight to 1.5**, the skipped-version jump a phone that never took 1.2–1.4 would make. Compared
-      table by table on *common columns*: **zero differing rows in every table**, both times. The only
-      changes are the ones the migrations are for — `weights.visitId` and `observations.trayPhotoPath`
-      added and null, `droppingsSize`/`droppingsForm` moved into the join tables per observation (the
-      one that answered neither contributes no rows), and the schema-6 tables arriving present-and-empty
-      on the 5 → 7 path.
-      ℹ️ **An app update does not cancel the pending dose alarm** — same alarm object, still armed for
-      20:00, across the package replace with the app never launched.
-      ✅ **The dormant window is closed (2026-08-16).** `schemaWipePending()` became
-      `schemaBlocksBackgroundWork()` and asks the *gate's* question: a debug build still blocks on any
-      mismatch (it has no migrations registered, so opening means wiping) and a release build still
-      blocks on a file no migration covers, but an upgrade a migration can walk now falls through — and
-      opening is what migrates. **Proven in-process**: the real `bunny.db` left at schema 6 under a
-      release-shaped build, `DoseAlarmTest` **16/16 green**, and the file at **7** when the run ended.
-      The background path performed the migration instead of sitting out the morning.
-      ⚠️ **Correcting yesterday's reading of this**: the broadcast that "showed the guard skipping a
-      dose" never reached the app at all — HyperOS did not start the process for it (`pidof` empty,
-      `stopped=false`). What the receiver does over a stale database is proven by the in-process run
-      above, not by an `adb` broadcast.
-      ℹ️ **`PackageReplacedReceiver` is in as belt-and-braces and is unverified on this phone.** After a
-      real `adb install -r` the receiver never ran: WorkManager's own database held only
-      `ReminderSweepWorker`, no `UpdateCatchUpWorker` row. HyperOS does not deliver
-      `MY_PACKAGE_REPLACED` without autostart, and the ROM has no `AUTO_START` appop to grant over
-      `adb`. It should work on ROMs that deliver it; the guard above is what carries the fix here.
-- [x] **§5's two hand items** — Play's per-app contact email (2026-08-15) and a delivered support mail
-      read (2026-08-16). The oldest open boxes in the project, shut a day apart.
-      ⚠️ **The first mail delivered but was filed as Spam**, fixed with a
-      `subject:bug OR subject:feature` → *Never send it to Spam* filter on the receiving account. One
-      rule covers all nine languages, because the tag is a Kotlin constant. **The next report landed in
-      the inbox proper with the diagnostics block visible**, which is what the box was for. See §5.
-- [x] **§7's capture-driver box**, moved here. ✅ **The code is done and device-proven (2026-08-14)** —
-      `return_to_home` + DND as setup/teardown, seed variants through a debug-only broadcast receiver
-      (`crowded` is the first), and needles resolved through the string resources before the first tap.
-      The default seed is **not** changed: **58** scenes rest on it.
-      ✅ **The Polish run is done (2026-08-15)** — 73 scenes in light and dark, **146/146**, in
-      `~/binky-screenshots/phase-7.5/pl`. That is the **Polish after set**, and it unblocks §4's Polish
-      listing screenshots.
-      ✅ **The English matrix is done (2026-08-16)** — **292 cells, 292 reached, zero errors, no
-      confirmed defect**, in `~/binky-screenshots/phase-7.5/en`. The 20:00 dose was made live *on demand*
-      rather than waited for: `DOSE_GRACE` is 30 minutes and a cell is nearer fifty, so an evening run
-      goes quiet halfway. A `due_dose` seed variant re-armed a slot a minute in the past **before every
-      scene**, and `mBypassDnd=false` was read off the channel first, so DND suppressing it is evidence
-      rather than luck. **Three driver defects had to be fixed to get the run, and none was in the app** —
-      see phase-7.5.md §4.
-      ⚠️ **`Care & Meds` and `Backup & restore` matched nothing in English**, because `dump_ui` parses the
-      XML with a regex and never unescaped `&amp;`. Those two needles head roughly **twenty** scenes.
-      Unreachable in Polish (*"Opieka i leki"*, *"Kopia zapasowa i przywracanie"*), so the 146/146 run
-      could not see it — **the first defect this phase where English is the broken half**, and it arrived
-      with the 2026-08-14 lengthening that fixed a different ambiguity.
-      ⚠️ **`tap`'s four-try scroll budget is a portrait-shaped constant.** A landscape swipe covers ~464 px
-      against portrait's ~1030, so seven landscape cells reported controls unreachable that `care-bottom`
-      scrolls straight past. It scrolls while the screen keeps changing now.
-      ⚠️ **A partial re-shoot used to overwrite the report** with only the re-shot cells — the Polish run's
-      2026-08-15 note, now folded into `write_report`, which merges by scene name.
-      ⚠️ **`photos` and `photos-bottom` had been shooting the wrong screen in Polish, silently** —
-      found 2026-08-15 and **fixed**. `more_photos` is *"Zdjęcia"* and `bunny_avatar_placeholder` is
-      *"Nie ma jeszcze zdjęcia"*, the same form; `find` takes the smaller node and the avatar (60×60)
-      beats the row (170×59), so the tap opened the bunny switcher. `photo-add-menu` failed loudly on
-      its next tap and **that is the only reason the other two were found**. All three now use
-      `tap_text` — the third structural needle — and were re-shot.
-      ℹ️ **The English evidence is not retracted**: *"No photo yet"* is singular, so the needle
-      *Photos* cannot match it. This defect is unreachable in English, in any configuration.
-      ℹ️ **The relaunch was already landing on Home** — measured from a detail route and from a non-Home
-      tab — so the isolation step is a *check*, and the 2026-08-12 cell is better explained by the dose
-      banner re-posting on every relaunch. See phase-7.5.md §4 for the rest of what the build found.
-      ⚠️ **`weight-entry-ime` has never had a keyboard in it, Phase 7's after set included** (found
-      2026-08-14). The grams field has no label and no placeholder, so the needle *"Weight in grams"*
-      matched the **help line underneath it** — a plain `Text` that focuses nothing. Third IME scene
-      caught by that trap and the only silent one. Fixed by tapping the *n*-th `EditText` instead;
-      **assume the existing `weight-entry-ime` evidence is wrong** rather than re-reading it.
-- [x] **§3's downsample answer**, taken while the phone was already in hand — **both** specs, `Document`
-      kept and `Observation` set, on one tray and one printout. 2026-08-14.
-- [x] **§9's gain signal** ✅ **built and device-proven 2026-08-14**, per
-      **[ADR-0028](adr/0028-a-weight-gain-is-observed-against-a-six-month-anchor.md)** — the rule in
-      `WeightTrend.kt`, three strings in **both** locales, the age question wired to the bunny editor from
-      all three of the flag's hosts, a **`gaining` seed variant** and three scenes so the card has a
-      permanent home in the harness. `TrendDrop` is now `TrendChange` and carries a direction; the
-      watermark's own direction is read back off its grams, so ADR-0028's flip discard still costs no
-      column, and `WeightRepository.add` asks `evaluateTrend` whether the row is stale rather than keeping
-      a second copy of the rule.
-      ⚠️ **The first capture found a defect the rule did not have**: the flag's action row is a `Row`, and
-      a third action does not clip there — it crushes *Start a watch* to one character wide and spells it
-      down the card. `FlowRow` now, in the banner **and** in both of the dialog's button slots. Seen in
-      English and Polish. **Second time seed variants have caught a state no screenshot held.**
-      ℹ️ **"No reading in the 4–8 month window" evaluates to `Steady`, deliberately** — it is a distinct
-      *case* and pinned as one, but nothing renders either as reassurance, so a third variant would be a
-      distinction with no consumer. Reasoning in phase-7.5.md §1.
-      The rule itself is **not restated here** — it is ADR-0028's, tested in `WeightTrendTest` and
-      summarised in §9 below, which stays for the question it started as.
-- [x] **Droppings are several things at once, and worth a photo** ✅ **built and device-proven 2026-08-14**,
-      per **[ADR-0029](adr/0029-droppings-are-multi-valued-and-the-tray-is-worth-a-photo.md)**. Nothing was
-      cut — the multiselect, the six new values, the `DroppingsAppearance` rename **and** the tray photo all
-      ship, so the release valve is unspent. **Schema 7 is frozen and tagged** (`schema-7` → `ddb430a`);
-      `MIGRATION_6_7` rebuilds `observations` create-copy-drop-rename with the symptom links staged across
-      the cascade, pinned by `Migration6To7Test` in five cases. **`connectedAndroidTest` green on the
-      Xiaomi at 215/215** — the gate item nothing else in this phase owed.
-      ⚠️ **The first run after a schema bump fails 13 `DoseAlarmTest` cases, and it is not a regression** —
-      expect it again at schema 8. `rescheduleDoseAlarm` opens with `schemaWipePending()`, which reads the
-      header of the **real** `bunny.db` rather than the test's in-memory database, so a phone still carrying
-      the previous schema's debug database disarms every alarm the suite tries to arm. The tell is that
-      every failure is an `assertTrue(armed())` and the three `assertFalse` cases pass. Clearing the debug
-      database through the app's own consent screen made the same run 215/215 with no code changed.
-      ℹ️ **The debug build wipes 6 → 7 rather than migrating, by design** (`BunnyDatabase.kt`: a build takes
-      the fallback **or** the migrations, never both). It preserved
-      `files/preserved/bunny-20260814T163225Z.db` — the replaced database's size to the byte — before
-      wiping, which is ADR-0007's promise watched for real for the first time. So the phone is **not** where
-      `MIGRATION_6_7` is proven; `aReleaseShapedOpenOfASchemaSixFileSucceeds` is.
-      ✅ **`bunny-schema-6-fixture.zip` is in (2026-08-16)**, exported on the Xiaomi by the `v1.4.0` tag's
-      own container, seeder, Room and exporter — a real artifact, like the other two. It is the first
-      fixture whose schema-6 tables are **full** rather than present-and-empty: 2 vets, 3 visits, 3 courses
-      over 3 times and 14 doses, 4 documents over 7 pages, carried through the migration that rebuilds
-      `observations` and drops `observation_symptoms` before putting it back.
-      `aSchemaSixBackupWrittenBy140MigratesTheLastStep` asserts all of it, plus the 7 document pages and
-      5 photos landing on disk. **2.8 MB**, because a faithful Everything export carries the seeded
-      3000 px scans; the schema-4 and schema-5 files are 9 KB and 15 KB for want of anything to carry.
-      **216/216 instrumented green on the Xiaomi** with it in — but the chore itself leaves the phone's
-      real `bunny.db` at schema 6, which disarms the dose alarms until `databases/bunny.db*` is deleted
-      through `run-as`. Details, and the two beliefs the artifact corrected, in phase-7.5.md §7.
-      ✅ **The droppings assertion is in (2026-08-15)**, in *both* fixture restores and by **value rather
-      than count**: four observations arrive as `ROUND`, the sizes as `NORMAL, NORMAL, SMALL, SMALL`, and
-      the fifth — which carried neither column — contributes **no** rows, which is the half a row count
-      could not tell apart from a migration that defaulted it. 12/12 green on the Xiaomi, and no new
-      fixture was needed, as predicted — the `zip` above landed the next day and asserts the same values
-      from a third artifact.
-      ℹ️ **HyperOS's ADB install prompt is drivable** with `input touchscreen tap`, contrary to the standing
-      note. `INSTALL_FAILED_USER_RESTRICTED` after ~12 s is a *missed prompt*; the same string returned
-      instantly is the first-install refusal. The delay tells them apart.
-      The question as it stood, and every decision behind it, is phase-7.5.md §7 and ADR-0029.
-- [x] **The healthy day moves behind the `+`** ✅ **built and device-proven 2026-08-14, in both locales.**
-      The "+" opens a `ModalBottomSheet` of two `ListRow`s — the healthy day carrying `healthy_day_help` as
-      its subtitle, because one tap commits four facts on the owner's behalf (ADR-0001) — and the Timeline
-      button is gone, so there is one entry point rather than two. **No schema and no new strings**:
-      `healthy_day_action`, `healthy_day_help` and `observation_add_title` are reused verbatim.
-      The write moved with it into a **shell-scoped `HealthyDayViewModel`** — the "+" is the shell's button
-      and the snackbar host was already the shell's — so the healthy day now writes **from Home**, which it
-      never could before, with the receipt and its Undo unchanged.
-      ⚠️ **Reusing the FAB's string cost the driver a needle.** The FAB's `contentDescription` and one sheet
-      row now say the same words, and `find` takes the *smallest* match — the FAB — so the old one-tap
-      route would have re-tapped the button and dismissed the sheet on its own scrim. Fixed structurally
-      like `tap_field`: a new **`tap_text`** step matches a node's text and ignores content descriptions.
-      Proven in Polish, where both read *"Zapisz obserwację"*. `OPEN_OBSERVATION_FORM` is the two-tap route
-      the four form scenes now share, and `record-day-sheet` is the sheet's own scene.
-- [x] **The housemates line at five bunnies** ✅ **built and device-proven 2026-08-14, in both locales.**
-      Both halves, as decided: `capHousemates` names two and folds the rest into *"& N others"* **from four
-      housemates up**, archived first, through **one `plurals` entry** joined as the last *item* of the list
-      so `joinNames` punctuates it per locale; plus `maxLines = 2, overflow = Ellipsis` at all three sites.
-      The rule lives in `housematesLabel`, never in `joinNames`, which the healthy-day receipt shares and
-      must not truncate (ADR-0008). Bijou reads *"Lives with Clover, Nugget & 2 others"* on one line —
-      *"Mieszka z: Clover, Nugget i 2 inne"* in Polish, the `few` form agreed correctly — and two long
-      names still take exactly two, bounded, which is what the backstop is for.
-      ℹ️ The cap is a **pure function with a JVM table** (`HousematesTest`), which is what pins *"& 1 other"*
-      never rendering across one to nine housemates. The width half is not testable there and is what the
-      `crowded` seed variant photographs.
-- [x] **§8's licence attribution** ✅ **built and device-proven 2026-08-14, in both locales.**
-      **`app.cash.licensee`** at build time, rendered by the app's own Compose screens. No ADR owed — it
-      adds no runtime dependency, so ADR-0009 is untouched, and it emits structured data plus a build
-      failure when a licence changes, which is §8's own stated fear. The Play plugin was rejected for a
-      second Play-services library *and* a stock Activity in a redesigned app.
-      A row on Support's last card opens *Open-source licences*: **201 artifacts** in the release variant,
-      grouped under four licences, one section each, with the artifact's coordinates under its name. The
-      list is generated **per variant**, so the debug build's 206 include `ui-tooling` and the release
-      build's do not — the screen names what *this* binary contains.
-      ⚠️ **The generator found a licence nobody knew about on its first run**: `BSD-3-Clause`, covering
-      exactly one artifact (`androidx.datastore:datastore-preferences-external-protobuf`, androidx's
-      repackaging of protobuf-javalite). A hand-typed list would have been wrong the day it was typed.
-      ℹ️ **The licence *text* ships, not a link to it** — §8's words are "travel with the binary", and a URL
-      does not travel. `assets/licences/<spdx-id>.txt` holds Apache-2.0 and BSD-3-Clause, rendered verbatim
-      on their own screen. The Android SDK and ML Kit terms are Google's and are **not** ours to
-      redistribute, so those two groups link out instead — a distinction the model carries rather than the
-      screen guessing.
-      ⚠️ **`allow("X")` in the build file has a build failure behind it; `assets/licences/X.txt` has
-      nothing.** Forgetting the second silently downgrades the screen from shipping a licence to pointing
-      at one, so `LicencesTest` reads `build.gradle.kts` and the asset directory and asserts they agree.
-      It is the only test in the project that reads the build file, and that is why.
-      ℹ️ *Open-source licences* is deliberately two resources with one value — the row and the screen it
-      opens — which is §6's collision and **benign here**: the two never share a screen and both translate
-      the same, so `resolve_needles` reports the duplicate and resolves it anyway. The ambiguity check is
-      about candidates *disagreeing*.
-      Two scenes, `licences` and `licence-text`. Everything else is phase-7.5.md §3.
+**What it shipped**, all built and device-proven in both locales: ADR-0028's **gain signal** against a
+six-month anchor; ADR-0029's **multi-valued droppings and the tray photo**, which is what took the phase
+from migration-free to `MIGRATION_6_7`; **licence attribution** over 201 artifacts with the texts bundled;
+both **downsample specs** settled on the phone; the **healthy day** moved behind the `+` so there is one
+entry point rather than two; the **housemates line** capped at five bunnies; and the **capture driver**
+taken from English-only to scene isolation, seed variants and resource-resolved needles — **146/146 in
+Polish** (the after set Phase 7 carried out) and **292 cells, zero errors** in English.
 
-**Commit rule carries over from Phase 7: `feat:`/`fix:`, never `feat!:`.**
+🛑 **The most valuable hour of the phase was not on its list.** Asking what a real owner meets when 1.5
+lands on a phone holding 1.4.0 data found the **launch gate refusing every schema-bumping update** — *"This
+version cannot open the records on this phone"* and a dead end, with `MIGRATION_6_7` never running because
+the gate returns before Room is constructed. The same shape shipped at 1.1 and 1.2. It is
+`schemaGateDecision` (`SchemaGate.kt`) now, `SchemaGateTest` is its truth table, and ADR-0023 carries the
+amendment — which is why the standing gate at the top of this file has a fifth item no test can satisfy.
+Both live upgrade paths were then watched on the phone — 1.4.0 → 1.5, and the skipped-version
+**1.1.0 → 1.5** — compared table by table on *common columns*: **zero differing rows, both times**.
+`bunny-schema-6-fixture.zip` is in, written by the `v1.4.0` tag's own container, and the instrumented suite
+reads **216/216** on the Xiaomi.
+
+⚠️ **Two traps to expect again at schema 8**, both in [`phase-7.5.md`](phase-7.5.md) §7. The first run after
+a bump fails every `assertTrue(armed())` case in `DoseAlarmTest` and it is **not** a regression: the phone's
+*real* `bunny.db` is still at the old version and the background guard reads it — clear
+`databases/bunny.db{,-wal,-shm}` through `run-as`, never `pm clear`, which takes the runtime permissions the
+rest of the suite depends on. And the debug build **wipes rather than migrates**, by design
+(`BunnyDatabase.kt` gives a build the fallback *or* the migrations, never both), so the phone is not where a
+migration is proven — `aReleaseShapedOpenOfASchemaSixFileSucceeds` is.
+
+**Commit rule carried over from Phase 7: `feat:`/`fix:`, never `feat!:`.**
 
 ---
 
@@ -526,63 +330,42 @@ the build it describes go up together.
 
 ---
 
-## 8 — Open-source licence attribution 🟢 built 2026-08-14, ships in 1.5
+## 8 — Open-source licence attribution ✅ built 2026-08-14, shipped in 1.5
 
-Raised while grilling Phase 6 and deliberately **not** folded into it. The app ships Room, Compose,
-Coil 3, Vico and ML Kit and carries **no attribution of any kind** — no string, no asset, no screen.
-Apache-2.0 §4 asks for the licence and NOTICE to travel with the binary.
+**Done**, and the mechanism was the real question. **`app.cash.licensee`** at build time, rendered by the
+app's own Compose screen — not Google's `play-services-oss-licenses`, which would have put a **second**
+Play-services library into a project that quarantines its first one behind an interface (ADR-0009), and a
+stock Activity into a redesigned app. Build-time only, so ADR-0009 is untouched.
 
-- [x] **Decide the mechanism**, which is a dependency question wearing a UI costume: Google's
-      `play-services-oss-licenses` plugin (off the shelf, but a **second** Play-services-dependent
-      library in a project that quarantines its first one behind an interface — ADR-0009), or a Gradle
-      task generating an asset the app renders itself (no dependency, more code, ours to keep working).
-      A hand-typed list is neither — it is wrong one dependency bump later and nobody notices.
-      **Decided 2026-08-14**: `app.cash.licensee` at build time, rendered by our own Compose screen —
-      see [`phase-7.5.md`](phase-7.5.md) §3. Build-time only, so ADR-0009 is untouched.
-- [x] Then build it where the answer says it belongs. Support is the app's only About-shaped screen.
-      **Built 2026-08-14**: a row on Support's last card, a generated list of **201 artifacts** under
-      four licences, and the Apache-2.0 and BSD-3-Clause **texts bundled** so the licence travels with
-      the binary rather than being linked. Seen in both locales.
+A row on Support's last card opens *Open-source licences*: **201 artifacts** in the release variant under
+four licences, generated **per variant** so the screen names what *this* binary contains, with the
+Apache-2.0 and BSD-3-Clause **texts bundled** — Apache-2.0 §4 asks for the licence to travel with the
+binary, and a URL does not travel. Google's SDK and ML Kit terms are not ours to redistribute and link out
+instead.
 
-**Before production launch**, which is when the exposure stops being theoretical — not before 1.3.
+⚠️ **The generator found a licence nobody knew was in the build** on its first run — `BSD-3-Clause`, over
+exactly one artifact. A hand-typed list would have been wrong the day it was typed. `LicencesTest` reads
+`build.gradle.kts` against the asset directory, because `allow("X")` has a build failure behind it and
+`assets/licences/X.txt` has nothing. Details in [`phase-7.5.md`](phase-7.5.md) §3.
 
 ---
 
-## 9 — A weight *gain* raises nothing 🟢 built 2026-08-14, ships in 1.5
+## 9 — A weight *gain* raises nothing ✅ answered and built 2026-08-14, shipped in 1.5
 
-Found by a tester, 2026-08-09, and written down here so it does not get lost. **Decided 2026-08-14 in
-[ADR-0028](adr/0028-a-weight-gain-is-observed-against-a-six-month-anchor.md)** and **built the same day**
-(§6.5's fourth box, now ticked); everything below is the question as it stood, kept because the ADR answers
-it point by point. **The tester's own reply is still owed** — their *"5 kg plus"* was a number rather than
-a change, and the honest answer is that Binky will never call a weight too high, only say that it moved
-(phase-7.5.md §1).
+Found by a tester 2026-08-09: a bunny putting on *"5 kg plus"* produced no flag, because `WeightTrend.kt`'s
+trigger was one-sided **by design** — loss is the acute, hours-matter signal ADR-0001 was written about, and
+the loss baseline is deliberately rise-resistant so a lasting gain cannot mute every later drop.
 
-**What they saw.** A bunny putting on a lot of weight — their words were "5 kg plus" — produces no flag,
-no notification, nothing. Only losses are ever raised.
+**Decided in [ADR-0028](adr/0028-a-weight-gain-is-observed-against-a-six-month-anchor.md) and built the same
+day.** A gain raises the same flag against a **six-month anchor** rather than the loss rule's baseline,
+because gain is chronic where loss is acute; the copy states a fact about the numbers, in grams, and never a
+verdict about the rabbit (ADR-0026, ADR-0001 — *health features observe, they never advise*). `TrendDrop`
+became `TrendChange` and carries a direction. Reasoning in [`phase-7.5.md`](phase-7.5.md) §1.
 
-**Confirmed in the code, and it is deliberate rather than an oversight.** `WeightTrend.kt`'s trigger is
-one-sided: `current.grams <= baseline.grams - threshold`. The baseline is the *second-lowest* of the prior
-window, chosen so a lasting rise cannot park the bunny permanently "above baseline" and mute every later
-drop. So the whole mechanism is built around loss, which is what ADR-0001 was written about — a rabbit
-losing weight is the acute, hours-matter signal.
-
-**What has to be decided before anything is built**, and none of it is obvious:
-
-- **Is a gain the same kind of event?** Loss is acute; gain is chronic. A symmetrical trigger would fire
-  on the same timescale as a loss and be wrong about what it means.
-- **What threshold, against what baseline?** The current baseline exists to be resistant to rises. A gain
-  rule cannot reuse it — it would need its own, and possibly its own window.
-- **What may the copy say?** ADR-0026 and ADR-0001 both bind here, and "your rabbit is overweight" is
-  medical advice, which this app does not give. *Health features observe; they never advise.* The honest
-  form is closer to the trend flag's own voice: a fact about the numbers, not a verdict about the rabbit.
-- **Is 5 kg even the case to serve?** A Flemish Giant is legitimately 6–10 kg. Any absolute number is
-  wrong for some breed, which is an argument that only *change* can be flagged, never a weight.
-- **Which surface?** The trend flag card already exists and already says "worth a closer look" without
-  diagnosing. Reusing it is cheaper than a second mechanism — but then the dot means two things.
-
-**Do not fold this into Phase 7.** That phase was *same functionality, new looks*, and a new trigger is new
-functionality by definition — which is why it went to 7.5 and ships as 1.5. The decision was grilled first
-and written as ADR-0028; the build is §6.5's fourth box.
+- [ ] **The tester's reply is still owed**, and it is not the feature. Their *"5 kg plus"* was a **number,
+      not a change**: a Flemish Giant is legitimately 6–10 kg, so any absolute weight is wrong for some
+      breed and Binky will never call a weight too high — only say that it moved, by how much, since a date.
+      Saying so is better than letting them find out.
 
 ---
 
