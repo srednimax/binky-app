@@ -528,13 +528,36 @@ in nine languages and having it read twice by nine native speakers.
       `res/` off disk as plain files, invisible to Gradle's up-to-date check, so editing a translation and
       re-running `test` printed `:app:test UP-TO-DATE` and a green build **having checked nothing**. Fixed
       by declaring `src/main/res` as a test input in `app/build.gradle.kts`.
-- [ ] ⤷ **The locale-aware capture driver is built and proven — in Phase 7.5 (§6.5), on `en` + `pl`.**
-      What this phase still owes is the **re-proof**: that the needle table resolves now that seven more
+- [x] ⤷ **The locale-aware capture driver is built and proven — in Phase 7.5 (§6.5), on `en` + `pl`.**
+      What this phase owed was the **re-proof**: that the needle table resolves now that seven more
       locales exist, and that needles naming resources the drafts reworded still find them. A needle is a
       claim about what some string says, and this phase changed eight files of strings. The reasoning, the
       two driver facts that paid for it (DND suppressing the seed's 20:00 dose banner; the return-to-Home
       isolation step) and the Polish after set are §6.5's record and are not repeated here.
+      ✅ **Re-proved 2026-08-18.** 45 needles over 74 scenes: in **all nine locales 39 resolve, zero
+      ambiguous**, and the six that fall through to the literal are all sample data — `Bijou`, `Juniper`,
+      `Pip`, `Rosemary` from the seed variants, plus `Metacam` and `Vaccination record`. Then on the
+      phone, the full suite in `de` and `uk` (66 scenes each) and a twelve-scene set in
+      `es fr it pt-BR cs pl`: **every locale walked end to end with no failed tap.**
+      ⚠️ **It found that Brazilian Portuguese could not be driven at all, in either spelling.** `--locale`
+      is documented as a BCP-47 tag and was handed straight to both `cmd locale` *and* the resource path,
+      so `--locale pt-BR` died looking for `values-pt-BR/`. The obvious workaround is worse than the
+      crash: the phone **accepts** `--locales pt-rBR` and stores the language as `rbr`, so the app comes
+      up in English while the needle table is Portuguese and the run reports on a language it never
+      displayed. Fixed with `resource_qualifier()` — `TranslationTest.qualifier`'s third copy, and the
+      shape of mistake this phase named in advance — plus a `require_bcp47()` guard that refuses the
+      resource spelling outright. `screenshots.py` imports both from the driver, so the store-screenshot
+      run inherits the fix.
+      ℹ️ **No locale introduces an edge-to-edge finding English does not already have.** The two
+      `drawn`-tier ones are Phase 7.5's known pair, and the measurements rule out copy length as a cause:
+      `reminders-sheet` overlaps 48 px in `en`, `pl` **and** `uk` and only **39 px in `de`** — shorter,
+      not longer — while `document-viewer` is 13 px in all four. Everything else is the `touch` tier,
+      an unlabelled hit area inflated by `minimumInteractiveComponentSize`.
       ℹ️ A `language-picker` scene was added to `scripts/edge-to-edge.py` with the report row.
+      ℹ️ **`scripts/aab-locale.py` checked `pl` and only `pl`** — the script that exists *because* 1.0.1
+      shipped without Polish reaching the artifact. At nine languages that is eight going to the tracks
+      unverified against the very failure it was written for. It now reads `locales_config.xml`, takes
+      BCP-47 tags, and checks every shipped locale before exiting; `RELEASING.md` invokes it bare.
 - [x] `settings_language_*` → `translatable="false"` — endonyms are locale-invariant, and this removes
       81 duplicated entries at nine languages. ✅ **Done 2026-08-16**, with a general assertion behind it
       rather than `app_name`'s specific one.
