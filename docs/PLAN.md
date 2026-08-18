@@ -37,12 +37,14 @@ and 8 are in [`phase-7.5.md`](phase-7.5.md) and [`phase-8.md`](phase-8.md)**.
   *(opened 2026-08-14 as an ordering over items already open in [`DOD.md`](DOD.md), each cheaper before nine
   languages than after; four owner-facing findings arrived the same day and one of them, multi-valued
   droppings, is what takes it from migration-free to `MIGRATION_6_7`)*
-- [ ] **Phase 8** — Nine languages — **ships as 1.6** — planned in [`phase-8.md`](phase-8.md), not here
+- [x] **Phase 8** — Nine languages — **ships as 1.6** — record in [`phase-8.md`](phase-8.md), not here
   *(retargeted from 1.5 on 2026-08-14: Phase 7.5 adds functionality, so `release-please` cuts 1.5 there.*
   ***All nine languages are promoted and shipping as of 2026-08-17** — 688 translatable resources × 8
   locales, complete — and the Play listing carries a title, short and full description in all nine,
   the English one rewritten from 1.0 scope to 1.6 first so the other eight were not written from stale
-  copy. The capture driver's re-proof against the seven new locales is the one box left.* **The review gate
+  copy. **The capture driver's re-proof closed the phase on 2026-08-18** — the needle table survived the
+  rewording, and what it caught was the driver's own inability to run Brazilian Portuguese in either
+  spelling of the locale.* **The review gate
   changed**: no native reviewer was findable for any of the seven, so a language now ships on an audit —
   the rules that outrank fluency, checked without a native speaker — plus an in-app report row for the
   fluency half, per
