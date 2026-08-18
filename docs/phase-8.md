@@ -189,12 +189,20 @@ question to the people who read the language every day. See
   something, in `cs` and `uk` as well as `pl`, where the *few*/*many* split is where a wrong table shows.
 - No string in any locale says *missed* or *overdue* outside Phase 4's care reminders, and no banned-word
   list entry appears in its own language's file.
-- The switcher offers nine languages by endonym, and switching to each restarts into that language.
+- ✅ **The switcher offers nine languages by endonym, and switching to each restarts into that
+  language** — driven end to end 2026-08-18, all nine tapped in turn, each landing in its own language,
+  and every one of the nine pickers listing all nine rows. This is the one link no test reaches:
+  `AppLanguageTest` proves the enum, `locales_config.xml` and the resource directories name the same
+  nine, but an endonym bound to the wrong enum entry is green everywhere and ships two wrong languages.
 - `settings_language_*` are `translatable="false"` and appear in no `values-<locale>` file.
 - ✅ The Play listing carries title, short and full description in all nine — written 2026-08-17, and the
   English one rewritten from 1.0 scope to 1.6 first, so the seven were not translated from stale copy.
-- **A device set to a language Binky does not ship** still falls back to English cleanly, including its
-  plurals.
+- ✅ **A device set to a language Binky does not ship** still falls back to English cleanly, including
+  its plurals — proven 2026-08-18 by pinning `nl`, which `cmd locale` accepts without consulting
+  `locales_config.xml`. Tabs and body copy come back from `values/`, and `gap_days` renders `3 days`
+  through English's own one/other rule. ℹ️ **Numbers and dates do not fall back** and should not: the
+  same screen reads `1,788 kg` and `17 aug 2026`, which is ICU formatting the Dutch locale correctly
+  while the strings are English.
 - Edge-to-edge unaffected: longest-string languages (German compounds, Ukrainian) do not clip or wrap
   wrongly on the narrowest supported screen — the one visual risk a translation genuinely carries.
   **Polish is re-checked here rather than assumed**: Phase 7 deferred its capture and Phase 7.5 shot it,
@@ -216,9 +224,18 @@ there is no schema change and no media path.
 2. ✅ **Endonyms done 2026-08-16**, along with `app_name`'s general rule and `med_editor_name_placeholder`
    (a medicine brand name). The brief is [`translator-brief.md`](translator-brief.md); its per-language
    banned lists are drafts until each native reviewer confirms their own row.
-3. **Re-prove the locale-aware capture driver** — built in Phase 7.5 and proven there on `pl`, so what is
-   owed here is only that its needle table still resolves once seven locales exist. Every new needle is a
-   claim that some resource still says what the table thinks it says.
+3. ✅ **Done 2026-08-18. Re-prove the locale-aware capture driver** — built in Phase 7.5 and proven
+   there on `pl`, so what was owed here is only that its needle table still resolves once seven locales
+   exist. Every new needle is a claim that some resource still says what the table thinks it says.
+   The table resolves in all nine (39 of 45, zero ambiguous, six sample-data literals) and the phone
+   walked `de` and `uk` in full plus a twelve-scene set in the other six with no failed tap.
+   **What it caught was in the driver rather than in the strings**, and it is the mistake this file
+   predicted for `AppLanguage` two sections up: `--locale` fed one spelling of a locale to two things
+   that spell it differently, so `pt-BR` crashed and `pt-rBR` — which `cmd locale` **accepts**, storing
+   `rbr` — would have shot an English app against a Portuguese needle table and called it a pass. The
+   lesson generalises past this phase: the failure mode of a two-spelling locale is not a crash, it is a
+   green run on the wrong language, so the guard belongs at the point the tag is *taken*, not where it
+   is used. `require_bcp47` and `resource_qualifier`, and `screenshots.py` inherits both.
 4. Draft all seven into `translations/`, validated by the test in place. ✅ **Done 2026-08-17** —
    `de`, `es` and `fr` on 2026-08-16, `it`, `pt-BR`, `cs` and `uk` the next day, 685/685 each —
    along with the staging area this step assumed and nothing had yet built: `TranslationTest` reads
