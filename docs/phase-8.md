@@ -185,8 +185,19 @@ question to the people who read the language every day. See
   that sees clipping. "No English left behind" survives untouched — it is `TranslationTest`'s job and always
   was. The **report row in the language picker** is what carries the part none of this reaches.
 - `TranslationTest` green across all nine locales; `AppLanguageTest` green across all three declarations.
-- **Plural categories correct per language**, checked on a real count in each: 1, 2, 5 and 22 of
+- ✅ **Plural categories correct per language**, checked on a real count in each: 1, 2, 5 and 22 of
   something, in `cs` and `uk` as well as `pl`, where the *few*/*many* split is where a wrong table shows.
+  **`PluralSelectionTest` (instrumented, 2026-08-18)** asks the platform for `gap_days` at those four
+  counts in all nine and compares against a table hand-checked once against CLDR. It has to be on a
+  device: `TranslationTest` proves a category is *declared*, and which item comes back is the
+  platform's choice, so a form filed under the wrong category is a complete file that reads wrong on
+  the phone. **Proven able to fail** — expecting Czech's `5 dne` reddens it.
+  ⚠️ **Czech's `many` is for fractions alone**, so every whole number lands in `few` or `other` and
+  `5 dní` is right where `5 dne` looks right. "Czech has a `many` form" is true of the file and false
+  of every count the app will ever pass it — the one place in this set where the declared table and
+  the rendered string disagree by design. `22` earns its place for the opposite reason: it returns to
+  `few` in Polish and Ukrainian, which is what separates a correct modulo rule from a range check
+  that stopped at 4.
 - No string in any locale says *missed* or *overdue* outside Phase 4's care reminders, and no banned-word
   list entry appears in its own language's file.
 - ✅ **The switcher offers nine languages by endonym, and switching to each restarts into that
@@ -209,8 +220,10 @@ question to the people who read the language every day. See
   so what this phase owes is the same check against copy the seven drafts have since changed nothing of —
   cheap, and the only shipped language with a before to compare against.
 
-`spotlessApply`, `assembleDebug`, `test` and `lint` at the gate. No `connectedAndroidTest` is owed —
-there is no schema change and no media path.
+`spotlessApply`, `assembleDebug`, `test` and `lint` at the gate. No `connectedAndroidTest` was owed for
+the reason it usually is — there is no schema change and no media path — but one arrived anyway, from
+the other direction: `PluralSelectionTest` needs a device because CLDR's selection rules live in the
+platform rather than in this repo.
 
 ## Order of work
 
