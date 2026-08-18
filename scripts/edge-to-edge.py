@@ -157,6 +157,8 @@ def set_locale(locale: str | None) -> None:
     suite is what keeps the `empty` suite honest: its scenes wipe as their *first step*, so a locale
     applied only once per cell would shoot the setup wizard in English inside a Polish run.
     """
+    if locale is not None:
+        require_bcp47(locale)
     global _LOCALE
     _LOCALE = locale
     if locale is None:
@@ -1325,15 +1327,42 @@ WATCH_CLOSE = "Close it"
 SEED_WALK = ("Skip for now", "Continue", "Finish setup", "More", "Settings", "Add the sample data", "OK")
 
 
+def require_bcp47(tag: str) -> None:
+    """Refuse the resource spelling of a locale, wherever it is handed in.
+
+    `cmd locale` takes a BCP-47 tag and does not validate it: `pt-rBR` is accepted and comes back
+    from `get-app-locales` as `[rbr]`, so the app runs in English while the needle table is
+    Portuguese — a run that reports on a language it never displayed. That is worth a sentence
+    rather than the `values-pt-rrBR` file-not-found it would otherwise become.
+    """
+    if "-r" in tag:
+        raise SystemExit(
+            f"--locale takes a BCP-47 tag, not a resource qualifier: {tag!r} is how "
+            f"`values-{tag}/` is spelled. Pass {tag.replace('-r', '-', 1)!r}.",
+        )
+
+
+def resource_qualifier(tag: str) -> str:
+    """The `values-` qualifier for a BCP-47 tag: `pl` → `pl`, `pt-BR` → `pt-rBR`.
+
+    Two spellings of one locale, which `TranslationTest.qualifier` already converts between on the
+    Kotlin side and this driver did not — `--locale pt-BR` died looking for `values-pt-BR`, and the
+    obvious workaround was worse — see [require_bcp47], which is why this is never handed one.
+    """
+    require_bcp47(tag)
+    language, _, region = tag.partition("-")
+    return f"{language}-r{region}" if region else language
+
+
 def load_strings(locale: str | None) -> dict[str, str]:
-    """`name -> value` for `values/` or `values-<locale>/`.
+    """`name -> value` for `values/` or `values-<qualifier>/`, keyed by BCP-47 tag.
 
     The escapes matter and the markup does not: `uiautomator` reports what is *on screen*, so `\\'`
     is an apostrophe by the time a node carries it, while `&amp;` has already been resolved by the
     XML parser. `itertext` rather than `.text` so a value wrapped in inline markup still comes back
     whole.
     """
-    values = RES_DIR / ("values" if locale is None else f"values-{locale}")
+    values = RES_DIR / ("values" if locale is None else f"values-{resource_qualifier(locale)}")
     strings: dict[str, str] = {}
     for element in ElementTree.parse(values / "strings.xml").getroot().findall("string"):
         name = element.get("name")
