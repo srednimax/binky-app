@@ -59,11 +59,17 @@ The two things worth stating as reasoning rather than as steps:
 **Trap:** never run `connectedAndroidTest` after arming. `am instrument` force-stops the package, which
 cancels every alarm it placed, and the result is indistinguishable from a broken rebuild.
 
-## 9b — The gate items parked behind it ✅ answered 2026-08-19
+## 9b — The gate items parked behind it ✅ closed 2026-08-19
 
 Seven, all in [`DOD.md`](DOD.md) §2 — six here and the seventh is 9c. They were parked deliberately:
 each writes to the armed course or force-stops the app, and doing any of them first costs the night 9a
 is waiting for.
+
+**Closed with the fix, not with the readings.** Six items answered at 38 readings is what was asked
+for; what it cost is a delivery state the app had been getting wrong since 4a, and 9b does not close
+until that is built and driven. It is — `ReminderDelivery.Silent`, re-run at 9/9 — and the second
+finding is answered in wording rather than in code, deliberately. See *"One decision over three
+findings"* below for why those two answers are the same answer.
 
 **They are driven by a script now, `scripts/alarm-gate.py`**, and that is worth a sentence because the
 obvious reading of this item is that it was already done. `DoseAlarmTest` proves ADR-0025's invariant
@@ -373,7 +379,9 @@ Phase 9 closes when all of these hold:
 
 - `spotlessApply`, `assembleDebug`, `test`, `lint` at 0/0, and the instrumented suite green on the Xiaomi.
 - **9a's outcome recorded** against 5a's three written outcomes, and Phase 5 ticked in `PLAN.md`.
-- **9b's seven** ticked, with ADR-0025 reworded if the autostart-denied reboot says it must be.
+- **9b's six** ticked ✅, ADR-0025 reworded ✅ — the reboot said it must be, though not for the reason
+  feared — and the readable half of what the run found *fixed*, not merely recorded ✅. (The seventh
+  bullet in §2 is 9c's and is gated on the line below, not this one.)
 - **73 scenes** clean, with the four suspect scenes re-shot and the `empty` suite seen in landscape for
   the first time.
 - The Pages root serves a page, and `_config.yml` no longer claims something untrue.
