@@ -59,15 +59,75 @@ The two things worth stating as reasoning rather than as steps:
 **Trap:** never run `connectedAndroidTest` after arming. `am instrument` force-stops the package, which
 cancels every alarm it placed, and the result is indistinguishable from a broken rebuild.
 
-## 9b — The gate items parked behind it
+## 9b — The gate items parked behind it 🔶 five of six answered 2026-08-19
 
-Seven, all in [`DOD.md`](DOD.md) §2. They were parked deliberately: each writes to the armed course or
-force-stops the app, and doing any of them first costs the night 9a is waiting for.
+Seven, all in [`DOD.md`](DOD.md) §2 — six here and the seventh is 9c. They were parked deliberately:
+each writes to the armed course or force-stops the app, and doing any of them first costs the night 9a
+is waiting for.
 
-The one with a consequence beyond a tick is **reboot twice, autostart granted and autostart denied**.
-Whatever the denied run says is what ADR-0025's self-heal consequence gets reworded to — on this phone,
-without autostart the ROM does not start the process for a broadcast at all, so "the alarm is rebuilt
-from truth at boot" may be a claim this device cannot keep.
+**They are driven by a script now, `scripts/alarm-gate.py`**, and that is worth a sentence because the
+obvious reading of this item is that it was already done. `DoseAlarmTest` proves ADR-0025's invariant
+in-process against an in-memory database, fifteen cases of it, and passes. What it cannot reach is the
+half the gate is actually about: whether the app's **own write paths**, tapped through on a real phone,
+reach the rebuild at all. A repository method that forgets to call `rescheduleDoseAlarm` passes every
+assertion in that test and none of the readings here. So each check taps the write an owner actually
+makes — *Given* on the Care tab, a chip removed from a course editor, *Archive* on Home — and then reads
+`dumpsys alarm`, which is the platform's answer rather than Kotlin's.
+
+**Twenty-five readings, twenty-four as expected**, across writes, bunny-level rebuilds, the blocked
+states, the destructive dialogs and a timezone change. Every armed alarm came back on the *exact*
+mechanism. The results are in `DOD.md` §2 and are not repeated here; three things are reasoning rather
+than record:
+
+- **Two of the ten write readings end at nothing armed**, and that is the half worth paying for. "At
+  most one" cannot fail — there is a single request code, so a second pending dose alarm is not
+  expressible — so the only reading with any information in it is **zero**, and a stale alarm left
+  behind by a deleted course is invisible until it fires into a database with no dose to post.
+- **The two blocked states are not one state, and the check was wrong before the app was.** The bullet
+  asks that a denied permission and a muted channel both "present as blocked". They do, but not in the
+  same words: app-wide, nothing has ever arrived and `ReminderCaveats` shows the point-of-use ask
+  (ADR-0006) instead of a caveat; per-channel, the owner has switched one category off and no dialog
+  the app can raise will ask it back, so it states the consequence. Expecting one sentence for both
+  would have made the better of the two behaviours look like a failure.
+- **Un-muting a channel is the second `Armed`-shaped finding in two days.** Switched off and on again,
+  `doses` returns at `IMPORTANCE_LOW` with `mUserLockedFields` set, so the app may never raise it back
+  — and at that importance a dose reminder posts silently, which for a 03:00 dose is most of the way to
+  not posting at all. `resolveReminderDelivery` calls it fine, because only `IMPORTANCE_NONE` is
+  blocked. It is one more rung in `caveatFor`'s ladder, not a redesign; whether it rides 1.7 or opens
+  Phase 10 is the same open question 9a's autostart finding raised, and they should be answered
+  together.
+
+The one with a consequence beyond a tick is still open: **reboot twice, autostart granted and autostart
+denied**. Whatever the denied run says is what ADR-0025's self-heal consequence gets reworded to — on
+this phone, without autostart the ROM does not start the process for a broadcast at all, so "the alarm
+is rebuilt from truth at boot" may be a claim this device cannot keep. **The first reading says it may
+not keep it even with autostart granted**: four minutes after a reboot there was no process and no
+pending alarm. One reading is not a finding, and the re-run is what §2 describes.
+
+### What the run cost, and two environment notes it corrects
+
+The phone was left on the lock screen with the notification shade holding focus, which refuses
+`am start`, `adb install` and `uiautomator` alike, so the reboot arm needs one physical unlock before it
+can continue. The cause was this file's own helper winding the autostart list back to the top by
+swiping upward; a swipe that ends near the top of the display pulls the shade down once the list has
+nowhere left to go. It restarts the activity from cold instead now.
+
+Two notes in [`CLAUDE.md`](../CLAUDE.md) and §1 came out of runs where autostart was **denied**, and
+with it granted they no longer hold:
+
+- **`MY_PACKAGE_REPLACED` was delivered.** After `adb install -r` the process was running and the alarm
+  had been rebuilt at the same instant, exactly as `UpdateCatchUp` intends. §1's reading that the ROM
+  "does not start the process for a broadcast at all" is a statement about a phone without autostart,
+  not about this phone.
+- **The `SCHEDULE_EXACT_ALARM` appop survived that reinstall**, reading `allow` afterwards — against
+  §1's "a reinstall is the one action known to revert the appop".
+
+And one that is new, and is a trap for every future overnight run: **the autostart grant lapses on its
+own.** It was granted 2026-08-19 07:47 and read as absent the same evening, with the header back to ten
+apps. Neither `pm clear` nor `adb install -r`, each tested on its own afterwards, removes it. So the
+grant is not durable and **must be re-read immediately before any run that depends on it** — the header
+count on the autostart screen is the only honest signal, because a `uiautomator` dump's `checked`
+attribute reports false on every row including the granted ones.
 
 ## 9c — The edge-to-edge matrix, 73 scenes
 
