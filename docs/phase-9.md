@@ -38,7 +38,8 @@ Most of this phase is independent work that can be done in any order. Three edge
    *arrives from a track*, so it is downstream of the upload by construction — the installed Play build
    is Play-signed and refuses a local APK on signature mismatch.
 
-Everything else — 9d, 9e, 9j — can be done whenever.
+Everything else — 9d, 9e, 9j — can be done whenever. **9e is done** (2026-08-19); its one
+remaining probe is gated on the merge, not on another item.
 
 ## 9a — The overnight Doze run 🔴 blocking
 
@@ -227,9 +228,9 @@ Write 9a's and 9b's results into [`PLAN.md`](PLAN.md)'s 5a / 5i / 5j entries and
 status list. It has been the one unticked box since 2026-08-05 while four later phases closed around it,
 which is confusing to read and will be more confusing in six months.
 
-## 9e — The front door
+## 9e — The front door ✅ closed 2026-08-19
 
-`docs/` is served by GitHub Pages from `main`, and **has no `index.md`**, so the site root is a 404.
+`docs/` is served by GitHub Pages from `main`, and **had no `index.md`**, so the site root was a 404.
 Probed 2026-08-18:
 
 ```
@@ -256,6 +257,23 @@ at the root, and the root is what anyone types.
   address, a link to the repo. It is also the page a reviewer lands on if they go looking.
 
 Scope: one new `docs/index.md` with front matter, one corrected comment. Not a site.
+
+**What shipped.** `docs/index.md` — what Binky is, what it records, *a record, not a diagnosis*, the
+privacy policy, `binky.support@gmail.com`, the repo and its licence — written from `README.md` and the
+English full description in [`store-listing.md`](store-listing.md) rather than freshly, so the front door
+and the Play listing cannot drift into saying different things about the same app. Nine languages are
+named on it; the page itself is English only, which is the honest state — a translated landing page is
+not in this phase and pretending otherwise would owe the translation gate nine files it is not getting.
+
+The corrected comment says what actually makes the directory safe, which the old one did not: **not**
+that planning documents go unrendered, but that the repo is public and holds nothing that is not already
+on GitHub. Stated that way it generalises to the rule that matters — anything that must not be published
+must not be in `docs/` at all — where the old wording quietly invited someone to drop a file in and
+trust that leaving the front matter off would keep it private.
+
+**One box stays open until this merges**, and it is not bookkeeping: Pages builds from `main`, so the
+root is still a 404 on the branch. The Website field in the Console (§4) must not be pasted before `/`
+answers 200, because a listing field pointing at a 404 is worse than the empty field it replaced.
 
 ## 9f — Seeing the whole fluffle
 

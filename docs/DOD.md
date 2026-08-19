@@ -549,7 +549,7 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
 - [ ] **Feature graphic** 1024×500 and **icon** 512², both already in [`art/`](../art/).
 - [ ] **Store settings**: category **Lifestyle**; contact email **`binky.support@gmail.com`** — the
       per-app address, *not* the account-level developer one, because `SupportHandoff.kt` hardcodes it and
-      the privacy policy defers to it; **Website** ← the URL 9e creates.
+      the privacy policy defers to it; **Website** ← `https://srednimax.github.io/binky-app/`, which 9e created.
 - [ ] **App content, all ten sections** — answers are paste-ready in
       [`play-app-content.md`](play-app-content.md). Data safety must still agree with the privacy policy;
       Play cross-checks the two and a mismatch is its own rejection reason.
@@ -738,7 +738,7 @@ entity changes, so the standing gate at the top of this file does not fire in th
 | **9b** | The six gate items parked behind it ✅ **closed 2026-08-19** — it found that the boot rebuild waits for the first unlock, and that a lowered channel was being reported as armed; the second is fixed in the same PR | §2 |
 | **9c** | The 73-scene edge-to-edge re-run | §2, last bullet |
 | **9d** | Close Phase 5 | below |
-| **9e** | The Pages front door | below |
+| **9e** | The Pages front door ✅ **closed 2026-08-19** — `docs/index.md` is the root, and `_config.yml`'s "copied verbatim" comment was wrong | below |
 | **9f** | Seeing the whole fluffle | below |
 | **9g** | Nine locales of screenshots | below |
 | **9h** | The Console sitting ✅ production access granted 2026-08-19 — the release is repo-side only now | §4 |
@@ -755,21 +755,32 @@ arrives from a track.
 - [ ] Write 9a's and 9b's results into [`PLAN.md`](PLAN.md)'s 5a / 5i / 5j entries and **tick Phase 5**.
       It has been the one unticked box since 2026-08-05 while four later phases closed around it.
 
-### 9e — The front door
+### 9e — The front door ✅ closed 2026-08-19
 
-`docs/` is served by Pages from `main` and **has no `index.md`**, so the site root is a 404. Probed
+`docs/` is served by Pages from `main` and **had no `index.md`**, so the site root was a 404. Probed
 2026-08-18: `/` → **404**, `/privacy-policy.html` → **200**, `/PLAN.html` → **200**, `/DOD.html` → **200**.
-Nothing is broken; Play's privacy-policy link has always worked. There is simply no page at the root, and
-the root is what anyone types.
+Nothing was broken; Play's privacy-policy link has always worked. There was simply no page at the root,
+and the root is what anyone types.
 
-- [ ] **`docs/index.md`** with front matter: what Binky is, the privacy policy, the support address, a
-      link to the repo. Not a site. It is also the URL for the listing's empty **Website** field (§4).
-- [ ] **Correct `_config.yml`'s comment.** It claims a Markdown file without front matter is "copied
-      verbatim rather than rendered", and offers that as the reason planning documents are safe to leave
+- [x] **`docs/index.md`** with front matter: what Binky is, the privacy policy, the support address, a
+      link to the repo. Not a site. It is also the URL for the listing's empty **Website** field (§4):
+      `https://srednimax.github.io/binky-app/`. Written from `README.md` and the English full description
+      in [`store-listing.md`](store-listing.md), so the front door and the listing say the same things —
+      including *a record, not a diagnosis*, which is the one paragraph that must not be softened for a
+      landing page (ADR-0001).
+- [x] **Corrected `_config.yml`'s comment.** It claimed a Markdown file without front matter is "copied
+      verbatim rather than rendered", and offered that as the reason planning documents are safe to leave
       in a published directory. Pages injects default front matter, so **every `.md` in `docs/` renders as
-      a themed, crawlable page** — `PLAN.html` and `DOD.html` above are the proof. The repo is public so
-      nothing leaks, but a comment that explains why something is safe is exactly the kind that gets
-      trusted rather than re-checked. Correct it; don't delete it.
+      a themed, crawlable page** — `PLAN.html` and `DOD.html` above are the proof. The comment now says
+      that, and says what actually makes the directory safe: the repo is public and holds nothing that is
+      not already on GitHub, so **anything that must not be published must not be in `docs/` at all.**
+- [ ] **Re-probe `/` once this merges.** Pages builds from `main`, so the 404 above only becomes a 200
+      after the merge — and the Website field must not be pasted into the Console before it is
+      (§4 is downstream of this, not of the branch). Re-probed from the branch on 2026-08-19 and the
+      baseline still holds — `/` **404**, `/privacy-policy.html` **200** — so a 200 at the root is a
+      real signal that the page went live rather than a stale cache. One
+      `curl -sS -o /dev/null -w '%{http_code}' https://srednimax.github.io/binky-app/`; the Pages build
+      takes a minute or two to land after the merge.
 
 ### 9f — Seeing the whole fluffle
 
