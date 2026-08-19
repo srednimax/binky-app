@@ -287,16 +287,82 @@ Nothing here contradicts that; the freezer is a different mechanism reached by a
 
 ## 2 — The gate items parked behind that run
 
-All deliberately after it, because each would disturb the armed course.
+All deliberately after it, because each would disturb the armed course. **Five of the six non-matrix
+items are answered, 2026-08-19**, by `scripts/alarm-gate.py` — a driver that taps the write an owner
+actually makes and then reads `dumpsys alarm`, because the question is not whether the rebuild is
+correct (`DoseAlarmTest` has that, in-process) but whether the **UI write paths reach it at all** on a
+phone with a vendor ROM in the loop. Run it with `--only <check>`; it prints one row per reading and
+writes them as JSON.
 
-- [ ] Writes against the armed course — add, edit, shorten, record and skip a dose; **at most one pending
+- [x] Writes against the armed course — add, edit, shorten, record and skip a dose; **at most one pending
       alarm** after each, and **none** when nothing is armed.
-- [ ] Bunny-level rebuilds: archive, un-archive, delete a bunny with an armed course. Same invariant.
-- [ ] Notifications denied / `doses` channel muted → presents as **blocked**, and creating a course still works.
-- [ ] The destructive halves of three dialogs (delete visit with its weighing, delete vet, delete bunny counts).
+      ✅ **10/10, `--only writes`.** Ten writes, ten readings, every armed one on the *exact* mechanism
+      (`window=0`, `exactAllowReason=permission`, `whenElapsed == maxWhenElapsed`). In order: the seeded
+      course armed at today 20:00 → *Given* on the Care tab moved it to tomorrow 08:00 → deleting that
+      answer put it **back** to today 20:00, which is the case ADR-0025 calls out and the one a
+      point-forward-only rebuild would fail → *Skipped* moved it to tomorrow 08:00 again → removing the
+      08:00 chip landed it on tomorrow **20:00**, not tomorrow 08:00 → *End the course* took it to
+      **zero** → a new course with one time armed it at 21:00 → adding a second time moved it
+      **earlier**, to 20:00 → removing that time moved it back to 21:00 → deleting the course took it to
+      **zero** again. Two of the ten end at nothing armed, which is the half a stale alarm breaks in
+      silence.
+- [x] Bunny-level rebuilds: archive, un-archive, delete a bunny with an armed course. Same invariant.
+      ✅ **5/5, `--only bunny`.** Armed at today 20:00 → archive → **0** → un-archive → **1**, back at
+      20:00 → delete → **0**. This is ADR-0025's reason for hanging the rebuild off the container's
+      writes rather than the medication tables: not one medication row moves in any of the three.
+      The delete's second stage counted what goes — *"70 records kept only for this bunny are
+      destroyed."*
+- [x] Notifications denied / `doses` channel muted → presents as **blocked**, and creating a course still works.
+      ✅ **`--only blocked`, and the two are not one state.** Both resolve to `ReminderDelivery.Blocked`,
+      and `ReminderCaveats` is right to split them. App-wide denial presents the **point-of-use ask**
+      (ADR-0006) — the opt-in block, which explains before it requests — not a caveat sentence; the
+      `doses` channel muted on its own presents `doses_state_blocked`, *"Notifications are off, so dose
+      reminders will only appear inside the app."* A course was created from scratch in **both** states
+      and appeared on the tab. Granting the permission back and switching the channel back on each
+      cleared their line.
+      ⚠️ **Un-muting a channel does not restore its importance, and the app can never raise it.**
+      Switched off and on again through system settings, `doses` comes back at `IMPORTANCE_LOW` (2)
+      rather than the `HIGH` (4) it was created with, and `mUserLockedFields=4` — the framework's
+      record that a person has touched it, after which an app's `createNotificationChannel` may only
+      lower it. Confirmed a relaunch does not help; only `pm clear` puts it back to 4. At importance 2
+      a dose reminder posts with **no sound and no heads-up**, and `resolveReminderDelivery` calls that
+      state fine, because it only treats `IMPORTANCE_NONE` as blocked. Same shape as 9a's finding: a
+      delivery the app describes more confidently than the phone will honour. **Decide whether this is
+      a 1.7 `fix:` or the thing that opens Phase 10** — it is one more rung on the ladder in
+      `caveatFor`, not a redesign.
+- [x] The destructive halves of three dialogs (delete visit with its weighing, delete vet, delete bunny counts).
+      ✅ **5/5, `--only dialogs`.** The seeded weighing read 2.380 kg on the Weight tab; the visit dialog
+      named it (*"A weighing of … was recorded at it"*); the **destructive** branch — *Delete the
+      weighing too*, not the *Keep* one a careless run takes — was pressed, and the weighing was gone
+      from the Weight tab afterwards. The vet was removed and their name left the visit while the visit
+      itself stood, which is ADR-0004's shared-entry rule. The bunny counts are the reading in the
+      bullet above, where the deletion was already happening.
 - [ ] **Reboot twice — autostart granted and autostart denied.** Whatever the denied run says is what
       ADR-0025's self-heal consequence gets reworded to.
-- [ ] Timezone change: today's answered doses stay answered, no alarm re-armed for a dose already given.
+      🔶 **Started, not finished — `--only reboot`.** One reading taken, and it is not the expected one:
+      with autostart **granted**, four minutes after a reboot there was **no pending dose alarm and no
+      process at all**. An alarm does not survive a reboot, so a pending one afterwards is
+      `BootReceiver`'s work or it is nothing — and there was nothing. That is a single unconfirmed
+      reading: it needs re-running with the pre-reboot armed instant recorded, the denied arm beside
+      it, and the follow-up reading the check now takes — *is it rebuilt at process start instead?* —
+      because "late by however long the app went unopened" and "never" are different promises and only
+      the second one falsifies ADR-0025.
+      ⛔ **Blocked on the phone**: the run left it on the lock screen with the notification shade holding
+      focus, and `am start`, `adb install` and `uiautomator` are all refused in that state. It needs one
+      physical unlock. The cause is fixed in `autostart_state()` — it wound the settings list back to
+      the top by swiping upward, and a swipe that ends near the top of the display pulls the shade down
+      once the list has nowhere left to go. It force-stops and restarts the activity instead now.
+- [x] Timezone change: today's answered doses stay answered, no alarm re-armed for a dose already given.
+      ✅ **5/5, `--only timezone`.** Armed at today 20:00, answered, alarm moved to tomorrow 08:00; the
+      phone moved **six hours west** to `America/New_York`, where today's answered 20:00 becomes an
+      instant that has not happened yet. The alarm stayed on tomorrow 08:00 and today's dose stayed
+      answered. A rebuild that re-derived slots without carrying their answers across would have armed
+      the app to tell someone to double-dose a rabbit.
+      ℹ️ **`suggest_manual_time_zone` is not usable from `adb`** — it is guarded by
+      `SUGGEST_MANUAL_TIME_AND_ZONE`, which uid 2000 does not hold, and it fails with a
+      `SecurityException` while leaving the zone untouched, which reads exactly like a change the app
+      ignored. `cmd time_zone_detector set_time_zone_state_for_tests --zone_id <id>` writes
+      `persist.sys.timezone` for real; `date` moves with it and so does the broadcast.
 - [ ] Edge-to-edge matrix re-run (`scripts/edge-to-edge.py`, **73 scenes** — Phase 7.5 added twelve,
       seven of them on the two seed variants).
       ⚠️ **A wipe costs the rotation, so every wiping scene in a landscape cell has been shot in
@@ -625,7 +691,7 @@ entity changes, so the standing gate at the top of this file does not fire in th
 | | What | Boxes |
 | --- | --- | --- |
 | **9a** | The overnight Doze run ✅ answered 2026-08-19 — autostart is the lever, and the delivery state was fixed to say so | §1 |
-| **9b** | The seven gate items parked behind it | §2 |
+| **9b** | The seven gate items parked behind it 🔶 five of six answered 2026-08-19; the reboot arm is blocked on one physical unlock | §2 |
 | **9c** | The 73-scene edge-to-edge re-run | §2, last bullet |
 | **9d** | Close Phase 5 | below |
 | **9e** | The Pages front door | below |

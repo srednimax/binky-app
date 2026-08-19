@@ -152,9 +152,17 @@ alongside the Play one as a separate install labelled **Binky Debug**; the two n
 which is the whole point — the Play build holds real bunny history.
 
 Xiaomi also kills background work aggressively; scheduled notifications need battery-optimisation
-exemption and autostart. **Without autostart it does not start the process for a broadcast at all** —
-neither `MY_PACKAGE_REPLACED` after a real `adb install -r` (WorkManager's own database showed no row for
-the work the receiver enqueues) nor an explicit `am broadcast` to a manifest receiver, which leaves `pidof`
-empty with `stopped=false`. There is no `AUTO_START` appop to grant over `adb`; it is a Settings toggle.
-So **a receiver's behaviour cannot be tested from `adb` on this phone** — drive the same code in-process
-from an instrumented test instead, or the run proves only that the ROM dropped the broadcast.
+exemption and **autostart**, and autostart is the load-bearing one: 9a watched a 03:00 exact alarm land at
+06:50 without it and on the second, in deep Doze, with it. **Without autostart the ROM does not start the
+process for a broadcast at all** — not `MY_PACKAGE_REPLACED` after a real `adb install -r`, not an explicit
+`am broadcast` to a manifest receiver, which leaves `pidof` empty with `stopped=false`. **With it granted,
+both work** (2026-08-19): the reinstall started the process and rebuilt the alarm. So a receiver *can* be
+tested from `adb` here, but only once the autostart state is known — and a run against an unknown one
+proves nothing either way.
+
+There is no `AUTO_START` appop; it is a Settings toggle
+(`am start -n com.miui.securitycenter/com.miui.permcenter.autostart.AutoStartManagementActivity`), and the
+grant **lapses on its own** — granted 07:47, gone by that evening, with neither `pm clear` nor
+`adb install -r` responsible. **Re-read it before any run that depends on it.** The header count
+("N apps can start in the background") is the only honest signal; a `uiautomator` dump's `checked`
+attribute reports false on every row, granted ones included. `scripts/alarm-gate.py` reads and sets it.
