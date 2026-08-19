@@ -41,7 +41,12 @@ device state and the traps, which is the expensive half to rewrite.
 
 ---
 
-## 1 — The exact-alarm overnight Doze run 🔴 blocking, and time-sensitive
+## 1 — The exact-alarm overnight Doze run ✅ 9a answered 2026-08-19
+
+**Read the two result blocks below first** — *"the alarm did not fire"* and *"9a passes"*. Everything
+above them is the pre-run record, kept because the arming procedure and its traps are the expensive half
+to rewrite. What is still open in this section is the **Phase-4 carry** (the care sweep firing while still
+in Doze, and a watch auto-expiring), not 9a.
 
 5a's outcome and the first bullet of Phase 5's gate. **Still owed**: the 4→5 Aug night fired on the
 *best-effort* path (`setAndAllowWhileIdle`) because the permission had reverted, so the question the
@@ -194,30 +199,86 @@ in the alarm's `idle-options` evidently does not outrank the freezer.
 - [x] **Re-run with autostart GRANTED to `Binky Debug`, one variable changed.** Granted 2026-08-19
       07:47 — the header now reads **"11 apps can start in the background"** with `Binky Debug` in the
       allowed list, against 10 the night before. That is the only variable that moved.
-- [ ] **The 10:00 run, armed 2026-08-19 07:49.** Metacam now carries **two** times, `3:00 AM & 10:00 AM`,
-      so one course gives two attempts: a desk test today and the deep-Doze repeat tonight. Pending alarm
-      reads `origWhen=2026-08-19 10:00:00.000 window=0 exactAllowReason=permission`.
+- [x] **The 10:00 run — it fired. Autostart is the lever.** Read 2026-08-19 16:34.
 
-      **A 10:00 desk test is the same experiment as 03:00, not a weaker one** — six minutes of stillness
-      reaches `device_idle=full` on this device, and the 17:00 capture proves retroactively whether it
-      did, exactly as it did for 03:00. What is weaker is *confidence the conditions held*: a glance at
-      the screen, a charging cable or picking the phone up breaks it, and nobody finds out until the read.
-      Hence 03:00 stays armed underneath as a free second attempt.
+### 9a passes: with autostart granted the exact alarm fires in deep Doze ✅
 
-      **Known confound:** the 09:00 care sweep runs an hour earlier and thaws the app. 55 minutes should
-      be ample for Greeze to re-freeze it before 10:00, but check the logcat for a re-freeze before
-      trusting a pass. The sweep is also a **bonus data point** — whether a WorkManager job is held by the
-      freezer the way the alarm was is not yet known either way.
+One variable changed from the run that failed — `Binky Debug` added to autostart — and the result
+inverts completely. Anchoring batterystats to its `TIME: 2026-08-19-09-01-02` marker:
 
-      Read: **`doses` post timestamped ~10:00** → autostart is the lever. **No post, plus
-      `GreezeManager: THAW` and `Aurogon: sendPendingAlarm` at plug-in** → still frozen, and exact alarms
-      are not deliverable on this ROM.
-- [ ] If it fires with autostart and not without, that is the finding, and **ADR-0003 needs an amendment**
-      saying so — plus whatever the app tells an owner on a ROM like this. If it fails **with** autostart
-      too, exact alarms are not deliverable on HyperOS at all and the delivery mechanism is the question,
-      not the wording.
-- [ ] This also front-runs 9b's *"reboot twice, autostart granted and autostart denied"* — the denied arm
-      is now on record.
+| | |
+| --- | --- |
+| Unplugged | **07:55:38** (`-plugged`), on battery at 30% for the whole test |
+| Deep Doze entered | **09:09:34** (`device_idle=full`) |
+| **Alarm fired** | **10:00:00.779** — `wake_reason=0:"35 pm8xxx_rtc_alarm"`, `+tmpwhitelist=u0a507`, then `NotificationManagerService:post:binky…debug` |
+| Deep Doze left | **10:09:24** |
+
+So the fire sits **50 minutes inside an unbroken 59m51s stretch of `device_idle=full`**, on battery,
+and the notification landed **779 ms** after the scheduled instant. `Metacam`, channel `doses`,
+importance 4. That is 5a's **outcome 1, "fires in grace"** — not merely in grace, but on the second.
+
+**And the app was never frozen.** The logcat covers 09:06:35 onward and contains **no `GreezeManager`
+and no `Aurogon` line for the app at all** — no freeze, no thaw, no `sendPendingAlarm`. Those three were
+the entire story the night before. Autostart does not make the alarm louder; it stops HyperOS freezing
+the process that receives it.
+
+**The conclusion, stated carefully:** on HyperOS an exact alarm is delivered on time in deep Doze **if
+and only if the app has autostart**. Without it the vendor freezes the process and queues the alarm
+until something thaws it — which, in the failing run, was plugging the phone in 3h50m later. Neither
+`SCHEDULE_EXACT_ALARM`, nor `window=0`, nor the alarm's own `temporaryAppAllowlistReasonCode=302`
+changes that.
+
+**Remaining caveat, and it is small.** The gap between the app last running and the fire was ~1 h today
+(the 09:00 sweep) against ~5 h on the failing night, so today does not *prove* a five-hour-idle app
+stays unfrozen. The 03:00 slot is still armed on the same course and costs nothing, so tonight supplies
+the matched gap. **It is confirmation, not a new experiment — 9a is answered.**
+
+### What 9a cost the app: `Armed` was a promise this phone does not keep ✅ fixed
+
+The finding falsifies a claim the app was already shipping. An owner on a Xiaomi who granted the battery
+exemption reached `ReminderDelivery.Armed` and was told *"this phone is set up to let them through"* — on
+a phone that had just held a dose for 3h50m. ADR-0003's opening argument is that a dose reminder which
+silently fails is worse than none, so this is a `fix:`, not a feature, and it rides 1.7.
+
+- [x] `hasAutostartSettings()` is now an input to `resolveReminderDelivery` (`oemAutostartUnreadable`),
+      ranked last of the three best-effort reasons because it is the only one the app cannot read back.
+      Where the list exists, **`Armed` is unreachable**; a stock phone still reaches it on the exemption
+      alone, so the hedge is scoped to the phones that earned it.
+- [x] Two new strings — the autostart variant of the care line and of the dose line — saying **hours**,
+      and saying the reminder turns up when the phone is next picked up. Translated into all eight.
+- [x] The exemption now *reveals* the autostart line rather than ending the conversation. That was a real
+      hole: the autostart block on the opt-in screen renders only while the app is unexempted, so an
+      exempt Xiaomi owner previously had no way in at all.
+- [x] `ReminderCaveats` ranks the same way, so the Care & Meds card follows the delivery line.
+- [x] ADR-0003 amended with both runs and what they change.
+
+**Not yet done on the phone**: the untested link in the chain is whether an *ordinary* app — not
+`adb shell`, which has more privilege — can actually launch the MIUI autostart activity.
+`hasAutostartSettings()` uses `resolveActivity`, so the button is not blind, but nobody has watched it
+open. Worth one tap before 1.7 goes out, since the new copy points at it.
+
+**What it costs the product**, and this is now the real work:
+
+- [ ] **ADR-0003 needs an amendment.** Its exact-alarm promise holds only where the OEM does not freeze
+      the app, and this is the single most popular Android OEM in several of the nine markets shipped to.
+- [ ] **An owner on a Xiaomi will hit this and never know.** They cannot be expected to find
+      *Settings → Apps → Permissions → Autostart* unaided, and the app currently says nothing. Whatever
+      is built here is user-facing copy at minimum and probably a check plus a deep link — i.e. a
+      **`feat:`**, which changes Phase 9's "exactly one feature commit" versioning note above.
+- [ ] Decide whether this is a Phase 9 item or the thing that opens Phase 10. It was not in the plan
+      because nobody knew it existed.
+
+### The 09:00 sweep, same morning: also fine, and the prediction was wrong in the app's favour
+
+Two posts at 09:00:27, not the four predicted: `Nail trim` / "Overdue for Bijou." on `care`
+(`notifiedForDueOn` now 20672), and the `watch` nag. **No weigh-in and therefore no group summary** —
+and the app is right, the prediction was wrong. `lastCompletedOn` takes the later of the care event and
+**the latest weighing** for `WEIGH_IN` (`CareSchedule.kt`), and Bijou was weighed 2026-08-16, so it is
+not due until 08-25. Reading `care_events` alone is what produced the bad prediction. With one care
+reminder due, `CareNotifier` correctly posts no summary.
+
+That also settles the freezer's reach: **a WorkManager job was not held either** — the sweep ran at
+09:00:27, 27 s after its slot, while the phone was on battery.
 
 **Not a Doze failure, so 4g's result stands**: a WorkManager job survived 10.5 h of Doze on 2026-08-04.
 Nothing here contradicts that; the freezer is a different mechanism reached by a different path.
@@ -568,7 +629,7 @@ entity changes, so the standing gate at the top of this file does not fire in th
 
 | | What | Boxes |
 | --- | --- | --- |
-| **9a** | The overnight Doze run 🔴 | §1 |
+| **9a** | The overnight Doze run ✅ answered 2026-08-19 — autostart is the lever, and the delivery state was fixed to say so | §1 |
 | **9b** | The seven gate items parked behind it | §2 |
 | **9c** | The 73-scene edge-to-edge re-run | §2, last bullet |
 | **9d** | Close Phase 5 | below |
