@@ -271,9 +271,12 @@ on GitHub. Stated that way it generalises to the rule that matters — anything 
 must not be in `docs/` at all — where the old wording quietly invited someone to drop a file in and
 trust that leaving the front matter off would keep it private.
 
-**One box stays open until this merges**, and it is not bookkeeping: Pages builds from `main`, so the
-root is still a 404 on the branch. The Website field in the Console (§4) must not be pasted before `/`
-answers 200, because a listing field pointing at a 404 is worse than the empty field it replaced.
+**Merged and probed the same day.** `/` answers **200** with the page rendered — Pages'
+`jekyll-relative-links` turned the page's `privacy-policy.md` link into `/binky-app/privacy-policy.html`,
+which is also a 200, so the front door's one outbound link works rather than merely existing. The box
+was held open until then on purpose, and it was not bookkeeping: Pages builds from `main`, so the root
+was still a 404 on the branch, and a Website field pointing at a 404 is worse than the empty field it
+replaces. **§4's Website field is now unblocked.**
 
 ## 9f — Seeing the whole fluffle
 
