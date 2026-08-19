@@ -167,7 +167,7 @@ def armed(step: str, at: str | None = None, *, exact: bool | None = None) -> lis
     """
     time.sleep(REBUILD_SETTLE)
     alarms = dose_alarms()
-    want = f"1 alarm{f' @ {at[11:]}' if at else ''}"
+    want = f"1 alarm{f' @ {at}' if at else ''}"
     if len(alarms) != 1:
         REPORT.record(_CHECK, step, want, f"{len(alarms)} alarms", False)
         return alarms
@@ -179,7 +179,10 @@ def armed(step: str, at: str | None = None, *, exact: bool | None = None) -> lis
         _CHECK,
         step,
         want,
-        f"1 alarm @ {got.at[11:]}",
+        # The **date** as well as the time. Reading only `HH:MM` is what made a run near the seed's
+        # own 20:00 slot unreadable: "20:00" and "08:00" were today's and tomorrow's, and which was
+        # which was the entire question.
+        f"1 alarm @ {got.at}",
         ok,
         f"{'exact' if got.exact else 'best-effort'}, window={got.window}",
     )
@@ -485,6 +488,37 @@ def set_autostart(on: bool) -> bool:
     return autostart_state()[1] == on
 
 
+def wait_for_unlock(timeout: float = 900.0) -> None:
+    """Stop and ask a person to unlock the phone, then carry on when they have.
+
+    **This device has a password and `adb` cannot get past it** — not `wm dismiss-keyguard`, not a
+    swipe, not a power cycle. So a reboot is not a step a script may take and then continue through;
+    it is a step that hands the run back to a person for a moment.
+
+    Ploughing on instead is worse than stalling, because a locked phone refuses far more than taps
+    and every refusal is misleading: `am start` answers `Error type 3 / Activity class ... does not
+    exist` for an activity plainly in the resolver table, `adb install` answers
+    `INSTALL_FAILED_USER_RESTRICTED` because its prompt cannot be shown, and `uiautomator dump`
+    comes back empty. On 2026-08-19 those three cost a session's worth of chasing a package that was
+    never broken. Asking the question first turns all of them into one known state.
+    """
+    if "isKeyguardShowing=false" in e2e.shell("dumpsys window | grep isKeyguardShowing"):
+        return
+    print("\n  ⏸  THE PHONE IS LOCKED — please unlock it. Waiting…", flush=True)
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if "isKeyguardShowing=false" in e2e.shell("dumpsys window | grep isKeyguardShowing"):
+            print("  ▶  unlocked, carrying on", flush=True)
+            # Held awake while on USB for the rest of the run, so the screen cannot lock itself
+            # again halfway through the taps that follow and strand the check a second time.
+            # `main` puts it back.
+            e2e.shell("svc power stayon usb")
+            e2e.settle(2.0)
+            return
+        time.sleep(5)
+    raise StepFailed("the phone was never unlocked; the reboot arm cannot continue without it")
+
+
 def reboot_and_wait(timeout: float = 180.0) -> float:
     """Reboot the phone and come back when it is up. Returns how long that took.
 
@@ -504,6 +538,8 @@ def reboot_and_wait(timeout: float = 180.0) -> float:
             # one for a receiver that simply had not run yet — a false negative that looks exactly
             # like the finding.
             time.sleep(45)
+            # Reading the alarm list needs no screen, but everything after it does — and the check
+            # must not walk into a locked phone's misleading refusals. See [wait_for_unlock].
             return time.time() - started
         time.sleep(3)
     raise StepFailed(f"the phone never finished booting in {timeout:.0f}s")
@@ -579,6 +615,42 @@ def open_course(name: str) -> None:
     if not found:
         raise StepFailed(f"no course named {name!r} on the tab; on screen: {visible()[:20]}")
     tap_node(found[-1])
+
+
+def clear_times() -> None:
+    """Remove every time-of-day chip from an open course editor.
+
+    Each chip's remove button describes itself as *Remove <time>*, so they are found by that prefix
+    and tapped one at a time — the row reflows as each goes, which is why this re-dumps rather than
+    collecting the list once.
+    """
+    for _ in range(8):
+        found = [n for n in e2e.dump_ui() if n.package == e2e.PACKAGE and norm(n.desc).startswith("remove ")]
+        if not found:
+            return
+        tap_node(found[0])
+        e2e.settle(0.8)
+
+
+def arm_single_slot(hour: int) -> None:
+    """Put the seeded course on **one** time of day, `hour`, and nothing else.
+
+    **The reboot check cannot use the seed's own schedule, and finding that out cost a run.** The
+    sample data arms 08:00 and 20:00, and a check that happens to run near either one watches the
+    alarm legitimately change under it three times: the slot ages into `DOSE_GRACE`, so a rebuild
+    arms it in the past, `AlarmManager` fires a past trigger immediately, `postDueDoses` posts it,
+    and the reschedule then skips *past* it — tomorrow's slot — because a posted slot is still
+    unanswered and re-arming it would loop. Every one of those is correct, and between them they
+    make "the same alarm came back after the reboot" unprovable. Two hours out, nothing moves.
+    """
+    open_care()
+    open_course("Metacam")
+    tap_nth("Edit", 0, exact=True)
+    clear_times()
+    e2e.tap("Add a time")
+    pick_time(hour)
+    tap_exact("Save")
+    e2e.settle(1.5)
 
 
 def open_care() -> None:
@@ -991,11 +1063,11 @@ def check_reboot() -> None:
         arm = "granted" if grant else "denied"
         print(f"\n-- autostart {arm}")
         e2e.reset_to_seeded()
-        open_care()
-        # No hardcoded instant: which slot the seed arms depends on the hour the check is run at,
-        # and the claim here is not *which* one but that **the same one comes back**. Reading it
-        # first and comparing afterwards is the stronger assertion anyway — a receiver that rebuilt
-        # some other slot would satisfy a bare count.
+        # Two hours out, so nothing about the slot changes across the reboot. See [arm_single_slot].
+        arm_single_slot((datetime.now().hour + 2) % 24)
+        # No hardcoded instant: the claim here is not *which* slot but that **the same one comes
+        # back**. Reading it first and comparing afterwards is the stronger assertion anyway — a
+        # receiver that rebuilt some other slot would satisfy a bare count.
         before = armed(f"{arm}: armed before the reboot")
         expected_at = before[0].at if before else "?"
 
@@ -1009,12 +1081,21 @@ def check_reboot() -> None:
         took = reboot_and_wait()
         print(f"  -- back up after {took:.0f}s")
 
+        # Read **before** asking for the unlock: this is the whole reading, and it must be taken
+        # with nothing having touched the app. Unlocking the screen does not start it, but waiting
+        # for a person to do so gives the ROM minutes it would not otherwise have had.
         alarms = dose_alarms()
         running = shell_ok(f"pidof {e2e.PACKAGE}").strip()
+        # **The keyguard state belongs in the reading.** `BOOT_COMPLETED` waits for the first unlock
+        # on this phone (see [check_locked_boot]), so "the alarm came back" means something quite
+        # different depending on whether a person had already reached for it — and without this the
+        # two runs are indistinguishable in the report.
+        locked = "isKeyguardShowing=true" in e2e.shell("dumpsys window | grep isKeyguardShowing")
         observe(
-            f"{arm}: the alarm is rebuilt at boot",
-            f"1 alarm @ {expected_at[11:]}, nothing launched",
-            f"{len(alarms)} alarms" + (f" @ {alarms[0].at[11:]}" if alarms else "") + f", pid={running or 'none'}",
+            f"{arm}: the alarm is rebuilt after a reboot",
+            f"1 alarm @ {expected_at}, nothing launched",
+            f"{len(alarms)} alarms" + (f" @ {alarms[0].at}" if alarms else "")
+            + f", pid={running or 'none'}, keyguard={'up' if locked else 'down'}",
             len(alarms) == 1 and alarms[0].at == expected_at,
         )
 
@@ -1023,15 +1104,85 @@ def check_reboot() -> None:
         # from truth the moment the owner opens the app — the self-heal at process start. A phone
         # that rebuilds on launch has a reminder that is late by however long the app went unopened;
         # a phone that rebuilds at neither has no reminder at all, and those are different promises.
+        # Everything past here drives the UI, so the phone has to be in a person's hands first.
+        wait_for_unlock()
         e2e.set_dnd(True)
         open_care()
         after = dose_alarms()
         observe(
             f"{arm}: rebuilt at process start instead",
-            f"1 alarm @ {expected_at[11:]}",
-            f"{len(after)} alarms" + (f" @ {after[0].at[11:]}" if after else ""),
+            f"1 alarm @ {expected_at}",
+            f"{len(after)} alarms" + (f" @ {after[0].at}" if after else ""),
             len(after) == 1 and after[0].at == expected_at,
         )
+
+
+def check_locked_boot() -> None:
+    """**Is the alarm rebuilt at boot, or at the first unlock?** — the question §2's bullet 5 hid.
+
+    `BootReceiver` listens for `ACTION_BOOT_COMPLETED`, and this phone is `ro.crypto.type=file`
+    with a secure lock screen. Under File-Based Encryption that broadcast is not sent when the
+    kernel finishes booting; it is sent when the owner's **credential-encrypted storage** is
+    unlocked, which is the first time they enter their password. A receiver can opt out of the wait
+    with `directBootAware`, and this one must not — it opens the database, and the database is in CE
+    storage by definition.
+
+    So the honest form of ADR-0025's self-heal claim may be *"rebuilt at the first unlock"* rather
+    than *"rebuilt at boot"*, and the difference is a real dose: a phone that restarts itself for an
+    OTA at 02:00 and is picked up at 07:00 has **no dose alarm at all** for those five hours, and a
+    03:00 slot inside them is not late, it is gone. Nothing in the app can see this state, because
+    nothing in the app is running during it.
+
+    The check reads the alarm list repeatedly **while the phone is still locked** — which needs no
+    screen and starts nothing — and then once more after the unlock. Whichever reading first shows
+    an alarm is the answer.
+    """
+    print("\n-- reseeding")
+    e2e.reset_to_seeded()
+    arm_single_slot((datetime.now().hour + 2) % 24)
+    before = armed("armed before the reboot")
+    expected_at = before[0].at if before else "?"
+
+    e2e.set_dnd(False)
+    print("\n  ⚠  LEAVE THE PHONE LOCKED after it reboots — the readings need it locked.")
+    took = reboot_and_wait()
+    print(f"  -- back up after {took:.0f}s")
+
+    for wait in (0, 60, 120):
+        if wait:
+            time.sleep(wait)
+        locked = "isKeyguardShowing=true" in e2e.shell("dumpsys window | grep isKeyguardShowing")
+        alarms = dose_alarms()
+        running = shell_ok(f"pidof {e2e.PACKAGE}").strip()
+        observe(
+            f"locked, +{45 + wait}s after boot",
+            "recorded, not asserted",
+            f"keyguard={'up' if locked else 'down'}, {len(alarms)} alarms"
+            + (f" @ {alarms[0].at}" if alarms else "")
+            + f", pid={running or 'none'}",
+            True,
+            "the reading is the finding" if locked else "unlocked early — this reading proves nothing",
+        )
+
+    wait_for_unlock()
+    # **Polled, and the number is the point.** The first run of this check read once at +20 s, found
+    # nothing, and recorded a failure that was really a stopwatch started too early: the alarm was
+    # there when the phone was next looked at. How long the owner's dose reminder does not exist for
+    # is the whole consequence, so it is measured rather than sampled.
+    unlocked_at = time.time()
+    for _ in range(30):
+        after = dose_alarms()
+        if after:
+            break
+        time.sleep(30)
+    waited = time.time() - unlocked_at
+    observe(
+        "after the first unlock",
+        f"1 alarm @ {expected_at}",
+        f"{len(after)} alarms" + (f" @ {after[0].at}" if after else "") + f", {waited:.0f}s after unlocking",
+        len(after) == 1 and after[0].at == expected_at,
+    )
+    e2e.set_dnd(True)
 
 
 CHECKS = {
@@ -1039,6 +1190,7 @@ CHECKS = {
     "bunny": check_bunny,
     "dialogs": check_dialogs,
     "reboot": check_reboot,
+    "locked-boot": check_locked_boot,
     "blocked": check_blocked,
     "timezone": check_timezone,
 }
@@ -1076,6 +1228,9 @@ def main() -> int:
     finally:
         if not args.keep_dnd:
             e2e.set_dnd(False)
+        # Whatever [wait_for_unlock] may have set. Left on, the phone never sleeps on the charger,
+        # which is exactly the condition an overnight Doze run cannot have.
+        e2e.shell("svc power stayon false")
 
     print(f"\n{len(REPORT.rows) - REPORT.failed}/{len(REPORT.rows)} readings as expected")
     if args.report:

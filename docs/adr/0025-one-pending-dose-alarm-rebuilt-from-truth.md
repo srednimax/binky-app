@@ -70,6 +70,38 @@ one unrecorded autostart state, which means none of them distinguishes the two c
 runs its reboot check **twice, autostart granted and denied**, and the denied run is the one that describes
 an owner who skipped the prompt.
 
+### Amended 2026-08-19 (Phase 9b): autostart was the wrong suspect, and "at boot" is wrong for everyone
+
+Both reboot arms were run, with a slot armed two hours out so nothing could move under them
+(`scripts/alarm-gate.py --only reboot`). **Autostart made no difference**: granted and denied, the phone
+came back from a restart with exactly one pending alarm at exactly the armed instant. The paragraph above
+is wrong about the mechanism — autostart governs whether a *frozen* process is thawed to receive an alarm
+hours after it was placed (ADR-0003's Phase 9a amendment), not whether the boot rebuild happens.
+
+**The rebuild does not happen at boot at all, and this is not a Xiaomi fact.** Left locked after a restart,
+the phone had no pending dose alarm and no process at +45 s, +105 s or +165 s; the alarm appeared only once
+the phone had been unlocked (`--only locked-boot`). The device is `ro.crypto.type=file`, and under
+File-Based Encryption with a secure lock screen `ACTION_BOOT_COMPLETED` is not sent when the kernel finishes
+booting — it is sent when the owner's **credential-encrypted storage** is unlocked, the first time they
+enter their password. `BootReceiver` cannot opt out with `directBootAware` and must not: it opens the
+database, and the database is in CE storage by definition. **Every phone with a lock screen behaves this
+way**, so this is a correction to the decision rather than a note about one device.
+
+So the sentence this ADR should be read by is **"a dropped alarm self-heals at the owner's first unlock
+after a restart, and within a day otherwise"** — and on the test phone not even promptly at that unlock: it
+was absent 20 s afterwards and present when next looked at.
+
+**What it costs, stated plainly.** A phone that restarts itself for a system update at 02:00 and is picked
+up at 07:00 has no dose alarm for those five hours. A 03:00 slot inside them is not delivered late — the
+grace window never comes into it — it is never armed. Nothing in the app can detect the state, because
+nothing in the app is running during it, and no amount of care in `rescheduleDoseAlarm` reaches it.
+
+**No code change follows from this**, which is why it is recorded here rather than fixed. `BootReceiver` is
+correct; making it `directBootAware` would only move the failure, since the schedule it needs is in the
+encrypted database. What is open is whether the delivery ladder should say anything to the owner — the
+third instance, with 9a's autostart finding and the user-locked channel importance, of one product
+question: how much of a phone's unreliability an app should narrate to someone who cannot fix most of it.
+
 **The invariant is a gate item, not a unit test.** Idempotence is assertable in JVM tests, but "exactly one
 pending alarm on a real device after adding courses, recording doses, archiving a bunny, changing the clock
 and rebooting" is only answerable with `dumpsys alarm` on the Xiaomi.

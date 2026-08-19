@@ -287,7 +287,7 @@ Nothing here contradicts that; the freezer is a different mechanism reached by a
 
 ## 2 — The gate items parked behind that run
 
-All deliberately after it, because each would disturb the armed course. **Five of the six non-matrix
+All deliberately after it, because each would disturb the armed course. **All six non-matrix
 items are answered, 2026-08-19**, by `scripts/alarm-gate.py` — a driver that taps the write an owner
 actually makes and then reads `dumpsys alarm`, because the question is not whether the rebuild is
 correct (`DoseAlarmTest` has that, in-process) but whether the **UI write paths reach it at all** on a
@@ -337,21 +337,33 @@ writes them as JSON.
       from the Weight tab afterwards. The vet was removed and their name left the visit while the visit
       itself stood, which is ADR-0004's shared-entry rule. The bunny counts are the reading in the
       bullet above, where the deletion was already happening.
-- [ ] **Reboot twice — autostart granted and autostart denied.** Whatever the denied run says is what
+- [x] **Reboot twice — autostart granted and autostart denied.** Whatever the denied run says is what
       ADR-0025's self-heal consequence gets reworded to.
-      🔶 **Started, not finished — `--only reboot`.** One reading taken, and it is not the expected one:
-      with autostart **granted**, four minutes after a reboot there was **no pending dose alarm and no
-      process at all**. An alarm does not survive a reboot, so a pending one afterwards is
-      `BootReceiver`'s work or it is nothing — and there was nothing. That is a single unconfirmed
-      reading: it needs re-running with the pre-reboot armed instant recorded, the denied arm beside
-      it, and the follow-up reading the check now takes — *is it rebuilt at process start instead?* —
-      because "late by however long the app went unopened" and "never" are different promises and only
-      the second one falsifies ADR-0025.
-      ⛔ **Blocked on the phone**: the run left it on the lock screen with the notification shade holding
-      focus, and `am start`, `adb install` and `uiautomator` are all refused in that state. It needs one
-      physical unlock. The cause is fixed in `autostart_state()` — it wound the settings list back to
-      the top by swiping upward, and a swipe that ends near the top of the display pulls the shade down
-      once the list has nowhere left to go. It force-stops and restarts the activity instead now.
+      ✅ **8/8, `--only reboot`, and autostart turned out not to be the variable.** A slot two hours out
+      was armed through the course editor, the phone rebooted, and the alarm list was read with nothing
+      launched: **both** arms came back with exactly one alarm at exactly the same instant —
+      `2026-08-19 22:00`, `window=0` — and both were still right after the app was opened. Autostart
+      governs whether a *frozen* process is thawed to receive an alarm hours later (9a); it does not
+      govern the boot rebuild.
+      🔴 **But the rebuild does not happen at boot, and that is the consequence beyond a tick.**
+      `--only locked-boot`, the check written once the reboot readings looked too good: with the phone
+      **left locked** after a restart there was **no pending dose alarm and no process** at +45 s,
+      +105 s and +165 s. The alarm appeared only after the phone was unlocked. The cause is not the ROM
+      and not a defect: this device is `ro.crypto.type=file`, and under File-Based Encryption with a
+      secure lock screen `ACTION_BOOT_COMPLETED` is not sent when the kernel finishes booting — it is
+      sent when the owner's **credential-encrypted storage** is unlocked, which is the first time they
+      enter their password. `BootReceiver` cannot opt out with `directBootAware`: it opens the
+      database, and the database is in CE storage by definition.
+      **So ADR-0025's "the alarm is rebuilt from truth at boot" is wrong on any phone with a lock
+      screen**, which is most of them. The accurate sentence is *rebuilt at the owner's first unlock
+      after a restart* — and on this phone not even promptly then: it was absent 20 s after the unlock
+      and present when next looked at. A phone that restarts itself for an OTA at 02:00 and is picked
+      up at 07:00 has **no dose alarm for those five hours**, so a 03:00 dose is not late, it never
+      exists. Nothing in the app can detect the state, because nothing in the app is running during it.
+      **Two things this needs**, and neither is a code change to `BootReceiver`: ADR-0025 amended to say
+      what actually happens, and a decision on whether the delivery ladder should say anything to the
+      owner — the same open question as 9a's autostart finding and the muted-channel one above. The
+      check now polls after the unlock so the next run puts a number on the latency.
 - [x] Timezone change: today's answered doses stay answered, no alarm re-armed for a dose already given.
       ✅ **5/5, `--only timezone`.** Armed at today 20:00, answered, alarm moved to tomorrow 08:00; the
       phone moved **six hours west** to `America/New_York`, where today's answered 20:00 becomes an
@@ -691,7 +703,7 @@ entity changes, so the standing gate at the top of this file does not fire in th
 | | What | Boxes |
 | --- | --- | --- |
 | **9a** | The overnight Doze run ✅ answered 2026-08-19 — autostart is the lever, and the delivery state was fixed to say so | §1 |
-| **9b** | The seven gate items parked behind it 🔶 five of six answered 2026-08-19; the reboot arm is blocked on one physical unlock | §2 |
+| **9b** | The seven gate items parked behind it ✅ answered 2026-08-19 — and it found that the boot rebuild waits for the first unlock | §2 |
 | **9c** | The 73-scene edge-to-edge re-run | §2, last bullet |
 | **9d** | Close Phase 5 | below |
 | **9e** | The Pages front door | below |
