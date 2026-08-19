@@ -119,3 +119,49 @@ than none, because it inverts the feature into a hazard. So, as built now:
 
 The evidence rule from 4a is unchanged and is what settled this: evidence from the hardware beats an
 unreadable flag — including when it beats the conclusion the last amendment drew from one.
+
+## Amendment (Phase 9, 9b): a fourth state, for the delivery that happens and is not heard
+
+The three states have always split on *whether* something arrives. 9b found a fourth axis under that:
+something arrives, on time, exactly as scheduled — **and makes no sound**.
+
+Switch the `doses` channel off and on again in system settings and HyperOS returns it at
+`IMPORTANCE_LOW` (2), not the `IMPORTANCE_HIGH` (4) the app created it with, and sets
+`mUserLockedFields` — the framework's record that a person has touched the channel, after which
+`createNotificationChannel` may only ever *lower* it. A relaunch does not help. Only `pm clear` puts it
+back. At importance 2 a dose reminder posts with no sound and no heads-up, and `resolveReminderDelivery`
+returned `Armed` for it, because only `IMPORTANCE_NONE` was treated as blocked.
+
+For a 03:00 dose, that is most of the way to not posting at all — and the app was calling it the one
+state it reserves for a promise.
+
+So, as built now:
+
+- **`ReminderDelivery.Silent` sits between `Blocked` and `BestEffort`**, returned for any importance
+  below `IMPORTANCE_DEFAULT`. The ordering rule is the one this ADR has used since 4a — **certainty
+  before likelihood** — and a silenced channel is certain in the same way a muted one is. What keeps it
+  out of `Blocked` is that something genuinely does arrive; it waits in the shade instead of being
+  dropped, so the app owes a caveat rather than a refusal to promise.
+- **A fourth enum entry, not a fourth branch in `caveatFor`.** The caveat-only version of this fix is
+  smaller and leaves the resolver saying `Armed` — in the one function whose entire purpose is to be the
+  honest answer, and to every other reader of it. Making it a state turns the fix into a compile error at
+  each call site, which is how the opt-in screen's delivery line was corrected in the same pass.
+- **The cliff is `IMPORTANCE_DEFAULT`, not the channel's own creation level.** Below DEFAULT Android
+  plays no sound; at DEFAULT a `doses` channel lowered from HIGH keeps its sound and loses only the
+  heads-up. The app says nothing about the latter, deliberately: *"it will arrive silently"* would be
+  false, and the sound is the half an owner responds to. Hedging about a pop-up would spend the one card
+  on the smaller fact.
+- **The way in is the channel's own settings page**, via `ACTION_CHANNEL_NOTIFICATION_SETTINGS` — one
+  screen deeper than every other notification caveat here, because the app-wide page does not hold this
+  control and landing an owner above it turns a two-tap fix into a hunt through four channel names.
+- **The app never says the owner chose this.** It may well not have been chosen at all — the vendor
+  restores the channel at LOW whatever it was created at — so the copy states the consequence and offers
+  the screen, and makes no claim about how the level got there.
+
+**And the state 9b found that is deliberately *not* here.** Under File-Based Encryption with a secure
+lock screen, `ACTION_BOOT_COMPLETED` arrives at the owner's first unlock, not when the kernel finishes
+booting, so a restart at 02:00 picked up at 07:00 leaves a 03:00 dose never armed rather than late
+(ADR-0025's amendment). It gets no state and no line, because it fails the rule the other three pass:
+**the app speaks when it can read the fact and the owner can act on it.** Nothing is running to read
+this one, so anything said would be printed unconditionally on every phone forever — which is the same
+wallpaper the armed state is silent to avoid.

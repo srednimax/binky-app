@@ -2,10 +2,11 @@ package app.binky.tracker.work
 
 import android.app.NotificationManager
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 /**
- * The three honest states, as a case table (ADR-0003's Phase 4a amendment).
+ * The four honest states, as a case table (ADR-0003's Phase 4a amendment, and 9b's).
  *
  * A case table is the whole reason `resolveReminderDelivery` is pure. The alternative is three
  * phones in three configurations, one of which — a muted channel on a device that also lacks the
@@ -18,6 +19,13 @@ import org.junit.Test
  */
 class ReminderDeliveryTest {
     private val muted = NotificationManager.IMPORTANCE_NONE
+
+    /**
+     * Lowered but not muted — what HyperOS hands a channel back at after an off-and-on in system
+     * settings, whatever the app created it as (9b). The one importance in this file that is not a
+     * decision anybody made.
+     */
+    private val lowered = NotificationManager.IMPORTANCE_LOW
     private val audible = NotificationManager.IMPORTANCE_DEFAULT
 
     @Test
@@ -52,6 +60,73 @@ class ReminderDeliveryTest {
             resolveReminderDelivery(
                 notificationsPermitted = true,
                 channelImportance = muted,
+                batteryExemptionConfirmed = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `a lowered channel is silent, not armed`() {
+        // **9b, as a case.** Every other fact is good — this is the row that used to come back
+        // `Armed`, and the phone it was found on posts a 03:00 dose with no sound in exactly this
+        // state. There is nothing wrong with the alarm; there is something wrong with the promise.
+        assertEquals(
+            ReminderDelivery.Silent,
+            resolveReminderDelivery(
+                notificationsPermitted = true,
+                channelImportance = lowered,
+                batteryExemptionConfirmed = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `silent outranks every best-effort reason, and blocked outranks silent`() {
+        // The whole ordering rule in two assertions: certainty before likelihood. A lowered channel
+        // on a phone that is also unexempted, without exact alarms and behind an autostart list is
+        // still reported as silent — the three hedges below it are about *when* something arrives,
+        // and this is about it arriving unnoticed, which is the fact worth the one card.
+        assertEquals(
+            ReminderDelivery.Silent,
+            resolveReminderDelivery(
+                notificationsPermitted = true,
+                channelImportance = lowered,
+                batteryExemptionConfirmed = false,
+                exactAlarmsPermitted = false,
+                oemAutostartUnreadable = true,
+            ),
+        )
+        // And it yields in turn: no permission means nothing is posted at all, so there is no
+        // silent notification to describe.
+        assertEquals(
+            ReminderDelivery.Blocked,
+            resolveReminderDelivery(
+                notificationsPermitted = false,
+                channelImportance = lowered,
+                batteryExemptionConfirmed = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `the audible cliff is DEFAULT, not the channel's own level`() {
+        // Deliberate, and the one place this resolver reports less than it could. A `doses` channel
+        // lowered from HIGH to exactly DEFAULT loses its heads-up and keeps its sound; the app says
+        // nothing, because the sentence it would print — "it will arrive silently" — would be
+        // false, and the noise is the half an owner actually responds to.
+        assertEquals(
+            ReminderDelivery.Armed,
+            resolveReminderDelivery(
+                notificationsPermitted = true,
+                channelImportance = audible,
+                batteryExemptionConfirmed = true,
+            ),
+        )
+        assertEquals(
+            ReminderDelivery.Silent,
+            resolveReminderDelivery(
+                notificationsPermitted = true,
+                channelImportance = NotificationManager.IMPORTANCE_MIN,
                 batteryExemptionConfirmed = true,
             ),
         )
@@ -221,11 +296,26 @@ class ReminderDeliveryTest {
     }
 
     @Test
-    fun `a lowered but unmuted channel still delivers`() {
+    fun `a lowered but unmuted channel still delivers, and says so`() {
         // IMPORTANCE_LOW is a silent notification, not a suppressed one. An owner who took the sound
-        // off a daily nag has not asked to stop being told.
+        // off a daily nag has not asked to stop being told — which is why this is not `Blocked`, and
+        // has never been.
+        //
+        // **It asserted `Armed` until 9b, and that half was wrong.** The premise underneath it was
+        // that a lowered channel is something the owner chose; HyperOS returns a channel at LOW
+        // after an off-and-on in system settings whatever it was created at, so the app cannot read
+        // the level as a decision. Both halves now hold at once: it delivers, and the app does not
+        // call that armed.
+        assertNotEquals(
+            ReminderDelivery.Blocked,
+            resolveReminderDelivery(
+                notificationsPermitted = true,
+                channelImportance = NotificationManager.IMPORTANCE_LOW,
+                batteryExemptionConfirmed = true,
+            ),
+        )
         assertEquals(
-            ReminderDelivery.Armed,
+            ReminderDelivery.Silent,
             resolveReminderDelivery(
                 notificationsPermitted = true,
                 channelImportance = NotificationManager.IMPORTANCE_LOW,

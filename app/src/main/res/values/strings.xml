@@ -258,6 +258,7 @@
     <string name="reminders_body">Binky can remind you about recurring care — a nail trim every six weeks, a yearly vaccination, a weekly weigh-in. Reminders arrive once a day, on this phone only, and you choose what they are for.</string>
     <string name="reminders_enable_action">Turn reminders on</string>
     <string name="reminders_state_blocked">Notifications are off, so reminders will only appear inside the app.</string>
+    <string name="reminders_state_silent">Reminders are on, but this kind is set to arrive quietly — no sound, so one waits in the notification shade until you next look.</string>
     <string name="reminders_state_best_effort">Reminders are on. This phone may still delay or drop them while Binky is in the background — the setting below is what fixes that.</string>
     <string name="reminders_state_best_effort_autostart">Reminders are on. This phone also decides which apps may run in the background, and Binky cannot read that list — off it, a reminder can sit unsent for hours and arrive when you next pick the phone up.</string>
     <string name="reminders_state_armed">Reminders are on, and this phone is set up to let them through.</string>
@@ -279,11 +280,13 @@
          direction would be the hedge that teaches an owner to stop reading the line. None of these
          say anything about the medication itself (ADR-0026). -->
     <string name="doses_state_blocked">Notifications are off, so dose reminders will only appear inside the app.</string>
+    <string name="doses_state_silent">Dose reminders are on, but this kind is set to arrive quietly — no sound and no pop-up, so a three in the morning dose waits in the notification shade until you next look.</string>
     <string name="doses_state_best_effort_exact">Dose reminders are on, but Android is not letting Binky set them to the minute — expect one within a few minutes of the time, not at it.</string>
     <string name="doses_state_best_effort_battery">Dose reminders are on and set to the minute. This phone may still delay them while Binky is in the background.</string>
     <string name="doses_state_best_effort_autostart">Dose reminders are on and set to the minute. This phone also decides which apps may run in the background, and Binky cannot read that list — off it, a three in the morning dose can reach you when you next pick the phone up.</string>
     <string name="doses_exact_alarm_action">Open alarm settings</string>
     <string name="reminders_caveat_notifications_title">Notifications are off</string>
+    <string name="reminders_caveat_silent_title">Reminders will not make a sound</string>
     <string name="reminders_caveat_exact_title">Reminders may arrive late</string>
     <string name="reminders_caveat_battery_title">This phone may hold reminders back</string>
 

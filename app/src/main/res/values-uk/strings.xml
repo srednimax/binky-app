@@ -340,6 +340,7 @@
     <string name="reminders_body">Binky може нагадувати про регулярний догляд — підстригання кігтів раз на шість тижнів, щорічне щеплення, щотижневе зважування. Нагадування приходять раз на день, лише на цьому телефоні, і про що вони — вирішуєш ти.</string>
     <string name="reminders_enable_action">Увімкнути нагадування</string>
     <string name="reminders_state_blocked">Сповіщення вимкнено, тож нагадування зʼявлятимуться лише всередині застосунку.</string>
+    <string name="reminders_state_silent">Нагадування ввімкнено, але цей вид налаштовано приходити тихо — без звуку, тож вони чекають у панелі сповіщень, доки ти туди не заглянеш.</string>
     <string name="reminders_state_best_effort">Нагадування ввімкнено. Цей телефон усе одно може затримати або відкинути їх, поки Binky у фоні, — саме це виправляє налаштування нижче.</string>
     <string name="reminders_state_best_effort_autostart">Нагадування ввімкнено. Цей телефон ще й сам вирішує, які застосунки можуть працювати у фоні, а Binky не може прочитати той список, — якщо Binky в ньому немає, нагадування може годинами лишатися невідправленим і надійти аж тоді, коли ти знову візьмеш телефон до рук.</string>
     <string name="reminders_state_armed">Нагадування ввімкнено, і цей телефон налаштовано їх пропускати.</string>
@@ -356,11 +357,13 @@
     <!-- Dose delivery (ADR-0003, ADR-0025, ADR-0026). Nothing here says anything about the
          medication itself. -->
     <string name="doses_state_blocked">Сповіщення вимкнено, тож нагадування про дози зʼявлятимуться лише всередині застосунку.</string>
+    <string name="doses_state_silent">Нагадування про дози ввімкнено, але цей вид налаштовано приходити тихо — без звуку й без спливання, тож доза о третій ночі чекатиме в панелі сповіщень, доки ти туди не заглянеш.</string>
     <string name="doses_state_best_effort_exact">Нагадування про дози ввімкнено, але Android не дає Binky ставити їх точно на хвилину — чекай нагадування в межах кількох хвилин від часу, а не рівно в час.</string>
     <string name="doses_state_best_effort_battery">Нагадування про дози ввімкнено й поставлено точно на хвилину. Цей телефон усе одно може затримати їх, поки Binky у фоні.</string>
     <string name="doses_state_best_effort_autostart">Нагадування про дози ввімкнено й поставлено точно на хвилину. Цей телефон ще й сам вирішує, які застосунки можуть працювати у фоні, а Binky не може прочитати той список, — якщо Binky в ньому немає, доза о третій ночі може дійти до тебе аж тоді, коли ти знову візьмеш телефон до рук.</string>
     <string name="doses_exact_alarm_action">Відкрити налаштування будильників</string>
     <string name="reminders_caveat_notifications_title">Сповіщення вимкнено</string>
+    <string name="reminders_caveat_silent_title">Нагадування приходитимуть без звуку</string>
     <string name="reminders_caveat_exact_title">Нагадування можуть приходити із запізненням</string>
     <string name="reminders_caveat_battery_title">Цей телефон може притримувати нагадування</string>
 
