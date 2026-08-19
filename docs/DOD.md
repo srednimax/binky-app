@@ -295,7 +295,7 @@ Nothing here contradicts that; the freezer is a different mechanism reached by a
 
 ---
 
-## 2 — The gate items parked behind that run
+## 2 — The gate items parked behind that run ✅ 9b closed 2026-08-19 — the last bullet is 9c and stays open
 
 All deliberately after it, because each would disturb the armed course. **All six non-matrix
 items are answered, 2026-08-19**, by `scripts/alarm-gate.py` — a driver that taps the write an owner
@@ -303,6 +303,17 @@ actually makes and then reads `dumpsys alarm`, because the question is not wheth
 correct (`DoseAlarmTest` has that, in-process) but whether the **UI write paths reach it at all** on a
 phone with a vendor ROM in the loop. Run it with `--only <check>`; it prints one row per reading and
 writes them as JSON.
+
+**9b is closed, and it did not close on a tick.** The run found two ways a reminder fails while the app
+says it is fine, and the one the app can *read* is fixed in the same branch — `ReminderDelivery.Silent`,
+the fourth delivery state, re-driven on the phone at 9/9. The one it cannot read gets corrected wording
+and no copy, on the rule written into ADR-0003: **the app speaks when it can read the fact and the owner
+can act on it.** Both are recorded in their bullets below, and the reasoning is in
+[`phase-9.md`](phase-9.md) §9b.
+
+**The seventh bullet is not 9b's.** The 73-scene edge-to-edge re-run lives at the end of this section
+because it shares the reason for being parked, not because it shares the item. It is 9c and is
+untouched.
 
 - [x] Writes against the armed course — add, edit, shorten, record and skip a dose; **at most one pending
       alarm** after each, and **none** when nothing is armed.
@@ -724,7 +735,7 @@ entity changes, so the standing gate at the top of this file does not fire in th
 | | What | Boxes |
 | --- | --- | --- |
 | **9a** | The overnight Doze run ✅ answered 2026-08-19 — autostart is the lever, and the delivery state was fixed to say so | §1 |
-| **9b** | The seven gate items parked behind it ✅ answered 2026-08-19 — and it found that the boot rebuild waits for the first unlock | §2 |
+| **9b** | The six gate items parked behind it ✅ **closed 2026-08-19** — it found that the boot rebuild waits for the first unlock, and that a lowered channel was being reported as armed; the second is fixed in the same PR | §2 |
 | **9c** | The 73-scene edge-to-edge re-run | §2, last bullet |
 | **9d** | Close Phase 5 | below |
 | **9e** | The Pages front door | below |
