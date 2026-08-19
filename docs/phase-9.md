@@ -59,7 +59,7 @@ The two things worth stating as reasoning rather than as steps:
 **Trap:** never run `connectedAndroidTest` after arming. `am instrument` force-stops the package, which
 cancels every alarm it placed, and the result is indistinguishable from a broken rebuild.
 
-## 9b — The gate items parked behind it 🔶 five of six answered 2026-08-19
+## 9b — The gate items parked behind it ✅ answered 2026-08-19
 
 Seven, all in [`DOD.md`](DOD.md) §2 — six here and the seventh is 9c. They were parked deliberately:
 each writes to the armed course or force-stops the app, and doing any of them first costs the night 9a
@@ -74,8 +74,8 @@ assertion in that test and none of the readings here. So each check taps the wri
 makes — *Given* on the Care tab, a chip removed from a course editor, *Archive* on Home — and then reads
 `dumpsys alarm`, which is the platform's answer rather than Kotlin's.
 
-**Twenty-five readings, twenty-four as expected**, across writes, bunny-level rebuilds, the blocked
-states, the destructive dialogs and a timezone change. Every armed alarm came back on the *exact*
+**Thirty-eight readings**, across writes, bunny-level rebuilds, the blocked states, the destructive
+dialogs, a timezone change and four reboots. Every armed alarm came back on the *exact*
 mechanism. The results are in `DOD.md` §2 and are not repeated here; three things are reasoning rather
 than record:
 
@@ -97,20 +97,47 @@ than record:
   Phase 10 is the same open question 9a's autostart finding raised, and they should be answered
   together.
 
-The one with a consequence beyond a tick is still open: **reboot twice, autostart granted and autostart
-denied**. Whatever the denied run says is what ADR-0025's self-heal consequence gets reworded to — on
-this phone, without autostart the ROM does not start the process for a broadcast at all, so "the alarm
-is rebuilt from truth at boot" may be a claim this device cannot keep. **The first reading says it may
-not keep it even with autostart granted**: four minutes after a reboot there was no process and no
-pending alarm. One reading is not a finding, and the re-run is what §2 describes.
+### The item with a consequence beyond a tick, and it was not the one expected
+
+**Reboot twice, autostart granted and autostart denied.** The fear written down was that without
+autostart the ROM would not start the process for a broadcast, so *"the alarm is rebuilt from truth at
+boot"* would be a claim this device cannot keep. **Autostart turned out to be irrelevant to it**: with a
+slot armed two hours out, both arms came back from a reboot with exactly one alarm at exactly the same
+instant. Autostart governs whether a frozen process is thawed to receive an alarm hours later, which is
+9a's finding and a different mechanism entirely.
+
+The claim is wrong anyway, and for a reason that has nothing to do with Xiaomi. **The rebuild does not
+happen at boot; it happens at the owner's first unlock.** Left locked after a restart, the phone had no
+pending dose alarm and no process at +45 s, +105 s or +165 s. This device is `ro.crypto.type=file`, and
+under File-Based Encryption with a secure lock screen `ACTION_BOOT_COMPLETED` is not sent when the
+kernel finishes booting — it is sent when credential-encrypted storage is unlocked, which is the first
+time a password is entered. `BootReceiver` cannot opt out of that with `directBootAware`, and should
+not want to: it opens the database, and the database is in CE storage by definition.
+
+**That is a real dose, not a technicality.** A phone that restarts itself for an OTA at 02:00 and is
+picked up at 07:00 has no dose alarm for five hours; a 03:00 slot inside them is not delivered late, it
+is never armed. And nothing in the app can notice — nothing in the app is running. It also means the
+first three readings of the earlier reboot run were only as good as the moment someone happened to
+reach for the phone, which is why the check records the keyguard state now and why `locked-boot` exists
+as a check of its own.
+
+So ADR-0025's self-heal sentence gets reworded to **"rebuilt at the owner's first unlock after a
+restart"** — and on this phone not even promptly then. Whether the delivery ladder should say anything
+about it is the third instance of the same open question, alongside 9a's autostart finding and the
+muted channel above. **All three want one decision, and it is a product decision rather than a
+technical one**: how much of a phone's unreliability an app should narrate to someone who cannot fix
+most of it.
 
 ### What the run cost, and two environment notes it corrects
 
-The phone was left on the lock screen with the notification shade holding focus, which refuses
-`am start`, `adb install` and `uiautomator` alike, so the reboot arm needs one physical unlock before it
-can continue. The cause was this file's own helper winding the autostart list back to the top by
-swiping upward; a swipe that ends near the top of the display pulls the shade down once the list has
-nowhere left to go. It restarts the activity from cold instead now.
+An early reboot left the phone on the lock screen with the notification shade holding focus, which
+refuses `am start`, `adb install` and `uiautomator` alike — and each refusal lies about its cause: the
+activity "does not exist", the install was "canceled by user", the dump is empty. The cause was this
+file's own helper winding the autostart list back to the top by swiping upward; a swipe that ends near
+the top of the display pulls the shade down once the list has nowhere left to go. It restarts the
+activity from cold now, and `wait_for_unlock()` makes every reboot stop and ask rather than walk into
+those three errors. **The phone has a password and `adb` cannot get past it** — a reboot is a step that
+hands the run back to a person.
 
 Two notes in [`CLAUDE.md`](../CLAUDE.md) and §1 came out of runs where autostart was **denied**, and
 with it granted they no longer hold:
