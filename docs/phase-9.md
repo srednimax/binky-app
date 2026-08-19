@@ -1,7 +1,9 @@
 # Phase 9 — Ship it — ships as 1.7
 
-**Status: opened 2026-08-18. Closed testing has ended and production access is applied for — Google's
-decision is pending**, which puts 9h and 9i behind it and leaves everything else free to run (see 9h).
+**Status: opened 2026-08-18. Production access GRANTED 2026-08-19** — closed testing ended, the 12-tester
+count cleared, and Google approved. Nothing external gates this phase any more: 9h and 9i are unblocked
+along with everything else, and the release date is whatever date this repo is ready (see 9h). **9a is
+answered too**, 2026-08-19, which frees 9b and 9c.
 Boxes in [`DOD.md`](DOD.md) §10; this file is the reasoning. Finished
 phases are in [`PLAN.md`](PLAN.md) and in `phase-6/7/7.5/8.md`, and are not needed to build this one.
 

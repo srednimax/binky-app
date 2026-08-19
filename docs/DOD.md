@@ -389,39 +389,34 @@ written.
 
 ---
 
-## 4 — 9h: The Console sitting 🟠 production access applied for, awaiting Google's decision
+## 4 — 9h: The Console sitting ✅ production access GRANTED — nothing on Google's side is blocking
 
-**The count has cleared.** Closed testing ended and the production-access request went in on
-**2026-08-18**. Google's answer — approve or reject — is now the gate, and it is still the one item in
-this file that nothing in the repo can move. Internal and closed tracks never needed it and still don't.
+**Approved**, recorded 2026-08-19, on the request that went in 2026-08-18 after closed testing ended and
+the 12-tester count cleared. **Production is available for the first time**, and the one item in this file
+that nothing in the repo could move is gone. Publishing is now entirely a question of when this repo is
+ready.
 
-⚠️ **Do not touch the public listing while the request is under review.** The nine-language copy in
-[`store-listing.md`](store-listing.md) describes **1.6** scope; the closed track is on **1.3** — no
-redesign, no multi-valued droppings, and seven of the nine languages are not in that build at all.
-Pasting it now would put nine localised descriptions and a feature list in front of a reviewer whose job
-is to check the app against exactly that, for a build that does not carry them. That is
-`store-listing.md`'s standing rule — *the listing and the build go up together* — meeting the worst
-possible week to break it. Same for the screenshots: prepare them (9g), upload nothing.
+Two holds lift with it, and one does not:
 
-### What the review does not block
+- ✅ **The listing paste is no longer blocked by a reviewer.** The review is over; nothing is sitting in
+  front of someone checking the app against copy it does not carry.
+- ✅ **1.7 can go to internal whenever it is built.** It was held only so that a *reject* reason could be
+  read before the artifact changed. There is no reject reason.
+- ⚠️ **The listing still goes up with the build, and only with it.** `store-listing.md`'s nine-language
+  copy describes **1.6-and-later** scope while the tracks still serve **1.0.0 / 1.3** — no redesign, no
+  multi-valued droppings, and seven of the nine languages are not in those builds at all. That rule was
+  never about the review; it is `store-listing.md`'s standing rule and it holds. **Upload the AAB first,
+  then paste.** Screenshots the same: prepare them (9g), upload with the build.
 
-Everything in this file except the paste. The review looks at the app on the track and at the closed
-test that has already happened; it is not a freeze on the repo. So the phase's long pole is still
-**§1's overnight run**, which costs a night and can be started tonight — the review clock and the Doze
-clock run in parallel, and §1 is the item most likely to still be open when the decision lands.
+### What is actually blocking the release now, and it is all in this repo
 
-ℹ️ **Uploading 1.7 to *internal* during the review is a judgement call, not a rule.** Internal is not
-the track under review and a new build there is ordinary Console traffic. Held here anyway until the
-decision, for one reason: if the answer is *reject*, the reason will name something, and knowing what it
-named before changing the artifact is worth more than a few days saved.
+Google is not in the list. In rough order: **9b** and **9c** (the gate items parked behind 9a, and the
+73-scene edge-to-edge re-run), **9d–9g** (close Phase 5, the Pages front door, the fluffle, nine locales
+of screenshots), then **9i**, the field upgrade proof 1.0.0 → 1.7 — which is the one that must not be
+skipped, because it is the only thing standing between an existing owner and a refusal screen.
 
-### Record the decision here when it lands
-
-- [ ] **Approved** → production becomes available for the first time, and the sitting below runs in full.
-      Whether 1.7 takes production immediately is an ADR-0009 decision made then, not now.
-- [ ] **Rejected** → write the stated reason into [`phase-9.md`](phase-9.md) verbatim before acting on it.
-      A re-application answers the reason given; the common ones are tester engagement and app
-      completeness, and which one it is changes whether the fix is Console work or app work.
+Whether 1.7 takes **production** immediately, or goes to internal → closed → production a step at a time,
+is an ADR-0009 decision to make at upload — the access being granted does not decide it.
 
 ⚠️ **This section said "upload 1.3" until 2026-08-18, and it had been stale for four releases.** The build
 that goes up is **1.7** — Phase 9's own, carrying everything from 1.4 through 1.7. Every downstream claim
@@ -636,7 +631,7 @@ entity changes, so the standing gate at the top of this file does not fire in th
 | **9e** | The Pages front door | below |
 | **9f** | Seeing the whole fluffle | below |
 | **9g** | Nine locales of screenshots | below |
-| **9h** | The Console sitting 🟡 | §4 |
+| **9h** | The Console sitting ✅ production access granted 2026-08-19 — the release is repo-side only now | §4 |
 | **9i** | The field upgrade proof 1.0.0 → 1.7 | §4 |
 | **9j** | The tester's reply | §9 |
 
