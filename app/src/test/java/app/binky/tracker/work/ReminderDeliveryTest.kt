@@ -70,17 +70,76 @@ class ReminderDeliveryTest {
     }
 
     @Test
-    fun `armed needs all three, and is reachable`() {
-        // The reachability is the point of the assertion, not the value. ADR-0003 as written
-        // conditioned armed on autostart too, which has no readable state on HyperOS — a strict
-        // reading makes this case impossible on the only device this project tests on, and a
-        // permanent hedge is wallpaper in the same way a permanent nag is.
+    fun `armed needs all three, and is reachable on a phone with no autostart list`() {
+        // The reachability is the point of the assertion, not the value — and since 9a it is
+        // conditional. 4a made armed reachable everywhere by leaving autostart out, on the argument
+        // that a permanent hedge is wallpaper; 9a found the hedge was true, and true by nearly four
+        // hours. So armed survives exactly where nothing unreadable stands behind it, which is what
+        // the default `oemAutostartUnreadable = false` says.
         assertEquals(
             ReminderDelivery.Armed,
             resolveReminderDelivery(
                 notificationsPermitted = true,
                 channelImportance = audible,
                 batteryExemptionConfirmed = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `an unreadable autostart list is best-effort, however well set up the rest is`() {
+        // **9a, as a case.** Permission granted, channel audible, exemption held, exact alarms
+        // permitted — every fact the app can read is good, and the alarm still did not arrive for
+        // 3h50m because HyperOS had frozen the process. Armed here would be the app promising
+        // something it watched its own phone not do.
+        assertEquals(
+            ReminderDelivery.BestEffort,
+            resolveReminderDelivery(
+                notificationsPermitted = true,
+                channelImportance = audible,
+                batteryExemptionConfirmed = true,
+                oemAutostartUnreadable = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `an autostart list does not soften a certain failure`() {
+        // Same ordering rule as everything else: blocked is knowable, best-effort is a hedge, and
+        // the newest hedge does not get to outrank the certainty either.
+        assertEquals(
+            ReminderDelivery.Blocked,
+            resolveReminderDelivery(
+                notificationsPermitted = false,
+                channelImportance = audible,
+                batteryExemptionConfirmed = true,
+                oemAutostartUnreadable = true,
+            ),
+        )
+        assertEquals(
+            ReminderDelivery.Blocked,
+            resolveReminderDelivery(
+                notificationsPermitted = true,
+                channelImportance = muted,
+                batteryExemptionConfirmed = true,
+                oemAutostartUnreadable = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `three missing facts are still one best-effort`() {
+        // The state stays three-valued as the inputs grow. Which of the three decides the sentence
+        // and the tap target, and that ranking lives in the composables that hold all three —
+        // adding a fourth enum entry per reason is how a delivery line stops being one sentence.
+        assertEquals(
+            ReminderDelivery.BestEffort,
+            resolveReminderDelivery(
+                notificationsPermitted = true,
+                channelImportance = audible,
+                batteryExemptionConfirmed = false,
+                exactAlarmsPermitted = false,
+                oemAutostartUnreadable = true,
             ),
         )
     }
@@ -148,7 +207,9 @@ class ReminderDeliveryTest {
     fun `the exact-alarm input defaults to true, so the sweep's channels are unaffected`() {
         // Care, watch and backup are delivered by the daily sweep, where this permission changes
         // nothing. The default is what keeps 4a's three call sites honest without each of them
-        // having to pass a fact about a mechanism they do not use.
+        // having to pass a fact about a mechanism they do not use. The autostart default rides the
+        // same call: a caller who says nothing about either is a stock phone, and stock phones are
+        // not hedged about.
         assertEquals(
             ReminderDelivery.Armed,
             resolveReminderDelivery(

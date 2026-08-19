@@ -251,6 +251,7 @@
     <string name="reminders_enable_action">Erinnerungen einschalten</string>
     <string name="reminders_state_blocked">Benachrichtigungen sind aus, deshalb erscheinen Erinnerungen nur in der App.</string>
     <string name="reminders_state_best_effort">Erinnerungen sind an. Dieses Handy kann sie trotzdem verzögern oder verwerfen, während Binky im Hintergrund ist — die Einstellung unten behebt das.</string>
+    <string name="reminders_state_best_effort_autostart">Erinnerungen sind an. Dieses Handy entscheidet außerdem selbst, welche Apps im Hintergrund laufen dürfen, und Binky kann diese Liste nicht lesen — steht Binky nicht darauf, kann eine Erinnerung stundenlang liegen bleiben und erst ankommen, wenn du das Handy das nächste Mal in die Hand nimmst.</string>
     <string name="reminders_state_armed">Erinnerungen sind an, und dieses Handy ist so eingestellt, dass es sie durchlässt.</string>
     <string name="reminders_denied_once">Kein Problem. Du kannst sie jederzeit einschalten.</string>
     <string name="reminders_permanently_denied">Android fragt nicht noch einmal, deshalb muss das in den Einstellungen des Handys eingeschaltet werden.</string>
@@ -267,6 +268,7 @@
     <string name="doses_state_blocked">Benachrichtigungen sind aus, deshalb erscheinen Erinnerungen an Gaben nur in der App.</string>
     <string name="doses_state_best_effort_exact">Erinnerungen an Gaben sind an, aber Android lässt Binky sie nicht auf die Minute genau setzen — rechne mit einer Erinnerung innerhalb einiger Minuten um die Zeit herum, nicht genau dann.</string>
     <string name="doses_state_best_effort_battery">Erinnerungen an Gaben sind an und auf die Minute genau gesetzt. Dieses Handy kann sie trotzdem verzögern, während Binky im Hintergrund ist.</string>
+    <string name="doses_state_best_effort_autostart">Erinnerungen an Gaben sind an und auf die Minute genau gesetzt. Dieses Handy entscheidet außerdem selbst, welche Apps im Hintergrund laufen dürfen, und Binky kann diese Liste nicht lesen — steht Binky nicht darauf, kann eine Gabe um drei Uhr nachts dich erst erreichen, wenn du das Handy das nächste Mal in die Hand nimmst.</string>
     <string name="doses_exact_alarm_action">Wecker-Einstellungen öffnen</string>
     <string name="reminders_caveat_notifications_title">Benachrichtigungen sind aus</string>
     <string name="reminders_caveat_exact_title">Erinnerungen können verspätet ankommen</string>

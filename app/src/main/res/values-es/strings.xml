@@ -297,6 +297,7 @@
     <string name="reminders_enable_action">Activar los recordatorios</string>
     <string name="reminders_state_blocked">Las notificaciones están desactivadas, así que los recordatorios solo aparecerán dentro de la app.</string>
     <string name="reminders_state_best_effort">Los recordatorios están activados. Este teléfono todavía puede retrasarlos o descartarlos mientras Binky está en segundo plano; el ajuste de abajo es lo que lo arregla.</string>
+    <string name="reminders_state_best_effort_autostart">Los recordatorios están activados. Este teléfono además decide por su cuenta qué aplicaciones pueden funcionar en segundo plano, y Binky no puede leer esa lista; si no está en ella, un recordatorio puede quedarse sin enviar durante horas y llegarte cuando vuelvas a coger el teléfono.</string>
     <string name="reminders_state_armed">Los recordatorios están activados, y este teléfono está preparado para dejarlos pasar.</string>
     <string name="reminders_denied_once">Sin problema. Puedes activarlos cuando quieras.</string>
     <string name="reminders_permanently_denied">Android ya no va a volver a preguntar, así que este hay que activarlo en los ajustes del teléfono.</string>
@@ -314,6 +315,7 @@
     <string name="doses_state_blocked">Las notificaciones están desactivadas, así que los recordatorios de dosis solo aparecerán dentro de la app.</string>
     <string name="doses_state_best_effort_exact">Los recordatorios de dosis están activados, pero Android no deja que Binky los ponga al minuto: espera uno a los pocos minutos de la hora, no justo a la hora.</string>
     <string name="doses_state_best_effort_battery">Los recordatorios de dosis están activados y puestos al minuto. Este teléfono todavía puede retrasarlos mientras Binky está en segundo plano.</string>
+    <string name="doses_state_best_effort_autostart">Los recordatorios de dosis están activados y puestos al minuto. Este teléfono además decide por su cuenta qué aplicaciones pueden funcionar en segundo plano, y Binky no puede leer esa lista; si no está en ella, una dosis de las tres de la madrugada puede llegarte cuando vuelvas a coger el teléfono.</string>
     <string name="doses_exact_alarm_action">Abrir los ajustes de alarmas</string>
     <string name="reminders_caveat_notifications_title">Las notificaciones están desactivadas</string>
     <string name="reminders_caveat_exact_title">Los recordatorios pueden llegar tarde</string>
