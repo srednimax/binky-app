@@ -70,3 +70,52 @@ So, as built:
 Phase 4 also widens the state from two to three, because a *denied notification permission* or a *muted
 channel* is not best-effort — it is certain, and it is detectable. Reminders present as **blocked**,
 **best-effort** or **armed**, resolved by one pure function that Phase 5 inherits for doses.
+
+## Amendment (Phase 9, 9a): the autostart list gates the honest state after all — and this time it was measured
+
+4a's amendment above reasoned from an absence: autostart has no readable state, therefore conditioning
+*armed* on it makes *armed* unreachable forever, therefore leave it out. That is sound as far as it goes,
+and it went one step too far — it treated an unreadable fact as an unimportant one. 9a measured the fact.
+
+Two runs on the test device, one variable between them, everything else identical (unplugged, stationary,
+`SCHEDULE_EXACT_ALARM` granted, alarm verified `window=0` and `whenElapsed == maxWhenElapsed` before the
+run):
+
+- **Autostart denied.** `device_idle=full` unbroken from 01:07:08 to 03:07:09, straight across a 03:00
+  dose. **No alarm fired at all.** The dose was delivered **3h50m47s late, at 06:50:47** — the instant the
+  phone was plugged in. The logs name the mechanism: `GreezeManager: THAW uid = 10507`, then
+  `Aurogon: sendPendingAlarm uid = 10507` half a second later. HyperOS had frozen the process and its
+  power framework held the pending alarm until something thawed it.
+- **Autostart granted.** Same course, same phone. Fired at **10:00:00.779**, fifty minutes inside an
+  unbroken 59m51s stretch of `device_idle=full`, on battery. No `GreezeManager` or `Aurogon` line for the
+  app anywhere in the capture — it was never frozen.
+
+So the freezer is not Doze, and it is not something the app can out-argue: neither `SCHEDULE_EXACT_ALARM`,
+nor `window=0`, nor the alarm's own `temporaryAppAllowlistReasonCode=302` outranks it. It holds the
+*process*, so no mechanism this app schedules sits above it.
+
+That falsifies the claim `ReminderDelivery.Armed` was making. As built since 4a, an owner on a Xiaomi who
+granted the battery exemption was told "this phone is set up to let them through" by an app that had no
+basis for saying so — and this ADR's opening argument is that a dose reminder which silently fails is worse
+than none, because it inverts the feature into a hazard. So, as built now:
+
+- **Where an OEM autostart list exists, `Armed` is out of reach**, and `hasAutostartSettings()` is the
+  input that puts it there. That resolves to "this phone keeps such a list", never "the app is off it" —
+  which is the weaker claim, and the only one available. Being hedged at while already on the list is the
+  cost, and it is the right way round: over-hedging annoys, over-promising loses a dose.
+- **The ceiling is best-effort with the reason named and the way in attached.** The autostart sentence is
+  the third variant of that state, after the exemption and the exact-alarm ones, and it is reached only
+  once both of those are satisfied — so nobody is shown two background-limit lines at once, and the line
+  that does show is the one thing left to do.
+- **The copy says hours and says when the reminder turns up**, because that is what was observed and
+  because "may be delayed" is the phrasing an owner reads past. This is the one delivery line permitted to
+  be that concrete; it earned it.
+- **4a's other two rules stand unchanged.** The owner is still never asked to confirm autostart, and the
+  app still claims nothing about the list in either direction. What changed is that *not knowing* now
+  costs the promise rather than being waved through.
+- **The wallpaper objection is answered by scope, not by volume.** The hedge appears only on phones that
+  actually keep such a list, and it carries a fix; a stock phone still reaches *armed* on the exemption
+  alone. `oemAutostartUnreadable` defaults to false for exactly that reason.
+
+The evidence rule from 4a is unchanged and is what settled this: evidence from the hardware beats an
+unreadable flag — including when it beats the conclusion the last amendment drew from one.

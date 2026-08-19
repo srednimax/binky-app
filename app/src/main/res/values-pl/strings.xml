@@ -251,6 +251,7 @@
     <string name="reminders_enable_action">Włącz przypomnienia</string>
     <string name="reminders_state_blocked">Powiadomienia są wyłączone, więc przypomnienia pojawią się tylko w aplikacji.</string>
     <string name="reminders_state_best_effort">Przypomnienia są włączone. Ten telefon może je mimo to opóźnić albo pominąć, kiedy Binky działa w tle — poniższe ustawienie to naprawia.</string>
+    <string name="reminders_state_best_effort_autostart">Przypomnienia są włączone. Ten telefon sam decyduje też, które aplikacje mogą działać w tle, a Binky nie potrafi odczytać tej listy — jeśli go na niej nie ma, przypomnienie może czekać niewysłane godzinami i dotrzeć dopiero wtedy, gdy znów weźmiesz telefon do ręki.</string>
     <string name="reminders_state_armed">Przypomnienia są włączone, a ten telefon jest ustawiony tak, żeby je przepuszczać.</string>
     <string name="reminders_denied_once">Nic nie szkodzi. Możesz je włączyć, kiedy tylko zechcesz.</string>
     <string name="reminders_permanently_denied">Android nie zapyta ponownie, więc to trzeba włączyć w ustawieniach telefonu.</string>
@@ -268,6 +269,7 @@
     <string name="doses_state_blocked">Powiadomienia są wyłączone, więc przypomnienia o dawkach pojawią się tylko w aplikacji.</string>
     <string name="doses_state_best_effort_exact">Przypomnienia o dawkach są włączone, ale Android nie pozwala Binky\'emu ustawiać ich co do minuty — przyjdą w ciągu kilku minut od danej godziny, nie punktualnie.</string>
     <string name="doses_state_best_effort_battery">Przypomnienia o dawkach są włączone i ustawione co do minuty. Ten telefon może je mimo to opóźnić, kiedy Binky działa w tle.</string>
+    <string name="doses_state_best_effort_autostart">Przypomnienia o dawkach są włączone i ustawione co do minuty. Ten telefon sam decyduje też, które aplikacje mogą działać w tle, a Binky nie potrafi odczytać tej listy — jeśli go na niej nie ma, dawka z trzeciej w nocy może dotrzeć do Ciebie dopiero wtedy, gdy znów weźmiesz telefon do ręki.</string>
     <string name="doses_exact_alarm_action">Otwórz ustawienia alarmów</string>
     <string name="reminders_caveat_notifications_title">Powiadomienia są wyłączone</string>
     <string name="reminders_caveat_exact_title">Przypomnienia mogą przychodzić z opóźnieniem</string>

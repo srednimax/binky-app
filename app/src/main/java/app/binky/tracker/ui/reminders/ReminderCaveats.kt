@@ -22,7 +22,9 @@ import app.binky.tracker.ui.common.SectionHeader
 import app.binky.tracker.work.ReminderChannel
 import app.binky.tracker.work.ReminderDelivery
 import app.binky.tracker.work.canScheduleExactAlarms
+import app.binky.tracker.work.isIgnoringBatteryOptimisations
 import app.binky.tracker.work.openAppNotificationSettings
+import app.binky.tracker.work.openAutostartSettings
 import app.binky.tracker.work.openBatteryOptimisationSettings
 import app.binky.tracker.work.openExactAlarmSettings
 import app.binky.tracker.work.reminderDelivery
@@ -59,6 +61,9 @@ fun ReminderCaveats(
     var care by remember { mutableStateOf<ReminderDelivery?>(null) }
     var dose by remember { mutableStateOf<ReminderDelivery?>(null) }
     var exactAlarms by remember { mutableStateOf(true) }
+    // Same shape as `exactAlarms`: assumed good until the first read, because `care` is null until
+    // then and nothing renders off it anyway.
+    var exempt by remember { mutableStateOf(true) }
 
     LifecycleResumeEffect(doses) {
         care = context.reminderDelivery(ReminderChannel.Care)
@@ -67,6 +72,7 @@ fun ReminderCaveats(
         // phone's notification settings.
         dose = if (doses) context.reminderDelivery(ReminderChannel.Doses) else null
         exactAlarms = context.canScheduleExactAlarms()
+        exempt = context.isIgnoringBatteryOptimisations()
         onPauseOrDispose {}
     }
 
@@ -76,7 +82,7 @@ fun ReminderCaveats(
     // `POST_NOTIFICATIONS` denials before it stops asking for good, and two separately-written asks
     // are two places to spend them from.
     val ask = care == ReminderDelivery.Blocked
-    val caveat = if (ask) null else caveatFor(care, dose, exactAlarms, context)
+    val caveat = if (ask) null else caveatFor(care, dose, exactAlarms, exempt, context)
 
     // Before anything has been read, and when everything is armed, this composable emits no layout
     // node — so the gap above it must be its own rather than the caller's. A Spacer emitted next to
@@ -125,13 +131,17 @@ private data class Caveat(
  * 2. Exact alarms not permitted. Denied by default on Android 14+, so this is a state real users
  *    genuinely sit in without ever having chosen it — there is no ask to have declined and no dialog
  *    that will ever appear again.
- * 3. Battery optimisation, which delays rather than blocks, and whose fix is an OEM screen
- *    underneath the app's own permission.
+ * 3. Battery optimisation, which delays rather than blocks, and whose fix is one readable toggle.
+ * 4. The OEM autostart list, last because it is the only one of the four the app cannot read back.
+ *    It is reached only once 3 is satisfied, so an owner is never shown two background-limit cards
+ *    in a row — and reaching it is not the app running out of things to blame: 9a watched a 03:00
+ *    dose land at 06:50 on this exact fact.
  */
 private fun caveatFor(
     care: ReminderDelivery?,
     dose: ReminderDelivery?,
     exactAlarms: Boolean,
+    exempt: Boolean,
     context: Context,
 ): Caveat? =
     when {
@@ -153,7 +163,7 @@ private fun caveatFor(
                 onAction = { context.openExactAlarmSettings() },
             )
 
-        dose == ReminderDelivery.BestEffort ->
+        dose == ReminderDelivery.BestEffort && !exempt ->
             Caveat(
                 title = R.string.reminders_caveat_battery_title,
                 body = R.string.doses_state_best_effort_battery,
@@ -161,12 +171,30 @@ private fun caveatFor(
                 onAction = { context.openBatteryOptimisationSettings() },
             )
 
-        care == ReminderDelivery.BestEffort ->
+        // Exact alarms permitted and the exemption held, and still best-effort: the autostart list
+        // is the only input left that can have put it here, so the branch needs no fourth fact.
+        dose == ReminderDelivery.BestEffort ->
+            Caveat(
+                title = R.string.reminders_caveat_battery_title,
+                body = R.string.doses_state_best_effort_autostart,
+                action = R.string.reminders_autostart_action,
+                onAction = { context.openAutostartSettings() },
+            )
+
+        care == ReminderDelivery.BestEffort && !exempt ->
             Caveat(
                 title = R.string.reminders_caveat_battery_title,
                 body = R.string.reminders_state_best_effort,
                 action = R.string.reminders_battery_action,
                 onAction = { context.openBatteryOptimisationSettings() },
+            )
+
+        care == ReminderDelivery.BestEffort ->
+            Caveat(
+                title = R.string.reminders_caveat_battery_title,
+                body = R.string.reminders_state_best_effort_autostart,
+                action = R.string.reminders_autostart_action,
+                onAction = { context.openAutostartSettings() },
             )
 
         else -> null

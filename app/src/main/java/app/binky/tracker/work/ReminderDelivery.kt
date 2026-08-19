@@ -34,10 +34,18 @@ enum class ReminderDelivery {
      * window the OS chooses. So the reminder is real and merely imprecise — the one place the app
      * degrades a **mechanism** rather than a promise. Same state, different sentence and different
      * fix; the copy and the tap target are chosen by whichever fact is missing.
+     *
+     * Since 9a it is also where an unreadable **OEM autostart list** lands, and that is the reason
+     * this state is now the ceiling on a Xiaomi rather than a step below one. Three facts, three
+     * sentences, one state.
      */
     BestEffort,
 
-    /** Permission granted, channel audible, exemption held. As close to a promise as this gets. */
+    /**
+     * Permission granted, channel audible, exemption held — and no OEM autostart list standing
+     * behind all three. As close to a promise as this gets, which is why 9a took it away from the
+     * phones that cannot keep it.
+     */
     Armed,
 }
 
@@ -59,10 +67,16 @@ enum class ReminderDelivery {
  * @param channelImportance the channel's current importance. `IMPORTANCE_NONE` is the owner having
  *   muted this kind specifically, which is a different decision from muting the app and is honoured
  *   the same way.
- * @param batteryExemptionConfirmed `PowerManager.isIgnoringBatteryOptimizations`. **Autostart is
- *   deliberately not an input**: HyperOS exposes no readable state for it, so requiring it would
- *   make [Armed] permanently unreachable on the only device this project tests on — a permanent
- *   hedge, which is wallpaper in exactly the way a permanent nag is (ADR-0003's Phase 4a amendment).
+ * @param batteryExemptionConfirmed `PowerManager.isIgnoringBatteryOptimizations`.
+ * @param oemAutostartUnreadable whether this phone keeps an OEM autostart list — a list this app can
+ *   be off without being able to tell. **An input since 9a, having deliberately not been one since
+ *   4a**, and the reversal is evidence rather than a change of mind: on HyperOS, with autostart
+ *   denied, an exact alarm armed `window=0` did not fire in deep Doze at all. The vendor froze the
+ *   process and held the alarm for **3h50m**, until the phone was plugged in. The same alarm with
+ *   autostart granted fired 779 ms late, 50 minutes deep into Doze (ADR-0003's Phase 9 amendment).
+ *   So where such a list exists, [Armed] is not a promise the app can keep, and the honest ceiling
+ *   is [BestEffort] with the reason named. Defaults to false — a phone with no such list is not
+ *   hedged about.
  * @param exactAlarmsPermitted `SCHEDULE_EXACT_ALARM`. **Doses only** — the fourth input, and it
  *   defaults to true because it is a fact about the *exact-alarm* mechanism and nothing else rides
  *   it. Care, watch and backup are delivered by the daily sweep, where this permission changes
@@ -75,6 +89,7 @@ fun resolveReminderDelivery(
     channelImportance: Int,
     batteryExemptionConfirmed: Boolean,
     exactAlarmsPermitted: Boolean = true,
+    oemAutostartUnreadable: Boolean = false,
 ): ReminderDelivery =
     when {
         !notificationsPermitted -> ReminderDelivery.Blocked
@@ -84,6 +99,10 @@ fun resolveReminderDelivery(
         // is the app's own doing, rather than about the OEM screen underneath it.
         !exactAlarmsPermitted -> ReminderDelivery.BestEffort
         !batteryExemptionConfirmed -> ReminderDelivery.BestEffort
+        // Last of the three, and only because the other two have fixes the app can verify
+        // afterwards. This one it can only offer. Which of the three is missing decides the
+        // sentence and the tap target, and that choice lives in the composable holding all three.
+        oemAutostartUnreadable -> ReminderDelivery.BestEffort
         else -> ReminderDelivery.Armed
     }
 
@@ -104,5 +123,9 @@ fun Context.reminderDelivery(channel: ReminderChannel): ReminderDelivery {
         // property of the channel rather than left to each caller to remember, so a fifth channel
         // added later cannot accidentally start reporting on a permission it does not use.
         exactAlarmsPermitted = channel != ReminderChannel.Doses || canScheduleExactAlarms(),
+        // Every channel, not just doses. The freezer holds the *process*, so nothing this app
+        // schedules is above it, and a promise it cannot keep is worth less than a hedge that
+        // names the way in.
+        oemAutostartUnreadable = hasAutostartSettings(),
     )
 }

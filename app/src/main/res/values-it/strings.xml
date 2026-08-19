@@ -385,6 +385,7 @@
     <string name="reminders_enable_action">Attiva i promemoria</string>
     <string name="reminders_state_blocked">Le notifiche sono disattivate, quindi i promemoria compariranno solo dentro l’app.</string>
     <string name="reminders_state_best_effort">I promemoria sono attivi. Questo telefono può comunque ritardarli o lasciarli cadere mentre Binky è in secondo piano: è l’impostazione qui sotto a rimediare.</string>
+    <string name="reminders_state_best_effort_autostart">I promemoria sono attivi. Questo telefono decide anche per conto suo quali app possono girare in secondo piano, e Binky non può leggere quell’elenco: se non c’è, un promemoria può restare non inviato per ore e arrivare quando riprendi in mano il telefono.</string>
     <string name="reminders_state_armed">I promemoria sono attivi, e questo telefono è impostato per lasciarli passare.</string>
     <string name="reminders_denied_once">Nessun problema. Puoi attivarli quando ti va.</string>
     <string name="reminders_permanently_denied">Android non lo chiederà di nuovo, quindi questo va attivato nelle impostazioni del telefono.</string>
@@ -401,6 +402,7 @@
     <string name="doses_state_blocked">Le notifiche sono disattivate, quindi i promemoria delle dosi compariranno solo dentro l’app.</string>
     <string name="doses_state_best_effort_exact">I promemoria delle dosi sono attivi, ma Android non lascia che Binky li punti al minuto: aspettane uno entro qualche minuto dall’orario, non esattamente all’orario.</string>
     <string name="doses_state_best_effort_battery">I promemoria delle dosi sono attivi e puntati al minuto. Questo telefono può comunque ritardarli mentre Binky è in secondo piano.</string>
+    <string name="doses_state_best_effort_autostart">I promemoria delle dosi sono attivi e puntati al minuto. Questo telefono decide anche per conto suo quali app possono girare in secondo piano, e Binky non può leggere quell’elenco: se non c’è, una dose delle tre di notte può raggiungerti solo quando riprendi in mano il telefono.</string>
     <string name="doses_exact_alarm_action">Apri le impostazioni delle sveglie</string>
     <string name="reminders_caveat_notifications_title">Le notifiche sono disattivate</string>
     <!-- About what the phone does to a notification, never about a dose: the verb is "tardare",

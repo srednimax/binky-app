@@ -55,6 +55,9 @@ import app.binky.tracker.work.reminderDelivery
  * The screen explains what reminders are for **before** anything is requested, which is the whole of
  * ADR-0006's objection to a bare system dialog on launch. It then reports honestly what will
  * actually happen (ADR-0003): blocked, best-effort or armed, each with the fix that state deserves.
+ *
+ * On a phone with an OEM autostart list, *armed* is unreachable on purpose (9a), so best-effort is
+ * what this screen settles on and the autostart way-in is what it settles on offering.
  */
 @Composable
 fun RemindersOptIn(modifier: Modifier = Modifier) {
@@ -97,17 +100,30 @@ fun RemindersOptIn(modifier: Modifier = Modifier) {
                     onOpenSettings = { context.openAppNotificationSettings() },
                 )
 
+            // Two reasons to be here, ranked the way the resolver ranks them: the exemption first,
+            // because its state is readable and its fix is one toggle, and the OEM autostart list
+            // only once that is out of the way. Holding the exemption is therefore what *reveals*
+            // the autostart line — which is the hole 9a found, since the block further down this
+            // screen stops rendering at the same moment.
             ReminderDelivery.BestEffort ->
-                DeliveryLine(
-                    text = stringResource(R.string.reminders_state_best_effort),
-                    actionLabel = stringResource(R.string.reminders_battery_action),
-                    onAction = {
-                        // Recorded here too: taking the fix from the delivery line is still having
-                        // been asked, and the unprompted card must not reappear behind it.
-                        viewModel.markBatteryExemptionAsked()
-                        context.openBatteryOptimisationSettings()
-                    },
-                )
+                if (exempt) {
+                    DeliveryLine(
+                        text = stringResource(R.string.reminders_state_best_effort_autostart),
+                        actionLabel = stringResource(R.string.reminders_autostart_action),
+                        onAction = { context.openAutostartSettings() },
+                    )
+                } else {
+                    DeliveryLine(
+                        text = stringResource(R.string.reminders_state_best_effort),
+                        actionLabel = stringResource(R.string.reminders_battery_action),
+                        onAction = {
+                            // Recorded here too: taking the fix from the delivery line is still
+                            // having been asked, and the unprompted card must not reappear behind it.
+                            viewModel.markBatteryExemptionAsked()
+                            context.openBatteryOptimisationSettings()
+                        },
+                    )
+                }
 
             ReminderDelivery.Armed ->
                 DeliveryLine(text = stringResource(R.string.reminders_state_armed), actionLabel = null, onAction = {})
