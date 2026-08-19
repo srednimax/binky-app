@@ -47,29 +47,90 @@ device state and the traps, which is the expensive half to rewrite.
 *best-effort* path (`setAndAllowWhileIdle`) because the permission had reverted, so the question the
 three outcomes were written for is untouched.
 
-As of 2026-08-05 20:30 the device is **not armed** — all three of these are wrong right now:
+**Armed for the night of 18→19 August 2026**, read 2026-08-18 21:40. The state the 2026-08-05 read
+found broken is now right, and this time the *exact* mechanism is proven armed before the night rather
+than guessed at from the appop afterwards:
 
-- `SCHEDULE_EXACT_ALARM` reads `default` (denied) for `binky.bunny.and.rabbit.tracker.debug` (`u0a497`).
-- No pending `DoseAlarmReceiver` alarm. Last removal is `Reason=data_cleared` at **19:24:08** — the
-  edge-to-edge matrix run took the armed course with it, as 5i said its `wipe` steps would. `files/`
-  has carried no media directories since, so nothing is re-seeded.
-- The phone is **USB powered**, so Doze cannot start.
+- `SCHEDULE_EXACT_ALARM` reads **`allow`** for `binky.bunny.and.rabbit.tracker.debug` (now `u0a507` —
+  the uid moved, so the 2026-08-05 note's `u0a497` is stale).
+- One pending `DoseAlarmReceiver` alarm, `RTC_WAKEUP #74`, `origWhen=2026-08-19 08:00:00.000`,
+  **`window=0`, `exactAllowReason=permission`, `whenElapsed == maxWhenElapsed`** (both
+  `+10h24m58s508ms`). That is the exact path, not `setAndAllowWhileIdle`.
+- Exactly one WorkManager job, `TIME=+11h24m35s` → **2026-08-19 09:00**, which carries the Phase-4 sweep.
+- Battery-optimisation exemption **absent** (`dumpsys deviceidle whitelist` has no binky), autostart
+  **not** granted to the debug build — deliberately, so the run is the honest best-effort presentation.
+- The build on the phone is debug **versionCode 346 / 1.5.0**, not HEAD's 1.6.0. It was left in place on
+  purpose: `git diff v1.5.0..HEAD -- app/src/main/java/app/binky/tracker/work
+  app/src/main/java/app/binky/tracker/data` is **empty**, so the alarm and sweep code under test is
+  byte-identical to 1.6.0, and a reinstall is the one action known to revert the appop under the run.
+
+### The dose was moved to 03:00, deliberately
+
+**Changed 2026-08-18 22:0x, through the app's own course editor** — the ordinary write path, which is
+itself the thing that re-arms the alarm. Bijou's Metacam went from `8:00 AM & 8:00 PM` to a single
+**`3:00 AM`**, and the alarm re-armed at `origWhen=2026-08-19 03:00:00.000`, `window=0`,
+`exactAllowReason=permission`, `whenElapsed == maxWhenElapsed`.
+
+The reason is the one thing every previous attempt got wrong: **deep Doze needs the phone stationary,
+not merely screen-off.** An 08:00 fire competes with the owner waking up, and a phone carried out of the
+house is in continuous motion — `active=1000:"motion"` is what spoiled 4→5 Aug. At 03:00 the phone is
+face-down on a nightstand and has been still for hours, which is the strongest condition this test can
+have. On this device Doze entry is fast — `inactive_to=15s`, `sensing_to=15s`, `locating_to=5s`,
+`idle_pending_to=5m`, so roughly **six minutes** of stillness reaches `device_idle=full`, against stock
+Android's half hour.
+
+Two side-effects of the edit, both accepted: the 20:00 slot is gone (the chip row reflows as chips are
+removed, so a retried tap took it), and the course is now one dose a day. Neither matters — it is
+seeded data, and one alarm is a cleaner test than two.
+
+### What the morning must show — one post at 03:00, four at 09:00
+
+Written down before the night so the read is falsifiable rather than a story told afterwards:
+
+1. **03:00, channel `doses` (importance 4)** — Bijou's Metacam, the only slot on the course, in deep
+   Doze, on battery, through the **exact** mechanism. **This is 9a, and it is the only one that matters.**
+2. **09:00, channel `care`** — Bijou's **Nail trim**, worded *overdue*: `firstDueOn` 20672 = 2026-08-07,
+   never completed, `notifiedForDueOn` null. The care tab says "11 days overdue".
+3. **09:00, channel `care`** — Bijou's **Weigh-in**, worded *overdue*: last `care_events` completion is
+   20655 = 2026-07-21 against a weekly interval, so it is 21 days behind.
+4. **09:00, channel `care`** — the **group summary**, because `CareNotifier` posts one for two or more
+   and cancels it otherwise. Two due reminders is the case that produces it.
+5. **09:00, channel `watch`** — "Have you checked on Bijou today?": watch active until 2026-08-21 08:30,
+   `lastNaggedOn` null, last observation 2026-08-17 18:00, outside `WATCH_SATISFIED_WITHIN`.
+
+And nothing else: Nugget's **Hay order** (`firstDueOn` 20686 = 2026-08-21) and Bijou's **vaccination**
+(20805) are both in the future and must stay silent.
+
+**Only item 1 is expected to be in Doze.** The 09:00 sweep runs at `DEFAULT_REMINDER_TIME`, and
+`reminderTime` is a preference **nothing in the UI ever writes** — it is plumbing for a setting that was
+never built, so 09:00 cannot be moved without fabricating a state no owner can reach. If the phone is
+carried to work it will be awake and moving at 09:00, and items 2–5 then prove only that the sweep fires,
+which 4g already showed. **The care-sweep-in-Doze half of the Phase-4 carry therefore rides a morning the
+phone stays home** — as does the watch auto-expiry, which needs 2026-08-21 anyway. Both are secondary;
+9a is the blocker and 9a is armed.
 
 ### Pre-flight, in this order
 
-- [ ] Re-seed a real medication course, and Bijou's watch for the Phase-4 carry below. `seedWatches`
+- [x] Re-seed a real medication course, and Bijou's watch for the Phase-4 carry below. `seedWatches`
       back-dates `startedAt`, so the expiry morning is a parameter, not something to wait for.
-- [ ] Grant the exact-alarm permission **through the app's own deep link** (that is the path under test).
-- [ ] Confirm the pending alarm is the *exact* mechanism: `window=0` and `whenElapsed == maxWhenElapsed`.
+      *(Seeded 2026-08-18 20:28; the watch's `endsAt` landed on 08-21, hence the carry note above.)*
+- [x] Grant the exact-alarm permission **through the app's own deep link** (that is the path under test).
+      *(Reads `allow`.)*
+- [x] Confirm the pending alarm is the *exact* mechanism: `window=0` and `whenElapsed == maxWhenElapsed`.
       The best-effort alarm reads `window=+38m55s`, `flags=0x20` and a `maxWhenElapsed` ~39 min later.
       **This pair of fields is the only pre-run proof of which mechanism is armed** — the 4→5 Aug run
       could only tell from the appop afterwards, too late.
-- [ ] Read and record the **autostart** state before touching anything: the count in the header of
+- [x] Read and record the **autostart** state before touching anything: the count in the header of
       *Ustawienia → Aplikacje → Uprawnienia → Autostart* and the apps under it. A `uiautomator` dump's
-      `checked` attribute lies on that screen — every row reports false. (Last read: 10 apps, `Binky`
-      among them, `Binky Debug` not; granted for the debug build → header 11.)
-- [ ] **Unplug**, evening, and leave it unplugged past the fire time. Charging blocks Doze — this is the
-      half 4g could not claim.
+      `checked` attribute lies on that screen — every row reports false. (Read 2026-08-18 21:42, via
+      `am start -n com.miui.securitycenter/com.miui.permcenter.autostart.AutoStartManagementActivity`
+      then `uiautomator dump` — the header reads **"10 apps can start in the background"**: Binky,
+      Calendar, Clock, Facebook, Google Wallet, Instagram, Messenger, Mi Fitness, Notes, WhatsApp.
+      **`Binky Debug` is not among them**, unchanged from the last read, and not needed — an alarm
+      broadcast arrives on its own temporary allowlist, `temporaryAppAllowlistReasonCode=302`.)
+- [x] **Unplug**, evening, and leave it unplugged past the fire time. Charging blocks Doze — this is the
+      half 4g could not claim. *(Done. Unplugged overnight, plugged back in 06:50:47 — and for the first
+      time in four attempts every condition held. See the result below.)*
 
 **Trap:** never run `connectedAndroidTest` after arming. `am instrument` force-stops the package, which
 cancels every alarm it placed, and the result is indistinguishable from a broken rebuild.
@@ -83,11 +144,83 @@ adb shell dumpsys batterystats --history   # device_idle=full unbroken across th
 adb shell dumpsys notification --noredact  # exactly one post on channel=doses, importance=4
 ```
 
-- [ ] **Dose outcome recorded** against 5a's three written-down outcomes (fires in grace / late but
-      reliable / not until touched). Outcome 3 rewrites ADR-0003 and the phase's delivery mechanism.
+- [x] **Dose outcome recorded** against 5a's three written-down outcomes — **outcome 3, "not until
+      touched"**, but for a reason none of the three anticipated. Written up below; it does not close 9a.
 - [ ] **Phase-4 carry, same night or its own**: the care sweep firing while **still in Doze**, and a
       watch **auto-expiring** — nagging stops that morning, the prompt shows the *current* trend,
       dismissing leaves no row behind. Different signatures, so one night can hold both.
+
+### Result of the 18→19 Aug run: the alarm did not fire, and **Doze is not why** 🔴
+
+Read 2026-08-19 06:51 with `scripts/doze-capture.sh`, before the shade was touched. **The conditions were
+finally right** — this is the first of four attempts where nothing about the setup is in question:
+
+- Unplugged and stationary all night. `device_idle=full` **unbroken from 01:07:08 to 03:07:09**, straight
+  across the 03:00 fire time, on battery at 27%. (Anchor: batterystats offset 0 = `2026-08-17 17:46:42`;
+  offsets past a day carry a `+1d` prefix, which is easy to miss when grepping.)
+- The alarm was verified exact before the night and never cancelled — the removal history's newest entry
+  for `u0a507` is the seeding at 20:27:45, hours before it was armed.
+- No reboot (`up 15 days`), battery never died (25% at the read).
+
+**And it did not fire.** There is no wake event at 03:00 at all; the only exit from idle, at 03:07:09,
+reads `wake_reason=0:"248 WLAN_CE_2"` — a WLAN wake, not an alarm. The dose was delivered **3h50m47s
+late, at 06:50:47**, the moment the phone was plugged in.
+
+**The cause is Xiaomi's process freezer, not AOSP's Doze:**
+
+```
+06:50:47.481 D GreezeManager: THAW uid = 10507 pid = [17392] reason : enable:28-thawAll caller : 1000
+06:50:47.982 D Aurogon    : sendPendingAlarm  uid = 10507
+06:50:47.987 I SmartPower : binky…debug/10507(17392): idle->background(3040566ms) R(alarm start)
+```
+
+`GreezeManager` is HyperOS's cgroup freezer and `Aurogon` its power framework. The app's process was
+**frozen**, and Aurogon **held its pending alarm** until the thaw, then released it half a second later —
+`sendPendingAlarm` is not an AOSP log line. Plugging in is what thawed it (`thawAll`). So the honest
+statement is not "an exact alarm does not survive Doze" but **"an exact alarm does not reach a frozen app
+on HyperOS, and the vendor decides when to thaw"**.
+
+**The app itself behaved correctly, which is a real positive result and was previously untested.**
+`DOSE_GRACE` is 30 minutes; the delivery was 3h50m late, so `postDueDoses` posted **nothing** — right, not
+broken, because a notification for a slot four hours stale is worse than silence — and
+`rescheduleDoseAlarm` armed the successor, now pending for **2026-08-20 03:00**, `window=0`,
+`exactAllowReason=permission`. Late delivery is handled exactly as designed.
+
+**The untested variable is autostart.** `Binky Debug` is not in the autostart list; the Play `Binky`
+build is. The 2026-08-18 pre-flight note above guessed autostart was "not needed — an alarm broadcast
+arrives on its own temporary allowlist"; that guess is now **wrong**, and the `temporaryAppAllowlistReasonCode=302`
+in the alarm's `idle-options` evidently does not outrank the freezer.
+
+- [x] **Re-run with autostart GRANTED to `Binky Debug`, one variable changed.** Granted 2026-08-19
+      07:47 — the header now reads **"11 apps can start in the background"** with `Binky Debug` in the
+      allowed list, against 10 the night before. That is the only variable that moved.
+- [ ] **The 10:00 run, armed 2026-08-19 07:49.** Metacam now carries **two** times, `3:00 AM & 10:00 AM`,
+      so one course gives two attempts: a desk test today and the deep-Doze repeat tonight. Pending alarm
+      reads `origWhen=2026-08-19 10:00:00.000 window=0 exactAllowReason=permission`.
+
+      **A 10:00 desk test is the same experiment as 03:00, not a weaker one** — six minutes of stillness
+      reaches `device_idle=full` on this device, and the 17:00 capture proves retroactively whether it
+      did, exactly as it did for 03:00. What is weaker is *confidence the conditions held*: a glance at
+      the screen, a charging cable or picking the phone up breaks it, and nobody finds out until the read.
+      Hence 03:00 stays armed underneath as a free second attempt.
+
+      **Known confound:** the 09:00 care sweep runs an hour earlier and thaws the app. 55 minutes should
+      be ample for Greeze to re-freeze it before 10:00, but check the logcat for a re-freeze before
+      trusting a pass. The sweep is also a **bonus data point** — whether a WorkManager job is held by the
+      freezer the way the alarm was is not yet known either way.
+
+      Read: **`doses` post timestamped ~10:00** → autostart is the lever. **No post, plus
+      `GreezeManager: THAW` and `Aurogon: sendPendingAlarm` at plug-in** → still frozen, and exact alarms
+      are not deliverable on this ROM.
+- [ ] If it fires with autostart and not without, that is the finding, and **ADR-0003 needs an amendment**
+      saying so — plus whatever the app tells an owner on a ROM like this. If it fails **with** autostart
+      too, exact alarms are not deliverable on HyperOS at all and the delivery mechanism is the question,
+      not the wording.
+- [ ] This also front-runs 9b's *"reboot twice, autostart granted and autostart denied"* — the denied arm
+      is now on record.
+
+**Not a Doze failure, so 4g's result stands**: a WorkManager job survived 10.5 h of Doze on 2026-08-04.
+Nothing here contradicts that; the freezer is a different mechanism reached by a different path.
 
 ---
 
