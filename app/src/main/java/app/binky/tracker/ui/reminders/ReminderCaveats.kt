@@ -26,6 +26,7 @@ import app.binky.tracker.work.isIgnoringBatteryOptimisations
 import app.binky.tracker.work.openAppNotificationSettings
 import app.binky.tracker.work.openAutostartSettings
 import app.binky.tracker.work.openBatteryOptimisationSettings
+import app.binky.tracker.work.openChannelNotificationSettings
 import app.binky.tracker.work.openExactAlarmSettings
 import app.binky.tracker.work.reminderDelivery
 
@@ -128,12 +129,18 @@ private data class Caveat(
  *
  * 1. The `doses` channel muted on its own. The app-wide case is the opt-in above; this is the owner
  *    having switched off one category in system settings, which nothing in the app can ask back.
- * 2. Exact alarms not permitted. Denied by default on Android 14+, so this is a state real users
+ * 2. The `doses` channel *lowered* rather than muted, so a dose arrives with no sound (9b). Above
+ *    every background limit below it because it is certain rather than probable, and because the
+ *    owner may never have chosen it: HyperOS hands a channel back at `IMPORTANCE_LOW` after an
+ *    off-and-on in system settings, whatever it was created at. Only the channel's own page can put
+ *    it back, so that is where this one points — one screen deeper than every other notification
+ *    caveat here.
+ * 3. Exact alarms not permitted. Denied by default on Android 14+, so this is a state real users
  *    genuinely sit in without ever having chosen it — there is no ask to have declined and no dialog
  *    that will ever appear again.
- * 3. Battery optimisation, which delays rather than blocks, and whose fix is one readable toggle.
- * 4. The OEM autostart list, last because it is the only one of the four the app cannot read back.
- *    It is reached only once 3 is satisfied, so an owner is never shown two background-limit cards
+ * 4. Battery optimisation, which delays rather than blocks, and whose fix is one readable toggle.
+ * 5. The OEM autostart list, last because it is the only one of the five the app cannot read back.
+ *    It is reached only once 4 is satisfied, so an owner is never shown two background-limit cards
  *    in a row — and reaching it is not the app running out of things to blame: 9a watched a 03:00
  *    dose land at 06:50 on this exact fact.
  */
@@ -153,6 +160,14 @@ private fun caveatFor(
                 body = R.string.doses_state_blocked,
                 action = R.string.reminders_open_settings_action,
                 onAction = { context.openAppNotificationSettings() },
+            )
+
+        dose == ReminderDelivery.Silent ->
+            Caveat(
+                title = R.string.reminders_caveat_silent_title,
+                body = R.string.doses_state_silent,
+                action = R.string.reminders_open_settings_action,
+                onAction = { context.openChannelNotificationSettings(ReminderChannel.Doses) },
             )
 
         dose == ReminderDelivery.BestEffort && !exactAlarms ->
@@ -179,6 +194,14 @@ private fun caveatFor(
                 body = R.string.doses_state_best_effort_autostart,
                 action = R.string.reminders_autostart_action,
                 onAction = { context.openAutostartSettings() },
+            )
+
+        care == ReminderDelivery.Silent ->
+            Caveat(
+                title = R.string.reminders_caveat_silent_title,
+                body = R.string.reminders_state_silent,
+                action = R.string.reminders_open_settings_action,
+                onAction = { context.openChannelNotificationSettings(ReminderChannel.Care) },
             )
 
         care == ReminderDelivery.BestEffort && !exempt ->

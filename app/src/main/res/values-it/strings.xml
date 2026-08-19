@@ -384,6 +384,7 @@
     <string name="reminders_body">Binky può ricordarti le cure che tornano: il taglio delle unghie ogni sei settimane, un vaccino ogni anno, una pesata ogni settimana. I promemoria arrivano una volta al giorno, solo su questo telefono, e scegli tu per che cosa.</string>
     <string name="reminders_enable_action">Attiva i promemoria</string>
     <string name="reminders_state_blocked">Le notifiche sono disattivate, quindi i promemoria compariranno solo dentro l’app.</string>
+    <string name="reminders_state_silent">I promemoria sono attivi, ma questo tipo è impostato per arrivare in silenzio: nessun suono, quindi restano nel pannello delle notifiche finché non li guardi.</string>
     <string name="reminders_state_best_effort">I promemoria sono attivi. Questo telefono può comunque ritardarli o lasciarli cadere mentre Binky è in secondo piano: è l’impostazione qui sotto a rimediare.</string>
     <string name="reminders_state_best_effort_autostart">I promemoria sono attivi. Questo telefono decide anche per conto suo quali app possono girare in secondo piano, e Binky non può leggere quell’elenco: se non c’è, un promemoria può restare non inviato per ore e arrivare quando riprendi in mano il telefono.</string>
     <string name="reminders_state_armed">I promemoria sono attivi, e questo telefono è impostato per lasciarli passare.</string>
@@ -400,11 +401,13 @@
     <!-- Dose delivery (ADR-0003, ADR-0025, ADR-0026, PLAN 5a). Nothing here says a word about
          the medication itself, and nothing says a dose is late. -->
     <string name="doses_state_blocked">Le notifiche sono disattivate, quindi i promemoria delle dosi compariranno solo dentro l’app.</string>
+    <string name="doses_state_silent">I promemoria delle dosi sono attivi, ma questo tipo è impostato per arrivare in silenzio: nessun suono e nessun avviso a comparsa, quindi una dose delle tre di notte resta nel pannello delle notifiche finché non la guardi.</string>
     <string name="doses_state_best_effort_exact">I promemoria delle dosi sono attivi, ma Android non lascia che Binky li punti al minuto: aspettane uno entro qualche minuto dall’orario, non esattamente all’orario.</string>
     <string name="doses_state_best_effort_battery">I promemoria delle dosi sono attivi e puntati al minuto. Questo telefono può comunque ritardarli mentre Binky è in secondo piano.</string>
     <string name="doses_state_best_effort_autostart">I promemoria delle dosi sono attivi e puntati al minuto. Questo telefono decide anche per conto suo quali app possono girare in secondo piano, e Binky non può leggere quell’elenco: se non c’è, una dose delle tre di notte può raggiungerti solo quando riprendi in mano il telefono.</string>
     <string name="doses_exact_alarm_action">Apri le impostazioni delle sveglie</string>
     <string name="reminders_caveat_notifications_title">Le notifiche sono disattivate</string>
+    <string name="reminders_caveat_silent_title">I promemoria non faranno alcun suono</string>
     <!-- About what the phone does to a notification, never about a dose: the verb is "tardare",
          and no status anywhere in this file says a thing is late (§6). -->
     <string name="reminders_caveat_exact_title">I promemoria possono tardare</string>

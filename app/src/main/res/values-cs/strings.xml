@@ -443,6 +443,7 @@
     <string name="reminders_body">Binky umí připomínat opakovanou péči — stříhání drápků každých šest týdnů, každoroční očkování, týdenní vážení. Připomínky chodí jednou denně, jen v tomhle telefonu, a ty si vybereš, čeho se týkají.</string>
     <string name="reminders_enable_action">Zapnout připomínky</string>
     <string name="reminders_state_blocked">Oznámení jsou vypnutá, takže se připomínky objeví jen uvnitř aplikace.</string>
+    <string name="reminders_state_silent">Připomínky jsou zapnuté, ale tenhle druh má chodit potichu — bez zvuku, takže čekají v oznamovací liště, dokud se tam nepodíváš.</string>
     <string name="reminders_state_best_effort">Připomínky jsou zapnuté. Tenhle telefon je ale může zdržet nebo zahodit, když Binky běží na pozadí — spraví to nastavení níž.</string>
     <string name="reminders_state_best_effort_autostart">Připomínky jsou zapnuté. Tenhle telefon si navíc sám určuje, které aplikace smějí běžet na pozadí, a Binky do toho seznamu nevidí — když v něm chybí, může připomínka zůstat neodeslaná celé hodiny a přijít, až telefon zase vezmeš do ruky.</string>
     <string name="reminders_state_armed">Připomínky jsou zapnuté a tenhle telefon je nechá projít.</string>
@@ -459,11 +460,13 @@
     <!-- Dose delivery (ADR-0003, ADR-0025, ADR-0026). Nothing here says anything about the
          medication itself, and nothing says a dose was late. -->
     <string name="doses_state_blocked">Oznámení jsou vypnutá, takže se připomínky dávek objeví jen uvnitř aplikace.</string>
+    <string name="doses_state_silent">Připomínky dávek jsou zapnuté, ale tenhle druh má chodit potichu — bez zvuku a bez vyskakování, takže dávka ze tří ráno počká v oznamovací liště, dokud se tam nepodíváš.</string>
     <string name="doses_state_best_effort_exact">Připomínky dávek jsou zapnuté, ale Android nedovolí Binky nastavit je na minutu přesně — čekej je do pár minut od daného času, ne přesně v něm.</string>
     <string name="doses_state_best_effort_battery">Připomínky dávek jsou zapnuté a nastavené na minutu přesně. Tenhle telefon je ale může zdržet, když Binky běží na pozadí.</string>
     <string name="doses_state_best_effort_autostart">Připomínky dávek jsou zapnuté a nastavené na minutu přesně. Tenhle telefon si navíc sám určuje, které aplikace smějí běžet na pozadí, a Binky do toho seznamu nevidí — když v něm chybí, může se dávka ze tří ráno ozvat, až telefon zase vezmeš do ruky.</string>
     <string name="doses_exact_alarm_action">Otevřít nastavení budíků</string>
     <string name="reminders_caveat_notifications_title">Oznámení jsou vypnutá</string>
+    <string name="reminders_caveat_silent_title">Připomínky se neozvou</string>
     <string name="reminders_caveat_exact_title">Připomínky mohou dorazit později</string>
     <string name="reminders_caveat_battery_title">Tenhle telefon může připomínky zdržet</string>
 

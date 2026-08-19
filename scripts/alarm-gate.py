@@ -266,7 +266,7 @@ def anywhere(needle: str) -> bool:
 
 
 def delivery_line() -> str:
-    """The Care tab's reminder-delivery sentence, whichever of the five it currently is.
+    """The Care tab's reminder-delivery sentence, whichever of the six it currently is.
 
     Recorded rather than merely matched, so a reading that fails says *which* state the app was in
     — the difference between "blocked" and "best-effort, battery" is the whole finding.
@@ -922,6 +922,10 @@ def check_blocked() -> None:
     The second half of the bullet is the one worth having twice over: **creating a course still
     works**. A phone that cannot deliver a reminder must not become a read-only app — the record is
     the point and the reminder is the extra.
+
+    **A third half since 9b**, and it is the reason this check was worth writing: un-muting does not
+    restore the importance, and the state it leaves behind used to be reported as armed. The last
+    reading is the new `Silent` caveat standing where that silence was.
     """
     print("\n-- reseeding")
     e2e.reset_to_seeded()
@@ -992,6 +996,25 @@ def check_blocked() -> None:
         restored > 0,
         "IMPORTANCE_LOW; mUserLockedFields=4" if restored == 2 else "",
     )
+
+    # **And what the app now says about it.** At importance 2 it used to say nothing: the resolver
+    # treated everything above `IMPORTANCE_NONE` as fine and returned `Armed`, so the owner of a
+    # channel their phone had quietly lowered was told the reminder was set up to get through. It
+    # now returns `ReminderDelivery.Silent` below `IMPORTANCE_DEFAULT`, and the card names the
+    # consequence and opens the channel's own settings page — the only screen the level can be
+    # raised from. Recorded as not-applicable rather than failed on a phone that hands the channel
+    # back audible, because there is then no silent state to describe.
+    silent = "no sound and no pop-up"
+    if restored < 3:
+        observe("lowered channel -> the silent caveat", silent, line[:80], norm(silent) in norm(line))
+    else:
+        observe(
+            "lowered channel -> the silent caveat",
+            "n/a on this phone",
+            f"restored audible at {restored}",
+            True,
+            "nothing to describe",
+        )
     # A `pm clear` is the only thing that puts the channel back at 4, so the phone is not left with
     # a permanently quieter dose reminder than the one every other check assumes.
     e2e.reset_to_seeded()

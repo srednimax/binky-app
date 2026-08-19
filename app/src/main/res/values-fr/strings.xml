@@ -352,6 +352,7 @@
     <string name="reminders_body">Binky peut te rappeler les soins qui reviennent : une coupe d’ongles toutes les six semaines, un vaccin par an, une pesée par semaine. Les rappels arrivent une fois par jour, sur ce téléphone uniquement, et c’est toi qui choisis ce qu’ils concernent.</string>
     <string name="reminders_enable_action">Activer les rappels</string>
     <string name="reminders_state_blocked">Les notifications sont désactivées : les rappels n’apparaîtront que dans l’application.</string>
+    <string name="reminders_state_silent">Les rappels sont activés, mais ce type est réglé pour arriver en silence — aucun son, ils attendent donc dans le volet des notifications jusqu’à ce que tu les voies.</string>
     <string name="reminders_state_best_effort">Les rappels sont activés. Ce téléphone peut encore les retarder ou les abandonner pendant que Binky est en arrière-plan — le réglage ci-dessous est ce qui corrige cela.</string>
     <string name="reminders_state_best_effort_autostart">Les rappels sont activés. Ce téléphone décide aussi lui-même quelles applis ont le droit de tourner en arrière-plan, et Binky ne peut pas lire cette liste — s’il n’y figure pas, un rappel peut rester non envoyé pendant des heures et n’arriver que lorsque tu reprends le téléphone en main.</string>
     <string name="reminders_state_armed">Les rappels sont activés, et ce téléphone est réglé pour les laisser passer.</string>
@@ -368,11 +369,13 @@
     <!-- Dose delivery (ADR-0003, ADR-0025, ADR-0026). "Retarder" is what the phone does to a
          notification — a mechanism, not a judgement about a dose. See the header. -->
     <string name="doses_state_blocked">Les notifications sont désactivées : les rappels de dose n’apparaîtront que dans l’application.</string>
+    <string name="doses_state_silent">Les rappels de dose sont activés, mais ce type est réglé pour arriver en silence — aucun son ni fenêtre surgissante, une dose de trois heures du matin attend donc dans le volet des notifications jusqu’à ce que tu la voies.</string>
     <string name="doses_state_best_effort_exact">Les rappels de dose sont activés, mais Android ne laisse pas Binky les régler à la minute près — attends-toi à un rappel dans les quelques minutes qui suivent l’heure, pas à l’heure pile.</string>
     <string name="doses_state_best_effort_battery">Les rappels de dose sont activés et réglés à la minute près. Ce téléphone peut encore les retarder pendant que Binky est en arrière-plan.</string>
     <string name="doses_state_best_effort_autostart">Les rappels de dose sont activés et réglés à la minute près. Ce téléphone décide aussi lui-même quelles applis ont le droit de tourner en arrière-plan, et Binky ne peut pas lire cette liste — s’il n’y figure pas, une dose de trois heures du matin peut ne te parvenir que lorsque tu reprends le téléphone en main.</string>
     <string name="doses_exact_alarm_action">Ouvrir les paramètres d’alarme</string>
     <string name="reminders_caveat_notifications_title">Les notifications sont désactivées</string>
+    <string name="reminders_caveat_silent_title">Les rappels ne feront aucun son</string>
     <string name="reminders_caveat_exact_title">Les rappels peuvent tarder</string>
     <string name="reminders_caveat_battery_title">Ce téléphone peut retenir les rappels</string>
 

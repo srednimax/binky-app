@@ -436,6 +436,7 @@
     <string name="reminders_body">O Binky pode lembrar você dos cuidados que se repetem — um corte de unhas a cada seis semanas, uma vacina anual, uma pesagem semanal. Os lembretes chegam uma vez por dia, só neste celular, e você escolhe do que eles tratam.</string>
     <string name="reminders_enable_action">Ativar os lembretes</string>
     <string name="reminders_state_blocked">As notificações estão desligadas, então os lembretes só aparecem dentro do app.</string>
+    <string name="reminders_state_silent">Os lembretes estão ativos, mas este tipo está configurado para chegar em silêncio — sem som, então eles esperam na área de notificações até você olhar.</string>
     <string name="reminders_state_best_effort">Os lembretes estão ativos. Este celular ainda pode atrasar ou descartar os lembretes enquanto o Binky está em segundo plano — a configuração abaixo é o que resolve isso.</string>
     <string name="reminders_state_best_effort_autostart">Os lembretes estão ativos. Este celular também decide sozinho quais aplicativos podem rodar em segundo plano, e o Binky não consegue ler essa lista — fora dela, um lembrete pode ficar horas sem ser enviado e chegar só quando você pegar o celular de novo.</string>
     <string name="reminders_state_armed">Os lembretes estão ativos, e este celular está configurado para deixá-los passar.</string>
@@ -452,11 +453,13 @@
     <!-- Dose delivery (ADR-0003, ADR-0025, ADR-0026, PLAN 5a). Nothing here says anything about
          the medication itself. -->
     <string name="doses_state_blocked">As notificações estão desligadas, então os lembretes de dose só aparecem dentro do app.</string>
+    <string name="doses_state_silent">Os lembretes de dose estão ativos, mas este tipo está configurado para chegar em silêncio — sem som e sem aviso na tela, então uma dose das três da manhã espera na área de notificações até você olhar.</string>
     <string name="doses_state_best_effort_exact">Os lembretes de dose estão ativos, mas o Android não está deixando o Binky marcá-los no minuto exato — espere um lembrete alguns minutos depois do horário, não nele.</string>
     <string name="doses_state_best_effort_battery">Os lembretes de dose estão ativos e marcados no minuto exato. Este celular ainda pode atrasá-los enquanto o Binky está em segundo plano.</string>
     <string name="doses_state_best_effort_autostart">Os lembretes de dose estão ativos e marcados no minuto exato. Este celular também decide sozinho quais aplicativos podem rodar em segundo plano, e o Binky não consegue ler essa lista — fora dela, uma dose das três da manhã pode chegar até você só quando pegar o celular de novo.</string>
     <string name="doses_exact_alarm_action">Abrir as configurações de alarme</string>
     <string name="reminders_caveat_notifications_title">As notificações estão desligadas</string>
+    <string name="reminders_caveat_silent_title">Os lembretes não vão emitir som</string>
     <!-- "atrasados" is on this language's banned list (§6) and this is not one of the two strings
          licensed to use it, so the caveat states the timing instead. -->
     <string name="reminders_caveat_exact_title">Os lembretes podem chegar depois da hora</string>

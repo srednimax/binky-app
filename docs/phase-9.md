@@ -97,6 +97,48 @@ than record:
   Phase 10 is the same open question 9a's autostart finding raised, and they should be answered
   together.
 
+  **Answered 2026-08-19, and built on this branch as a 1.7 `fix:`.** See *"One decision over three
+  findings"* below.
+
+### One decision over three findings
+
+9b closed with three ways a reminder can fail while the app says it is fine — 9a's autostart list,
+this section's lowered channel, and the post-restart window below. They are one question asked three
+times: **how much of a phone's unreliability should the app narrate to someone who cannot fix most of
+it?** Answering them separately is how a delivery ladder turns into a wall of hedges, so they were
+answered together, on one rule:
+
+> **The app speaks when it can read the fact *and* the owner can act on it.** Everything else is a
+> line that would be printed unconditionally, and an unconditional caveat is wallpaper — the thing
+> ADR-0003 already refuses to print for the armed state, for the same reason.
+
+That rule sorts all three without further argument:
+
+| Finding | Readable? | Actionable? | What the app does |
+| --- | --- | --- | --- |
+| Autostart list (9a) | no — the list is unreadable, only its *existence* is | yes, by hand | already hedges: `BestEffort` with the way in offered, never claimed back (shipped in 1.7) |
+| Lowered channel (9b) | **yes**, exactly | **yes**, on one screen | **new: `ReminderDelivery.Silent`**, one rung, pointing at the channel's own page |
+| Post-restart window (9b) | **no** — nothing is running to read it | no | nothing. The ADR wording is corrected and the app says nothing |
+
+**The fourth state, and why it is a state rather than a caveat branch.** The cheap version of this fix
+is a new `when` arm in `caveatFor` alone, leaving the resolver as it was. That would have left
+`resolveReminderDelivery` returning `Armed` for a silenced channel — the promise, still being made, in
+the one function whose whole job is to be the honest answer — and every *other* reader of it
+(`RemindersOptIn`, the backup screen, `BackupExclusionNotifier`) still believing it. Making it an enum
+entry is what turns the fix into a compiler error at each of those sites, which is how the opt-in
+screen's own delivery line got the same sentence without anybody remembering it existed.
+
+**The audible cliff is `IMPORTANCE_DEFAULT`, not the level the channel was created at.** Below DEFAULT
+Android plays no sound, and that is exactly where *"it will arrive silently"* becomes true. A `doses`
+channel lowered from HIGH to precisely DEFAULT loses its heads-up and keeps its sound, and is
+deliberately not reported: the sound is the half an owner responds to, and spending the one card on
+the pop-up would be hedging about the smaller fact. It is the one place this resolver knowingly says
+less than it could, and `ReminderDeliveryTest` asserts the silence as a case so it reads as a choice
+rather than an oversight.
+
+**Versioning.** A `fix:` — the ladder gained a rung, not a capability — so 9f's *"exactly one `feat:`"*
+note for 1.7 still holds and Phase 10 stays unopened.
+
 ### The item with a consequence beyond a tick, and it was not the one expected
 
 **Reboot twice, autostart granted and autostart denied.** The fear written down was that without

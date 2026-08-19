@@ -296,6 +296,7 @@
     <string name="reminders_body">Binky puede recordarte los cuidados que se repiten: cortar las uñas cada seis semanas, la vacuna anual, un pesaje a la semana. Los recordatorios llegan una vez al día, solo a este teléfono, y tú eliges para qué son.</string>
     <string name="reminders_enable_action">Activar los recordatorios</string>
     <string name="reminders_state_blocked">Las notificaciones están desactivadas, así que los recordatorios solo aparecerán dentro de la app.</string>
+    <string name="reminders_state_silent">Los recordatorios están activados, pero este tipo está puesto para llegar en silencio: sin sonido, así que esperan en el panel de notificaciones hasta que mires.</string>
     <string name="reminders_state_best_effort">Los recordatorios están activados. Este teléfono todavía puede retrasarlos o descartarlos mientras Binky está en segundo plano; el ajuste de abajo es lo que lo arregla.</string>
     <string name="reminders_state_best_effort_autostart">Los recordatorios están activados. Este teléfono además decide por su cuenta qué aplicaciones pueden funcionar en segundo plano, y Binky no puede leer esa lista; si no está en ella, un recordatorio puede quedarse sin enviar durante horas y llegarte cuando vuelvas a coger el teléfono.</string>
     <string name="reminders_state_armed">Los recordatorios están activados, y este teléfono está preparado para dejarlos pasar.</string>
@@ -313,11 +314,13 @@
          "best-effort" arrives for two different reasons with two different fixes, and the copy
          has to say which one is missing or the button underneath it looks arbitrary. -->
     <string name="doses_state_blocked">Las notificaciones están desactivadas, así que los recordatorios de dosis solo aparecerán dentro de la app.</string>
+    <string name="doses_state_silent">Los recordatorios de dosis están activados, pero este tipo está puesto para llegar en silencio: sin sonido y sin aviso emergente, así que una dosis de las tres de la madrugada espera en el panel de notificaciones hasta que mires.</string>
     <string name="doses_state_best_effort_exact">Los recordatorios de dosis están activados, pero Android no deja que Binky los ponga al minuto: espera uno a los pocos minutos de la hora, no justo a la hora.</string>
     <string name="doses_state_best_effort_battery">Los recordatorios de dosis están activados y puestos al minuto. Este teléfono todavía puede retrasarlos mientras Binky está en segundo plano.</string>
     <string name="doses_state_best_effort_autostart">Los recordatorios de dosis están activados y puestos al minuto. Este teléfono además decide por su cuenta qué aplicaciones pueden funcionar en segundo plano, y Binky no puede leer esa lista; si no está en ella, una dosis de las tres de la madrugada puede llegarte cuando vuelvas a coger el teléfono.</string>
     <string name="doses_exact_alarm_action">Abrir los ajustes de alarmas</string>
     <string name="reminders_caveat_notifications_title">Las notificaciones están desactivadas</string>
+    <string name="reminders_caveat_silent_title">Los recordatorios no sonarán</string>
     <string name="reminders_caveat_exact_title">Los recordatorios pueden llegar tarde</string>
     <string name="reminders_caveat_battery_title">Este teléfono puede retener los recordatorios</string>
 

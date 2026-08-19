@@ -40,6 +40,7 @@ import app.binky.tracker.work.isIgnoringBatteryOptimisations
 import app.binky.tracker.work.openAppNotificationSettings
 import app.binky.tracker.work.openAutostartSettings
 import app.binky.tracker.work.openBatteryOptimisationSettings
+import app.binky.tracker.work.openChannelNotificationSettings
 import app.binky.tracker.work.rememberNotificationPermissionAsk
 import app.binky.tracker.work.reminderDelivery
 
@@ -98,6 +99,16 @@ fun RemindersOptIn(modifier: Modifier = Modifier) {
                     deniedOnce = outcome == NotificationPermissionOutcome.Denied,
                     onAsk = ask,
                     onOpenSettings = { context.openAppNotificationSettings() },
+                )
+
+            // Nothing to ask for and nothing to grant: the level is the owner's, and Android will
+            // not let the app raise it back. So this line does the one thing left — say what will
+            // happen, and open the page where it can be undone by hand.
+            ReminderDelivery.Silent ->
+                DeliveryLine(
+                    text = stringResource(R.string.reminders_state_silent),
+                    actionLabel = stringResource(R.string.reminders_open_settings_action),
+                    onAction = { context.openChannelNotificationSettings(ReminderChannel.Care) },
                 )
 
             // Two reasons to be here, ranked the way the resolver ranks them: the exemption first,

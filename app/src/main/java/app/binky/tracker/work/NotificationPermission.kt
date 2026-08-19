@@ -95,15 +95,52 @@ fun rememberNotificationPermissionAsk(onOutcome: (NotificationPermissionOutcome)
  * back on, and the only remaining route once the system dialog is spent.
  */
 fun Context.openAppNotificationSettings() {
-    val actions =
-        listOf(
-            // The notification page directly, which is where the switch actually is.
-            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName),
-            // The app's details page, one tap further away and present on every device.
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)),
-        )
-    for (intent in actions) {
+    startFirstAvailable(
+        // The notification page directly, which is where the switch actually is.
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, packageName),
+        // The app's details page, one tap further away and present on every device.
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)),
+    )
+}
+
+/**
+ * One channel's **own** page in Android's settings — where an importance that has been lowered can
+ * be raised back up, which is the only place it can be (9b).
+ *
+ * A separate way in from [openAppNotificationSettings] rather than a reuse of it, because the fix is
+ * a different control: the app-wide switch lives on the app's page, the per-kind level lives on a
+ * screen below it, and landing an owner one screen above the toggle they need is how a two-tap fix
+ * becomes a hunt through a list of four channel names.
+ *
+ * `ACTION_CHANNEL_NOTIFICATION_SETTINGS` and channels both arrived in API 26, which is `minSdk`, so
+ * there is no version branch to write — but a skin can still decline to export it, so it falls
+ * through to the same two screens as above.
+ */
+fun Context.openChannelNotificationSettings(channel: ReminderChannel) {
+    startFirstAvailable(
+        Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+            .putExtra(Settings.EXTRA_CHANNEL_ID, channel.id),
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, packageName),
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)),
+    )
+}
+
+/**
+ * Tries each screen in turn and stops at the first one that opens.
+ *
+ * Every way into system settings this app offers is a *best guess at a screen that may not exist
+ * here* — a settings action is not a guaranteed part of the platform, and an OEM may drop one or
+ * keep it unexported. So the callers above list their targets most-specific-first — the screen that
+ * holds the actual control, then the ones above it — and this walks them until one opens.
+ *
+ * Kotlin note: `vararg` is the same idea as JS rest parameters, so the call sites read as a list of
+ * arguments rather than an explicitly built `listOf`.
+ */
+private fun Context.startFirstAvailable(vararg intents: Intent) {
+    for (intent in intents) {
         try {
             startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             return

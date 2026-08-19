@@ -259,14 +259,24 @@ open. Worth one tap before 1.7 goes out, since the new copy points at it.
 
 **What it costs the product**, and this is now the real work:
 
-- [ ] **ADR-0003 needs an amendment.** Its exact-alarm promise holds only where the OEM does not freeze
+- [x] **ADR-0003 needs an amendment.** Its exact-alarm promise holds only where the OEM does not freeze
       the app, and this is the single most popular Android OEM in several of the nine markets shipped to.
-- [ ] **An owner on a Xiaomi will hit this and never know.** They cannot be expected to find
+      ✅ Written as *"the autostart list gates the honest state after all"*, and amended a second time in
+      9b for the silenced channel.
+- [x] **An owner on a Xiaomi will hit this and never know.** They cannot be expected to find
       *Settings → Apps → Permissions → Autostart* unaided, and the app currently says nothing. Whatever
       is built here is user-facing copy at minimum and probably a check plus a deep link — i.e. a
       **`feat:`**, which changes Phase 9's "exactly one feature commit" versioning note above.
-- [ ] Decide whether this is a Phase 9 item or the thing that opens Phase 10. It was not in the plan
+      ✅ Shipped in `ed42638` as copy plus a deep link — `hasAutostartSettings()` puts the phone at
+      best-effort, `doses_state_best_effort_autostart` names the cost in hours, `openAutostartSettings()`
+      is the way in. **It went in as a `fix:`, not the `feat:` feared here**: the ladder already had the
+      state and the card, so this added a reason to an existing rung rather than a capability. The
+      versioning note survives untouched.
+- [x] Decide whether this is a Phase 9 item or the thing that opens Phase 10. It was not in the plan
       because nobody knew it existed.
+      ✅ **A Phase 9 item, and so are 9b's two.** Answered 2026-08-19 as one decision over all three
+      findings — see *"One decision over three findings"* in [`phase-9.md`](phase-9.md). Phase 10 stays
+      unopened; 1.7 carries all of it as `fix:` commits.
 
 ### The 09:00 sweep, same morning: also fine, and the prediction was wrong in the app's favour
 
@@ -327,9 +337,14 @@ writes them as JSON.
       lower it. Confirmed a relaunch does not help; only `pm clear` puts it back to 4. At importance 2
       a dose reminder posts with **no sound and no heads-up**, and `resolveReminderDelivery` calls that
       state fine, because it only treats `IMPORTANCE_NONE` as blocked. Same shape as 9a's finding: a
-      delivery the app describes more confidently than the phone will honour. **Decide whether this is
-      a 1.7 `fix:` or the thing that opens Phase 10** — it is one more rung on the ladder in
-      `caveatFor`, not a redesign.
+      delivery the app describes more confidently than the phone will honour.
+      ✅ **Fixed on this branch, as a 1.7 `fix:`** — `ReminderDelivery.Silent`, a fourth state between
+      `Blocked` and `BestEffort`, returned for any importance below `IMPORTANCE_DEFAULT` and given its
+      own rung in `caveatFor` for both `doses` and `care`. The card points at the *channel's* own
+      settings page rather than the app's, because that is the only screen the level can be raised
+      from. The cliff is `DEFAULT` and not the channel's own creation level on purpose: a `doses`
+      channel lowered to exactly `DEFAULT` keeps its sound and loses only the heads-up, and *"it will
+      arrive silently"* would be a false sentence about it.
 - [x] The destructive halves of three dialogs (delete visit with its weighing, delete vet, delete bunny counts).
       ✅ **5/5, `--only dialogs`.** The seeded weighing read 2.380 kg on the Weight tab; the visit dialog
       named it (*"A weighing of … was recorded at it"*); the **destructive** branch — *Delete the
@@ -364,6 +379,12 @@ writes them as JSON.
       what actually happens, and a decision on whether the delivery ladder should say anything to the
       owner — the same open question as 9a's autostart finding and the muted-channel one above. The
       check now polls after the unlock so the next run puts a number on the latency.
+      ✅ **Decided 2026-08-19: the ADR wording only, and no user-facing copy.** The other two findings
+      each got a rung because the app can *read* the fact and the owner can *act* on it. This one has
+      neither property: nothing is running to detect the state, so anything said about it would be said
+      unconditionally, on every phone, forever — a permanent line about a window most owners never sit
+      in, which is precisely the wallpaper the delivery ladder is built to avoid. Revisit only if a
+      mechanism appears that can tell an owner it *happened*, after the fact, rather than that it can.
 - [x] Timezone change: today's answered doses stay answered, no alarm re-armed for a dose already given.
       ✅ **5/5, `--only timezone`.** Armed at today 20:00, answered, alarm moved to tomorrow 08:00; the
       phone moved **six hours west** to `America/New_York`, where today's answered 20:00 becomes an

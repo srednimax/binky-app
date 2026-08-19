@@ -250,6 +250,7 @@
     <string name="reminders_body">Binky może przypominać o powtarzalnej opiece — obcinaniu pazurów co sześć tygodni, corocznym szczepieniu, cotygodniowym ważeniu. Przypomnienia przychodzą raz dziennie, tylko na tym telefonie, a Ty decydujesz, czego dotyczą.</string>
     <string name="reminders_enable_action">Włącz przypomnienia</string>
     <string name="reminders_state_blocked">Powiadomienia są wyłączone, więc przypomnienia pojawią się tylko w aplikacji.</string>
+    <string name="reminders_state_silent">Przypomnienia są włączone, ale ten rodzaj ma przychodzić po cichu — bez dźwięku, więc czekają w panelu powiadomień, aż tam zajrzysz.</string>
     <string name="reminders_state_best_effort">Przypomnienia są włączone. Ten telefon może je mimo to opóźnić albo pominąć, kiedy Binky działa w tle — poniższe ustawienie to naprawia.</string>
     <string name="reminders_state_best_effort_autostart">Przypomnienia są włączone. Ten telefon sam decyduje też, które aplikacje mogą działać w tle, a Binky nie potrafi odczytać tej listy — jeśli go na niej nie ma, przypomnienie może czekać niewysłane godzinami i dotrzeć dopiero wtedy, gdy znów weźmiesz telefon do ręki.</string>
     <string name="reminders_state_armed">Przypomnienia są włączone, a ten telefon jest ustawiony tak, żeby je przepuszczać.</string>
@@ -267,11 +268,13 @@
          więcej” bierze się z dwóch różnych braków i każdy naprawia się gdzie indziej. Żadne z tych
          zdań nie mówi nic o samym leku. -->
     <string name="doses_state_blocked">Powiadomienia są wyłączone, więc przypomnienia o dawkach pojawią się tylko w aplikacji.</string>
+    <string name="doses_state_silent">Przypomnienia o dawkach są włączone, ale ten rodzaj ma przychodzić po cichu — bez dźwięku i bez wyskakującego okienka, więc dawka o trzeciej nad ranem poczeka w panelu powiadomień, aż tam zajrzysz.</string>
     <string name="doses_state_best_effort_exact">Przypomnienia o dawkach są włączone, ale Android nie pozwala Binky\'emu ustawiać ich co do minuty — przyjdą w ciągu kilku minut od danej godziny, nie punktualnie.</string>
     <string name="doses_state_best_effort_battery">Przypomnienia o dawkach są włączone i ustawione co do minuty. Ten telefon może je mimo to opóźnić, kiedy Binky działa w tle.</string>
     <string name="doses_state_best_effort_autostart">Przypomnienia o dawkach są włączone i ustawione co do minuty. Ten telefon sam decyduje też, które aplikacje mogą działać w tle, a Binky nie potrafi odczytać tej listy — jeśli go na niej nie ma, dawka z trzeciej w nocy może dotrzeć do Ciebie dopiero wtedy, gdy znów weźmiesz telefon do ręki.</string>
     <string name="doses_exact_alarm_action">Otwórz ustawienia alarmów</string>
     <string name="reminders_caveat_notifications_title">Powiadomienia są wyłączone</string>
+    <string name="reminders_caveat_silent_title">Przypomnienia nie wydadzą dźwięku</string>
     <string name="reminders_caveat_exact_title">Przypomnienia mogą przychodzić z opóźnieniem</string>
     <string name="reminders_caveat_battery_title">Ten telefon może wstrzymywać przypomnienia</string>
 
