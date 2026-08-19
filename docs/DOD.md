@@ -774,7 +774,11 @@ and the root is what anyone types.
       a themed, crawlable page** — `PLAN.html` and `DOD.html` above are the proof. The comment now says
       that, and says what actually makes the directory safe: the repo is public and holds nothing that is
       not already on GitHub, so **anything that must not be published must not be in `docs/` at all.**
-- [ ] **Re-probe `/` once this merges.** Pages builds from `main`, so the 404 above only becomes a 200
+- [x] **Re-probed after the merge ✅ 2026-08-19.** `/` → **200**, served as rendered HTML with
+      `<title>Binky — a health record for your rabbit</title>`, and Pages' `jekyll-relative-links`
+      resolved the page's `privacy-policy.md` link to `/binky-app/privacy-policy.html`, which is a 200
+      too — so the one link on the front door that matters works. **The Website field is unblocked**
+      (§4). Original wording kept below because the reasoning is the reusable part: Pages builds from `main`, so the 404 above only becomes a 200
       after the merge — and the Website field must not be pasted into the Console before it is
       (§4 is downstream of this, not of the branch). Re-probed from the branch on 2026-08-19 and the
       baseline still holds — `/` **404**, `/privacy-policy.html` **200** — so a 200 at the root is a
