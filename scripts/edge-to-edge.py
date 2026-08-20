@@ -1251,6 +1251,20 @@ SCENES = [
         seed="crowded",
         note="the profile card with four housemates, one of them archived",
     ),
+    # **Where the folded names actually live** (Phase 9f). `home-crowded` above is the defect this
+    # is the fix for: the line names two of Bijou's four and counts the rest, and until this sheet
+    # existed the other two were unreachable anywhere in the app. Captured in all four
+    # configurations because it is the phase's one piece of new UI, and because a sheet is anchored
+    # to the bottom edge — which is exactly where the navigation bar is, and the inset case a dialog
+    # never covers. The landscape cells are the ones that earn their keep: the sheet skips the
+    # half-height state precisely so a fluffle of four opens showing four there rather than two.
+    Scene(
+        "home-fluffle-sheet",
+        "overlay",
+        [*SELECT_BUNNY, ("tap", "Lives with"), ("wait", "1.0")],
+        seed="crowded",
+        note="the whole fluffle, archived member marked, tappable through to each",
+    ),
     # The case the count cap cannot fix, and the reason §8 asks for both halves: two housemates, so
     # nothing folds, and the names alone overflow the line. "Pip" is the short-named member of the
     # long-named trio, so what wraps is plainly the two names and not the subject's own.

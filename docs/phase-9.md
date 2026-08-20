@@ -214,7 +214,7 @@ grant is not durable and **must be re-read immediately before any run that depen
 count on the autostart screen is the only honest signal, because a `uiautomator` dump's `checked`
 attribute reports false on every row including the granted ones.
 
-## 9c — The edge-to-edge matrix, 73 scenes
+## 9c — The edge-to-edge matrix, 75 scenes
 
 The re-run `scripts/edge-to-edge.py` has owed since Phase 7.5 added twelve scenes. It is also the first
 run in which **the `empty` suite has ever genuinely been shot in landscape**: all six of its scenes wipe
@@ -293,7 +293,7 @@ was held open until then on purpose, and it was not bookkeeping: Pages builds fr
 was still a 404 on the branch, and a Website field pointing at a 404 is worse than the empty field it
 replaces. **§4's Website field is now unblocked.**
 
-## 9f — Seeing the whole fluffle
+## 9f — Seeing the whole fluffle ✅ closed 2026-08-20
 
 The one piece of new code in the phase, and the one owner-facing gap Phase 7.5's cap left behind.
 
@@ -332,6 +332,44 @@ nine — completeness is a merge gate, not a test.
 
 **The archived-first fold in `capHousemates` stays.** The sheet is not the line: it shows everyone, in
 the order they arrived, and the archived ones are marked rather than sunk.
+
+### What it shipped as, and the two things only the phone said
+
+`HousematesSheet.kt`, `housematesInSheet` in `BunnyLabels.kt` beside the cap it contrasts with, a
+`HousematesLine` on Home's profile header, one wire in `Navigation.kt`, and `Housemate` grown an
+`avatar` — resolved in `toProfile` like the profile's own, so no composable learns where `filesDir`
+is. **Zero new strings**, as aimed for. Built, `spotlessApply`/`assembleDebug`/`test`/`lint` clean,
+and driven on the Xiaomi against the `crowded` seed on 2026-08-20.
+
+**The affordance is the chevron.** The write-up above says a tooltip fails because "the affordance is
+invisible" — and a line made tappable with no other change is invisible in exactly the same way, one
+inert-looking line among three. It is the dashboard card's own chevron, so it costs no new vocabulary
+and no new string, and `minimumInteractiveComponentSize()` gets the row to Material's 48dp: a
+one-line label is 18dp, less than half a touch target. Checked by tapping 38px below the text, which
+opens the sheet.
+
+**1. "The switcher's existing navigation" is the wrong navigation for half the rows.** The sheet
+lists archived housemates, and `selectBunny` *persists* — ADR-0015 forbids reopening the app into a
+memorial, which is why the archived list uses `openArchivedScope` and keeps it in memory. Worse in
+the other direction: `resolveSelection` gives the archived scope **outright precedence over the
+stored selection**, so tapping a live housemate from an archived bunny's profile would have written
+the choice and left the owner staring at the same memorial. It needs `closeArchivedScope()` first.
+Both directions watched on the phone; neither is visible from the JVM.
+
+**2. The sheet opened half-height in landscape** — Material's partially-expanded state — showing
+Clover and Nugget, *the same two the line already named*, with the two it exists to reveal one drag
+below the fold. `skipPartiallyExpanded = true` fixes it: expanded is the content's own height, so
+portrait is unchanged and landscape opens showing all four. This is precisely the failure the
+tooltip argument warned about, arriving through the door that was supposed to be safe — and it was
+invisible in portrait, which is the configuration anyone would check first.
+
+**It is captured, and that was the argument all along.** `home-fluffle-sheet` joins the matrix as a
+`full`-suite scene on the `crowded` seed, in the `overlay` family with the app's two other sheets —
+a sheet is anchored to the bottom edge, which is where the navigation bar is, and that is the inset
+case no dialog covers. The tooltip was rejected partly for being unphotographable; shipping the
+replacement without a scene would have kept the defect and moved the excuse. **The suite is 75, not
+73**: `language-picker` had already taken it to 74 with commit `b34b3fc` and nobody edited the count
+in `DOD.md`, so 9c should read the number off `scripts/edge-to-edge.py` rather than off prose.
 
 ## 9g — Nine locales of screenshots
 
@@ -415,10 +453,11 @@ Phase 9 closes when all of these hold:
 - **9b's six** ticked ✅, ADR-0025 reworded ✅ — the reboot said it must be, though not for the reason
   feared — and the readable half of what the run found *fixed*, not merely recorded ✅. (The seventh
   bullet in §2 is 9c's and is gated on the line below, not this one.)
-- **73 scenes** clean, with the four suspect scenes re-shot and the `empty` suite seen in landscape for
+- **75 scenes** clean (73 was stale before 9f — see 9f), with the four suspect scenes re-shot and the `empty` suite seen in landscape for
   the first time.
 - The Pages root serves a page, and `_config.yml` no longer claims something untrue.
-- The fluffle sheet built, driven on the device, and reachable from Home with any number of housemates.
+- ~~The fluffle sheet built, driven on the device, and reachable from Home with any number of housemates.~~
+  ✅ **2026-08-20** — and it is a matrix scene, so 9g photographs it in all four configurations.
 - **1.7 live on a track**, with nine listings' copy, nine screenshot sets and nine release notes.
 - **1.0.0 → 1.7 watched on the phone**, arriving from Play, with a table-by-table diff on common columns
   that is empty.

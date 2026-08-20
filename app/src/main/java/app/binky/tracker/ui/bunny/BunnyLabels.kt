@@ -110,6 +110,21 @@ internal fun capHousemates(housemates: List<Housemate>): CappedHousemates {
 }
 
 /**
+ * Who the **sheet** lists, against [capHousemates]' who the **line** names: everyone, in the order
+ * the profile gave them.
+ *
+ * It is a function rather than the raw list at the call site so that the difference between the two
+ * is a claim a JVM test can hold. The line has a cap and must keep it — it grew the card without
+ * bound before it had one — and the sheet exists precisely because that cap leaves names the owner
+ * can reach nowhere else, so reusing [capHousemates] here would quietly re-cap the one place that
+ * must not be capped (Phase 9f).
+ *
+ * The archived-first fold is [capHousemates]' alone for the same reason: the sheet has no count to
+ * spend the preference on, so it marks archived housemates rather than sinking them.
+ */
+internal fun housematesInSheet(housemates: List<Housemate>): List<Housemate> = housemates
+
+/**
  * Joins names through string resources, never with a hardcoded `" & "` — other languages punctuate
  * lists differently, and this label appears in the switcher, on the profile and in Phase 2's
  * healthy-day snackbar (ADR-0008, ADR-0013).

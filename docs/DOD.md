@@ -454,7 +454,7 @@ and no copy, on the rule written into ADR-0003: **the app speaks when it can rea
 can act on it.** Both are recorded in their bullets below, and the reasoning is in
 [`phase-9.md`](phase-9.md) §9b.
 
-**The seventh bullet is not 9b's.** The 73-scene edge-to-edge re-run lives at the end of this section
+**The seventh bullet is not 9b's.** The 75-scene edge-to-edge re-run lives at the end of this section
 because it shares the reason for being parked, not because it shares the item. It is 9c and is
 untouched.
 
@@ -550,8 +550,12 @@ untouched.
       `SecurityException` while leaving the zone untouched, which reads exactly like a change the app
       ignored. `cmd time_zone_detector set_time_zone_state_for_tests --zone_id <id>` writes
       `persist.sys.timezone` for real; `date` moves with it and so does the broadcast.
-- [ ] Edge-to-edge matrix re-run (`scripts/edge-to-edge.py`, **73 scenes** — Phase 7.5 added twelve,
+- [ ] Edge-to-edge matrix re-run (`scripts/edge-to-edge.py`, **75 scenes** — Phase 7.5 added twelve,
       seven of them on the two seed variants).
+      ⚠️ **73 was already stale before 9f, and the count is `grep -c '^    Scene(' scripts/edge-to-edge.py`,
+      never this line.** `language-picker` arrived with the i18n commit `b34b3fc` and took the file to 74
+      without anyone editing the number here; 9f's `home-fluffle-sheet` is the 75th. Both are `full`-suite
+      scenes.
       ⚠️ **A wipe costs the rotation, so every wiping scene in a landscape cell has been shot in
       portrait — in this run and in 4f's** (found 2026-08-12). `pm clear` kills the app, the
       portrait-locked launcher takes the foreground, and HyperOS writes `user_rotation` back to **0**;
@@ -664,7 +668,7 @@ Two holds lift with it, and one does not:
 ### What is actually blocking the release now, and it is all in this repo
 
 Google is not in the list. In rough order: **9b** and **9c** (the gate items parked behind 9a, and the
-73-scene edge-to-edge re-run), **9d–9g** (close Phase 5, the Pages front door, the fluffle, nine locales
+75-scene edge-to-edge re-run), **9d–9g** (close Phase 5, the Pages front door, the fluffle, nine locales
 of screenshots), then **9i**, the field upgrade proof 1.0.0 → 1.7 — which is the one that must not be
 skipped, because it is the only thing standing between an existing owner and a refusal screen.
 
@@ -879,10 +883,10 @@ entity changes, so the standing gate at the top of this file does not fire in th
 | --- | --- | --- |
 | **9a** | The overnight Doze run ✅ answered 2026-08-19 — autostart is the lever, and the delivery state was fixed to say so. **§1's last box is still open**: the Phase-4 carry's watch half, owed at the 09:00 sweep on 2026-08-22 | §1 |
 | **9b** | The six gate items parked behind it ✅ **closed 2026-08-19** — it found that the boot rebuild waits for the first unlock, and that a lowered channel was being reported as armed; the second is fixed in the same PR | §2 |
-| **9c** | The 73-scene edge-to-edge re-run | §2, last bullet |
+| **9c** | The 75-scene edge-to-edge re-run | §2, last bullet |
 | **9d** | Close Phase 5 | below |
 | **9e** | The Pages front door ✅ **closed 2026-08-19** — `docs/index.md` is the root, and `_config.yml`'s "copied verbatim" comment was wrong | below |
-| **9f** | Seeing the whole fluffle | below |
+| **9f** | Seeing the whole fluffle ✅ **closed 2026-08-20** — the sheet is built, tested and driven; the archived route and the landscape half-height state were both found on the phone | below |
 | **9g** | Nine locales of screenshots | below |
 | **9h** | The Console sitting ✅ production access granted 2026-08-19 — the release is repo-side only now | §4 |
 | **9i** | The field upgrade proof 1.0.0 → 1.7 | §4 |
@@ -932,20 +936,35 @@ and the root is what anyone types.
       `curl -sS -o /dev/null -w '%{http_code}' https://srednimax.github.io/binky-app/`; the Pages build
       takes a minute or two to land after the merge.
 
-### 9f — Seeing the whole fluffle
+### 9f — Seeing the whole fluffle ✅ closed 2026-08-20
 
 `housematesLabel` names **two** and folds the rest into "& N others" (`BunnyLabels.kt:60`, from four up).
 The cap is right — it exists because the line grew the card without bound — but with five housemates the
 owner **cannot see who three of them are, anywhere in the app**.
 
-- [ ] **Tap the "Lives with" line on Home's profile header** (`HomeScreen.kt:212`) → a modal bottom sheet
+- [x] **Tap the "Lives with" line on Home's profile header** → `HousematesSheet.kt`, a modal bottom sheet
       titled *Lives with*, one row per housemate — avatar, name, `(archived)` where it applies — and
-      tapping a row switches to that bunny through the switcher's existing navigation.
-- [ ] **Leave the other two sites alone.** The all-bunnies list card (`HomeScreen.kt:457`) is already one
-      click target that switches bunny, so a tap there is spoken for; the archived list
-      (`ArchivedBunniesScreen.kt:171`) is not where you go to navigate a fluffle.
-- [ ] **A test that the sheet lists *every* housemate, archived included** — the claim the line cannot
-      make. `capHousemates`' JVM table is unchanged: the sheet has no cap to test.
+      tapping a row switches to that bunny. **Zero new strings**, as aimed for.
+      The line is now a `Row` carrying the label and the dashboard card's own chevron, wrapped in
+      `minimumInteractiveComponentSize()`: a tappable line that looks like the two inert lines above it
+      is a feature nobody finds, and a one-line label is half of Material's 48dp target. Driven on the
+      Xiaomi 2026-08-20 against the `crowded` seed — four housemates, one archived, all four listed.
+- [x] **Leave the other two sites alone.** Both still render the plain `housematesLabel`.
+- [x] **A test that the sheet lists *every* housemate, archived included** — `housematesInSheet` and two
+      cases in `HousematesTest`, asserted *against* `capHousemates` so that reusing the cap here goes
+      red. `capHousemates`' own table is unchanged.
+
+**Two things the device found that no test would have.**
+
+1. **The archived path is not the switcher's navigation**, and using it would have been a bug. An
+   active housemate is `selectBunny` (persisted); an archived one is `openArchivedScope` — in memory
+   only, because ADR-0015 forbids reopening the app into a memorial. And `resolveSelection` gives the
+   archived scope **outright precedence**, so the reverse trip needs `closeArchivedScope()` *first* or
+   selecting a live housemate from an archived bunny's profile writes the choice and leaves the screen
+   where it was. All four transitions watched on the phone.
+2. **The sheet opened half-height in landscape**, showing the same two housemates the line already
+   named. Fixed with `skipPartiallyExpanded = true` — expanded is the content's own height, so portrait
+   is unchanged and landscape now opens showing all four. Re-checked at 2712×1220.
 
 **A sheet, not a tooltip**, and not for style: M3's `TooltipBox` is long-press-only on touch so the
 affordance is invisible, dismisses on any touch elsewhere, cannot scroll at eight housemates, cannot be

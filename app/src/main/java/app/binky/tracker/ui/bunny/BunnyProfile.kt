@@ -13,6 +13,13 @@ data class Housemate(
     val id: String,
     val name: String,
     /**
+     * Resolved like [BunnyProfile.avatar] and for the same reason — the database stores a relative
+     * path (house rule) and this is where it becomes a [File], so no composable has to know where
+     * `filesDir` is. Null, or a file that no longer exists, renders as the placeholder: the fluffle
+     * sheet is a list of rabbits, and a restored backup that lacks photos must still list them.
+     */
+    val avatar: File?,
+    /**
      * An archived housemate is shown distinguishably — *"Lives with Hazel (archived)"* — rather
      * than as a current roommate: the fluffle survives archival, and the survivor genuinely did
      * live with them (ADR-0008).
@@ -68,5 +75,12 @@ fun BunnyEntity.toProfile(
         housemates =
             everyBunny
                 .filter { it.id != id && it.fluffleId != null && it.fluffleId == fluffleId }
-                .map { Housemate(id = it.id, name = it.name, archived = it.archivedAt != null) },
+                .map {
+                    Housemate(
+                        id = it.id,
+                        name = it.name,
+                        avatar = it.avatarPath?.let(media::resolve),
+                        archived = it.archivedAt != null,
+                    )
+                },
     )

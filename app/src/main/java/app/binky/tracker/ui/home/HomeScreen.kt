@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -24,8 +25,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -43,6 +48,8 @@ import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.bunny.BunnyAvatar
 import app.binky.tracker.ui.bunny.BunnyDialogHost
 import app.binky.tracker.ui.bunny.BunnyProfile
+import app.binky.tracker.ui.bunny.Housemate
+import app.binky.tracker.ui.bunny.HousematesSheet
 import app.binky.tracker.ui.bunny.ageLabel
 import app.binky.tracker.ui.bunny.dateLabel
 import app.binky.tracker.ui.bunny.housematesLabel
@@ -77,6 +84,7 @@ fun HomeScreen(
     onAddBunny: () -> Unit,
     onEditBunny: (String) -> Unit,
     onSelectBunny: (String) -> Unit,
+    onOpenHousemate: (Housemate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory, extras = appViewModelExtras())
@@ -104,6 +112,7 @@ fun HomeScreen(
                     vitals = state.vitalsFor(profile.id),
                     unit = state.unit,
                     readOnly = state.readOnly,
+                    onOpenHousemate = onOpenHousemate,
                     onEdit = { onEditBunny(profile.id) },
                     onArchive = { viewModel.requestArchive(profile) },
                     onDelete = { viewModel.requestDelete(profile) },
@@ -171,6 +180,7 @@ private fun OneBunny(
     vitals: BunnyVitals,
     unit: WeightUnit,
     readOnly: Boolean,
+    onOpenHousemate: (Housemate) -> Unit,
     onEdit: () -> Unit,
     onArchive: () -> Unit,
     onDelete: () -> Unit,
@@ -185,6 +195,10 @@ private fun OneBunny(
     // almost all of them, almost all of the time.
     val hasFlag = vitals.flag.showsBanner()
     val hasWatch = !readOnly && vitals.watch is WatchState.Active
+    // Kotlin note: `by rememberSaveable { mutableStateOf(false) }` is Compose's useState, and the
+    // `Saveable` half additionally survives rotation — an owner who turns the phone while reading a
+    // nine-strong fluffle keeps the sheet they opened.
+    var showHousemates by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier =
@@ -209,18 +223,10 @@ private fun OneBunny(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                housematesLabel(profile.housemates)?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        // The backstop behind the count cap (Phase 7.5 §8). Two *long* names fold
-                        // nothing — no cap fires at two — so the only bound left is the line's own,
-                        // and card growth stops at one extra line rather than running on.
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                HousematesLine(
+                    housemates = profile.housemates,
+                    onOpen = { showHousemates = true },
+                )
             }
         }
 
@@ -293,6 +299,75 @@ private fun OneBunny(
                 }
             }
         }
+    }
+
+    // Outside the scrolling Column on purpose: a modal sheet is its own window, and hosting it
+    // inside a `verticalScroll` would make it a child of a scrollable that is no longer on screen
+    // once it opens. Present only while asked for — an unopened sheet composes nothing.
+    if (showHousemates) {
+        HousematesSheet(
+            housemates = profile.housemates,
+            onOpenHousemate = { housemate ->
+                // Dismiss *and* navigate: the sheet is a step on the way to a bunny, not a place to
+                // come back to, and leaving it up over the rabbit it just switched to would hide
+                // the answer it was opened for.
+                showHousemates = false
+                onOpenHousemate(housemate)
+            },
+            onDismiss = { showHousemates = false },
+        )
+    }
+}
+
+/**
+ * *"Lives with Thumper, Clover & 3 others"*, and — on this screen only — a way to see the three.
+ *
+ * **The chevron is the affordance.** Tapping a line that looks exactly like the two inert lines
+ * above it is a feature nobody finds, and it is the same chevron the dashboard card already uses to
+ * mean *this opens something*, so it costs no new vocabulary and no new string.
+ *
+ * The other two sites keep the plain line, and not by omission: the dashboard card is already one
+ * click target that switches bunny, so a second target inside it would compete with the first; and
+ * the archived list is a list of the archived, not somewhere an owner goes to navigate a fluffle.
+ */
+@Composable
+private fun HousematesLine(
+    housemates: List<Housemate>,
+    onOpen: () -> Unit,
+) {
+    val label = housematesLabel(housemates) ?: return
+    Row(
+        // `minimumInteractiveComponentSize` is Material's 48dp touch target. It measures the row at
+        // 48dp without redrawing anything larger, which a one-line label otherwise misses by half —
+        // and this is a target an owner aims at with a thumb, not a link inside a paragraph.
+        modifier =
+            Modifier
+                .clickable(onClick = onOpen)
+                .minimumInteractiveComponentSize(),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.hair),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            // The backstop behind the count cap (Phase 7.5 §8). Two *long* names fold nothing — no
+            // cap fires at two — so the only bound left is the line's own, and card growth stops at
+            // one extra line rather than running on. The sheet is now where the elided names live.
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            // `fill = false` so the text takes what it needs and no more: it must yield to the
+            // chevron when it is long, and must not push it off the right edge.
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        // No content description: the row is one target already named by the label beside it, and a
+        // second announcement would only repeat it.
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.size(18.dp),
+        )
     }
 }
 

@@ -435,6 +435,23 @@ private fun AppShell(
                             onAddBunny = { backStack.add(BunnyEditor()) },
                             onEditBunny = { bunnyId -> backStack.add(BunnyEditor(bunnyId)) },
                             onSelectBunny = shellViewModel::selectBunny,
+                            // The fluffle sheet reaches **both kinds** of bunny, and they are two
+                            // different navigations rather than one with a flag. An active
+                            // housemate is an ordinary selection, persisted like the switcher's;
+                            // an archived one is ADR-0015's read-only scope, in memory only,
+                            // because a background kill must never reopen the app into a memorial.
+                            onOpenHousemate = { housemate ->
+                                if (housemate.archived) {
+                                    shellViewModel.openArchivedScope(housemate.id)
+                                } else {
+                                    // Closed first because the archived scope *wins outright* over
+                                    // the stored selection (`resolveSelection`): from an archived
+                                    // bunny's profile, selecting a live housemate without this
+                                    // would write the choice and leave the screen where it was.
+                                    shellViewModel.closeArchivedScope()
+                                    shellViewModel.selectBunny(housemate.id)
+                                }
+                            },
                         )
                     }
                     entry<Weight> {
