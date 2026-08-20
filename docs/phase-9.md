@@ -41,7 +41,7 @@ Most of this phase is independent work that can be done in any order. Three edge
 Everything else — 9d, 9e, 9j — can be done whenever. **9e is done** (2026-08-19); its one
 remaining probe is gated on the merge, not on another item.
 
-## 9a — The overnight Doze run 🔴 blocking
+## 9a — The overnight Doze run ✅ answered 2026-08-19, confirmed on the matched gap 08-20
 
 5a's outcome, the first bullet of Phase 5's gate, and the oldest open item in the project. The 4→5 Aug
 night fired on the **best-effort** path because the permission had reverted under it, so the question the

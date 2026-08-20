@@ -151,11 +151,14 @@ adb shell dumpsys notification --noredact  # exactly one post on channel=doses, 
 
 - [x] **Dose outcome recorded** against 5a's three written-down outcomes — **outcome 3, "not until
       touched"**, but for a reason none of the three anticipated. Written up below; it does not close 9a.
-- [ ] **Phase-4 carry, same night or its own** (the sweep half was *still pending* at the 19→20 read,
-      and the 07:28 plug-in puts that morning's run out of Doze; the watch half cannot land before
-      08-21): the care sweep firing while **still in Doze**, and a
-      watch **auto-expiring** — nagging stops that morning, the prompt shows the *current* trend,
-      dismissing leaves no row behind. Different signatures, so one night can hold both.
+- [ ] **Phase-4 carry — sweep half ✅ answered 2026-08-20, watch half owed 08-22.** The care sweep
+      firing while **still in Doze** is done; the result block below replaces this bullet's guess that
+      the 07:28 plug-in spoiled it. What is left is a watch **auto-expiring** — nagging stops that
+      morning, the prompt shows the *current* trend, dismissing leaves no row behind. The seeded watch
+      runs `startedAt` 2026-08-15 08:30 → `endsAt` **2026-08-22 08:30**, so the sweep that reports it is
+      **09:00 on Saturday 2026-08-22**; the "08-21" written here before the 2026-08-19 21:25 re-seed is
+      a day early. It needs **no arming and no Doze** — the app installed, the job enqueued, and
+      `lastNaggedOn` read before the shade is swiped.
 
 ### Result of the 18→19 Aug run: the alarm did not fire, and **Doze is not why** 🔴
 
@@ -384,13 +387,14 @@ open. Worth one tap before 1.7 goes out, since the new copy points at it.
       findings — see *"One decision over three findings"* in [`phase-9.md`](phase-9.md). Phase 10 stays
       unopened; 1.7 carries all of it as `fix:` commits.
 
-### The 09:00 sweep, same morning: also fine, and the prediction was wrong in the app's favour
+### The 09:00 sweep on 2026-08-19, the same morning: also fine, and the prediction was wrong in the app's favour
 
 Two posts at 09:00:27, not the four predicted: `Nail trim` / "Overdue for Bijou." on `care`
 (`notifiedForDueOn` now 20672), and the `watch` nag. **No weigh-in and therefore no group summary** —
 and the app is right, the prediction was wrong. `lastCompletedOn` takes the later of the care event and
 **the latest weighing** for `WEIGH_IN` (`CareSchedule.kt`), and Bijou was weighed 2026-08-16, so it is
-not due until 08-25. Reading `care_events` alone is what produced the bad prediction. With one care
+not due until 08-25. (Those two dates do not sit a week apart, so one of them is mistyped — `careDueOn`
+is `lastCompletedOn + interval` and nothing else; the mechanism is what the paragraph is for.) Reading `care_events` alone is what produced the bad prediction. With one care
 reminder due, `CareNotifier` correctly posts no summary.
 
 That also settles the freezer's reach: **a WorkManager job was not held either** — the sweep ran at
@@ -398,6 +402,39 @@ That also settles the freezer's reach: **a WorkManager job was not held either**
 
 **Not a Doze failure, so 4g's result stands**: a WorkManager job survived 10.5 h of Doze on 2026-08-04.
 Nothing here contradicts that; the freezer is a different mechanism reached by a different path.
+
+### The sweep *inside* deep Doze, 2026-08-20 — the Phase-4 carry's first half ✅
+
+Read 2026-08-20 17:00–18:00, shade untouched. The carry bullet above assumed this morning's sweep was
+spoiled by the plug-in. It was not, on two counts: the read that called the sweep "pending" happened at
+**07:30, ninety minutes before the slot**, and the cable was in for **twenty minutes** — `+plugged`
+07:28:43, `-plugged` 07:48:24, then on battery until 17:05:35.
+
+- **`device_idle=full` 08:32:05 → 09:02:05, unbroken**, on battery.
+- **The sweep posted at 09:02:03.8** — `Nail trim` / "Overdue for Bijou." on `care`, the `watch` nag at
+  09:02:03.87 — inside that stretch, with Doze exiting ~1 s later.
+- **Two minutes late is the WorkManager window, not a freeze**, which is the question the carry was for:
+  whether the freezer eats a sweep the way it ate the 18→19 dose alarm. It does not.
+
+**Anchor the history to its `TIME:` markers, never to the RESET.** The relative clock is elapsed-realtime
+and drifts across Doze — RESET-based arithmetic put the plug-in at 07:01, twenty-seven minutes early,
+where the marker at `+2d13h13m39s708ms = 2026-08-20-07-27-23` puts it at 07:28:43, the figure the morning
+read had recorded independently.
+
+**What is not settled, and re-running would not settle it:** whether the job ran *inside* `full` or in the
+maintenance window that ended it. The anchor is ±1 s and logcat no longer reaches 09:02 — its buffer
+starts 10:05. That distinction belongs to the platform; the app's half is answered.
+
+**Two posts again, and again the app is right.** `notifiedForDueOn` is now **20673** (2026-08-08) on the
+nail trim. The weigh-in stayed null because `careDueOn` is `lastCompletedOn + interval` and
+`lastCompletedOn` for a `WEIGH_IN` counts weighings — Bijou's latest is **2026-08-17 08:30**, so it is not
+due until **08-24**. One care reminder due, so `CareNotifier` correctly posts no summary; the summary in
+the shade is Android's own `Aggregate_AlertingSection` autogroup on `watch`, not the app's.
+
+**The 2026-08-19 21:25 re-seed moved every seeded date a day later** than the predictions written above —
+the nail trim's `firstDueOn` 20672 → 20673, the watch's `endsAt` to 08-22. Predictions written against the
+older seed do not apply, and neither does `sqlite3` being unavailable: the database reads fine on the
+host, pulled with `adb exec-out run-as … cat databases/bunny.db` plus its `-wal`.
 
 ---
 
