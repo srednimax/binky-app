@@ -2,6 +2,7 @@ package app.binky.tracker.ui.bunny
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -16,7 +17,9 @@ class HousematesTest {
     private fun fluffle(
         size: Int,
         archived: Set<Int> = emptySet(),
-    ) = (1..size).map { Housemate(id = "id-$it", name = "Bunny $it", archived = it in archived) }
+    ) = (1..size).map {
+        Housemate(id = "id-$it", name = "Bunny $it", avatar = null, archived = it in archived)
+    }
 
     @Test
     fun namesEveryHousemateUpToThree() {
@@ -64,6 +67,36 @@ class HousematesTest {
         val capped = capHousemates(fluffle(5, archived = setOf(1, 2, 3, 4, 5)))
         assertEquals(listOf("Bunny 1", "Bunny 2"), capped.named.map { it.name })
         assertEquals(3, capped.others)
+    }
+
+    @Test
+    fun theSheetListsEveryHousemateTheLineFolds() {
+        // The claim the line cannot make (Phase 9f). Five housemates, two of them archived: the
+        // line names two and says "& 3 others", and those three exist nowhere else in the app —
+        // this is the list that has them, archived ones included and in the order they arrived.
+        val fluffle = fluffle(5, archived = setOf(2, 4))
+        val capped = capHousemates(fluffle)
+
+        // What the line does: names the two active ones it reaches first, counts the other three.
+        assertEquals(listOf("Bunny 1", "Bunny 3"), capped.named.map { it.name })
+        assertEquals(3, capped.others)
+
+        // What the sheet does: everyone, in the order they arrived — so the archived ones the line
+        // sinks to the back of the fold are back where the profile put them, and marked, not sunk.
+        assertEquals(fluffle, housematesInSheet(fluffle))
+        // Stated the other way round as well, because this is the claim the feature exists to make:
+        // nobody the line folded away is missing from the sheet.
+        assertTrue(housematesInSheet(fluffle).containsAll(fluffle - capped.named.toSet()))
+    }
+
+    @Test
+    fun theSheetHasNoCapAtAnySize() {
+        // Not a cap that is merely wide: there is no size at which the sheet stops listing. Nine is
+        // past every fold the line performs, and the archived ones are marked, never dropped.
+        (1..9).forEach { size ->
+            val fluffle = fluffle(size, archived = setOf(1, size))
+            assertEquals("$size housemates", fluffle, housematesInSheet(fluffle))
+        }
     }
 
     @Test
