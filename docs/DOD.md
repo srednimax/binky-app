@@ -151,7 +151,9 @@ adb shell dumpsys notification --noredact  # exactly one post on channel=doses, 
 
 - [x] **Dose outcome recorded** against 5a's three written-down outcomes — **outcome 3, "not until
       touched"**, but for a reason none of the three anticipated. Written up below; it does not close 9a.
-- [ ] **Phase-4 carry, same night or its own**: the care sweep firing while **still in Doze**, and a
+- [ ] **Phase-4 carry, same night or its own** (the sweep half was *still pending* at the 19→20 read,
+      and the 07:28 plug-in puts that morning's run out of Doze; the watch half cannot land before
+      08-21): the care sweep firing while **still in Doze**, and a
       watch **auto-expiring** — nagging stops that morning, the prompt shows the *current* trend,
       dismissing leaves no row behind. Different signatures, so one night can hold both.
 
@@ -232,6 +234,110 @@ changes that.
 (the 09:00 sweep) against ~5 h on the failing night, so today does not *prove* a five-hour-idle app
 stays unfrozen. The 03:00 slot is still armed on the same course and costs nothing, so tonight supplies
 the matched gap. **It is confirmation, not a new experiment — 9a is answered.**
+
+### Armed for the night of 19→20 August: the matched gap, and the Phase-4 carry
+
+Re-armed **2026-08-19 22:07**, through `scripts/alarm-gate.py`'s own helpers rather than by hand —
+`autostart_state`, `set_autostart`, `arm_single_slot(3)`, `dose_alarms`. The first arming in this project
+that was not tapped out by eye, which is worth a line because the helpers were written for 9b's readings
+and turn out to be the arming procedure as well.
+
+- **The build on the phone moved and nobody wrote it down.** It is now debug **versionCode 358 / 1.6.0**,
+  installed 2026-08-19 21:15:05, where the 18→19 pre-run note above records 346 / 1.5.0. Data survived —
+  `bunny.db` intact, Bijou's Metacam still on the Care tab.
+- **The autostart grant was gone again.** Read 22:05: *"10 apps can start in the background"*, no
+  `Binky Debug` — 14 hours after it was granted at 07:47 and the 10:00 run passed on it. **This sighting
+  is confounded**, unlike the one CLAUDE.md records: a reinstall happened at 21:15 in between, and that
+  earlier note explicitly cleared `pm clear` and `adb install -r` of responsibility. So this is evidence
+  the grant does not survive *this* reinstall, not a second sighting of a spontaneous lapse. Re-granted
+  → **11 apps, `Binky Debug` listed.**
+- **The dose had reverted to 08:00** and is re-armed at **`origWhen=2026-08-20 03:00:00.000`,
+  `window=0`, `exactAllowReason=permission`, `whenElapsed == maxWhenElapsed` (+4h52m45s857ms)** — the
+  exact path, through the app's own course editor, which is the write path under test.
+- Exactly one WorkManager job, `TIME=+10h52m45s` → **2026-08-20 09:00**, carrying the Phase-4 sweep.
+- Battery-optimisation exemption still **absent**. Autostart remains the only lever that has moved.
+- **No notification channels exist for the debug package at all.** `dumpsys notification` prints 860
+  channels and not one is binky's; the reinstall dropped them. **This cannot swallow the post**: every
+  posting path calls `ensureReminderChannel` immediately before building the notification
+  (`ReminderNotifications.kt:130`), so `doses` is created at importance 4 at post time. Two consequences
+  worth having in writing — 9b's silenced-channel failure mode is **not** available as tomorrow's
+  explanation, and `reminderChannelImportance` falls back to the creation importance rather than
+  reporting a not-yet-created channel as muted, which is the behaviour its comment claims.
+- **The idle gap is the whole point of tonight.** The app was last touched at 22:10, so it sits ~4h50m
+  idle before the fire — against ~5 h on the night it was frozen and ~1 h on the morning it passed. That
+  is the matched gap the caveat above asks for.
+- **Left to a person: unplug it** and leave it stationary. Charging blocks Doze, and plugging in is what
+  thawed the frozen process on 18→19.
+
+**What the morning must show**: one post at **03:00 on `doses`**, inside an unbroken `device_idle=full`
+stretch, on battery, and **no `GreezeManager` / `Aurogon` line for the app** — that trio is what the
+failing night looked like and their absence is what passing looks like. Then the 09:00 sweep.
+`scripts/doze-capture.sh`, read-only, before the shade is touched.
+
+**The watch auto-expiry is not tonight.** The seeded watch ends 2026-08-21 08:30, so it belongs to the
+20→21 night — and its state is **unverified** at this arming: `sqlite3` is not on the device (`run-as`
+finds no binary), and the app must not be relaunched now, because `e2e.relaunch` force-stops and that
+cancels the alarm just armed. Read it from the Care tab tomorrow, **before** re-arming.
+
+### Result of the 19→20 Aug run: confirmed on the matched gap ✅
+
+Read 2026-08-20 07:30 with `scripts/doze-capture.sh`, shade untouched. **Every line of "what the morning
+must show" holds**, and the caveat the 10:00 pass carried is retired.
+
+- **The alarm fired at 03:00:01.599**, 1.6 s after `origWhen 1787187600000` (03:00:00.000) — and the ROM
+  **started the process for it**: `am_proc_start [… ,broadcast,{…/DoseAlarmReceiver}]` against a process
+  `SmartPower` logs as `died->background`. A cold start for a broadcast is the autostart signature, and
+  it is exactly what the 18→19 night could not do.
+- **Posted 03:00:02.4 on `doses` at importance 4** — "Metacam / 0.3 ml for Bijou", *Given* and *Skipped*.
+  The channel was created at post time as the arming note predicted; the reinstall having dropped every
+  channel changed nothing.
+- **`device_idle=full` unbroken 01:08:00 → 03:07:55.** The fire sits 1 h 52 m inside deep Doze, and Doze
+  did not break *for* it — the 03:07:55 exit is the maintenance window. (Anchor: the `TIME:` marker at
+  `+2d06h48m12s535ms` = 2026-08-20 01:01:56.)
+- **On battery throughout.** First `plug=usb` at **07:28:44**, at 47%.
+- **No `GreezeManager` or `Aurogon` line for uid 10507 anywhere near the fire.** The only two in the whole
+  logcat are `FZ uid = 10507 reason =new process success !` at **03:04:42** — three and a half minutes
+  *after* the broadcast ended — and the `THAW` at 07:28:43 when the cable went in. The freezer took the
+  process only once it had done its work.
+- **Nobody touched it**: `seen=true` at 07:13:51 (lock screen), `posttimeToFirstClickMs=-1`,
+  `posttimeToDismissMs=-1`.
+- **The successor is armed**: one `RTC_WAKEUP`, `origWhen` = 2026-08-21 03:00:00. ADR-0025's "at most one"
+  holds across a firing, not only at rest.
+- **The idle gap was ~4h50m**, against ~5 h on the frozen night and ~1 h on the morning it passed. That is
+  the matched gap the caveat above asks for, and it closes it: a five-hour-idle app on this phone stays
+  unfrozen **with autostart granted**.
+- **The autostart grant survived the night** — re-read 07:35, still *"11 apps can start in the
+  background"* with `Binky Debug` listed, 9½ h after granting. That is not a second sighting of the
+  spontaneous lapse CLAUDE.md records; it is mild evidence against one.
+
+**Finding 1 — the alarm fires twice when it is what cold-starts the process.** 🟠 Two deliveries,
+03:00:01.599 and 03:00:08.477, same `origWhen`, the second with `whenElapsed` bumped +7.4 s — the
+signature of AlarmManager firing a re-arm whose trigger time is already in the past. The cause is
+`BinkyApplication.kt:183`: the alarm started the process, so process-init's `rescheduleDoseAlarm()` ran
+**with no `postedThrough`** and armed the slot it was still inside `DOSE_GRACE` of.
+`DoseAlarmReceiver` does pass `postedThrough`, and armed tomorrow correctly. It is self-limiting to one
+extra fire — the second delivery starts no process, so init does not run again — and the owner sees one
+notification, because the id plus `ONLY_ALERT_ONCE` collapse the second post into an update. What it
+actually costs is a second wakeup and a second full rebuild at 03:00. `DoseAlarm.kt:88` documents this
+exact loop and defends the receiver against it; **the process-start rebuild is the hole in that defence,
+and it opens only when the alarm is what starts the process** — that is, precisely on the phones and at
+the hours this whole run exists to test, which is why five months of the receiver path being right never
+surfaced it.
+
+**Finding 2 — no overnight run has ever tested whether a dose reminder can wake anyone.** 🟠 The post made
+no sound: `mLastAudiblyAlertedMs=-1`, `mBuzzBeepBlinkCode=0`, and `notification_alert` reads zero for
+buzz, beep and blink. **This is the phone, not the app** — `settings get global mode_ringer` reads `0`
+(silent) with the notification stream muted, and nothing alerted audibly all night: WhatsApp at 20:54 and
+the deskclock at 05:50 and 06:50 read identically. `doses` was at importance 4 with `mUserLockedFields=0`,
+so `resolveReminderDelivery` was right to say `Armed` and 9b's silenced-channel failure mode is not in
+play. The visual half did work — the AOD lit at 03:00:08. Two things to carry: **read `mode_ringer` before
+taking a silent post for a delivery defect**, and every run in this file has proven *delivery*, never
+*audibility*.
+
+**The 09:00 sweep was still pending at the read, and the cable threatens it.** Exactly one WorkManager
+job, `TIME=+1h29m22s787ms` from 07:30:38 → **09:00**, with only `0x80000000` — the timing delay —
+unsatisfied. But the phone went on charge at 07:28:44 and **charging blocks Doze**, so on the cable the
+sweep fires out of idle and the Phase-4 carry's "still in Doze" half is not settled by this morning.
 
 ### What 9a cost the app: `Armed` was a promise this phone does not keep ✅ fixed
 
