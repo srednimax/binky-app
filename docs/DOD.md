@@ -877,7 +877,7 @@ entity changes, so the standing gate at the top of this file does not fire in th
 
 | | What | Boxes |
 | --- | --- | --- |
-| **9a** | The overnight Doze run ✅ answered 2026-08-19 — autostart is the lever, and the delivery state was fixed to say so | §1 |
+| **9a** | The overnight Doze run ✅ answered 2026-08-19 — autostart is the lever, and the delivery state was fixed to say so. **§1's last box is still open**: the Phase-4 carry's watch half, owed at the 09:00 sweep on 2026-08-22 | §1 |
 | **9b** | The six gate items parked behind it ✅ **closed 2026-08-19** — it found that the boot rebuild waits for the first unlock, and that a lowered channel was being reported as armed; the second is fixed in the same PR | §2 |
 | **9c** | The 73-scene edge-to-edge re-run | §2, last bullet |
 | **9d** | Close Phase 5 | below |
@@ -897,6 +897,9 @@ arrives from a track.
 
 - [ ] Write 9a's and 9b's results into [`PLAN.md`](PLAN.md)'s 5a / 5i / 5j entries and **tick Phase 5**.
       It has been the one unticked box since 2026-08-05 while four later phases closed around it.
+      ⚠️ **Waits on §1's watch half (08-22).** Phase 4 closed on the build with its delivery evidence
+      carried into Phase 5, and that carry is the last thing §1 is still holding — so the tick lands
+      after Saturday's reading unless the carry is deliberately tracked outside Phase 5.
 
 ### 9e — The front door ✅ closed 2026-08-19
 

@@ -38,8 +38,8 @@ Most of this phase is independent work that can be done in any order. Three edge
    *arrives from a track*, so it is downstream of the upload by construction — the installed Play build
    is Play-signed and refuses a local APK on signature mismatch.
 
-Everything else — 9d, 9e, 9j — can be done whenever. **9e is done** (2026-08-19); its one
-remaining probe is gated on the merge, not on another item.
+Everything else — 9d, 9e, 9j — can be done whenever. **9e is closed** (2026-08-19), its
+post-merge probe included.
 
 ## 9a — The overnight Doze run ✅ answered 2026-08-19, confirmed on the matched gap 08-20
 
@@ -59,6 +59,15 @@ The two things worth stating as reasoning rather than as steps:
 
 **Trap:** never run `connectedAndroidTest` after arming. `am instrument` force-stops the package, which
 cancels every alarm it placed, and the result is indistinguishable from a broken rebuild.
+
+**One box is still open under §1, and it is not 9a's own question.** The Phase-4 carry came in two
+halves. The sweep half is answered — 2026-08-20, the care sweep posted at 09:02 *inside* an unbroken
+`device_idle=full`, so the freezer does not eat a sweep the way it ate the 18→19 dose alarm. The watch
+half is not: a watch **auto-expiring**, where nagging stops that morning, the prompt shows the *current*
+trend, and dismissing leaves no row behind. After the 2026-08-19 21:25 re-seed the seeded watch ends
+2026-08-22 08:30, so the sweep that reports it is **09:00 on Saturday 2026-08-22** — a day later than
+the "08-21" written before that re-seed. It needs **no arming and no Doze**: the app installed, the job
+enqueued, and `lastNaggedOn` read before the shade is swiped. Box and readings in [`DOD.md`](DOD.md) §1.
 
 ## 9b — The gate items parked behind it ✅ closed 2026-08-19
 
@@ -225,7 +234,13 @@ look first.
 ## 9d — Close Phase 5
 
 Write 9a's and 9b's results into [`PLAN.md`](PLAN.md)'s 5a / 5i / 5j entries and tick **Phase 5** in the
-status list. It has been the one unticked box since 2026-08-05 while four later phases closed around it,
+status list.
+
+⚠️ **It waits on the 08-22 reading, or the tick is over an unmade observation.** Phase 4 closed *on the
+build*, with its delivery evidence carried into Phase 5 — and §1's watch half is the last of that carry.
+Ticking Phase 5 before Saturday ticks a box whose evidence does not exist yet. The alternative is to
+track the carry as its own item outside Phase 5 and tick without it; that is a decision, not a default,
+and it should be written down here if it is taken. It has been the one unticked box since 2026-08-05 while four later phases closed around it,
 which is confusing to read and will be more confusing in six months.
 
 ## 9e — The front door ✅ closed 2026-08-19
@@ -335,32 +350,27 @@ the build it describes.
 
 Everything in [`DOD.md`](DOD.md) §4, in one sitting, in that order.
 
-⚠️ **[`DOD.md`](DOD.md) §4 said "upload 1.3", and that went stale four releases ago.** It was written
-when 1.3 was the tip. The build that goes up is **1.7**, and every downstream claim moves with it —
-most importantly the field upgrade proof, which retargets from 1.0.0 → 1.3 to **1.0.0 → 1.7** and now
-crosses `MIGRATION_4_5`, `MIGRATION_5_6` **and** `MIGRATION_6_7`. Uploading any intermediate version
-first spends a release cycle to prove nothing 1.7 would not.
+✅ **Production access was granted 2026-08-19**, on the request that went in the day before, once closed
+testing ended and the 12-tester count cleared. **Nothing on Google's side is waiting** — the review is
+over, production is available for the first time, and the release date is whatever date this repo is
+ready. What is left in the Console is paste: the AAB, nine listings, nine screenshot sets, nine release
+notes, the store settings and App content's ten sections. None of it is gated on a decision any more.
 
-**The 12-testers / 14-day count cleared on 2026-08-18**, and the production-access request went in the
-same day. What is now waiting is **Google's decision**, which is still Console state and still the one
-item nothing in this repo can move — but it is a different state from the one this phase was planned
-under, and it responds differently.
+⚠️ **The listing still goes up with the build, and only with it.** That rule was never about the review;
+it is `store-listing.md`'s standing rule and it outlived the thing it was mistaken for. The copy
+describes **1.6-and-later** scope while the tracks still serve **1.0.0 / 1.3** — no redesign, no
+multi-valued droppings, seven of the nine languages absent — so pasting nine localised descriptions
+today puts a feature list in front of an owner for a build that does not carry it. **Upload the AAB
+first, then paste.** Screenshots the same: prepare them at 9g, upload them with the build.
 
-⚠️ **The review is not a freeze on the repo, and it is a freeze on the listing.** Everything in Phase 9
-except the paste carries on; 9a in particular should be started immediately, because it costs a night and
-is the item most likely to still be open when the decision lands. The listing and the screenshots are the
-exception: `store-listing.md`'s copy describes **1.6** scope and the closed track holds **1.3** — no
-redesign, no multi-valued droppings, seven of the nine languages absent — so pasting nine localised
-descriptions now would put a feature list in front of a reviewer for a build that does not carry it. The
-standing rule meeting the worst possible week to break it.
+⚠️ **Access granted is not a track chosen.** Whether 1.7 goes straight to production or walks
+internal → closed → production is an ADR-0009 decision made at upload. The grant makes production
+possible; it does not make that call.
 
-**If the answer is *reject*, write the stated reason down verbatim before acting on it.** The reason
-determines whether the fix is Console work or app work, and paraphrasing it is how a re-application ends
-up answering a different question than the one asked.
-
-**The listing and the build go up together.** That is the only rule `store-listing.md` has ever had, and
-it now points the other way from the way it used to: the copy describes 1.6-scope features, and putting
-it on a track still serving 1.0.0 is a listing violation rather than a rounding error.
+**The build that goes up is 1.7**, carrying everything from 1.4 through 1.7, and every downstream claim
+moves with it — most importantly the field upgrade proof, which retargets from 1.0.0 → 1.3 to
+**1.0.0 → 1.7** and now crosses `MIGRATION_4_5`, `MIGRATION_5_6` **and** `MIGRATION_6_7`. Uploading an
+intermediate version first spends a release cycle to prove nothing 1.7 would not.
 
 ## 9i — The field upgrade proof
 
@@ -400,6 +410,8 @@ Phase 9 closes when all of these hold:
 
 - `spotlessApply`, `assembleDebug`, `test`, `lint` at 0/0, and the instrumented suite green on the Xiaomi.
 - **9a's outcome recorded** against 5a's three written outcomes, and Phase 5 ticked in `PLAN.md`.
+- **The Phase-4 carry's watch half read** at the 09:00 sweep on **2026-08-22** — §1's last open box, and
+  the only item in this phase with a date it cannot be moved off.
 - **9b's six** ticked ✅, ADR-0025 reworded ✅ — the reboot said it must be, though not for the reason
   feared — and the readable half of what the run found *fixed*, not merely recorded ✅. (The seventh
   bullet in §2 is 9c's and is gated on the line below, not this one.)
