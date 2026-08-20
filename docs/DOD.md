@@ -550,83 +550,19 @@ untouched.
       `SecurityException` while leaving the zone untouched, which reads exactly like a change the app
       ignored. `cmd time_zone_detector set_time_zone_state_for_tests --zone_id <id>` writes
       `persist.sys.timezone` for real; `date` moves with it and so does the broadcast.
-- [ ] Edge-to-edge matrix re-run (`scripts/edge-to-edge.py`, **75 scenes** — Phase 7.5 added twelve,
-      seven of them on the two seed variants).
-      ⚠️ **73 was already stale before 9f, and the count is `grep -c '^    Scene(' scripts/edge-to-edge.py`,
-      never this line.** `language-picker` arrived with the i18n commit `b34b3fc` and took the file to 74
-      without anyone editing the number here; 9f's `home-fluffle-sheet` is the 75th. Both are `full`-suite
-      scenes.
-      ⚠️ **A wipe costs the rotation, so every wiping scene in a landscape cell has been shot in
-      portrait — in this run and in 4f's** (found 2026-08-12). `pm clear` kills the app, the
-      portrait-locked launcher takes the foreground, and HyperOS writes `user_rotation` back to **0**;
-      `accelerometer_rotation` stays 0, so nothing puts it back. The cell goes on capturing, checking
-      and reporting *clean* at 1220×2712 under a name saying `landscape`. Confirmed both ways:
-      `settings get system user_rotation` read `0` moments after `apply_config` set it to `1`, and the
-      committed `docs/edge-to-edge/ime-landscape-*.png` are genuinely 1400×630, so landscape did work
-      where nothing wiped. **The blast radius is the `empty` suite** — all six of its scenes wipe as
-      their first step, so the setup wizard has never actually been seen in landscape by this harness;
-      `mismatch` corrupts the database without a wipe and is unaffected, and `full` was only exposed
-      once a per-config re-seed was added. Fixed in `wipe()`, which now re-pins the rotation it just
-      cost, with `apply_config` recording what to re-pin to; and the per-config re-seed now runs
-      **before** `apply_config` rather than after it. **A cell that cannot fail is not evidence** —
-      the check ran 53 times per landscape cell and passed every time, on portrait screenshots.
-      ✅ **The tap blocker is gone** (6c, 2026-08-06). It was never a permission: `input` picks a
-      default source when none is named, and HyperOS stopped honouring that inference. **`input
-      touchscreen tap` lands where bare `input tap` is dropped** — A/B'd on one screen at one
-      coordinate — and `keyevent` and `swipe` were never affected. `edge-to-edge.py` is fixed and both
-      new scenes ran clean in all four configurations, so the matrix is driveable again.
-      ⚠️ **`watch-expiry` needs re-shooting when the matrix is re-run** (found 2026-08-06, building Phase
-      7's capture). The seed leaves exactly **one** expired watch — Nugget's 3-day, started 4 days ago;
-      Bijou's 7-day is still running — and every scene that is not `keeps_watch_prompt` opens by tapping
-      *Close it*, which **deletes the row** (`WatchExpiry.kt`: "close, dismiss and swipe-away are one
-      action"). In `SCENES` order `home` runs ~20 scenes ahead of `watch-expiry`, so by then there is no
-      prompt and the PNG is a plain Home screen under a dialog's name. `screenshots.py` sorts
-      `keeps_watch_prompt` scenes first within each suite; `edge-to-edge.py` still does not, and its
-      existing `watch-expiry` evidence should be assumed wrong rather than re-read.
-      ⚠️ **`medication-course`, `medication-course-bottom` and `record-dose` likewise** (found
-      2026-08-06, same session, and this one is the worse of the two). The Care screen grows a
-      blocked-state banner for **each of two permissions** — notifications off, and exact alarms not
-      permitted — and both buttons are `action_open`, **the same "Open"** the medication-course row
-      uses. `find` is a case-insensitive substring match, so `tap("Open")` hit a banner and launched
-      HyperOS's Settings: both `medication-course` shots were **screenshots of the system Settings
-      app**, and `record-dose` failed with an empty node list because the foreground had left this
-      package. Confirmed twice by `dumpsys window` — `Settings$AppNotificationSettings`, then
-      `Settings$AlarmsAndRemindersAppActivity` once the first was granted.
-      **This applies to the 4f run too** — §1 records it ended `Reason=data_cleared`, so it wiped,
-      so it held neither permission. Assume those three scenes' existing evidence is wrong.
-      ℹ️ **`observation-entry-ime`'s needle changed with Phase 7's `2c`** (2026-08-09) — not wrong
-      evidence, but it would have become wrong on the next run. It tapped *"Anything else"*, which is
-      now a label **above** the note box rather than the box's own floating label; the tap would have
-      landed on a plain `Text` with nothing to focus and shot a form with no keyboard. It taps the
-      placeholder now. **Expect one of these per redrawn route** — a scene needle is a claim about what
-      the UI says, and this phase rewrites exactly that.
-      ℹ️ **`course-editor-ime` broke on `3e`** (2026-08-09) — the same trap as `observation-entry-ime`,
-      one route later, which is now two of two for IME scenes. It tapped *"What is it?"*, a floating
-      label that is a plain `Text` **above** the box since the redraw; the tap would have focused
-      nothing and shot a form with no keyboard. It taps the placeholder (*"Metacam"*) now. **An IME
-      scene's needle is a claim that some text belongs to a focusable control**, and the form idiom
-      moves exactly that text. `course-editor-bottom` did not break but its note did: Save is in the
-      app bar now, so the bottom edge is the notes box rather than a button.
-      ℹ️ **`5a`/`5b` and `4e` broke none either** (2026-08-09), and between them they turn the
-      exception into the rule's other half. Four needles across the two routes — `vets` and
-      `vet-editor` tap a More row and the *Add a vet* button; `bunny-editor` and its two siblings tap
-      *Edit* on Home and then swipe — and **not one of them names anything the redraw touched**, even
-      though Vets deleted two buttons off every row and the bunny editor moved six fields into cards.
-      `bunny-editor-bottom`'s shot changes, as `course-editor-bottom`'s did, but its needle does not.
-      **A needle on chrome survives a redraw of what the chrome contains**; only content needles are
-      fragile, which is now five routes' worth of evidence.
-      ℹ️ **`2a`/`2b` Observations broke none** (2026-08-09), which is worth recording as the exception
-      rather than as proof the rule was wrong: it *deleted* a string (`observation_observed_together`)
-      and added three, and both its scenes came through clean because neither needle ever named
-      anything inside a card — they tap the tab and swipe. **Needles that reach into content are the
-      fragile ones**; a needle on chrome survives a redraw of what the chrome contains.
-      **The fix is the needle, not the permissions**: the scenes now open the course by name
-      (`MEDICATION_COURSE = "Metacam"`, the sample data's first). Granting both would also clear it
-      and is the wrong lever — `SCHEDULE_EXACT_ALARM` is denied by default on Android 14+, so that
-      banner is a state real users genuinely see, and §1 wants the permission granted through the
-      app's own deep link because that path is what is under test. `reset_to_seeded()` does grant
-      `POST_NOTIFICATIONS` back, separately, so a seeded install stands in for an app in use; the
-      `empty` suite keeps the denied state, where it is the truth of a first run.
+- [x] Edge-to-edge matrix re-run ✅ **2026-08-20/21 — 300 cells, 0 errors, no defect.** All **75**
+      scenes across four configurations, into `~/binky-screenshots/phase-9/en`. 35 findings, every
+      one benign: 28 `touch`, and 7 `drawn` that each have an exact counterpart in the 2026-08-16
+      baseline. ⚠️ **The count is `grep -c '^    Scene(' scripts/edge-to-edge.py`, never a number
+      written in this file** — that is how 73 went stale twice.
+      **Everything this bullet used to warn about was already spent before it was read.** The
+      `empty` suite in landscape, `watch-expiry`, `medication-course`, `medication-course-bottom`
+      and `record-dose` were all fixed by `011a07d` (2026-08-13) and re-proved by the 2026-08-16
+      run three days later — which this run's own reports confirm scene by scene. **A warning
+      outlives its defect silently**, and this one had been telling three sessions to distrust
+      evidence that was sound.
+      **Two driver defects had to be fixed to get the run**, both the same shape and both in
+      `swipe_up` — a swipe aimed at the wrong rectangle. Record in [`phase-9.md`](phase-9.md) §9c.
 
 ---
 
@@ -883,7 +819,7 @@ entity changes, so the standing gate at the top of this file does not fire in th
 | --- | --- | --- |
 | **9a** | The overnight Doze run ✅ answered 2026-08-19 — autostart is the lever, and the delivery state was fixed to say so. **§1's last box is still open**: the Phase-4 carry's watch half, owed at the 09:00 sweep on 2026-08-22 | §1 |
 | **9b** | The six gate items parked behind it ✅ **closed 2026-08-19** — it found that the boot rebuild waits for the first unlock, and that a lowered channel was being reported as armed; the second is fixed in the same PR | §2 |
-| **9c** | The 75-scene edge-to-edge re-run | §2, last bullet |
+| **9c** | The 75-scene edge-to-edge re-run ✅ **closed 2026-08-21** — 300 cells, 0 errors; it found two driver bugs and that its own warnings had gone stale | §2, last bullet |
 | **9d** | Close Phase 5 | below |
 | **9e** | The Pages front door ✅ **closed 2026-08-19** — `docs/index.md` is the root, and `_config.yml`'s "copied verbatim" comment was wrong | below |
 | **9f** | Seeing the whole fluffle ✅ **closed 2026-08-20** — the sheet is built, tested and driven; the archived route and the landscape half-height state were both found on the phone | below |

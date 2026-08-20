@@ -214,22 +214,86 @@ grant is not durable and **must be re-read immediately before any run that depen
 count on the autostart screen is the only honest signal, because a `uiautomator` dump's `checked`
 attribute reports false on every row including the granted ones.
 
-## 9c — The edge-to-edge matrix, 75 scenes
+## 9c — The edge-to-edge matrix, 75 scenes ✅ closed 2026-08-21
 
-The re-run `scripts/edge-to-edge.py` has owed since Phase 7.5 added twelve scenes. It is also the first
-run in which **the `empty` suite has ever genuinely been shot in landscape**: all six of its scenes wipe
-as their first step, `pm clear` cost the rotation, and HyperOS wrote `user_rotation` back to 0 — so the
-setup wizard has been photographed in portrait under a landscape filename, 53 times per cell, passing
-every time. `wipe()` re-pins the rotation now and the per-config re-seed runs before `apply_config`.
+**300 cells, 300 reached, zero errors, no defect in the app** — 67 `full` scenes, 6 `empty` and 2
+`mismatch`, each across all four configurations, 20:05 to 23:59 into `~/binky-screenshots/phase-9/en`.
+35 findings, every one benign: 28 `touch` and 7 `drawn`, and each `drawn` one has an exact counterpart
+in the 2026-08-16 baseline, down to the overlap in pixels. **Two driver defects had to be fixed to get
+it**, both in `swipe_up`, both the same shape, and neither in the app.
 
-**A cell that cannot fail is not evidence.** Four scenes' existing PNGs should be assumed wrong rather
-than re-read — `watch-expiry`, `medication-course`, `medication-course-bottom`, `record-dose` — for the
-reasons recorded in [`DOD.md`](DOD.md) §2.
+### Its own warnings had gone stale, which is the finding worth keeping
 
-**Expect one broken needle per route 9f touches.** Five routes' worth of evidence says the same thing:
-a needle on *chrome* survives a redraw of what the chrome contains, and only needles that reach into
-*content* are fragile. 9f adds a tap target to content on Home, so `home` and its siblings are where to
-look first.
+This section and [`DOD.md`](DOD.md) §2 both said the run would be the first to shoot the `empty` suite
+in landscape, and that four scenes' PNGs — `watch-expiry`, `medication-course`,
+`medication-course-bottom`, `record-dose` — should be assumed wrong. **None of that was true any more.**
+`011a07d` fixed the wipe's rotation and the `keeps_watch_prompt` sort on 2026-08-13, and the 2026-08-16
+run three days later already used the fixed driver: its `empty` landscape PNGs are genuinely
+2712x1220, and [`phase-7.5.md`](phase-7.5.md) says in its own record that *"`medication-course` is
+checked correctly for the first time"*. Diffing that run's reports against `SCENES` put it at **73 of
+the 75** — only `language-picker` and `home-fluffle-sheet` had never been shot at all.
+
+**A warning outlives the defect it was written for, and nothing makes a noise when it does.** Three
+sessions could have read "assume this evidence is wrong" about evidence that was sound. The count went
+stale the same way twice, which is why `DOD.md` now carries the `grep` instead of a number.
+
+**The full re-run was still the right call**, for a reason the old text does not give: four commits
+since 2026-08-16 touch UI that scenes photograph — `9b46f41` (`Navigation.kt`, the nav label, and so
+the bottom bar on all 21 `tab` scenes, which is where every overlap in this matrix lands), `b34b3fc`
+(Settings and Support), `ed42638`/`6575e4a` (the reminders caveats), and `c086112` (9f: `HomeScreen`
+and `BunnyProfile`, which `ArchivedBunniesScreen` also draws). Drawing the line around those by hand is
+the same judgement that let the scene count go stale.
+
+### Two swipes aimed at the wrong rectangle
+
+**`user_rotation` is a claim about the pin, not a reading of the screen.** It records what the display
+was last pinned to and means nothing while `accelerometer_rotation` is 1. The run's *first*
+`ensure_seed` happens before any `apply_config`, so nothing had pinned anything yet — and the key read
+`1`, left over from an earlier session, against a live 1220x2712 portrait screen. `swipe_up` built a
+2712-wide swipe from it and sent every gesture to x=1356, off the right edge of the display. Nothing
+scrolled, `tap` read the unchanged screen as *"nowhere left to go"*, and the seed walk died on the
+wizard's *Continue* before a single cell was captured. Fixed by `screen_size()`, which reads `cur=WxH`
+from `dumpsys window displays` — already rotated, and the one reading that cannot disagree with the
+screen.
+
+**A swipe at the middle of the screen is a claim that the screen is what scrolls.** `home-crowded-all`
+came back unreachable in *both* landscape configs — as it had on 2026-08-16, where 7.5 read it as a
+scroll budget too short for a landscape viewport and re-shot it clean. That was not the whole cause.
+The bunny switcher is a `DropdownMenu` 212dp wide anchored under its app-bar control, and *All bunnies*
+sits below every active bunny — six of them on the `crowded` seed, which fills the menu and leaves it
+scrolling internally. Measured on the phone: the menu occupies `x[178-897]` of a 2712px-wide landscape
+screen, and `swipe_up` was swiping at **x=1356**, outside it. The gesture went to the window behind.
+Portrait passes because its midpoint, x=610, happens to fall *inside* the menu — the scene was never
+right in landscape, only lucky in portrait.
+
+Fixed by `content_box`, which scrolls inside the rectangle the app's own nodes occupy. A dump taken
+while the menu is open contains **only** that window's nodes, so the box is the menu; on an ordinary
+screen it is the whole display. Measured rather than assumed before the change went in: Care & Meds and
+Settings both box to exactly `(0, 0, 2712, 1220)` in landscape, so every full-screen scene swipes
+precisely where it always did. Both cells came back clean, and the screenshot is the real *All bunnies*
+view rather than a Home screen wearing its name.
+
+- **Compose does not publish `scrollable="true"`** — Care & Meds and the housemates sheet report zero
+  scrollable nodes. The `DropdownMenu` is the exception because it wraps a real
+  `android.widget.ScrollView`. So a fix keyed on that attribute would have worked here and nowhere
+  else, which is why the box is measured from the nodes instead.
+
+### What it proves for 9f
+
+`home-fluffle-sheet` is **clean in all four configurations**, and the landscape shot is the one the
+scene was written for: the sheet opens past the half-height state with all four housemates on screen —
+Clover, Nugget, Thistle and *Pumpkin (archived)*, the marker included — over a 1220px viewport. Three
+of those names were unreachable anywhere in the app before 9f.
+
+**The predicted broken needle did not appear.** This file expected one per route 9f touches, and `home`
+and its siblings all came through clean; the one scene that did break is on a route 9f never touched.
+Five routes' worth of evidence said needles on chrome survive a redraw and only content needles are
+fragile — 9f's needle is `Lives with`, which is content, and it held. The rule now has an exception,
+and the thing that actually broke was geometry rather than vocabulary.
+
+**No route that changed since 2026-08-16 produced a finding** — `home`, `home-fluffle-sheet`,
+`settings`, `support`, `archived`, `language-picker`, all clean in all four cells. `9b46f41`'s nav-label
+change touches the bottom bar on 21 scenes and cost nothing.
 
 ## 9d — Close Phase 5
 
@@ -453,8 +517,10 @@ Phase 9 closes when all of these hold:
 - **9b's six** ticked ✅, ADR-0025 reworded ✅ — the reboot said it must be, though not for the reason
   feared — and the readable half of what the run found *fixed*, not merely recorded ✅. (The seventh
   bullet in §2 is 9c's and is gated on the line below, not this one.)
-- **75 scenes** clean (73 was stale before 9f — see 9f), with the four suspect scenes re-shot and the `empty` suite seen in landscape for
-  the first time.
+- ~~**75 scenes** clean, with the four suspect scenes re-shot and the `empty` suite seen in landscape.~~
+  ✅ **2026-08-21 — 300 cells, 0 errors, no defect in the app.** The four suspect scenes and the
+  landscape `empty` suite had been sound since 2026-08-16; what the run actually cost was two driver
+  bugs, both in `swipe_up`. See §9c.
 - The Pages root serves a page, and `_config.yml` no longer claims something untrue.
 - ~~The fluffle sheet built, driven on the device, and reachable from Home with any number of housemates.~~
   ✅ **2026-08-20** — and it is a matrix scene, so 9g photographs it in all four configurations.
