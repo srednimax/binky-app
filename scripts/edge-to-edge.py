@@ -501,7 +501,7 @@ def tap(needle: str, *, optional: bool = False, text_only: bool = False) -> None
         if attempt >= MIN_TAP_TRIES - 1 and current == previous:
             break
         previous = current
-        swipe_up()
+        swipe_up(nodes)
     if node is None:
         if optional:
             return
@@ -534,24 +534,83 @@ def back() -> None:
     settle(0.8)
 
 
-def swipe_up() -> None:
-    """Scroll a list towards its end — where the row nearest the navigation bar is."""
-    size = shell("wm size")
-    match = re.search(r"(\d+)x(\d+)", size.split(":")[-1])
-    width, height = (int(match.group(1)), int(match.group(2))) if match else (1220, 2712)
-    # In landscape the physical size is still reported portrait-first, so the swipe is built from
-    # whichever is currently on screen.
-    if shell("settings get system user_rotation").strip() == "1":
-        width, height = max(width, height), min(width, height)
-    else:
-        width, height = min(width, height), max(width, height)
+def screen_size() -> tuple[int, int]:
+    """The display's size **as it is currently rotated**, which `wm size` does not report.
+
+    `wm size` gives the *physical* size and stays portrait-first through every rotation, so the
+    orientation has to come from somewhere else — and `user_rotation` is the wrong somewhere. That
+    key records what the display was last **pinned** to, and it means nothing while
+    `accelerometer_rotation` is 1: on 2026-08-20 it read `1` against a live 1220x2712 portrait
+    screen, left over from an earlier run's pinning that `--restore` had handed back.
+
+    [swipe_up] built a 2712-wide swipe out of it and sent every gesture to x=1356, off the right
+    edge of a 1220px display. Nothing scrolled, so [tap] read the unchanged screen as "nowhere left
+    to go" and the seed walk died on the wizard's *Continue* — before the matrix captured a single
+    cell. **The same shape as the two rotation bugs already recorded here**: a value that describes
+    what the driver asked for, trusted as a description of what the phone is doing.
+
+    `dumpsys window displays` reports `cur=WxH` already rotated, which is the one reading that
+    cannot disagree with the screen. It is also why this does not consult `mRotation`: a rotation
+    still has to be turned into a width and a height, and `cur=` is both, measured.
+    """
+    match = re.search(r"cur=(\d+)x(\d+)", shell("dumpsys window displays"))
+    if match:
+        return int(match.group(1)), int(match.group(2))
+    # Portrait-first from `wm size` is a poor guess, but the caller needs a midpoint rather than the
+    # truth, and guessing beats dividing by nothing.
+    match = re.search(r"(\d+)x(\d+)", shell("wm size").split(":")[-1])
+    return (int(match.group(1)), int(match.group(2))) if match else (1220, 2712)
+
+
+def content_box(nodes: list[Node]) -> "Rect | None":
+    """The rectangle the app's own nodes occupy — **which is the popup when one is open**.
+
+    A `DropdownMenu` is its own window, and a dump taken while one is open contains *only* that
+    window's nodes: with the switcher open on the `crowded` seed the whole dump sits inside
+    `[178,130][897,1172]`, with nothing of Home behind it. So the app's bounding box is the menu,
+    and on an ordinary screen it is the whole display — measured, not assumed: Care & Meds and
+    Settings both box to exactly `(0, 0, 2712, 1220)` in landscape, which is why scrolling by this
+    box leaves every full-screen scene swiping precisely where it always did.
+    """
+    ours = [node for node in nodes if node.package == PACKAGE]
+    if not ours:
+        return None
+    return Rect(
+        min(node.bounds.left for node in ours),
+        min(node.bounds.top for node in ours),
+        max(node.bounds.right for node in ours),
+        max(node.bounds.bottom for node in ours),
+    )
+
+
+def swipe_up(nodes: "list[Node] | None" = None) -> None:
+    """Scroll a list towards its end — where the row nearest the navigation bar is.
+
+    **Swipes inside [content_box], not across the middle of the screen.** The bunny switcher is a
+    `DropdownMenu` 212dp wide anchored under its app-bar control, and *All bunnies* sits below every
+    active bunny — six of them on the `crowded` seed, which fills the menu and leaves it to scroll
+    internally. A swipe at the screen's own midpoint is x=1356 on a 2712px-wide landscape display
+    and lands **outside** the menu entirely, so the gesture went to the window behind it, the menu
+    never moved, and [tap] read the unchanged screen as "nowhere left to go". That is why
+    `home-crowded-all` failed in *both* landscape configs on 2026-08-16 and again on 2026-08-20
+    while passing in both portrait ones: portrait's midpoint, x=610, happens to fall inside the
+    menu. **A swipe aimed at the screen is a claim that the screen is what scrolls.**
+
+    `nodes` is the dump the caller already holds, so the common path costs no extra dump.
+    """
+    box = content_box(nodes if nodes is not None else dump_ui())
+    if box is None:
+        width, height = screen_size()
+        box = Rect(0, 0, width, height)
+    x = (box.left + box.right) // 2
+    span = box.bottom - box.top
     # **Both ends of the swipe have to land inside the scrollable**, which is a smaller target than
     # it looks in landscape: a top-level tab there has a switcher above it and a navigation bar
     # below, leaving content between roughly 26% and 76% of a 1220px screen. Swiping from 75% —
     # comfortably inside a portrait screen — landed on the bottom bar's edge and scrolled nothing,
     # and a swipe that does nothing turns a scroll-to-end scene into a screenshot of the top of the
     # list wearing the name of the bottom.
-    shell(f"input swipe {width // 2} {int(height * 0.70)} {width // 2} {int(height * 0.32)} 300")
+    shell(f"input swipe {x} {box.top + int(span * 0.70)} {x} {box.top + int(span * 0.32)} 300")
     settle(1.0)
 
 
@@ -565,9 +624,13 @@ def swipe_to_end() -> None:
     # Each swipe now covers less of the screen, and the observation timeline holds a year of rows,
     # so the cap is generous: stopping early would report the middle of a list as its end.
     previous = ""
+    # Dumped once up front and then reused: the signature dump each round is also the one the next
+    # swipe aims by, so scrolling inside [content_box] costs a single extra dump for the whole loop.
+    nodes = dump_ui()
     for attempt in range(16):
-        swipe_up()
-        current = screen_signature(dump_ui())
+        swipe_up(nodes)
+        nodes = dump_ui()
+        current = screen_signature(nodes)
         if current == previous:
             return
         previous = current
