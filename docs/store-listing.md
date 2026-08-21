@@ -60,6 +60,7 @@ for consistency rather than because those languages need it.
 | Phone screenshots (1526×2713) | [`1-home`](../art/play-screenshot-1-home.png), [`2-weight`](../art/play-screenshot-2-weight.png), [`3-observations`](../art/play-screenshot-3-observations.png), [`4-backup`](../art/play-screenshot-4-backup.png) — English dark, re-shot at 9g. The other eight locales are prepared outside the repo; see *Open* |
 | App category | Lifestyle |
 | Contact email | `binky.support@gmail.com` — the per-app support address, set in Store settings, not the account-level developer email |
+| Website | `https://srednimax.github.io/binky-app/` — the Pages root 9e created, also in Store settings. The privacy-policy URL above is a page *under* it |
 
 ✅ **The screenshots were re-shot at 9g on 2026-08-21** and photograph the app as 1.7 ships it,
 9f's Home header included. Entering them in the Console is a separate box (`DOD.md` §4).
@@ -78,8 +79,10 @@ set it to anything else and the listing points a reader at a mailbox the app its
 
 The privacy policy is served by GitHub Pages from `main` / `docs`, which is why `docs/_config.yml`
 exists at all: Play requires a *hosted* URL and the app has no server by design. It rebuilds on every
-push to `main`, so the policy can never drift from the repo. The site root has no `index.md` and
-returns 404 on purpose — this site serves one page.
+push to `main`, so the policy can never drift from the repo. ⚠️ **The site root is no longer a 404.**
+This paragraph said it returned one "on purpose" until 2026-08-21, which was true when the site served
+exactly one page; **9e added `docs/index.md`**, so the root now answers 200 and is what the Website
+field below points at.
 
 ---
 
@@ -734,11 +737,175 @@ Both describe the *only* user-visible change in 1.0.1, which is what the release
 mentions the schema, because nothing about it changed for the person reading this — what changed is
 what the project owes from here (PLAN.md 3j, ADR-0023).
 
-⚠️ **Release notes for 1.1 through 1.6 are owed and not written here.** Nothing since 1.0.1 has been
-uploaded, so no note has ever been needed; the release that finally goes up owes one per locale — nine
-of them from 1.6 onwards, since a locale with a listing and no note falls back to the default
-language's, which is worse than terse. They are written at upload time against what that specific
-build changes, which is why they are not drafted in advance the way the descriptions are.
+### 1.7 — the release that carries 1.1 through 1.6 with it
+
+⚠️ **This is not a note about one release, and it cannot be.** Nothing since 1.0.1 has ever been
+uploaded, so whoever takes this update sees 1.7's note and no other — everything 1.1 through 1.6
+changed is new *to them*. A note scoped to 1.7's own commits would describe the housemates sheet and
+nothing else, which would be true and useless. These nine cover the span, ordered by what a 1.0
+install gains rather than by which release added it.
+
+**Written from the English**, per [`translator-brief.md`](translator-brief.md), and each locale quotes
+its **own** UI labels — the *Lives with* line and the Home destination exactly as `values-*/strings.xml`
+spells them (`Start`, `Domů`, `Accueil`, `Головна`, …) — because the last bullet asks the reader to go
+and tap one. Second person stays genderless everywhere, and each locale keeps the register its full
+description already set: infinitives in German and French, informal singular in Spanish, Italian,
+Polish and Portuguese, formal plural in Czech and Ukrainian.
+
+The counts below are measured and deliberately hold headroom. The first draft ran 464 in English and
+put French, Italian, German, Polish and Portuguese **over** 500 — Romance and German prose run longer
+than the English they are written from, and Play truncates rather than warns. The vet bullet lost its
+directory and the weight bullet lost a clause; nothing lost a claim.
+
+**English** — 416/500:
+
+```
+• Nine languages, switched inside the app
+• Vet visits, medication courses and dose reminders
+• Scan documents and keep them with the visit
+• Care reminders for anything that recurs
+• Weight changes flagged for a closer look, up or down
+• Droppings: every shape in the tray, and a photo of it
+• A new look; Material You optional
+• Tap "Lives with" on Home to see the whole group
+
+Still no account, no ads, no server.
+```
+
+**Polish** — 462/500:
+
+```
+• Dziewięć języków, przełączanych w samej aplikacji
+• Wizyty u weterynarza, kuracje i przypomnienia o dawkach
+• Skanowanie dokumentów i trzymanie ich przy wizycie
+• Przypomnienia o opiece, która się powtarza
+• Zmiany wagi, którym warto się przyjrzeć — w dół i w górę
+• Bobki: tyle kształtów, ile jest w kuwecie, i zdjęcie
+• Nowy wygląd; Material You do wyboru
+• Dotknij „Mieszka z” na ekranie Start, żeby zobaczyć grupę
+
+Nadal bez konta, bez reklam, bez serwera.
+```
+
+**German** — 462/500:
+
+```
+• Neun Sprachen, direkt in der App umschaltbar
+• Tierarztbesuche, Medikamentenkuren und Dosis-Erinnerungen
+• Unterlagen scannen und beim Besuch aufbewahren
+• Pflege-Erinnerungen für alles, was wiederkehrt
+• Ab- und Zunahmen markiert für einen zweiten Blick
+• Köttel: so viele Formen, wie im Klo liegen, mit Foto
+• Neue Gestaltung; Material You optional
+• „Lebt mit“ auf Start antippen und die ganze Gruppe sehen
+
+Weiterhin kein Konto, keine Werbung, kein Server.
+```
+
+**Spanish** — 476/500:
+
+```
+• Nueve idiomas, que se cambian dentro de la app
+• Visitas al veterinario, tratamientos y avisos de cada dosis
+• Escanea documentos y guárdalos junto a la visita
+• Avisos de cuidados que vuelven cada cierto tiempo
+• Bajadas y subidas de peso señaladas para mirarlas de cerca
+• Cagarrutas: todas las formas que haya en la bandeja, con foto
+• Aspecto nuevo; Material You opcional
+• Toca «Vive con» en Inicio para ver todo el grupo
+
+Sigue sin cuenta, sin anuncios y sin servidor.
+```
+
+**French** — 450/500:
+
+```
+• Neuf langues, à changer dans l’app même
+• Visites vétérinaires, traitements et rappel par dose
+• Scanner les documents et les garder avec la visite
+• Rappels pour les soins qui reviennent
+• Baisses et hausses de poids signalées à regarder de près
+• Crottes : toutes les formes du bac, avec une photo
+• Nouvelle allure ; Material You au choix
+• Toucher « Vit avec » sur Accueil pour voir tout le groupe
+
+Toujours sans compte, sans pub, sans serveur.
+```
+
+**Italian** — 455/500:
+
+```
+• Nove lingue, da cambiare nell’app stessa
+• Visite dal veterinario, cure e promemoria per ogni dose
+• Scansiona i documenti e tienili con la visita
+• Promemoria per le cure che tornano
+• Cali e aumenti di peso segnalati da guardare da vicino
+• Palline: tutte le forme che ci sono nella lettiera, con foto
+• Aspetto nuovo; Material You a scelta
+• Tocca «Vive con» su Inizio per vedere tutto il gruppo
+
+Sempre senza account, senza pubblicità, senza server.
+```
+
+**Brazilian Portuguese** — 480/500:
+
+```
+• Nove idiomas, trocados dentro do próprio app
+• Consultas veterinárias, tratamentos e lembretes de dose
+• Digitalize documentos e guarde-os junto da consulta
+• Lembretes de cuidados que voltam de tempos em tempos
+• Quedas e ganhos de peso sinalizados para olhar de perto
+• Bolinhas: todos os formatos que houver na caixa, com foto
+• Visual novo; Material You opcional
+• Toque em "Mora com" na tela Início para ver o grupo inteiro
+
+Continua sem conta, sem anúncios e sem servidor.
+```
+
+**Czech** — 446/500:
+
+```
+• Devět jazyků, přepínatelných přímo v aplikaci
+• Návštěvy veterináře, léčebné kúry a připomínky dávek
+• Naskenujte dokumenty a nechte je u návštěvy
+• Připomínky péče, která se vrací
+• Poklesy i vzestupy hmotnosti označené k bližšímu pohledu
+• Bobky: všechny tvary, které na záchodku jsou, i s fotkou
+• Nový vzhled; Material You volitelně
+• Klepnutím na „Spolubydlící“ na obrazovce Domů zobrazíte skupinu
+
+Stále bez účtu, bez reklam, bez serveru.
+```
+
+**Ukrainian** — 448/500:
+
+```
+• Девʼять мов, які перемикаються в самому застосунку
+• Візити до ветеринара, курси ліків і нагадування про дози
+• Скануйте документи й тримайте їх при візиті
+• Нагадування про догляд, що повертається
+• Зниження та набір ваги позначені, щоб придивитися
+• Котяхи: усі форми, які є в лотку, і фото
+• Новий вигляд; Material You за бажанням
+• Торкніться «Живе з» на Головній, щоб побачити всю групу
+
+Досі без облікового запису, без реклами, без сервера.
+```
+
+**Every bullet is a feature this build actually has**, checked against `CHANGELOG.md` rather than
+against memory: nine languages (1.6), vet visits and medication courses with a reminder per dose (1.2),
+document scanning attached to the visit (1.2), recurring care reminders (1.1), the trend flag that a
+*gain* raises too (1.1, extended at 1.5), multi-valued droppings with a photo of the tray (1.5), the
+redesign with Material You as a toggle (1.4), and the housemates sheet (1.7, 9f).
+
+**No note implies a diagnosis and none infers a problem from silence** — the same two rules that
+outrank fluency in the descriptions. "Flagged for a closer look" is the app's own framing
+(`trend_flag_title`, ADR-0001) and is why the bullet does not simply say "flagged", which would read
+as the app having decided something.
+
+⚠️ **The support screen, the licence attribution and the backup destination are not mentioned.** They
+shipped in 1.3, 1.5 and 1.1 and every one of them is real; 500 characters is the constraint and a note
+that lists everything gets read as none of it. Add them only if something comes out.
 
 ---
 

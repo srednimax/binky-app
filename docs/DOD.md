@@ -679,9 +679,13 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
 
 ### Before the AAB goes up
 
-- [ ] **Release notes ×9**, written at upload time against what *this* build changes. None has ever been
-      needed since 1.0.1, so 1.7 owes the first — and a locale with a listing and no note falls back to
-      the default language's, which is worse than terse.
+- [ ] **Release notes ×9** — **written 2026-08-21** into [`store-listing.md`](store-listing.md), waiting
+      only to be entered. None had ever been needed since 1.0.1, so 1.7 owed the first, and a locale with
+      a listing and no note falls back to the default language's, which is worse than terse. ⚠️ **They
+      cover 1.1 through 1.6 as well as 1.7**, because whoever takes this update sees this note and no
+      other: one scoped to 1.7's own commits would describe the housemates sheet and nothing else. All
+      nine are measured under Play's 500 — the first draft put five locales *over* it, which is the
+      failure mode Play truncates rather than warns about.
 - [ ] **Title / short / full description ×9** — paste-ready in [`store-listing.md`](store-listing.md),
       written at Phase 8 and never yet entered. ⚠️ French and Italian sit at **3992 and 3993 of 4000**
       characters: a paragraph added to English cannot simply be translated into those two.
