@@ -24,7 +24,9 @@ open**, in [`phase-9.md`](phase-9.md).
 - [x] **Phase 3** — Backup, first-run setup, photo gallery — **ships as 1.0**
 - [x] **Phase 4** — Care reminders and watch — **ships as 1.1** *(closed on the build; the Console half and
   one night's evidence are carried into Phase 5)*
-- [ ] **Phase 5** — Vet, medications, documents, dose reminders — **ships as 1.2**
+- [x] **Phase 5** — Vet, medications, documents, dose reminders — **ships as 1.2** *(build half closed
+  2026-08-05 at 5j; the device evidence it carried — the overnight Doze run, the gate items and Phase 4's
+  own carry — closed 2026-08-19/21 as Phase 9's 9a, 9b and §1)*
 - [x] **Phase 6** — Support contact — **ships as 1.3** — record in [`phase-6.md`](phase-6.md), not here
   *(closed on the build and the documents; Play's per-app contact email and the received-mail read are
   carried in [`DOD.md`](DOD.md) §5)*
@@ -2219,7 +2221,7 @@ Each checkpoint is meant to survive being picked up cold, so read its decisions 
   (ADR-0001).
 - Then the 1.1 release: internal track, then closed, installable from Play on the Xiaomi.
 
-## Phase 5 — Vet, medications, documents, dose reminders — ships as 1.2
+## Phase 5 — Vet, medications, documents, dose reminders — ships as 1.2 ✅ *(closed 2026-08-21; the build half at 5j on 2026-08-05, the evidence half in Phase 9)*
 
 The phase that closes the roadmap, and the one whose failure mode is the worst in the app. A missed nail
 trim is an inconvenience; a missed dose during treatment is the hazard ADR-0003 spends its entire

@@ -168,3 +168,11 @@ grant **lapses on its own** — granted 07:47, gone by that evening, with neithe
 `adb install -r` responsible. **Re-read it before any run that depends on it.** The header count
 ("N apps can start in the background") is the only honest signal; a `uiautomator` dump's `checked`
 attribute reports false on every row, granted ones included. `scripts/alarm-gate.py` reads and sets it.
+
+**Two device readings look identical to a pass when they are nothing at all** (9d, 2026-08-21). A pulled
+`bunny.db` **without its `bunny.db-wal`** is stale — the app's most recent writes sit in the WAL, so a
+deleted row still reads as present. Pull both and `PRAGMA wal_checkpoint(TRUNCATE)` on the host, on reads as
+well as on the arming recipe. And `cmd jobscheduler run -f -n androidx.work.systemjobscheduler <pkg> <id>`
+answers *"Could not find job N"* on stderr and exits 0: `am force-stop` cancels the app's jobs and
+WorkManager re-enqueues under a **new id** at the next launch, so read the id from `dumpsys jobscheduler`
+and confirm `WM-WorkerWrapper: Starting work for …` in logcat before believing any sweep result.

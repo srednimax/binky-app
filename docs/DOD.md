@@ -151,14 +151,13 @@ adb shell dumpsys notification --noredact  # exactly one post on channel=doses, 
 
 - [x] **Dose outcome recorded** against 5a's three written-down outcomes — **outcome 3, "not until
       touched"**, but for a reason none of the three anticipated. Written up below; it does not close 9a.
-- [ ] **Phase-4 carry — sweep half ✅ answered 2026-08-20, watch half owed 08-22.** The care sweep
-      firing while **still in Doze** is done; the result block below replaces this bullet's guess that
-      the 07:28 plug-in spoiled it. What is left is a watch **auto-expiring** — nagging stops that
-      morning, the prompt shows the *current* trend, dismissing leaves no row behind. The seeded watch
-      runs `startedAt` 2026-08-15 08:30 → `endsAt` **2026-08-22 08:30**, so the sweep that reports it is
-      **09:00 on Saturday 2026-08-22**; the "08-21" written here before the 2026-08-19 21:25 re-seed is
-      a day early. It needs **no arming and no Doze** — the app installed, the job enqueued, and
-      `lastNaggedOn` read before the shade is swiped.
+- [x] **Phase-4 carry ✅ both halves answered** — the sweep half 2026-08-20, the watch half **2026-08-21**.
+      The care sweep firing while **still in Doze** is done; the result block below replaces this bullet's
+      guess that the 07:28 plug-in spoiled it. The watch half — a watch **auto-expiring**, where nagging
+      stops, the prompt shows the *current* trend, and closing it leaves no row behind — was **not** read at
+      the 09:00 sweep on Saturday 2026-08-22. That arming no longer existed by the time Saturday came, so it
+      was read on the bench the evening before, as a two-leg A/B against the same sweep. Second result block
+      below. **This was the last of Phase 4's carry, so Phase 5 ticks with it.**
 
 ### Result of the 18→19 Aug run: the alarm did not fire, and **Doze is not why** 🔴
 
@@ -435,6 +434,65 @@ the shade is Android's own `Aggregate_AlertingSection` autogroup on `watch`, not
 the nail trim's `firstDueOn` 20672 → 20673, the watch's `endsAt` to 08-22. Predictions written against the
 older seed do not apply, and neither does `sqlite3` being unavailable: the database reads fine on the
 host, pulled with `adb exec-out run-as … cat databases/bunny.db` plus its `-wal`.
+
+### The watch half, 2026-08-21: an A/B on the bench, because the sunrise had been destroyed ✅
+
+**The 09:00 Saturday reading no longer existed to take.** 9g reseeds the database once per scene, and every
+scene but one taps *Close it* on the watch prompt — which deletes the row. After eleven reseeds `watches` was
+empty, so the watch due to expire at 08:30 on 08-22 was gone, and with it the arming this box had been
+waiting on since 2026-08-05. **A screenshot run is a destructive act against anything armed, and nothing
+warned** — that belongs in the driver, not in a reader's memory.
+
+What replaced it is a two-leg A/B against the same sweep, on the debug install (dummy data — ADR-0023's
+Phase 9 amendment). A watch was written straight into the database, `startedAt` 2026-08-14 20:09:43 →
+`endsAt` 2026-08-21 20:09:43, `lastNaggedOn` 20685 (yesterday), and the daily sweep forced with `cmd
+jobscheduler run -f`. **`endsAt` is the only field that differs between the legs**, so rule 2 of
+`WatchSweep.kt` is the only filter that can account for a difference between them.
+
+| | leg A — 19:16:27 | leg B — 20:12:08 |
+| --- | --- | --- |
+| `endsAt` | in the **future** | in the **past** (20:09:43) |
+| the worker | ran | ran — `WM-WorkerWrapper: Starting work for …ReminderSweepWorker`, then `SUCCESS` |
+| `channel=watch` post | **yes**, id `2083104992` | **none** — 0 records before, 0 after |
+
+- [x] **Nagging stops at expiry.** The A/B above: same bunny, same day, same sweep, one field changed, and
+      the nag disappears. `WatchSweepTest."an expired watch stops nagging immediately…"` already held this
+      in-process; what was missing was the sweep doing it on the phone.
+      **The claim rests on the notification record, not on the watermark.** Leg B's `lastNaggedOn` was read
+      without the WAL (see the traps below) and so cannot tell "unchanged" from "not yet checkpointed"; the
+      `channel=watch` count is a direct measurement and is independent of the database entirely.
+- [x] **The prompt names the *current* trend** — the one claim with no test anywhere in either tree. Read off
+      the phone at 20:10:50: *"The watch on Bijou has run out / It has already stopped asking. Extend it if
+      you are still keeping an eye out, or close it."*, carrying the flag itself rather than a copy of it —
+      **"Bijou is down 170 g since Aug 7, 2026. 2.470 kg then, 2.300 kg now."** The database agrees exactly:
+      Aug 7 = 2470 g, newest = 2300 g on Aug 19, difference **170 g**.
+      **The anchor is what makes it current rather than remembered.** Aug 7 is fourteen days before *today*,
+      not fourteen days before the watch's own start on Aug 14 — a prompt rendering the trend as it stood
+      when the watch was created would have read *down 10 g since Jul 31* (2490 → 2480). It reads neither, so
+      `evaluateTrend` is running at display time, which is what `WatchExpiryViewModel.prompt` reading
+      `Instant.now()` on every emission is for. The change is in grams and the absolutes in kg, per the house
+      rule, and ADR-0001's sentence is *in the dialog* — "an observation about the numbers, not a diagnosis"
+      — next to the vet-directed-diet caveat, rather than a page away.
+- [x] **Closing it leaves no row.** *Close it* tapped 20:13; `watches` is **empty**. `WatchExpiry.kt` makes
+      close, dismiss and swipe-away one action deliberately — that is what makes "prompts once" true without
+      a column recording it — and the prompt did not return across a force-stop and a relaunch, with Home
+      offering *Start a watch* in its place. `WatchRepositoryTest`'s
+      `closingDeletesTheRowAndStartingAgainIsNotBlockedByAStaleOne` covers the same ground in-process.
+
+**Two ways this evening nearly recorded a false result, and neither was the app's fault.** Both are about
+reading the phone, both produce output that looks exactly like a pass, and both are cheap to defend against.
+
+- **A forced job proves nothing until the worker is seen to run.** `cmd jobscheduler run -f -n
+  androidx.work.systemjobscheduler … 0` answered *"Could not find job 0"*, because `am force-stop` cancels an
+  app's jobs and WorkManager re-enqueued under **id 1** when the app was next launched. The output of that
+  non-run is **identical to a pass** — no nag posted, no watermark moved — and it was very nearly written up
+  as one. Read `WM-WorkerWrapper: Starting work for …ReminderSweepWorker` out of logcat before believing any
+  sweep result, and read the id out of `dumpsys jobscheduler` rather than assuming it is still 0.
+- **A database pulled without its `-wal` is a stale database.** Three reads in a row reported that the watch
+  row had survived *Close it*. It had not — the delete was sitting in an 8 KB write-ahead log that was never
+  pulled, and the conclusion heading for this file was an app bug that does not exist. Pull `bunny.db` **and**
+  `bunny.db-wal`, then `PRAGMA wal_checkpoint(TRUNCATE)` on the host, on every read. The arming recipe
+  already said so; the reading half did not, and that asymmetry is the whole trap.
 
 ---
 
@@ -830,7 +888,7 @@ entity changes, so the standing gate at the top of this file does not fire in th
 
 | | What | Boxes |
 | --- | --- | --- |
-| **9a** | The overnight Doze run ✅ answered 2026-08-19 — autostart is the lever, and the delivery state was fixed to say so. **§1's last box is still open**: the Phase-4 carry's watch half, owed at the 09:00 sweep on 2026-08-22 | §1 |
+| **9a** | The overnight Doze run ✅ answered 2026-08-19 — autostart is the lever, and the delivery state was fixed to say so. **§1 is closed**: the Phase-4 carry's watch half was read 2026-08-21 as a bench A/B, 9g having destroyed the 08-22 arming | §1 |
 | **9b** | The six gate items parked behind it ✅ **closed 2026-08-19** — it found that the boot rebuild waits for the first unlock, and that a lowered channel was being reported as armed; the second is fixed in the same PR | §2 |
 | **9c** | The 75-scene edge-to-edge re-run ✅ **closed 2026-08-21** — 300 cells, 0 errors; it found two driver bugs and that its own warnings had gone stale | §2, last bullet |
 | **9d** | Close Phase 5 | below |
@@ -849,11 +907,13 @@ arrives from a track.
 
 ### 9d — Close Phase 5
 
-- [ ] Write 9a's and 9b's results into [`PLAN.md`](PLAN.md)'s 5a / 5i / 5j entries and **tick Phase 5**.
-      It has been the one unticked box since 2026-08-05 while four later phases closed around it.
-      ⚠️ **Waits on §1's watch half (08-22).** Phase 4 closed on the build with its delivery evidence
-      carried into Phase 5, and that carry is the last thing §1 is still holding — so the tick lands
-      after Saturday's reading unless the carry is deliberately tracked outside Phase 5.
+- [x] Write 9a's and 9b's results into [`PLAN.md`](PLAN.md)'s 5a / 5i / 5j entries and **tick Phase 5**.
+      ✅ **Done 2026-08-21.** It had been the one unticked box since 2026-08-05 while four later phases
+      closed around it. The carry it was waiting on — §1's watch half — was read the same evening, so the
+      tick lands over evidence rather than over an intention, and no carry had to be tracked outside Phase 5
+      to get it. Two stale markers were corrected on the way past: **5b** still read "not closed" over a
+      bullet 5j had already written, and **5i** still read "in progress, 2026-08-05". A phase cannot honestly
+      be ticked over checkpoints whose own text contradicts their marker.
 
 ### 9e — The front door ✅ closed 2026-08-19
 
