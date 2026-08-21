@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.7.0](https://github.com/srednimax/binky-app/compare/v1.6.0...v1.7.0) (2026-08-21)
+
+
+### Features
+
+* **home:** the whole fluffle, one tap from the line that hides it ([c086112](https://github.com/srednimax/binky-app/commit/c0861122acd4ba07e69697266bf066d310e295c0))
+
+
+### Bug Fixes
+
+* **driver:** --locale en is the base, not values-en ([199fb4c](https://github.com/srednimax/binky-app/commit/199fb4c34a519b5808017ec3eb71bb1c2cba3c53))
+* **driver:** swipe at the thing that scrolls, not at the middle of the screen ([628ee82](https://github.com/srednimax/binky-app/commit/628ee82af9acee223c194552899fb6aa61047cc6))
+* **reminders:** a reminder that makes no sound is not armed ([6575e4a](https://github.com/srednimax/binky-app/commit/6575e4a047682cba3e6de066abb06c46288ea5b0))
+* **reminders:** armed is a promise a Xiaomi does not keep ([ed42638](https://github.com/srednimax/binky-app/commit/ed42638e9411b16fefb7adb86b2887fd650ae8a0))
+* **uk:** a date ending in "р." does not take a second full stop ([dc64f85](https://github.com/srednimax/binky-app/commit/dc64f855c98604c29de1eb556d05b7a24bb37fc9))
+
 ## [1.6.0](https://github.com/srednimax/binky-app/compare/v1.5.0...v1.6.0) (2026-08-18)
 
 
