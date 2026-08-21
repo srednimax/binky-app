@@ -77,6 +77,11 @@ the *why*, don't restate the line. Prefer explicit and readable over clever.
 - **Never infer a health problem from missing data** (ADR-0001). Silence means nobody looked.
 - Health features are for *observation*, never medical advice.
 - One `ViewModel` per screen, UI state as a single immutable data class.
+- **Developer-only surface lives in `app/src/debug/`, never in `main/` behind `BuildConfig.DEBUG`.**
+  With `isMinifyEnabled = false` a statically-false branch is still compiled into the release AAB — a
+  hide, not a strip — and its strings are still inside the translation gate. The seam is
+  `ui/settings/DebugSettings.kt`, one file per variant, with a no-op in `src/release/` (9k). Debug-only
+  strings go in `src/debug/res/`, marked `translatable="false"` so Android lint stays quiet.
 
 ## Commands
 
@@ -107,6 +112,10 @@ app/src/main/java/app/binky/tracker/
                keeps "drop the dependency" a one-line change in AppContainer
   ui/          Compose screens + ViewModels, one package per tab
   work/        reminder scheduling and notifications
+
+app/src/debug/   the developer-only build: the sample-data seeder, the two-minute reminder, Settings'
+                 debug section and its strings, and SeedVariantReceiver for the capture driver
+app/src/release/ only the no-op half of that seam, so main/ can call it unconditionally
 ```
 
 ## Versions

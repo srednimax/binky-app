@@ -1462,6 +1462,12 @@ SCENES = [
 
 RES_DIR = Path(__file__).resolve().parent.parent / "app" / "src" / "main" / "res"
 
+# The debug build's own resource overlay. It is not decoration: `9k` moved the debug section's
+# thirteen strings out of `app/src/main/res` so they would stop being translated into nine languages,
+# and two of their labels are needles this driver taps by name. The driver only ever drives the debug
+# build, so its English table is main *plus* this — see [load_strings].
+DEBUG_RES_DIR = Path(__file__).resolve().parent.parent / "app" / "src" / "debug" / "res"
+
 # **The needles that belong to the driver rather than to a scene**, and the reason they are named
 # here: [scene_needles] can only see what is in [SCENES], so a literal buried in a function is one a
 # locale run does not translate — and the first Polish run failed on exactly that, in
@@ -1512,15 +1518,24 @@ def load_strings(locale: str | None) -> dict[str, str]:
     # no `values-en/` to find. It is still a shipped locale in `locales_config.xml`, so `--locale en`
     # is a thing to ask for — it pins the app to English rather than inheriting a Polish phone — and
     # without this line it died on a missing file before the first tap.
+    def read(path: Path) -> dict[str, str]:
+        found: dict[str, str] = {}
+        for element in ElementTree.parse(path).getroot().findall("string"):
+            name = element.get("name")
+            if name is None:
+                continue
+            found[name] = "".join(element.itertext()).replace("\\'", "'").replace('\\"', '"')
+        return found
+
     base = locale is None or locale == "en"
-    values = RES_DIR / ("values" if base else f"values-{resource_qualifier(locale)}")
-    strings: dict[str, str] = {}
-    for element in ElementTree.parse(values / "strings.xml").getroot().findall("string"):
-        name = element.get("name")
-        if name is None:
-            continue
-        strings[name] = "".join(element.itertext()).replace("\\'", "'").replace('\\"', '"')
-    return strings
+    if not base:
+        return read(RES_DIR / f"values-{resource_qualifier(locale)}" / "strings.xml")
+    # The debug overlay layered on top, because the debug build is the only one this driver runs and
+    # `values/` alone no longer describes it: `9k` moved the debug section's strings to
+    # `src/debug/res` and out of the translation gate. Without this the two labels `seed()` and the
+    # `reminders-sheet` scenes tap would be unknown resources, and [resolve_needles] would fall to
+    # its substring case and pick whichever *other* string happened to contain the words.
+    return read(RES_DIR / "values" / "strings.xml") | read(DEBUG_RES_DIR / "values" / "strings.xml")
 
 
 def scene_needles() -> set[str]:

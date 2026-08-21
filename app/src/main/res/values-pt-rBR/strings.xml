@@ -466,19 +466,6 @@
     <string name="reminders_caveat_battery_title">Este celular pode segurar os lembretes</string>
 
     <!-- Debug builds only, and never shown in a release build. -->
-    <string name="settings_sample_data">Dados de exemplo</string>
-    <string name="settings_debug_header">Somente em builds de depuração</string>
-    <string name="settings_sample_data_help">Adiciona dois coelhos que moram juntos, um ano de pesagens irregulares e retroativas e algumas observações, para o gráfico, o sinal de tendência e a linha do tempo poderem ser revisados com um histórico real.</string>
-    <string name="settings_sample_data_action">Adicionar os dados de exemplo</string>
-    <string name="settings_sample_data_seeded">Dados de exemplo adicionados.</string>
-    <string name="settings_sample_data_present">Os coelhos de exemplo já estão aqui.</string>
-    <string name="settings_debug_reminder">Entrega de lembretes</string>
-    <string name="settings_debug_reminder_help">Envia uma notificação daqui a dois minutos, por um caminho próprio em vez da varredura diária — assim o canal, a permissão e a entrega podem ser comprovados sem nenhum lembrete existir.</string>
-    <string name="settings_debug_reminder_settings_action">Configurações de lembrete</string>
-    <string name="settings_debug_reminder_action">Lembrar daqui a dois minutos</string>
-    <string name="settings_debug_reminder_scheduled">Um lembrete de teste vai chegar em dois minutos. Bloqueie o celular e espere.</string>
-    <string name="debug_reminder_notification_title">Lembrete de teste</string>
-    <string name="debug_reminder_notification_text">É assim que um lembrete de cuidado vai aparecer. Nada está previsto — o lembrete foi agendado à mão nas Configurações.</string>
 
     <!-- A dose notification: the medicine is the title, this is the line under it (ADR-0002,
          ADR-0026, ADR-0001). -->

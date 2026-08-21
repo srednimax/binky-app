@@ -1066,11 +1066,13 @@ entity changes, so the standing gate at the top of this file does not fire in th
 | **9h** | The Console sitting ✅ production access granted 2026-08-19 — the release is repo-side only now | §4 |
 | **9i** | The field upgrade proof 1.0.0 → 1.7 ✅ **closed 2026-08-22** — the in-place assembly, from the closed track, over a real 1.0.0 data directory; it found that a clean diff cannot on its own tell an in-place update from a hand restore | §4 |
 | **9j** | The tester's reply ✅ **replied 2026-08-21** | §9 |
-| **9k** | The debug affordances that ship anyway — swept 2026-08-21, one finding, and it waits for 1.7 | below |
+| **9k** | The debug affordances that ship anyway — swept 2026-08-21, one finding, and ✅ **built 2026-08-21** on `chore/9k-debug-affordances`; the branch waited for 9i, the code did not, and 9i closed 2026-08-22 | below |
 
-**Four edges must not be reordered**, and everything else is free: ✅ **9i before 9k** — spent, 9i closed
-2026-08-22, so 9k is free to change what is in the artifact now that the proof about *this* artifact is
-taken; **9a before 9b and 9c**, because both
+**Four edges must not be reordered**, and everything else is free: ✅ **9i before 9k's *merge*** — spent.
+The distinction is the whole of it: the code built on `chore/9k-debug-affordances` changed no artifact
+while it sat on a branch, and what had to wait was that branch *landing on `main`*, because 9k changes
+what is in the artifact and 9i is the proof about *this* artifact. **9i closed 2026-08-22**, so the merge
+is free; **9a before 9b and 9c**, because both
 disturb the armed course and the run costs a night; **9f before 9g**, because 9g photographs a screen 9f
 changes; **9g and the listing copy before 9h before 9i**, because the upgrade proof needs an update that
 arrives from a track.
@@ -1216,30 +1218,54 @@ truncation, no overflow, no clipped control.
 
 ---
 
-### 9k — The debug affordances that ship anyway
+### 9k — The debug affordances that ship anyway ✅ built 2026-08-21, **held for merge until after 9i**
 
 **Swept 2026-08-21 across the whole repo. One finding, and it is hygiene rather than a hole.**
 
-- [ ] **Move `SampleData.kt`, `DebugReminder.kt` and `SettingsScreen`'s `DebugSection` into
-      `app/src/debug/`**, which already exists, leaving a no-op seam in a `release` source set so
-      `SettingsScreen` still compiles. Today all three sit in `main/` behind `if (BuildConfig.DEBUG)` at
-      the call site (`SettingsScreen.kt:179`) — a **runtime** guard, and `isMinifyEnabled = false` for
-      release means R8 never runs to strip the dead branch. So the seeder and the two-minute reminder are
-      **compiled into the release AAB**, unreachable.
-- [ ] **Drop the 13 debug strings from the gate.** `settings_sample_data*`, `settings_debug_*` and
-      `debug_reminder_notification_*` (`values/strings.xml:294–306`) carry no `translatable="false"`, so
-      they are inside the 693 and **fully translated into all nine** — developer-facing copy paid for nine
-      times, shipping in the release resource table and inside `aab-locale.py`'s scope, a check that exists
-      to catch a *missing* translation.
-- [ ] **Revisit `isMinifyEnabled`.** `build.gradle.kts:146` says "Revisit at 1.1, against a known-good
-      1.0" and it is now six releases overdue. A known-good 1.7 is the baseline it was waiting for, and R8
-      would strip the branches above on its own.
+**All three boxes are built and proven on `chore/9k-debug-affordances`, and the branch is deliberately
+not merged.** The ordering rule below is unchanged and it was never about when the code could be
+*written* — it is about what is in the artifact 9i proves. An unmerged branch changes no artifact, so
+the work waits where waiting costs nothing rather than in a session that has to rediscover it.
 
-⚠️ **Not before 1.7.** Adding a source-set divergence to the artifact you are about to prove is the
-mistake the same file already reasoned its way out of once — R8 is off precisely because "a sixth
-divergence whose failures are release-only, runtime and reflection-shaped is the opposite of what this
-checkpoint proves". **After 9i**, for the same reason: 9i is a claim about the artifact that goes up, and
-this changes it.
+- [x] **Move `SampleData.kt`, `DebugReminder.kt` and `SettingsScreen`'s `DebugSection` into
+      `app/src/debug/`**, which already exists, leaving a no-op seam in a `release` source set so
+      `SettingsScreen` still compiles. They sat in `main/` behind `if (BuildConfig.DEBUG)` at the call
+      site (`SettingsScreen.kt:179`) — a **runtime** guard, and `isMinifyEnabled = false` for release
+      means R8 never runs to strip the dead branch, so the seeder and the two-minute reminder were
+      **compiled into the release AAB**, unreachable. The seam is now
+      `ui/settings/DebugSettings.kt`, one file per variant: `src/debug/` composes the section,
+      `src/release/` is `@Composable fun DebugSettings() = Unit`, and `SettingsScreen` calls it with
+      no flag at all. `SettingsViewModel` gave up `SampleDataOutcome`, `seedSampleData` and
+      `clearSampleDataOutcome` to a debug-only `DebugSettingsViewModel` — a second ViewModel on one
+      screen, against the house rule and argued in the file, because folding the state back would put
+      exactly what was removed straight back into `main/`.
+- [x] **Drop the 13 debug strings from the gate.** `settings_sample_data*`, `settings_debug_*` and
+      `debug_reminder_notification_*` (`values/strings.xml:294–306`) carried no `translatable="false"`, so
+      they were inside the 693 and **fully translated into all nine** — developer-facing copy paid for nine
+      times, shipping in the release resource table and inside `aab-locale.py`'s scope, a check that exists
+      to catch a *missing* translation. They moved to `src/debug/res/values/strings.xml`, which is outside
+      both scripts' `app/src/main/res` scope, and out of all eight `values-*/`. **693 → 680 × 8, gate
+      green.** They carry `translatable="false"` there anyway, for Android lint rather than the gate:
+      lint reads the *merged* debug resources, saw thirteen unqualified strings with eight translated
+      siblings and failed the build with thirteen `MissingTranslation` errors.
+- [x] **Revisit `isMinifyEnabled`** — and the revisit's answer is that it stays off, recorded in
+      `build.gradle.kts` in place of the stale "Revisit at 1.1" note. The *reason* R8 was wanted here is
+      gone: the source-set move excludes what R8 would have stripped. The *condition* is not met and its
+      subject moved — "against a known-good 1.0" becomes a known-good **1.7**, which is not on a track
+      yet — and it cannot be met on the bench either, because a release build cannot be installed over
+      the Play one (signature mismatch), so a green `assembleRelease` is not evidence about a phone.
+
+⚠️ **The branch does not merge before 1.7 is up and 9i is watched.** Adding a source-set divergence to
+the artifact you are about to prove is the mistake the same file already reasoned its way out of once —
+R8 is off precisely because "a sixth divergence whose failures are release-only, runtime and
+reflection-shaped is the opposite of what this checkpoint proves". **After 9i**, for the same reason:
+9i is a claim about the artifact that goes up, and this changes it.
+
+**Closed by measurement, not by reading the diff**, and the how is in
+[`phase-9.md`](phase-9.md#9k--the-debug-affordances-that-ship-anyway): zero occurrences of the moved
+classes in the release dex and of the thirteen names in its `resources.arsc`, both variants built; the
+section, the seeder and the two-minute reminder all exercised on the Xiaomi; and `edge-to-edge.py` taught
+about the overlay, which is the one thing the move nearly broke.
 
 **No safety hole, and the sweep is why that can be said rather than assumed.** `BuildConfig.DEBUG` is
 false in a release build, so the section never composes and the seeder — which writes through the

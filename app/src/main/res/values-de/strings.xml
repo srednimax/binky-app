@@ -278,19 +278,6 @@
     <string name="reminders_caveat_battery_title">Dieses Handy kann Erinnerungen zurückhalten</string>
 
     <!-- Debug builds only -->
-    <string name="settings_sample_data">Beispieldaten</string>
-    <string name="settings_debug_header">Nur in Debug-Builds</string>
-    <string name="settings_sample_data_help">Fügt zwei zusammenlebende Kaninchen hinzu, ein Jahr ungleichmäßiger, rückdatierter Wägungen und eine Handvoll Beobachtungen, damit sich Diagramm, Hinweis zur Entwicklung und Zeitleiste an echter Geschichte prüfen lassen.</string>
-    <string name="settings_sample_data_action">Beispieldaten hinzufügen</string>
-    <string name="settings_sample_data_seeded">Beispieldaten hinzugefügt.</string>
-    <string name="settings_sample_data_present">Die Beispielkaninchen sind schon da.</string>
-    <string name="settings_debug_reminder">Zustellung von Erinnerungen</string>
-    <string name="settings_debug_reminder_help">Sendet in zwei Minuten eine Benachrichtigung, auf eigenem Weg statt über den täglichen Durchlauf — so lassen sich Kanal, Berechtigung und Zustellung prüfen, ohne dass es eine einzige Erinnerung gibt.</string>
-    <string name="settings_debug_reminder_settings_action">Einstellungen für Erinnerungen</string>
-    <string name="settings_debug_reminder_action">In zwei Minuten erinnern</string>
-    <string name="settings_debug_reminder_scheduled">In zwei Minuten kommt eine Test-Erinnerung. Sperre das Handy und warte.</string>
-    <string name="debug_reminder_notification_title">Test-Erinnerung</string>
-    <string name="debug_reminder_notification_text">So sieht eine Pflege-Erinnerung aus. Es steht nichts an — diese Erinnerung wurde von Hand in den Einstellungen geplant.</string>
 
     <!-- A dose notification: the medicine is the title, this is the line under it. It names the
          amount exactly as the vet wrote it and says nothing about whether the dose is late. -->

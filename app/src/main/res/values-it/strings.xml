@@ -414,19 +414,6 @@
     <string name="reminders_caveat_battery_title">Questo telefono può trattenere i promemoria</string>
 
     <!-- Debug builds only, and never shown in a release build. -->
-    <string name="settings_sample_data">Dati di esempio</string>
-    <string name="settings_debug_header">Solo nelle build di debug</string>
-    <string name="settings_sample_data_help">Aggiunge due conigli che vivono insieme, un anno di pesate irregolari e retrodatate e qualche osservazione, così il grafico, la segnalazione dell’andamento e la cronologia si possono guardare su una storia vera.</string>
-    <string name="settings_sample_data_action">Aggiungi i dati di esempio</string>
-    <string name="settings_sample_data_seeded">Dati di esempio aggiunti.</string>
-    <string name="settings_sample_data_present">I conigli di esempio ci sono già.</string>
-    <string name="settings_debug_reminder">Consegna dei promemoria</string>
-    <string name="settings_debug_reminder_help">Manda una notifica tra due minuti, su una strada tutta sua invece che attraverso il giro quotidiano, così il canale, il permesso e la consegna si possono provare senza avere nemmeno un promemoria.</string>
-    <string name="settings_debug_reminder_settings_action">Impostazioni dei promemoria</string>
-    <string name="settings_debug_reminder_action">Ricordamelo tra due minuti</string>
-    <string name="settings_debug_reminder_scheduled">Un promemoria di prova arriverà tra due minuti. Blocca il telefono e aspetta.</string>
-    <string name="debug_reminder_notification_title">Promemoria di prova</string>
-    <string name="debug_reminder_notification_text">Ecco come si presenterà un promemoria di cura. Non c’è niente da fare: questo è stato programmato a mano dalle impostazioni.</string>
 
     <!-- A dose notification: the medicine is the title, this is the line under it. It names the
          amount exactly as the vet wrote it and reasons about none of it (ADR-0002, ADR-0026). -->

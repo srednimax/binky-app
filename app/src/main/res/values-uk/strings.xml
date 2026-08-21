@@ -379,19 +379,6 @@
     <string name="reminders_caveat_battery_title">Цей телефон може притримувати нагадування</string>
 
     <!-- Debug builds only -->
-    <string name="settings_sample_data">Демонстраційні дані</string>
-    <string name="settings_debug_header">Лише для складань debug</string>
-    <string name="settings_sample_data_help">Додає двох кроликів, які живуть разом, рік нерівномірних зважувань заднім числом і кілька спостережень, щоб графік, позначку ваги та стрічку можна було переглянути на справжній історії.</string>
-    <string name="settings_sample_data_action">Додати демонстраційні дані</string>
-    <string name="settings_sample_data_seeded">Демонстраційні дані додано.</string>
-    <string name="settings_sample_data_present">Демонстраційні кролики вже тут.</string>
-    <string name="settings_debug_reminder">Доставка нагадувань</string>
-    <string name="settings_debug_reminder_help">Надсилає одне сповіщення за дві хвилини, власним шляхом, а не через щоденний обхід, — тож канал, дозвіл і доставку можна перевірити, коли жодного нагадування ще не існує.</string>
-    <string name="settings_debug_reminder_settings_action">Налаштування нагадувань</string>
-    <string name="settings_debug_reminder_action">Нагадати за дві хвилини</string>
-    <string name="settings_debug_reminder_scheduled">Тестове нагадування прийде за дві хвилини. Заблокуй телефон і зачекай.</string>
-    <string name="debug_reminder_notification_title">Тестове нагадування</string>
-    <string name="debug_reminder_notification_text">Ось як виглядатиме нагадування про догляд. Нічого не заплановано — це нагадування поставлено вручну з налаштувань.</string>
 
     <!-- A dose notification. §7.4: "для" governs the genitive, so the common noun carries it. -->
     <string name="dose_notification_amount">%1$s для кролика %2$s</string>

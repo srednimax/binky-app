@@ -471,21 +471,8 @@
     <string name="reminders_caveat_battery_title">Tenhle telefon může připomínky zdržet</string>
 
     <!-- Debug builds only, and never shown in a release build. -->
-    <string name="settings_sample_data">Ukázková data</string>
-    <string name="settings_debug_header">Jen ladicí sestavení</string>
-    <string name="settings_sample_data_help">Přidá dva spřátelené králíky, rok nepravidelných zpětně zapsaných vážení a hrst pozorování, aby šel graf, poznámka k trendu i časová osa projít na skutečné historii.</string>
-    <string name="settings_sample_data_action">Přidat ukázková data</string>
-    <string name="settings_sample_data_seeded">Ukázková data přidána.</string>
-    <string name="settings_sample_data_present">Ukázkoví králíci už tu jsou.</string>
-    <string name="settings_debug_reminder">Doručení připomínky</string>
-    <string name="settings_debug_reminder_help">Pošle jedno oznámení za dvě minuty, vlastní cestou mimo denní kontrolu — takže jde ověřit kanál, oprávnění i doručení, aniž by existovala jediná připomínka.</string>
-    <string name="settings_debug_reminder_settings_action">Nastavení připomínek</string>
-    <string name="settings_debug_reminder_action">Připomeň mi to za dvě minuty</string>
-    <string name="settings_debug_reminder_scheduled">Zkušební připomínka dorazí za dvě minuty. Zamkni telefon a počkej.</string>
-    <string name="debug_reminder_notification_title">Zkušební připomínka</string>
     <!-- Impersonal: *naplánoval jsi* would gender the owner, and "we" would claim a team where
          there is one person (the Polish read-through's finding). -->
-    <string name="debug_reminder_notification_text">Takhle bude vypadat připomínka péče. Nic není na řadě — tahle připomínka byla naplánovaná ručně z Nastavení.</string>
 
     <!-- A dose notification: the medicine is the title, this is the line under it (ADR-0002,
          ADR-0026). §7.4: the declined common noun carries the case the name cannot take. -->

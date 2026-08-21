@@ -146,7 +146,24 @@ android {
             // R8 stays off deliberately, not by template default: 1.0 already differs from any
             // tested build in several ways, and a sixth divergence whose failures are release-only,
             // runtime and reflection-shaped is the opposite of what this checkpoint proves.
-            // Revisit at 1.1, against a known-good 1.0. See docs/PLAN.md 3a.
+            // See docs/PLAN.md 3a.
+            //
+            // **Revisited at 9k**, which is the revisit the "at 1.1" note asked for rather than
+            // another deferral of it. Two things changed and they point opposite ways.
+            //
+            // The *reason* R8 was wanted here is gone. It was the cheap way to strip the debug
+            // affordances out of the release build, because with minification off nothing removes a
+            // branch whose condition is a compile-time `false`. 9k moved them to `src/debug/`
+            // instead, so the release variant never compiles them and there is nothing left for R8
+            // to strip that the source sets do not already exclude.
+            //
+            // The *condition* has not changed, only its subject. "Against a known-good 1.0" was
+            // never met — 1.0 is the install the field upgrade proof is still crossing from — so it
+            // now reads against a known-good **1.7**, and 1.7 is not on a track yet. Nor can this
+            // be proven on the bench in the meantime: a release build cannot be installed over the
+            // Play one, which refuses a locally-signed APK on signature mismatch, so `assembleRelease`
+            // succeeding is not evidence about a phone. Turn it on when there is a shipped build to
+            // turn it on *against*, and watch that build run.
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             // Google holds the permanent *app signing* key; this is only the *upload* key proving
@@ -164,8 +181,11 @@ android {
     buildFeatures {
         compose = true
         aidl = false
-        // Needed for BuildConfig.DEBUG, which gates the sample-data action in Settings — a fixture
-        // that writes through the repositories and must never reach a release build.
+        // Needed for BuildConfig.DEBUG. It gated the sample-data action in Settings until 9k moved
+        // that to a source set — a runtime flag only hid the fixture, where `src/debug/` keeps it
+        // out of the artifact. What still reads the flag is behaviour rather than exclusion:
+        // WorkManager's logging level, ADR-0023's `destructiveMigrationAllowed`, and the `-debug`
+        // marker on the version a support mail reports.
         buildConfig = true
         shaders = false
     }
