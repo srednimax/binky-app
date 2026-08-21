@@ -809,10 +809,12 @@ because gain is chronic where loss is acute; the copy states a fact about the nu
 verdict about the rabbit (ADR-0026, ADR-0001 — *health features observe, they never advise*). `TrendDrop`
 became `TrendChange` and carries a direction. Reasoning in [`phase-7.5.md`](phase-7.5.md) §1.
 
-- [ ] **9j — the tester's reply is still owed**, and it is not the feature. Their *"5 kg plus"* was a **number,
-      not a change**: a Flemish Giant is legitimately 6–10 kg, so any absolute weight is wrong for some
-      breed and Binky will never call a weight too high — only say that it moved, by how much, since a date.
-      Saying so is better than letting them find out.
+- [x] **9j — replied 2026-08-21.** Owed since 08-09, and it was never the feature. Their *"5 kg plus"*
+      was a **number, not a change**: a Flemish Giant is legitimately 6–10 kg, so any absolute weight is
+      wrong for some breed, and Binky will never call a weight too high — only say that it moved, by how
+      much, since a date. ADR-0028 shipped the gain signal they were actually asking for; the reply is
+      the half that explains why the app will not do the thing they literally asked for, which is better
+      said than left to be discovered.
 
 ---
 
@@ -832,7 +834,7 @@ entity changes, so the standing gate at the top of this file does not fire in th
 | **9g** | Nine locales of screenshots ✅ **closed 2026-08-21** — 72 padded PNGs, and it found a doubled full stop in Ukrainian that no test could see | below |
 | **9h** | The Console sitting ✅ production access granted 2026-08-19 — the release is repo-side only now | §4 |
 | **9i** | The field upgrade proof 1.0.0 → 1.7 | §4 |
-| **9j** | The tester's reply | §9 |
+| **9j** | The tester's reply ✅ **replied 2026-08-21** | §9 |
 
 **Three edges must not be reordered**, and everything else is free: **9a before 9b and 9c**, because both
 disturb the armed course and the run costs a night; **9f before 9g**, because 9g photographs a screen 9f

@@ -38,8 +38,8 @@ Most of this phase is independent work that can be done in any order. Three edge
    *arrives from a track*, so it is downstream of the upload by construction — the installed Play build
    is Play-signed and refuses a local APK on signature mismatch.
 
-Everything else — 9d, 9e, 9j — can be done whenever. **9e is closed** (2026-08-19), its
-post-merge probe included.
+Everything else — 9d, 9e, 9j — can be done whenever. **9e is closed** (2026-08-19), its post-merge probe
+included, and **9j is replied** (08-21).
 
 ## 9a — The overnight Doze run ✅ answered 2026-08-19, confirmed on the matched gap 08-20
 
@@ -516,9 +516,9 @@ Both live upgrade paths were watched on the phone at 7.5 — 1.4.0 → 1.5 and t
 1.1.0 → 1.5, zero differing rows on common columns both times — but neither of those was a *Play*
 delivery to an install carrying an owner's real records.
 
-## 9j — The tester's reply
+## 9j — The tester's reply ✅ replied 2026-08-21
 
-Owed since 2026-08-09 and it is not the feature. Their *"5 kg plus"* was a **number, not a change**: a
+Owed since 2026-08-09 and it was never the feature. Their *"5 kg plus"* was a **number, not a change**: a
 Flemish Giant is legitimately 6–10 kg, so any absolute weight is wrong for some breed, and Binky will
 never call a weight too high — only say that it moved, by how much, since a date. ADR-0028 shipped the
 gain signal they were actually asking for; the reply is the part that explains why the app will not do
