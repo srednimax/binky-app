@@ -312,7 +312,13 @@ def screen_signature(nodes: list[Node]) -> str:
 _TRANSLATED: dict[str, str] = {}
 
 
-def find(nodes: list[Node], needle: str, *, text_only: bool = False) -> Node | None:
+def find(
+    nodes: list[Node],
+    needle: str,
+    *,
+    text_only: bool = False,
+    exact: bool = False,
+) -> Node | None:
     """The smallest node whose text or description contains `needle`, case-insensitively.
 
     Smallest, because Compose reports a merged semantics node for a whole row as well as the leaf
@@ -325,17 +331,32 @@ def find(nodes: list[Node], needle: str, *, text_only: bool = False) -> Node | N
     needle would tap the button that is already open and dismiss the sheet on the scrim. The row has
     text and no description; the FAB has a description and no text. Structure, not copy, again.
 
+    `exact` goes further and demands the node's **text be the needle entire** — no descriptions, no
+    substrings. It exists for the five tab labels, where "contains" is not a strong enough claim: a
+    tab label can sit *inside* another string on the same screen, and then the smallest-node rule
+    picks the wrong one. Czech `Pozorování` is inside the shell "+"'s description
+    `Zapsat pozorování` and Ukrainian `Спостереження` inside `Записати спостереження`; the FAB is
+    the smaller node, so at 9g both locales tapped the "+" and photographed the record sheet over
+    Home instead of the Observations tab. The other seven locales are clean only by accident of
+    grammar — English *Observations* is not inside *Record an observation*. See [TAB_NEEDLES].
+
     **Every needle is translated here**, which is the one place it can be: `tap`, `return_to_home`
     and `showing_home` all arrive through this function, so a locale run needs no second table and
     no scene rewritten. See [resolve_needles].
     """
     needle = _TRANSLATED.get(needle, needle).casefold()
+
+    def matches_label(node: Node) -> bool:
+        if exact:
+            return node.text.casefold() == needle
+        return needle in node.text.casefold() or (
+            not text_only and needle in node.desc.casefold()
+        )
+
     matches = [
         node
         for node in nodes
-        if node.package == PACKAGE
-        and (needle in node.text.casefold() or (not text_only and needle in node.desc.casefold()))
-        and node.bounds.area > 0
+        if node.package == PACKAGE and matches_label(node) and node.bounds.area > 0
     ]
     return min(matches, key=lambda node: node.bounds.area) if matches else None
 
@@ -396,6 +417,20 @@ def relaunch() -> None:
 TAB_BAR = "Choose which bunny to show"
 HOME_TAB = "Home"
 
+# The five top-level destinations, named so [tap] can tell a tab from anything else it is asked to
+# press. Two things follow from being on this list, and both are about a tab label being a *short*
+# string that other strings can quote: the needle is matched exactly rather than by substring
+# ([find]'s `exact`), and the tap is not believed until the tab it names reports itself selected
+# ([showing_tab]). Kept as the English literals the scene table is written in — translation happens
+# inside [find], one layer down.
+#
+# Exactness narrows the trap without closing it: Italian *Inizio* is both the Home tab and
+# `med_editor_start`, and *Altro* is both the More tab and `care_type_custom`. Neither is reachable
+# in practice — both twins live on detail routes, where the navigation bar is not drawn — and if one
+# ever is, [showing_tab] turns it into a failed scene rather than a wrong screenshot. That is the
+# division of labour: exactness is the fix, the assertion is what makes the next one survivable.
+TAB_NEEDLES = (HOME_TAB, "Weight", "Observations", "Care & Meds", "More")
+
 # How many times [return_to_home] may press back before it gives up. Six covers the deepest route in
 # the app (More → Settings → Backup, plus a dialog and an IME) with room to spare; it is a bound
 # rather than a target, and hitting it is a failure and not a retry budget.
@@ -414,7 +449,22 @@ def showing_home(nodes: list[Node]) -> bool:
     the dump with `selected="true"` is the current tab, and the *Home* label is inside it exactly
     when Home is that tab.
     """
-    label = find(nodes, HOME_TAB)
+    return showing_tab(nodes, HOME_TAB)
+
+
+def showing_tab(nodes: list[Node], needle: str) -> bool:
+    """Is the tab called `needle` the selected one?
+
+    [showing_home]'s geometry, asked about any of the five rather than only about Home — which is
+    what turns a tab tap from "something on screen moved" into "the app is on that tab". 9g needed
+    it and did not have it: two locales tapped the shell "+" instead of the Observations tab, the
+    sheet that opened counted as movement, and the run reported four scenes reached in all nine
+    locales while two of them had photographed Home.
+
+    Exact, because the whole point is to not be fooled by a label quoted inside another string —
+    the same reason the tap itself is exact. See [TAB_NEEDLES].
+    """
+    label = find(nodes, needle, exact=True)
     if label is None:
         return False
     selected = next((node for node in nodes if node.package == PACKAGE and node.selected), None)
@@ -486,12 +536,15 @@ def tap(needle: str, *, optional: bool = False, text_only: bool = False) -> None
     # changing after one swipe and gives up sooner than the old budget did. [MIN_TAP_TRIES] is the
     # floor underneath it, because a screen still composing dumps as an empty `ComposeView` and two
     # identical empty dumps must not be read as "nowhere left to go".
+    # A tab is matched exactly and then checked, rather than matched loosely and hoped for. Both
+    # halves are [TAB_NEEDLES]'s reason for existing.
+    is_tab = needle in TAB_NEEDLES
     attempts = 1 if optional else TAP_SCROLL_CAP
     node = None
     previous = ""
     for attempt in range(attempts):
         nodes = dump_ui()
-        node = find(nodes, needle, text_only=text_only)
+        node = find(nodes, needle, text_only=text_only, exact=is_tab)
         if node is not None:
             break
         if optional:
@@ -523,8 +576,24 @@ def tap(needle: str, *, optional: bool = False, text_only: bool = False) -> None
     for _ in range(3):
         shell(f"input touchscreen tap {x} {y}")
         settle(1.2)
-        if screen_signature(dump_ui()) != before:
+        after = dump_ui()
+        moved = screen_signature(after) != before
+        if not is_tab:
+            if moved:
+                return
+            continue
+        # **"The screen moved" is not "the app is on that tab".** It was the whole test until 9g,
+        # and a sheet opening over Home satisfies it perfectly. Ask the navigation bar instead.
+        if showing_tab(after, needle):
             return
+        if moved:
+            visible = ", ".join(sorted({n.label for n in after if n.package == PACKAGE and n.label})[:25])
+            raise StepFailed(
+                f"tapped {needle!r}, the screen moved, and that tab is not the selected one — "
+                f"the needle named something else; on screen: {visible}",
+            )
+    if is_tab:
+        raise StepFailed(f"tapped {needle!r} three times and never landed on that tab")
     # Fell through: three taps and nothing moved. That is a finding about the scene, not about the
     # phone — a control that does nothing — so it is left to the caller's next step to fail on.
 
