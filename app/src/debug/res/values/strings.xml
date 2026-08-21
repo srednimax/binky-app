@@ -11,4 +11,35 @@
 -->
 <resources>
     <string name="app_name">Binky Debug</string>
+
+    <!--
+        The debug affordances' own copy (Phase 9, `9k`). It lived in `src/main/res` until then, with
+        no `translatable="false"`, so all thirteen strings were inside the merge gate's count and had
+        been translated into nine languages — developer-facing text, paid for nine times, shipping in
+        the release resource table. `scripts/translation-gate.py` and `scripts/aab-locale.py` both
+        scope to `app/src/main/res`, so moving them here is what takes them off that bill; no
+        `translatable="false"` is needed, because the gate never looks in this directory.
+
+        `translatable="false"` on every one of them, for Android lint rather than for the gate: lint
+        sees an unqualified string with eight `values-` siblings in the merged debug resources and
+        reports `MissingTranslation` on all thirteen, which is a build failure. The attribute is also
+        simply true — English is what the debug build shows in every locale, because resource
+        resolution falls back to this unqualified `values/` when `values-pl/` has no such name.
+        `scripts/edge-to-edge.py` taps two of these labels by name (*Add the sample data* in `seed()`,
+        *Reminder settings* in the `reminders-sheet` scenes) and merges this file over its English
+        needle table, so a locale run resolves them to these literals and finds them on screen.
+    -->
+    <string name="settings_debug_header" translatable="false">Debug builds only</string>
+    <string name="settings_sample_data" translatable="false">Sample data</string>
+    <string name="settings_sample_data_help" translatable="false">Adds two bonded bunnies, a year of uneven, back-dated weighings and a handful of observations, so the chart, the trend flag and the timeline can be reviewed against real history.</string>
+    <string name="settings_sample_data_action" translatable="false">Add the sample data</string>
+    <string name="settings_sample_data_seeded" translatable="false">Sample data added.</string>
+    <string name="settings_sample_data_present" translatable="false">The sample bunnies are already here.</string>
+    <string name="settings_debug_reminder" translatable="false">Reminder delivery</string>
+    <string name="settings_debug_reminder_help" translatable="false">Posts one notification two minutes from now, on its own path rather than through the daily sweep — so the channel, the permission and the delivery can be proven with no reminders in existence.</string>
+    <string name="settings_debug_reminder_settings_action" translatable="false">Reminder settings</string>
+    <string name="settings_debug_reminder_action" translatable="false">Remind me in two minutes</string>
+    <string name="settings_debug_reminder_scheduled" translatable="false">A test reminder will arrive in two minutes. Lock the phone and wait.</string>
+    <string name="debug_reminder_notification_title" translatable="false">Test reminder</string>
+    <string name="debug_reminder_notification_text" translatable="false">This is what a care reminder will look like. Nothing is due — the reminder was scheduled by hand from Settings.</string>
 </resources>

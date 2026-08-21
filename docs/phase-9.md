@@ -634,18 +634,69 @@ copy nobody will read. **That is the whole of the finding**, and it is hygiene, 
   WorkManager's logging level, `destructiveMigrationAllowed` — which *is* ADR-0023 — and the `-debug`
   marker in the support email's version label, which exists so a bug report says which build sent it.
 
-### Why it waits
+### Why it waits — and what "it" turned out to be
 
 ⚠️ **After 1.7, and after 9i.** Moving three files between source sets changes what is in the artifact,
 and 9i is a proof *about* that artifact. `build.gradle.kts:146` already made this argument once, for R8:
 "a sixth divergence whose failures are release-only, runtime and reflection-shaped is the opposite of what
 this checkpoint proves." The same sentence applies to a source-set move on the eve of a release.
 
-The work, when it comes, is three things at once: move the files to `src/debug/` with a no-op seam in a
-`release` source set so `SettingsScreen` still compiles; delete the thirteen strings and their nine
-translations; and **revisit `isMinifyEnabled`**, which that comment marked for "1.1, against a known-good
-1.0" and is now six releases overdue. A known-good 1.7 is exactly the baseline it was waiting for — and R8
-would strip the branches on its own, which is the cheaper half of this item arriving for free.
+✅ **The wait is over: 9i closed 2026-08-22.** The proof was taken on 1.7.0 / versionCode 379, in place
+from the closed track, so the artifact this branch changes is no longer the one anything is pending on.
+
+**The rule survives; what it constrains turned out to be narrower than the sentence above says.** It is
+about the artifact, and the artifact is made by a merge. Writing the code changes nothing until it lands,
+so on **2026-08-21** all three parts were built on `chore/9k-debug-affordances` and the branch was left
+unmerged. The waiting moved to the only place it was ever load-bearing — the merge — and off the part
+where waiting only meant a later session paying to rediscover the finding.
+
+### What was built
+
+**The seam is a source set, not a flag**, which is the difference between a strip and a hide.
+`ui/settings/DebugSettings.kt` exists twice: `src/debug/` composes the section, `src/release/` is
+`@Composable fun DebugSettings() = Unit`, and `SettingsScreen` calls it with no `BuildConfig.DEBUG` in
+sight. `SampleData.kt` and `DebugReminder.kt` moved to `src/debug/` unchanged.
+
+**`SettingsViewModel` had to give up state**, because a screen ViewModel in `main/` holding
+`SampleDataOutcome` and calling `seedSampleData` is the leak in a different shape. It went to a debug-only
+`DebugSettingsViewModel` — a **second ViewModel on one screen**, against the house rule and argued in the
+file. It stays a ViewModel rather than a `rememberCoroutineScope` because [`SampleData.kt`] is not
+idempotent by merging: it declines to run twice by checking whether Bijou is already there, so a seed
+cancelled by a rotation leaves Bijou behind and every later run reports *already present* over a fixture
+missing most of its rows — which the capture harness would then photograph.
+
+**Thirteen strings to `src/debug/res/values/strings.xml`**, outside both scripts' `app/src/main/res`
+scope, and deleted from all eight `values-*/`. **693 → 680 × 8**, gate green. They carry
+`translatable="false"` there anyway — not for the gate, which never looks in that directory, but for
+Android lint, which reads the *merged* debug resources and failed the build with thirteen
+`MissingTranslation` errors until they were marked.
+
+**The finding is closed by measurement.** Both variants built, both APKs unzipped: the release dex has
+**zero** occurrences of `SampleDataKt`, `DebugReminderWorker`, `seedSampleData` and
+`scheduleDebugReminder`, and its `resources.arsc` zero of the thirteen names, where the debug APK carries
+all of them. The only `DebugSettings` in the release dex is the empty stub.
+
+**`isMinifyEnabled` was revisited and stays off**, which is an answer rather than a seventh deferral. The
+*reason* R8 was wanted here is gone — the move already excludes what R8 would have stripped, so "R8 would
+strip the branches on its own" stopped being the cheaper half and became a redundant one. The *condition*
+was never met and its subject moved: "against a known-good 1.0" becomes a known-good **1.7**, and 1.7 is
+not on a track. Nor can it be met on the bench — a release build cannot be installed over the Play one,
+which refuses a locally-signed APK on signature mismatch, so `assembleRelease` succeeding is not evidence
+about a phone. The comment now says that instead of pointing at a release that shipped six versions ago.
+
+### The one thing the move nearly broke
+
+`scripts/edge-to-edge.py` taps two of the thirteen labels **by name** — *Add the sample data* in `seed()`,
+*Reminder settings* in the `reminders-sheet` scenes — and its `load_strings` read `app/src/main/res` only.
+After the move those were unknown resources, and `resolve_needles` would not have failed loudly: it would
+have fallen to its **substring** case and resolved each needle to whichever *other* string happened to
+contain the words, which is a scene that shoots the wrong screen rather than a run that stops.
+
+It now layers `src/debug/res/values` over the English base. That is honest independently of this change —
+the driver only ever drives the debug build, so `values/` alone never described what is on the screen it
+is reading. Simulated offline against `pl`, `uk` and `pt-BR`: both needles resolve to the literal English,
+which is exactly what the debug build renders in every locale (resource resolution falls back to the
+unqualified `values/`), and no needle became ambiguous.
 
 ## Tests
 
@@ -682,7 +733,10 @@ Phase 9 closes when all of these hold:
   ✅ **2026-08-20** — and it is a matrix scene, so 9g photographs it in all four configurations.
 - ~~Nine screenshot sets prepared.~~ ✅ **2026-08-21** — 72 padded PNGs, one defect found and closed.
 - **1.7 live on a track**, with nine listings' copy, nine screenshot sets and nine release notes.
-- **The debug affordances out of `main/`** and the thirteen strings out of the gate — after the upgrade proof, never before it.
+- ~~**The debug affordances out of `main/`** and the thirteen strings out of the gate — after the upgrade
+  proof, never before it.~~ ✅ **Built 2026-08-21** on `chore/9k-debug-affordances`, and the branch is held
+  rather than merged: the rule is about the artifact, and an unmerged branch is not in one. **The merge is
+  still gated on 9i.**
 - **1.0.0 → 1.7 watched on the phone**, arriving from Play, with a table-by-table diff on common columns
   that is empty.
 

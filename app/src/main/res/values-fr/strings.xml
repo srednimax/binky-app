@@ -380,19 +380,6 @@
     <string name="reminders_caveat_battery_title">Ce téléphone peut retenir les rappels</string>
 
     <!-- Debug builds only, and never shown in a release build. -->
-    <string name="settings_sample_data">Données d’exemple</string>
-    <string name="settings_debug_header">Builds de débogage uniquement</string>
-    <string name="settings_sample_data_help">Ajoute deux lapins liés, une année de pesées irrégulières et antidatées et quelques observations, pour pouvoir juger la courbe, l’indicateur de tendance et le journal sur un vrai historique.</string>
-    <string name="settings_sample_data_action">Ajouter les données d’exemple</string>
-    <string name="settings_sample_data_seeded">Données d’exemple ajoutées.</string>
-    <string name="settings_sample_data_present">Les lapins d’exemple sont déjà là.</string>
-    <string name="settings_debug_reminder">Envoi des rappels</string>
-    <string name="settings_debug_reminder_help">Poste une notification dans deux minutes, par son propre chemin plutôt que par le balayage quotidien — de quoi prouver le canal, l’autorisation et l’envoi sans qu’aucun rappel n’existe.</string>
-    <string name="settings_debug_reminder_settings_action">Paramètres des rappels</string>
-    <string name="settings_debug_reminder_action">Me rappeler dans deux minutes</string>
-    <string name="settings_debug_reminder_scheduled">Un rappel de test arrivera dans deux minutes. Verrouille le téléphone et attends.</string>
-    <string name="debug_reminder_notification_title">Rappel de test</string>
-    <string name="debug_reminder_notification_text">Voilà à quoi ressemblera un rappel de soin. Il n’y a rien à faire — ce rappel a été programmé à la main depuis les paramètres.</string>
 
     <!-- A dose notification: the medicine is the title, this is the line under it (ADR-0002,
          ADR-0026, ADR-0001). -->

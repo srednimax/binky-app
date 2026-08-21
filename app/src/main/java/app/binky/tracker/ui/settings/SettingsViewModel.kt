@@ -8,21 +8,15 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import app.binky.tracker.AppContainer
 import app.binky.tracker.BinkyApplication
 import app.binky.tracker.data.WeightUnit
-import app.binky.tracker.data.seedSampleData
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** What the sample-data action did, for a one-line report. Debug builds only. */
-enum class SampleDataOutcome { SEEDED, ALREADY_PRESENT }
-
 data class SettingsUiState(
     val unit: WeightUnit = WeightUnit.KILOGRAMS,
     val materialYou: Boolean = false,
-    val sampleData: SampleDataOutcome? = null,
 )
 
 /**
@@ -38,15 +32,12 @@ data class SettingsUiState(
 class SettingsViewModel(
     private val container: AppContainer,
 ) : ViewModel() {
-    private val sampleData = MutableStateFlow<SampleDataOutcome?>(null)
-
     val uiState: StateFlow<SettingsUiState> =
         combine(
             container.preferences.weightUnit,
             container.preferences.materialYou,
-            sampleData,
-        ) { unit, materialYou, seeded ->
-            SettingsUiState(unit = unit, materialYou = materialYou, sampleData = seeded)
+        ) { unit, materialYou ->
+            SettingsUiState(unit = unit, materialYou = materialYou)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     /** Display only: entry stays in grams either way, and changes are always shown in grams. */
@@ -63,33 +54,6 @@ class SettingsViewModel(
      */
     fun setMaterialYou(enabled: Boolean) {
         viewModelScope.launch { container.preferences.setMaterialYou(enabled) }
-    }
-
-    /** Debug builds only — the screen renders the row behind `BuildConfig.DEBUG`. */
-    fun seedSampleData() {
-        viewModelScope.launch {
-            val seeded =
-                seedSampleData(
-                    bunnies = container.bunnyRepository,
-                    fluffles = container.fluffleRepository,
-                    weights = container.weightRepository,
-                    observations = container.observationRepository,
-                    symptoms = container.symptomRepository,
-                    photos = container.photoRepository,
-                    care = container.careRepository,
-                    watches = container.watchRepository,
-                    vets = container.vetRepository,
-                    visits = container.visitRepository,
-                    medications = container.medicationRepository,
-                    documents = container.documentRepository,
-                    cacheDir = container.cacheDir,
-                )
-            sampleData.value = if (seeded) SampleDataOutcome.SEEDED else SampleDataOutcome.ALREADY_PRESENT
-        }
-    }
-
-    fun clearSampleDataOutcome() {
-        sampleData.value = null
     }
 
     companion object {

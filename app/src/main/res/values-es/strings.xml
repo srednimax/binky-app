@@ -325,19 +325,6 @@
     <string name="reminders_caveat_battery_title">Este teléfono puede retener los recordatorios</string>
 
     <!-- Debug builds only, and never shown in a release build. -->
-    <string name="settings_sample_data">Datos de ejemplo</string>
-    <string name="settings_debug_header">Solo en compilaciones de depuración</string>
-    <string name="settings_sample_data_help">Añade dos conejos que conviven, un año de pesajes irregulares con fecha anterior y unas cuantas observaciones, para poder revisar el gráfico, el aviso de tendencia y la línea de tiempo con un historial de verdad.</string>
-    <string name="settings_sample_data_action">Añadir los datos de ejemplo</string>
-    <string name="settings_sample_data_seeded">Datos de ejemplo añadidos.</string>
-    <string name="settings_sample_data_present">Los conejos de ejemplo ya están aquí.</string>
-    <string name="settings_debug_reminder">Entrega de recordatorios</string>
-    <string name="settings_debug_reminder_help">Lanza una notificación dentro de dos minutos, por su propio camino y no por el barrido diario, para poder probar el canal, el permiso y la entrega sin que exista ningún recordatorio.</string>
-    <string name="settings_debug_reminder_settings_action">Ajustes de recordatorios</string>
-    <string name="settings_debug_reminder_action">Recuérdamelo en dos minutos</string>
-    <string name="settings_debug_reminder_scheduled">Llegará un recordatorio de prueba dentro de dos minutos. Bloquea el teléfono y espera.</string>
-    <string name="debug_reminder_notification_title">Recordatorio de prueba</string>
-    <string name="debug_reminder_notification_text">Así se verá un recordatorio de cuidados. No hay nada previsto: este se programó a mano desde Ajustes.</string>
 
     <!-- A dose notification: the medicine is the title, this is the line under it. It names the
          amount exactly as the vet wrote it and says nothing about whether the dose is late

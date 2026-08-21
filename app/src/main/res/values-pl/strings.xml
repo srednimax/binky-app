@@ -279,19 +279,6 @@
     <string name="reminders_caveat_battery_title">Ten telefon może wstrzymywać przypomnienia</string>
 
     <!-- Debug builds only, and never shown in a release build. -->
-    <string name="settings_sample_data">Dane przykładowe</string>
-    <string name="settings_debug_header">Tylko w wersji deweloperskiej</string>
-    <string name="settings_sample_data_help">Dodaje dwa zaprzyjaźnione króliki, rok nierównomiernych, wstecznie datowanych ważeń i kilka obserwacji, żeby wykres, ostrzeżenie o trendzie i oś czasu dało się obejrzeć na prawdziwej historii.</string>
-    <string name="settings_sample_data_action">Dodaj dane przykładowe</string>
-    <string name="settings_sample_data_seeded">Dane przykładowe dodane.</string>
-    <string name="settings_sample_data_present">Przykładowe króliki już tu są.</string>
-    <string name="settings_debug_reminder">Dostarczanie przypomnień</string>
-    <string name="settings_debug_reminder_help">Wysyła jedno powiadomienie za dwie minuty, własną drogą, nie codziennym przebiegiem — żeby dało się sprawdzić kanał, uprawnienie i samo dostarczenie, kiedy nie istnieje jeszcze żadne przypomnienie.</string>
-    <string name="settings_debug_reminder_settings_action">Ustawienia przypomnień</string>
-    <string name="settings_debug_reminder_action">Przypomnij mi za dwie minuty</string>
-    <string name="settings_debug_reminder_scheduled">Testowe przypomnienie przyjdzie za dwie minuty. Zablokuj telefon i poczekaj.</string>
-    <string name="debug_reminder_notification_title">Testowe przypomnienie</string>
-    <string name="debug_reminder_notification_text">Tak będzie wyglądać przypomnienie o opiece. Nic nie jest zaplanowane — to przypomnienie ustawiono ręcznie w Ustawieniach.</string>
 
     <!-- Powiadomienie o dawce: tytułem jest nazwa leku, a to wiersz pod nim. Podaje dawkę dokładnie
          tak, jak zapisał ją weterynarz, i nigdy jej nie interpretuje (ADR-0002); nie mówi też, czy
