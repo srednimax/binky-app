@@ -790,17 +790,30 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
       photos, kept out of git for the same reason the 72 screenshots are — but **the before image
       cannot be produced again**, so do not delete it.
 
-- [ ] **The in-place update path is still open, and this is the honest half.** The rows above got into
-      1.7 by **restoring the schema-4 export by hand**, not by Play swapping the APK under an existing
-      data directory. What that leaves untested is exactly what 1.5 nearly shipped a refusal screen
-      over: **a cold start against a pre-existing older-schema database the app did not just restore**
-      — ADR-0023's launch gate on a real upgrade. The migrations are proven; the *gate on upgrade* is
-      not.
+- [ ] **The in-place update path is deferred, deliberately, and 1.7 must not reach production until it
+      is done.** The rows above got into 1.7 by **restoring the schema-4 export by hand**, not by Play
+      swapping the APK under an existing data directory.
+
+      **What is untested is narrower than it first looks.** Each component is covered: the migrations
+      by the committed fixtures in CI at API 26/34/36; ADR-0023's launch gate *on upgrade* by
+      `SchemaGateTest`, which asserts `schemaGateDecision(onDiskVersion = 4, appSchemaVersion = 7)`
+      lets the owner in and that 4→7, 5→7 and 6→7 all have paths; and the migrations against real
+      1.0.0 rows on real hardware by the run above. ⚠️ **An earlier draft of this box said "the gate on
+      upgrade is not proven" and that was wrong** — it is unit-tested, and it is what stood in front of
+      the 1.5 near-miss. What is untested is the **assembly**: Play replaces the APK, the process cold
+      starts, and the gate reads an on-disk version out of an installed database rather than a
+      constructed one.
+
+      **The decision, 2026-08-21: ship to testers without it, test it properly later.** The exposure is
+      a tester losing dummy rows, against a path whose every component is already green. ⚠️ **That
+      reasoning holds only while 1.7 is on internal or closed.** 1.0.0 has been live on **production**
+      since July, and those installs would take the in-place upgrade for real — so **production is
+      gated on this box**, not on the phase.
 
       **Close it with the release-shaped debug build** ([`phase-7.5.md`](phase-7.5.md) §7), which is
       why that route exists: the `.debug` variant installs alongside anything, so an old tag can be
       seeded and the new build laid over it, and the whole thing is on the bench with Google nowhere
-      in it.
+      in it — no track, no opt-in page, no uninstall prompt, and repeatable.
 
       ⚠️ **How the Play install was lost, so it is not repeated.** The **internal track's opt-in page
       instructs the tester to uninstall the current build first**, and an uninstall wipes the data
