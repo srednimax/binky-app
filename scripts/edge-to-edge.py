@@ -1439,7 +1439,12 @@ def load_strings(locale: str | None) -> dict[str, str]:
     XML parser. `itertext` rather than `.text` so a value wrapped in inline markup still comes back
     whole.
     """
-    values = RES_DIR / ("values" if locale is None else f"values-{resource_qualifier(locale)}")
+    # `en` is the base, not a qualified variant: the English strings live in `values/` and there is
+    # no `values-en/` to find. It is still a shipped locale in `locales_config.xml`, so `--locale en`
+    # is a thing to ask for — it pins the app to English rather than inheriting a Polish phone — and
+    # without this line it died on a missing file before the first tap.
+    base = locale is None or locale == "en"
+    values = RES_DIR / ("values" if base else f"values-{resource_qualifier(locale)}")
     strings: dict[str, str] = {}
     for element in ElementTree.parse(values / "strings.xml").getroot().findall("string"):
         name = element.get("name")
