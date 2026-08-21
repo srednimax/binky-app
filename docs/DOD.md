@@ -840,8 +840,9 @@ entity changes, so the standing gate at the top of this file does not fire in th
 | **9h** | The Console sitting ✅ production access granted 2026-08-19 — the release is repo-side only now | §4 |
 | **9i** | The field upgrade proof 1.0.0 → 1.7 | §4 |
 | **9j** | The tester's reply ✅ **replied 2026-08-21** | §9 |
+| **9k** | The debug affordances that ship anyway — swept 2026-08-21, one finding, and it waits for 1.7 | below |
 
-**Three edges must not be reordered**, and everything else is free: **9a before 9b and 9c**, because both
+**Four edges must not be reordered**, and everything else is free: **9i before 9k**, because 9k changes what is in the artifact and 9i is the proof about *this* artifact; **9a before 9b and 9c**, because both
 disturb the armed course and the run costs a night; **9f before 9g**, because 9g photographs a screen 9f
 changes; **9g and the listing copy before 9h before 9i**, because the upgrade proof needs an update that
 arrives from a track.
@@ -954,6 +955,49 @@ exists once a formatter and a translation meet on screen.** The other eight loca
 truncation, no overflow, no clipped control.
 
 ---
+
+### 9k — The debug affordances that ship anyway
+
+**Swept 2026-08-21 across the whole repo. One finding, and it is hygiene rather than a hole.**
+
+- [ ] **Move `SampleData.kt`, `DebugReminder.kt` and `SettingsScreen`'s `DebugSection` into
+      `app/src/debug/`**, which already exists, leaving a no-op seam in a `release` source set so
+      `SettingsScreen` still compiles. Today all three sit in `main/` behind `if (BuildConfig.DEBUG)` at
+      the call site (`SettingsScreen.kt:179`) — a **runtime** guard, and `isMinifyEnabled = false` for
+      release means R8 never runs to strip the dead branch. So the seeder and the two-minute reminder are
+      **compiled into the release AAB**, unreachable.
+- [ ] **Drop the 13 debug strings from the gate.** `settings_sample_data*`, `settings_debug_*` and
+      `debug_reminder_notification_*` (`values/strings.xml:294–306`) carry no `translatable="false"`, so
+      they are inside the 693 and **fully translated into all nine** — developer-facing copy paid for nine
+      times, shipping in the release resource table and inside `aab-locale.py`'s scope, a check that exists
+      to catch a *missing* translation.
+- [ ] **Revisit `isMinifyEnabled`.** `build.gradle.kts:146` says "Revisit at 1.1, against a known-good
+      1.0" and it is now six releases overdue. A known-good 1.7 is the baseline it was waiting for, and R8
+      would strip the branches above on its own.
+
+⚠️ **Not before 1.7.** Adding a source-set divergence to the artifact you are about to prove is the
+mistake the same file already reasoned its way out of once — R8 is off precisely because "a sixth
+divergence whose failures are release-only, runtime and reflection-shaped is the opposite of what this
+checkpoint proves". **After 9i**, for the same reason: 9i is a claim about the artifact that goes up, and
+this changes it.
+
+**No safety hole, and the sweep is why that can be said rather than assumed.** `BuildConfig.DEBUG` is
+false in a release build, so the section never composes and the seeder — which writes through the
+repositories — has nothing to reach it. The two-minute reminder posts on `ReminderChannel.Care`, an
+existing production channel, so it leaves no stray channel in a user's notification settings either.
+
+**What the sweep cleared, so it is not re-swept:**
+
+- **The manifest.** `main/` declares exactly **one** exported component, the launcher activity. Every
+  receiver, provider and service is `exported="false"`, each with the comment saying why. `src/debug/`'s
+  `SeedVariantReceiver` is `exported="true"` on purpose and variant-scoped, so the release build has no
+  such file to merge.
+- **Logging.** No `Log.d`, no `Log.v`, no `println`, no StrictMode. The five `Log.w`/`Log.i` calls are all
+  on genuine failure paths — photo import, scan storage, the ML Kit fallback — and belong in a release.
+- **The other three `BuildConfig.DEBUG` uses are legitimate behaviour, not leakage.** WorkManager's
+  logging level (`BinkyApplication.kt:100`); `destructiveMigrationAllowed` (`BunnyDatabase.kt:124`), which
+  is ADR-0023's whole point; and the `-debug` marker in the support email's version label
+  (`SupportHandoff.kt:92`), which exists so a report says which build sent it.
 
 ## Already proven — do not re-run
 
