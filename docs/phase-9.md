@@ -531,6 +531,60 @@ never call a weight too high — only say that it moved, by how much, since a da
 gain signal they were actually asking for; the reply is the part that explains why the app will not do
 the thing they literally asked for, which is better said than left to be discovered.
 
+## 9k — The debug affordances that ship anyway
+
+**A repo-wide sweep on 2026-08-21 for developer-only surface reaching the production build. One finding.**
+
+The question was whether the two-minute reminder button, the sample-data seeder and anything like them are
+kept out of the Play build. **Partly.** `app/src/debug/` is real exclusion — `SeedVariantReceiver`, the
+debug manifest and the *Binky Debug* launcher label are variant-scoped and the release build never
+compiles them. But the *user-facing* half of those tools lives in `main/`, behind `if (BuildConfig.DEBUG)`
+at the call site (`SettingsScreen.kt:179`), and that is a **runtime** guard.
+
+**`isMinifyEnabled = false` is what turns that from a strip into a hide.** With R8 off, nothing removes a
+branch whose condition is a compile-time `false`, so `SampleData.kt`, `DebugReminder.kt` and
+`DebugSection` are compiled into the release AAB. Unreachable — but present.
+
+**Unreachable is the accurate word, and the sweep is why it can be said rather than assumed.**
+`BuildConfig.DEBUG` is false in a release build, so the section never composes; the seeder writes through
+the repositories but nothing can call it; and the two-minute reminder posts on `ReminderChannel.Care`, a
+channel the app already ships, so it does not leave a stray entry in a user's notification settings. There
+is no path from an installed Play build to any of it.
+
+### What it actually costs: thirteen strings, translated nine times
+
+`values/strings.xml:294–306` carries no `translatable="false"`, so the debug copy is inside the gate's 693
+and has been translated into every shipped language:
+
+> `settings_debug_reminder_help` → *Надсилає одне сповіщення за дві хвилини, власним шляхом…*
+
+Developer-facing text, paid for nine times, shipping in the release resource table, and inside
+`aab-locale.py`'s scope — a check written to catch a *missing* translation now also standing guard over
+copy nobody will read. **That is the whole of the finding**, and it is hygiene, not risk.
+
+### What the sweep cleared
+
+- **The manifest.** `main/` declares exactly one exported component: the launcher activity. Every
+  receiver, provider and service is `exported="false"` with the reasoning beside it.
+- **Logging.** No `Log.d`, no `Log.v`, no `println`, no StrictMode. The five `Log.w`/`Log.i` calls sit on
+  real failure paths and belong in a release.
+- **The other three `BuildConfig.DEBUG` uses**, all of which are deliberate behaviour rather than leakage:
+  WorkManager's logging level, `destructiveMigrationAllowed` — which *is* ADR-0023 — and the `-debug`
+  marker in the support email's version label, which exists so a bug report says which build sent it.
+
+### Why it waits
+
+⚠️ **After 1.7, and after 9i.** Moving three files between source sets changes what is in the artifact,
+and 9i is a proof *about* that artifact. `build.gradle.kts:146` already made this argument once, for R8:
+"a sixth divergence whose failures are release-only, runtime and reflection-shaped is the opposite of what
+this checkpoint proves." The same sentence applies to a source-set move on the eve of a release.
+
+The work, when it comes, is three things at once: move the files to `src/debug/` with a no-op seam in a
+`release` source set so `SettingsScreen` still compiles; delete the thirteen strings and their nine
+translations; and **revisit `isMinifyEnabled`**, which that comment marked for "1.1, against a known-good
+1.0" and is now six releases overdue. A known-good 1.7 is exactly the baseline it was waiting for — and R8
+would strip the branches on its own, which is the cheaper half of this item arriving for free.
+
 ## Tests
 
 The phase is mostly evidence, so it adds few. What it does add:
@@ -564,6 +618,7 @@ Phase 9 closes when all of these hold:
   ✅ **2026-08-20** — and it is a matrix scene, so 9g photographs it in all four configurations.
 - ~~Nine screenshot sets prepared.~~ ✅ **2026-08-21** — 72 padded PNGs, one defect found and closed.
 - **1.7 live on a track**, with nine listings' copy, nine screenshot sets and nine release notes.
+- **The debug affordances out of `main/`** and the thirteen strings out of the gate — after the upgrade proof, never before it.
 - **1.0.0 → 1.7 watched on the phone**, arriving from Play, with a table-by-table diff on common columns
   that is empty.
 
