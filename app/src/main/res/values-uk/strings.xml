@@ -47,6 +47,17 @@
       file, and `settings_material_you_help` was rewritten (*кольори братимуться*) rather than lean on
       *він*.
 
+    · ✅ **Six strings end on a date and so take no full stop.** Ukrainian's CLDR medium date
+      pattern is `d MMM y 'р'.` — it *ends in a period* — so `trend_flag_drop`, `trend_flag_rise`,
+      `trend_flag_acknowledged`, `backup_reminder_next`, `weight_chart_none_in_range` and
+      `watch_expired_weight` rendered *7 серп. 2026 р..* until the stop came off. Every other
+      shipped locale closes its medium date on digits, which is why this is the only file with the
+      rule. The abbreviation's period does the sentence's work, as it ordinarily does in Ukrainian;
+      taking it off the *date* instead would leave *р* standing as no abbreviation at all.
+      ⚠️ The rule is **ends on the date argument**, not "ends on an argument" —
+      `backup_auto_recorded` and `backup_restored_scope` keep their full stop, because
+      `dateTimeLabel` closes them with a short time. Found in 9g's screenshot, not by a test.
+
     · ⚠️ **§7.5: Ukrainian declares four categories and the unreachable one is `other`.** CLDR gives
       `uk` *one: i%10=1 and i%100!=11*, *few: i%10=2..4 and i%100!=12..14*, *many: i%10=0, 5..9 or
       i%100=11..14*, and ***other: v!=0*** — the **fraction** form. So `many` is an ordinary
@@ -225,7 +236,7 @@
     <string name="weight_chart_no_weighings">Поки нічого малювати. Для графіка потрібні хоча б два зважування.</string>
     <string name="weight_chart_single_point">Поки одне зважування. Друге дасть графіку лінію.</string>
     <string name="weight_chart_single_in_range">За %1$s є лише одне зважування, тож лінію малювати нема з чого. Раніші є.</string>
-    <string name="weight_chart_none_in_range">За %1$s зважувань немає. Останнє було %2$s.</string>
+    <string name="weight_chart_none_in_range">За %1$s зважувань немає. Останнє було %2$s</string>
     <string name="weight_chart_show_all">Показати всі зважування</string>
 
     <string name="weight_entry_add_title">Записати зважування</string>
@@ -263,8 +274,8 @@
     <!-- The trend flag (ADR-0001). "важить … менше" is the present tense on purpose: the past would
          have to agree with a bunny whose sex the app does not consult. -->
     <string name="trend_flag_title">Варто придивитися</string>
-    <string name="trend_flag_drop">%1$s важить на %2$s менше, ніж %3$s.</string>
-    <string name="trend_flag_rise">%1$s важить на %2$s більше, ніж %3$s.</string>
+    <string name="trend_flag_drop">%1$s важить на %2$s менше, ніж %3$s</string>
+    <string name="trend_flag_rise">%1$s важить на %2$s більше, ніж %3$s</string>
     <string name="trend_flag_readings">Тоді %1$s, зараз %2$s.</string>
     <string name="trend_flag_long_gap">Між цими двома зважуваннями — %1$s, тож ідеться про зміну за тривалий час, а не про раптову.</string>
     <string name="trend_flag_not_advice">Це спостереження про числа, а не діагноз. Якщо це тебе непокоїть, спитай ветеринара.</string>
@@ -272,7 +283,7 @@
     <string name="trend_flag_vet_gain">Це план відгодівлі за призначенням ветеринара? Тоді такий набір — саме те, чого ти прагнеш, і ці позначки можна не брати до уваги.</string>
     <string name="trend_flag_acknowledge">Зрозуміло</string>
     <string name="trend_flag_ask_age">Скільки років має %1$s?</string>
-    <string name="trend_flag_acknowledged">Переглянуто %1$s.</string>
+    <string name="trend_flag_acknowledged">Переглянуто %1$s</string>
     <string name="trend_flag_close">Закрити</string>
 
     <plurals name="gap_years">
@@ -458,7 +469,7 @@
     <string name="backup_reminder_help">Підказка зробити експорт, що приходить у той самий час доби, що й інші нагадування. Це підказка про твої копії, а не ознака, що щось не так.</string>
     <string name="backup_reminder_switch">Нагадувати</string>
     <string name="backup_reminder_off">Вимкнено. Binky не питатиме.</string>
-    <string name="backup_reminder_next">Наступне нагадування: %1$s.</string>
+    <string name="backup_reminder_next">Наступне нагадування: %1$s</string>
     <string name="backup_reminder_blocked">Сповіщення для Binky вимкнено або нагадування про копії заглушено, тож це нагадування не зможе прийти.</string>
     <string name="backup_reminder_weekly">Щотижня</string>
     <string name="backup_reminder_fortnightly">Раз на два тижні</string>
@@ -918,7 +929,7 @@
     <string name="watch_close">Завершити</string>
     <string name="watch_expired_title">Нагляд за кроликом %1$s завершився</string>
     <string name="watch_expired_body">Питати вже перестало. Продовж, якщо ти й далі пильнуєш, або заверши нагляд.</string>
-    <string name="watch_expired_weight">Останнє зважування %1$s, %2$s.</string>
+    <string name="watch_expired_weight">Останнє зважування %1$s, %2$s</string>
     <string name="watch_expired_no_weight">Нічого не зважували, тож і тенденції немає — ні в один бік, ні в інший.</string>
     <string name="watch_expired_extend">Продовжити</string>
     <string name="watch_notification_title">Чи вдалося сьогодні перевірити кролика %1$s?</string>
