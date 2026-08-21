@@ -704,11 +704,19 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
 - [ ] **App content, all ten sections** — answers are paste-ready in
       [`play-app-content.md`](play-app-content.md). Data safety must still agree with the privacy policy;
       Play cross-checks the two and a mismatch is its own rejection reason.
-- [ ] **Artifact checks** ([`RELEASING.md`](RELEASING.md)): `aab-version.py`, `aab-permissions.py`,
-      `aab-locale.py` — which now reads `locales_config.xml` and checks **all nine** locales where it
-      checked only `pl` until Phase 8 — and `keytool` on the bundle. All three exit non-zero rather than
-      leaving you to read; each exists because the corresponding claim was once wrong in a shipped
-      artifact while every source-side check was green.
+- [x] **Artifact checks** ([`RELEASING.md`](RELEASING.md)) — ✅ **all four green 2026-08-21** against
+      `app/build/outputs/bundle/release/app-release.aab`, 12.4 MB, built by `bundleRelease` from
+      `54b2e78` (`v1.7.0`). `aab-version.py`: **versionCode 377**, versionName **1.7.0**, the count
+      matching `git rev-list --count HEAD`. `aab-permissions.py`: **8 permissions**, every one
+      accounted for, **none of the four forbidden**, **0 `<uses-feature>`**. `aab-locale.py`: all
+      **6 058** translated strings of all **8** shipped locales present in `base/resources.pb` —
+      it reads `locales_config.xml` and checks every one where it checked only `pl` until Phase 8;
+      the ninth is `en`, which *is* the base it compares against rather than a locale it can miss.
+      `keytool`: `CN=Maksymilian Sredniawa, O=Binky, C=PL`, the upload key, SHA-256
+      `3E:11:8C:FB:…:04:C7`. All three scripts exit non-zero rather than leaving you to read; each
+      exists because the corresponding claim was once wrong in a shipped artifact while every
+      source-side check was green. ⚠️ **The bundle is not committed and not reproducible by hand** —
+      rebuild it at upload time from the tag if this one is stale.
 
 ### The sitting itself
 
