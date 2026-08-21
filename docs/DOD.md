@@ -627,8 +627,14 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
 - [ ] **Title / short / full description ×9** — paste-ready in [`store-listing.md`](store-listing.md),
       written at Phase 8 and never yet entered. ⚠️ French and Italian sit at **3992 and 3993 of 4000**
       characters: a paragraph added to English cannot simply be translated into those two.
-- [ ] **Screenshots ×9** (9g below). Min 2, max 8, **1526×2713** padded from the native 1220×2712 with
-      `#121318`, because Play's aspect limit is 2:1 and the raw capture is 2.22:1.
+- [ ] **Screenshots ×9** — **shot and padded 2026-08-21** (9g below), waiting only to be entered.
+      Min 2, max 8, **1526×2713** padded from the native 1220×2712, because Play's aspect limit is 2:1
+      and the raw capture is 2.22:1. ⚠️ This line said the fill was `#121318` until 2026-08-21 and had
+      been wrong since Phase 7 redrew the palette — that is the *pre*-redesign dark surface. Nothing
+      read it: `art/pad-screenshot.py` takes the fill from the image's own edge, which is why the sets
+      are correct anyway at `#16130D` dark and `#FFF8EF` light, Binky's own surfaces (`theme/Color.kt`).
+      Ready at `~/binky-screenshots/phase-9/listing/_play/{light,dark}/<tag>/`; **dark is the set to
+      upload**, because it is what the store already shows.
 - [ ] **Feature graphic** 1024×500 and **icon** 512², both already in [`art/`](../art/).
 - [ ] **Store settings**: category **Lifestyle**; contact email **`binky.support@gmail.com`** — the
       per-app address, *not* the account-level developer one, because `SupportHandoff.kt` hardcodes it and
@@ -823,7 +829,7 @@ entity changes, so the standing gate at the top of this file does not fire in th
 | **9d** | Close Phase 5 | below |
 | **9e** | The Pages front door ✅ **closed 2026-08-19** — `docs/index.md` is the root, and `_config.yml`'s "copied verbatim" comment was wrong | below |
 | **9f** | Seeing the whole fluffle ✅ **closed 2026-08-20** — the sheet is built, tested and driven; the archived route and the landscape half-height state were both found on the phone | below |
-| **9g** | Nine locales of screenshots | below |
+| **9g** | Nine locales of screenshots ✅ **closed 2026-08-21** — 72 padded PNGs, and it found a doubled full stop in Ukrainian that no test could see | below |
 | **9h** | The Console sitting ✅ production access granted 2026-08-19 — the release is repo-side only now | §4 |
 | **9i** | The field upgrade proof 1.0.0 → 1.7 | §4 |
 | **9j** | The tester's reply | §9 |
@@ -912,14 +918,33 @@ re-introduces exactly the unbounded card growth the cap was written to stop.
 suffix `R.string.bunny_archived_name`, both already translated in all nine. A phase that adds no English
 string owes the translation gate nothing; if one turns out to be needed it ships in all nine.
 
-### 9g — Nine locales of screenshots
+### 9g — Nine locales of screenshots ✅ closed 2026-08-21
 
-- [ ] **~2 h of device time** through `screenshots.py --locale <tag>`, re-proved across every shipped
-      locale on 2026-08-18 — Brazilian Portuguese included, the one that crashed in both spellings until
-      the guard moved to where the tag is taken. **English is a selection**, not a run: the 63 scenes in
-      `~/binky-screenshots/phase-7/after/` are already the final screens. This improves the listing rather
-      than unblocking it — Play falls back to the default listing's set — which is why it waited until the
+- [x] **Nine locales × four scenes × two themes**, `home` / `weight` / `observations` / `backup`,
+      through `screenshots.py --locale <tag>` at ~7 min a locale. 72 native captures at 1220×2712 and
+      72 padded at exactly 1526×2713, in
+      `~/binky-screenshots/phase-9/listing/<tag>/{light,dark}/` and `…/listing/_play/{light,dark}/<tag>/`.
+      Every locale reached all four scenes; no skips, no errors. This improves the listing rather than
+      unblocking it — Play falls back to the default listing's set — which is why it waited until the
       tracks could carry the build it describes.
+
+**English was a run, not a selection**, and that line had gone stale in the day between being written
+and being read. It said the 63 scenes in `~/binky-screenshots/phase-7/after/` were already final; **9f
+changed Home's profile header on 2026-08-20** and that set is from 08-13, so its `home.png` is missing
+the chevron and the tappable *Lives with* row — on the one screenshot that leads the listing. Shooting
+English cost seven minutes and the check cost one crop. **A "no run needed" claim about a screen is
+only as old as the last commit that touched it.**
+
+`--locale en` had also never been runnable: `load_strings` built `values-<qualifier>` from the tag and
+English is the base in `values/`, so it died before the first tap. Fixed in the same branch. Without
+it English inherits the phone's system language, which here is Polish.
+
+**What the run found, and only a run could:** Ukrainian rendered `7 серп. 2026 р..` — its CLDR medium
+date pattern ends in a period and six strings appended a sentence one. Fixed in the same branch and
+`uk` re-shot; the detail is in the header of `values-uk/strings.xml`. Every one of those strings is
+well-formed on its own, which is why `TranslationTest` is green and always was: **the defect only
+exists once a formatter and a translation meet on screen.** The other eight locales were clean — no
+truncation, no overflow, no clipped control.
 
 ---
 

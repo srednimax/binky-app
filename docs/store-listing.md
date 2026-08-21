@@ -57,12 +57,12 @@ for consistency rather than because those languages need it.
 | Privacy policy URL | `https://srednimax.github.io/binky-app/privacy-policy.html` |
 | App icon (512²) | [`art/play-icon-512.png`](../art/play-icon-512.png) |
 | Feature graphic (1024×500) | [`art/play-feature-graphic.png`](../art/play-feature-graphic.png) |
-| Phone screenshots (1526×2713) | [`1-home`](../art/play-screenshot-1-home.png), [`2-weight`](../art/play-screenshot-2-weight.png), [`3-observations`](../art/play-screenshot-3-observations.png), [`4-backup`](../art/play-screenshot-4-backup.png) — real, from the Play build at 3h |
+| Phone screenshots (1526×2713) | [`1-home`](../art/play-screenshot-1-home.png), [`2-weight`](../art/play-screenshot-2-weight.png), [`3-observations`](../art/play-screenshot-3-observations.png), [`4-backup`](../art/play-screenshot-4-backup.png) — English dark, re-shot at 9g. The other eight locales are prepared outside the repo; see *Open* |
 | App category | Lifestyle |
 | Contact email | `binky.support@gmail.com` — the per-app support address, set in Store settings, not the account-level developer email |
 
-⚠️ **The screenshots are 1.0's and predate Phase 7's redesign**, so they photograph screens the app no
-longer has. They are a separate box (`DOD.md` §4) and are not blocked on anything in this file.
+✅ **The screenshots were re-shot at 9g on 2026-08-21** and photograph the app as 1.7 ships it,
+9f's Home header included. Entering them in the Console is a separate box (`DOD.md` §4).
 
 **Lifestyle, not Health & Fitness**, even though the app tracks health data. Health & Fitness is
 oriented at *human* health, where Play applies closer scrutiny to anything that reads as a medical
@@ -744,11 +744,16 @@ build changes, which is why they are not drafted in advance the way the descript
 
 ## Open
 
-- **The screenshots are 1.0's and are stale.** Real, but taken at 3h from the Play build, before
-  Phase 7 redrew every route. Captured at the phone's native 1220×2712 and padded to 1526×2713, which
+- ~~**The screenshots are 1.0's and are stale.**~~ **Re-shot at 9g, 2026-08-21**, in all nine
+  locales and both themes. Captured at the phone's native 1220×2712 and padded to 1526×2713, which
   is exactly 9:16; Play's screenshot aspect limit is 2:1 and the raw capture is 2.22:1, so the padding
-  is a requirement rather than a style choice. The fill is `#121318`, the app's own dark surface, so
-  the side bars are invisible. Re-shooting them is `DOD.md` §4, and it is not blocked on this file.
+  is a requirement rather than a style choice. The fill is the app's own surface, so the side bars are
+  invisible — **`#16130D` dark, `#FFF8EF` light**. ⚠️ This bullet said `#121318` until 2026-08-21: that
+  is the *pre*-Phase-7 dark, and it had outlived the palette by four releases. It was never load-bearing
+  — `art/pad-screenshot.py` samples the image's own edge rather than reading a constant — which is
+  exactly why nothing caught it. The four in `art/` are now English dark from the 9g run; the other
+  eight locales are at `~/binky-screenshots/phase-9/listing/_play/{light,dark}/<tag>/`, outside the repo
+  because 72 PNGs are not source.
 
   **Four, not the five 3h planned.** The gallery shot was dropped: the sample seeder writes
   solid-colour JPEGs (`SampleData.writeSampleJpeg`) because the fixture exists to exercise the media

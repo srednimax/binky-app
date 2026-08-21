@@ -9,7 +9,7 @@ path data in the `VectorDrawable`s.
 | `rabbit.py`'s MARK and EYE curves | `concept-1.png` → `trace-mark.py` | final |
 | `drawable/ic_launcher_{foreground,monochrome}.xml`, `drawable/ic_notification.xml`, `mipmap-*`, `play-icon-512.png` | `rabbit.py` → `make-launcher-icon.py` | final |
 | `play-feature-graphic.png` (1024×500) | `rabbit.py` → `make-feature-graphic.py` | final |
-| `play-screenshot-{1-home,2-weight}.png` (1526×2713) | device capture → `pad-screenshot.py` | placeholder until 3g |
+| `play-screenshot-{1-home,2-weight,3-observations,4-backup}.png` (1526×2713) | device capture → `pad-screenshot.py` | English dark, re-shot at 9g (2026-08-21). The other eight locales live outside the repo — `docs/store-listing.md` says where |
 
 **No third-party art is involved, and nothing here carries a licence obligation.** That is a
 deliberate property, not a coincidence — see below.

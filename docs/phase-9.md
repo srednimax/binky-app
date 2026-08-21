@@ -435,18 +435,49 @@ replacement without a scene would have kept the defect and moved the excuse. **T
 73**: `language-picker` had already taken it to 74 with commit `b34b3fc` and nobody edited the count
 in `DOD.md`, so 9c should read the number off `scripts/edge-to-edge.py` rather than off prose.
 
-## 9g — Nine locales of screenshots
+## 9g — Nine locales of screenshots ✅ closed 2026-08-21
 
-~2 h of device time through `screenshots.py --locale <tag>`, re-proved across every shipped locale on
-2026-08-18 — Brazilian Portuguese included, which is the one that crashed in both spellings until the
-guard moved to where the tag is taken.
-
-**English is a selection, not a run**: the 63 scenes in `~/binky-screenshots/phase-7/after/` are already
-the final screens. The other eight are real captures.
+Four scenes — `home`, `weight`, `observations`, `backup` — in nine locales and both themes, through
+`screenshots.py --locale <tag>` at ~7 min a locale. 72 padded PNGs at exactly 1526×2713, in
+`~/binky-screenshots/phase-9/listing/_play/{light,dark}/<tag>/`. No scene was missed in any locale.
 
 Play falls back to the default listing's screenshots for a locale that has none, so this improves the
 listing rather than unblocking it — which is exactly why it was never done before the tracks could carry
 the build it describes.
+
+**"English is a selection, not a run" was true when it was written and false when it was read.** The 63
+scenes in `~/binky-screenshots/phase-7/after/` are from 2026-08-13; **9f changed Home's profile header on
+08-20**, so that set's `home.png` has neither the chevron nor the tappable *Lives with* row — on the
+screenshot that leads the listing. The ordering rule *9f before 9g* was written precisely to stop 9g
+photographing a screen 9f was about to change, and it worked; what it could not do was update the
+sentence next to it. **A claim that a screen needs no re-shoot expires with the next commit that touches
+it**, and the check is one crop.
+
+`--locale en` had never run at all, for an unrelated reason: `load_strings` built `values-<qualifier>`
+from the tag, and English is the base in `values/` with no `values-en/` to find. So the flag died before
+the first tap, and without it English inherits the phone's system language — Polish, here. One line.
+
+### What the run found: Ukrainian doubled a full stop
+
+`Bijou важить на 170 г менше, ніж 7 серп. 2026 р..` — on the lead screenshot. Ukrainian's CLDR medium
+date pattern is `d MMM y 'р'.` and **ends in a period**; six strings closed on that date and appended a
+sentence one. `trend_flag_drop`, `trend_flag_rise`, `trend_flag_acknowledged`, `backup_reminder_next`,
+`weight_chart_none_in_range`, `watch_expired_weight`. The stop came off — the abbreviation's period does
+the sentence's work, as it ordinarily does in Ukrainian — and `uk` was re-shot.
+
+**The rule is *ends on the date argument*, not *ends on an argument*.** `backup_auto_recorded` and
+`backup_restored_scope` keep their full stop, because `dateTimeLabel` closes them with a short time
+rather than a date. No other shipped locale's medium pattern ends in punctuation: Czech and German close
+on the year's digits, `pt-BR` on `de 2026`.
+
+**Every one of those six strings is well-formed on its own**, which is why `TranslationTest` was green
+and would have stayed green: it checks format arguments, plural categories and orphans, and each of
+those questions has the right answer here. The defect does not exist in the file. It exists once a
+formatter and a translation meet on screen, and the only instrument that reaches it is a screenshot —
+which is a second reason to shoot all nine, beyond the listing that asked for them.
+
+**Taking the period off the *date* would have been the wrong fix.** `р` without its period is not an
+abbreviation of *рік*; it is a stray letter. The sentence yields, not the date.
 
 ## 9h — The Console sitting
 
@@ -524,6 +555,7 @@ Phase 9 closes when all of these hold:
 - The Pages root serves a page, and `_config.yml` no longer claims something untrue.
 - ~~The fluffle sheet built, driven on the device, and reachable from Home with any number of housemates.~~
   ✅ **2026-08-20** — and it is a matrix scene, so 9g photographs it in all four configurations.
+- ~~Nine screenshot sets prepared.~~ ✅ **2026-08-21** — 72 padded PNGs, one defect found and closed.
 - **1.7 live on a track**, with nine listings' copy, nine screenshot sets and nine release notes.
 - **1.0.0 → 1.7 watched on the phone**, arriving from Play, with a table-by-table diff on common columns
   that is empty.
