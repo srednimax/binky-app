@@ -1093,6 +1093,36 @@ string owes the translation gate nothing; if one turns out to be needed it ships
       unblocking it — Play falls back to the default listing's set — which is why it waited until the
       tracks could carry the build it describes.
 
+⚠️ **"No errors" was the driver's opinion, and in two locales it was wrong.** `cs` and `uk` shot
+**Home with the record-day sheet half-open over it** where `observations` should have been, in both
+themes — found by eye on 2026-08-22, four days after the run was recorded clean. `find` matched
+needles by *substring*, and the Czech tab label `Pozorování` sits inside the shell "+"'s description
+`Zapsat pozorování`, as `Спостереження` sits inside `Записати спостереження`. The FAB is the smaller
+node, so the smallest-match rule tapped it, the sheet counted as "the screen moved", and the scene
+passed. **The other seven locales are clean by accident of grammar** — English *Observations* is not
+inside *Record an observation* — which is the same shape as 1.5's `29d442d`, *"a collision only
+Polish can express"*, and of the ampersand defect only English could express.
+
+The padding carried the same defect twice over: `art/pad-screenshot.py` samples the image's own edge,
+the edge was under the sheet's scrim, so both files padded to `#ADA8A2` instead of `#FFF8EF` in light
+and `#0F0D09` instead of `#16130D` in dark. Glaring in light, invisible in dark.
+
+- [x] **Fixed and re-shot 2026-08-22.** `edge-to-edge.py` gained `TAB_NEEDLES`: a tab is matched
+      **exactly, on text only** (`find(..., exact=True)`), and the tap is not believed until
+      `showing_tab` sees that tab reporting itself selected. **The assertion is the load-bearing
+      half** — exactness stops this bug, but "the screen moved" was never a claim about *arriving*,
+      and without the check the next collision shoots another wrong screen just as quietly. Eight
+      files replaced (`{cs,uk}/{light,dark}/observations.png` and their four in `_play`), all
+      1526×2713 with the right fill, all within 8 KB of the seven good locales. The two manifests
+      carry the new byte counts and a note.
+
+⚠️ **The debug app was not installed when the re-shoot started** — only the Play 1.0.0 install, which
+9i needs and which nothing here touched. `installDebug` put it back without a HyperOS refusal. The
+first run then failed anyway: **a per-app locale does not stick on an app that has never been
+launched.** `cmd locale set-app-locales` reported success, `get-app-locales` came back `[]`, and the
+Czech run shot an English setup wizard. One launch fixes it for good. Worth knowing before any capture
+run that follows a fresh install.
+
 **English was a run, not a selection**, and that line had gone stale in the day between being written
 and being read. It said the 63 scenes in `~/binky-screenshots/phase-7/after/` were already final; **9f
 changed Home's profile header on 2026-08-20** and that set is from 08-13, so its `home.png` is missing
