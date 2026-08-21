@@ -656,7 +656,12 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
 
 ### 9i — then, and only then, the field upgrade proof
 
-- [ ] **1.0.0 → 1.7**, real bunny history intact. The Xiaomi's Play build is on **1.0.0**, not the 1.0.1
+- [ ] **1.0.0 → 1.7**, every row 1.0.0 wrote still there. ⚠️ **Those rows are dummy data, not real bunny
+      history** — this line claimed otherwise until 2026-08-21. It does not weaken the proof, which asks
+      whether the chain preserves what the old build wrote and does not care what the rows mean. It does
+      move the coverage into your hands: **whatever tables the diff should cover have to be filled while
+      the phone is still on 1.0.0**, because there is no way back down once 1.7 lands.
+      The Xiaomi's Play build is on **1.0.0**, not the 1.0.1
       4h assumed, so the chain crosses **all three** hand-written migrations — `MIGRATION_4_5`,
       `MIGRATION_5_6`, `MIGRATION_6_7` — and the launch gate ADR-0023's Phase 7.5 amendment rewrote. It
       cannot run locally: the installed build is Play-signed and a local APK is refused on signature

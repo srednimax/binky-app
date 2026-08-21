@@ -807,6 +807,9 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
    - That build is then **uninstalled**. It is a pipeline proof, not a dogfood build: leaving a release build
      at schema 3 sitting on the phone would create a migration obligation for a version nobody used, and
      3c's wipe is spent on the debug app instead. The author's real bunny history starts at 1.0.
+     ⚠️ **It never started.** That install has held dummy data throughout (corrected 2026-08-21); see
+     ADR-0023's Phase 9 amendment. The bullet's own reasoning is untouched — the migration obligation
+     it is protecting is owed to owners, not to the author.
    - **Neither of those last two bullets happened, and recording that is worth more than quietly dropping
      them.** The developer account, the App content answers, the listing copy, the privacy policy, the icon,
      the keystore and a real `bundleRelease` all landed; **nothing was ever uploaded to a track**. So the one
@@ -1649,7 +1652,9 @@ prompt on easy ground, so dose reminders later add only the exact-alarm path.
 **Three things are different from every phase before this one, and each of them costs something.** The
 schema is **load-bearing**: 1.0 is installed from Play on the author's phone and holds real bunny history,
 which is exactly the dogfood case ADR-0007 names, so version 5 arrives by a **written, tested migration**
-and not by a wipe — the first one this project has ever had to write. The app ships **two locales**, so a
+and not by a wipe — the first one this project has ever had to write. ⚠️ **The phone held dummy data, not
+real history** (corrected 2026-08-21, ADR-0023's Phase 9 amendment). The schema was load-bearing regardless:
+1.0 had been published, so the obligation was owed to whoever installed it. The app ships **two locales**, so a
 new string is not finished until it exists in both, and `PolishTranslationTest` makes that a red build
 rather than a memory. And the app **posts notifications for the first time**, which means the first runtime
 permission, the first manifest permission since Phase 1, and the first change to the Play answers 3a
@@ -2132,6 +2137,9 @@ obligation rather than a phase of its own — which is the whole return on havin
      it, and the real bunny history is still there — the end-to-end evidence that `MIGRATION_4_5` works on a
      file this project did not construct for the purpose. 4b's committed 1.0.1 fixture is the cheaper version
      of the same proof that CI has been running on every pull request since; this is the one on real history.
+     ⚠️ **Read "real history" here as "a file this project did not construct for the purpose"** — the phone's
+     rows are dummy data (corrected 2026-08-21). That is the property the proof actually turns on and it
+     still holds: the file was written by the shipped build in the field, not synthesised by a test.
      **Outstanding, and the distinction matters:** `MIGRATION_4_5` is not unproven — the committed schema-4
      zip written by the shipped 1.0.1 build migrates and reads every table back, green in CI at API 26/34/36
      on every pull request. What is missing is only the last mile, that same migration against *this phone's*
@@ -3112,7 +3120,9 @@ copy.
       every pull request; on the phone, the run that matters is the **longest chain the field can produce** —
       whatever version a real device is on, forward to 1.2, real bunny history intact. This is 4h's carried
       item, and 1.2 is where it is finally cheap to do properly, because the fixtures already say what the
-      answer should be.
+      answer should be. ⚠️ **"Real bunny history" is wrong here too** — that install holds dummy data
+      (corrected 2026-08-21, ADR-0023's Phase 9 amendment). The property the run needs is that the file was
+      written by a shipped build in the field rather than synthesised by a test, and that is still true.
       ✅ **The CI half is done** — both fixtures are committed and both migrate to 6 on every pull request at
       API 26 / 34 / 36 (see 5b). ⏳ **The phone half is carried again, and the chain got longer than
       expected**: the Xiaomi's Play build is on **1.0.0**, not the 1.0.1 that 4h assumed, so the field chain
