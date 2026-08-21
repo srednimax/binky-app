@@ -507,9 +507,16 @@ intermediate version first spends a release cycle to prove nothing 1.7 would not
 
 ## 9i — The field upgrade proof
 
-1.0.0 → 1.7 on the Xiaomi, arriving from a track, with real bunny history intact. The Play build on that
-phone is **1.0.0**, not the 1.0.1 that 4h assumed, so the chain crosses all three hand-written
+1.0.0 → 1.7 on the Xiaomi, arriving from a track, with every row 1.0.0 wrote still there. The Play build
+on that phone is **1.0.0**, not the 1.0.1 that 4h assumed, so the chain crosses all three hand-written
 migrations and the launch gate that ADR-0023's Phase 7.5 amendment rewrote.
+
+⚠️ **That install holds dummy data, not real bunny history**, which this file and DOD §4 both claimed
+until 2026-08-21. The proof is unharmed — it asks whether the chain preserves what the old build wrote,
+and a dummy row migrates exactly as a real one does. What it costs is the coverage that months of
+dogfooding would have given for free: **the diff can only cover tables that have rows, and rows can only
+be added while the phone is still on 1.0.0**, since a Play-signed install refuses a local APK and nothing
+brings 1.7 back down. Check what the install actually contains *before* the upload, not after.
 
 **This is the standing gate's item 5**, the one no test can satisfy, on the release it matters most for.
 Both live upgrade paths were watched on the phone at 7.5 — 1.4.0 → 1.5 and the skipped-version

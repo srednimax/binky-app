@@ -64,6 +64,36 @@ migration *exists*. It never establishes that it survives this particular file, 
 drifts. The staged open needs neither. Its one trap: the staged builder must pin its own configuration, or
 in a debug build the fallback above would quietly empty the very file it was asked to test.
 
+## Amendment (Phase 9): the premise above is wrong, and the decision is right anyway
+
+**The release app on the author's phone holds dummy data, not real bunny history, and never has** — the
+paragraph above says otherwise and did so from the day it was written (corrected 2026-08-21). It is worth
+amending rather than editing, because a decision resting on a false premise is exactly the thing an ADR
+exists to expose.
+
+The decision survives, on two better reasons. **The obligation was never the author's phone.** ADR-0007's
+promise is owed to *owners*, and the tracks have served 1.0.0 and 1.3 to testers who entered their own
+rabbits; that a dogfooding developer would notice first is a convenience, not the ground the obligation
+stands on. And the
+suffix protects something the original framing missed: the Play install cannot be recreated at all. It is
+signed with the release key, so a local APK is refused on signature mismatch, which makes it **the only
+1.0.0 install this project has** and the only device the field upgrade proof (`DOD.md` §4, 9i) can run on.
+Uninstalling it destroys a *test fixture that cannot be rebuilt*, which is a sharper reason to keep the
+builds apart than the data ever was.
+
+**The care level steps at production; the obligation does not.** Those are two different lines and this
+ADR only ever drew one. The obligation started when the first track shipped — a tester's rows are theirs,
+and 9i is the proof they come back. What production changes is the *cost of being wrong*: the install base
+stops being twelve people who can be messaged, a bad migration becomes a support burden instead of a phone
+call, and a fix has to travel through review. So the standing schema gate (`DOD.md`, top) is not a
+production-only discipline — but **every hand-written migration from the production rollout onward is
+carrying strangers' data, and is reviewed on those terms.** Which is why 9i runs *before* production and
+not after: it is the last upgrade proof that can still be watched on a phone you own.
+
+What the correction does cost is coverage. Months of dogfooding would have filled every table for free;
+dummy data covers what someone remembered to enter, and 9i's table-by-table diff can only bite where there
+are rows. Whatever it should cover has to be entered **while the phone is still on 1.0.0**.
+
 ## Amendment (Phase 4b): a build takes migrations **or** the fallback, never both
 
 This ADR says the debug build keeps the fallback and the release build gets migrations, and reads as though
