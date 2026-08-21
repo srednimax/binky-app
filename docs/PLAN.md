@@ -2372,10 +2372,29 @@ truth, as the ADR-0024 exception it is, now also carrying the 30-minute grace wi
 rebuild triggers; **ADR-0026**, the app records doses and never advises on them, on screen as well as in the
 copy.
 
-1. **5a — The exact-alarm path, proven while nothing depends on it.** 🔨 *(built; lint 0/0, JVM tests green —
-   **not closed**: the overnight-Doze run has now been read once — the night of 4→5 August, result under its
-   bullet below — but it fired on the **best-effort** path, so the question the three outcomes were written for
-   is untouched and the tick still waits. **Everything else is proven on the device**, 2026-08-04 on the Xiaomi: the two-minute dose arrived, with
+1. **5a — The exact-alarm path, proven while nothing depends on it.** ✅ *(closed 2026-08-20 by Phase 9's 9a; lint 0/0, JVM tests green.
+   The overnight-Doze run did not answer here and did not answer for another two weeks, and the answer when it
+   came is **outcome 1, "fires in grace"** — 779 ms after the instant, 50 minutes inside an unbroken
+   `device_idle=full`, on battery — **conditional on a lever none of the three outcomes named**: HyperOS's
+   *autostart*. The night of 4→5 August fired on the **best-effort** path, because the permission had reverted
+   underneath it, and so settled nothing. The night of 18→19 August was the first attempt with nothing about the
+   setup in question — unplugged, stationary, `device_idle=full` unbroken 01:07 → 03:07 straight across the fire
+   time — and it **did not fire at all**. **Doze is not why.** MIUI's `GreezeManager` had frozen the process and
+   `Aurogon` held its pending alarm until a thaw, which arrived 3h50m late the moment the phone was plugged in.
+   One variable moved — `Binky Debug` added to autostart, the header going 10 → 11 — and the 2026-08-19 10:00 run
+   inverted the result, with no `GreezeManager` and no `Aurogon` line for the app anywhere in the log. The night
+   of 19→20 August then supplied the **matched ~5 h idle gap** that pass was missing: fired at **03:00:01.599**
+   inside `device_idle=full` 01:08 → 03:07:55, with `am_proc_start … DoseAlarmReceiver` against a process
+   `SmartPower` had already logged as dead — a cold start for a broadcast, which is the autostart signature and
+   exactly what the failing night could not do. **So the result is not "an exact alarm survives Doze" but "an
+   exact alarm does not reach a frozen app, and autostart is what stops the freeze"** — neither
+   `SCHEDULE_EXACT_ALARM`, nor `window=0`, nor the alarm's own `temporaryAppAllowlistReasonCode=302` outranks the
+   vendor's freezer. Readings in [`DOD.md`](DOD.md) §1. **The app's own behaviour on the failing night is a real
+   positive result and was previously untested**: at 3h50m late `postDueDoses` posted **nothing**, because
+   `DOSE_GRACE` is 30 minutes and a notification for a four-hour-stale slot is worse than silence, and
+   `rescheduleDoseAlarm` armed the successor. **What it cost the app is the part that outlives the run**:
+   `Armed` was a promise this phone does not keep, so 9a added a fourth delivery state — `ReminderDelivery.Silent`
+   — rather than let the UI claim a guarantee the ROM withholds. **Everything else is proven on the device**, 2026-08-04 on the Xiaomi: the two-minute dose arrived, with
    `1 wakeups` recorded against `DoseAlarmReceiver` — so the alarm woke the phone rather than riding somebody
    else's wakeup; `doses` exists at `mImportance=4` with the other three at 3; the appop went `default` →
    `allow` through the app's own deep link, so the permission path works end to end; the slot store is empty
@@ -2497,8 +2516,8 @@ copy.
    - Tests, JVM: the extended delivery resolver as a case table across notification × channel × exact-alarm
      state; the ADR-0007 guard as a pure predicate, reused rather than re-derived.
 2. **5b — The whole schema: vets, visits, and the first column added to a shipped table. Schema 6.**
-   🔨 *(built; spotless, `assembleDebug` and JVM tests green, lint 0/0 — **not closed**: the schema-5
-   fixture is the one bullet still owed, see below. Instrumented: **141 tests on the Xiaomi, all
+   ✅ *(built; spotless, `assembleDebug` and JVM tests green, lint 0/0. **Closed at 5j**, which is where its
+   one owed bullet — the schema-5 fixture — was written; see below. Instrumented: **141 tests on the Xiaomi, all
    green**, 2026-08-04, run through `am instrument` after the split install refused. One install note
    worth keeping, because it cost two rounds: HyperOS's first-install refusal applies **per package**,
    so the app APK updated cleanly while `…debug.test` — dropped when an earlier split-install session
@@ -3047,13 +3066,22 @@ copy.
      order respected at the boundary; a core already over budget admitting zero documents rather than going
      negative; the marker round-tripping an excluded count and an old marker without one still reading.
 9. **5i — The gate pass, freezing schema 6, and the definitive overnight Doze run.**
-   🔨 *(in progress, 2026-08-05. The **software half is green**: spotless, `assembleDebug` and JVM
+   ✅ *(software half green 2026-08-05, device half 2026-08-19. The **software half**: spotless, `assembleDebug` and JVM
    tests, and `lint` back to **0 errors and 0 warnings** (17 hints), which 3g reached and the job
    since has been to hold. **201 instrumented tests on the Xiaomi, all green** in 29 s — 5f's 187
    plus what 5g and 5h added — and CI's matrix is green **by name** at API 26 / 34 / 36 on `main`.
-   **Not closed**: the overnight Doze run is armed for the night of 5→6 August, and everything that
-   would disturb it — the writes against the armed course, denying notifications, the destructive
-   halves of three dialogs, the reboot pair and the timezone change — is deliberately after it.*
+   ✅ **Closed 2026-08-19 by Phase 9's 9a and 9b** — two weeks and several nights after the run was first
+   armed for 5→6 August. The overnight Doze run is answered under 5a above. The six items parked behind it were
+   not ticked off a list; they were driven as **38 readings** by `scripts/alarm-gate.py`, across writes,
+   bunny-level rebuilds, the blocked states, the destructive dialogs, a timezone change and four reboots. The
+   driver exists because `DoseAlarmTest` already proves ADR-0025's invariant in-process, fifteen cases of it, and
+   the half it cannot reach is the one this gate is about: whether the app's **own write paths**, tapped through
+   on a real phone, reach the rebuild at all. A repository method that forgets to call `rescheduleDoseAlarm`
+   passes every assertion in that test and none of these readings. **Every armed alarm came back on the *exact*
+   mechanism**, and two of the ten write readings end at **nothing armed**, which is the half worth paying for:
+   "at most one" cannot fail against a single request code, so zero is the only reading with information in it —
+   a stale alarm left by a deleted course is invisible until it fires into a database with no dose to post.
+   Readings in [`DOD.md`](DOD.md) §2, reasoning in [`phase-9.md`](phase-9.md) §9b.*
 
    ***Three findings from arming it, none of which a JVM test could have produced.*** *`am instrument`
    **cancels the app's pending alarms**: the runner force-stops the target package, and a force-stopped
@@ -3100,6 +3128,24 @@ copy.
      in cannot distinguish "self-heals within a day" from "self-heals when someone opens the app". The denied
      run is the one that describes an owner who skipped the prompt, and whatever it says is what ADR-0025's
      consequence is reworded to.
+     ✅ **8/8, 2026-08-19 — and the premise was wrong in an instructive way.** Both arms came back with exactly
+     one alarm at exactly the same instant, and both were still right after the app was opened, so **autostart
+     does not govern the boot rebuild at all.** It governs whether a *frozen* process is thawed to receive an
+     alarm hours later, which is 5a's question rather than this one.
+     🔴 **The reworded consequence came from a check nobody had planned**, written once the reboot readings
+     looked too good. With the phone left **locked** after the restart there was no pending dose alarm and no
+     process at +45 s, +105 s and +165 s; the alarm appeared only after the unlock. This is not the ROM and not
+     a defect: the device is `ro.crypto.type=file`, and under File-Based Encryption with a secure lock screen
+     `ACTION_BOOT_COMPLETED` is delivered when the owner's **credential-encrypted storage** is unlocked, not
+     when the kernel finishes booting. `BootReceiver` cannot opt out with `directBootAware`, because it opens
+     the database and the database is in CE storage by definition. **So ADR-0025's "the alarm is rebuilt from
+     truth at boot" is wrong on any phone with a lock screen**, which is most of them; the accurate sentence is
+     *rebuilt at the owner's first unlock after a restart*. A phone that restarts itself for an OTA at 02:00 and
+     is picked up at 07:00 has **no dose alarm for those five hours** — a 03:00 dose is not late, it never
+     exists — and nothing in the app can detect the state, because nothing in the app is running during it.
+     **Decided 2026-08-19: the ADR wording only, and no user-facing copy.** The app can neither read the fact
+     nor offer an action on it, so anything said would be said unconditionally, on every phone, forever, about a
+     window most owners never sit in.
    - **Schema 6 is frozen**: `6.json` committed and git-tagged (ADR-0007), `MIGRATION_5_6` no longer pending.
    - `lint` back to **0 errors and 0 warnings**, which 3g reached and the job since has been to hold.
    - The CI instrumented matrix green at API 26 / 34 / 36. **Both ends earn their place this time**: 26 is
@@ -3130,6 +3176,9 @@ copy.
       signed by Play's app-signing key and a locally built APK is refused over it with a signature mismatch,
       so the update has to arrive **from a track**. That makes this strictly downstream of the upload below,
       and the upload is downstream of Play's 12-testers / 14-day count, which was still running at 5j.
+      ➡️ **It is Phase 9's 9i now**, and the chain grew again while it waited: **1.0.0 → 1.7**, because 1.3
+      superseded 1.2.0 on the tracks and 1.7 is the build that takes production. The Play-side blocker is gone
+      (see the track bullet below); what remains is the same device trip, against a longer chain.
     - **`docs/play-app-content.md` re-verified, with one live question rather than three**: §7 Data safety,
       if ML Kit changed the permission set. §4 and §10 are **re-reads, not open questions** — the document
       answered both at Phase 3 with reasoning that medication does not disturb: Play's Health apps policy and
@@ -3146,12 +3195,20 @@ copy.
       Presumably *Debugowanie USB (ustawienia zabezpieczeń)* was reset — it needs a Mi account, and it is the
       same toggle that gates USB install. Nothing downstream is actually waiting: the listings cannot be
       updated while the Play count runs, so this rides with the upload below.
+      ✅ **Shot 2026-08-21 at 9g** — 72 padded PNGs, four scenes × light and dark × nine locales. **The gate was
+      in the driver, not on the phone**: synthetic taps land when they are sent as `input touchscreen tap`, and
+      bare `input tap` is what the Xiaomi was dropping. Nine locales rather than two because the app ships nine,
+      and shooting them found a doubled full stop in Ukrainian that no test could see.
     - Internal track first, then closed — the same order every release has taken. If 1.0.1's closed run has by
       then satisfied Play's 12-testers / 14-day requirement, **production becomes available for the first
       time**; whether 1.2 is the build that takes it is an ADR-0009 decision made then, not an automatic
       consequence of being allowed to.
       ⏳ **Not done at 5j: the count was still running on 2026-08-05**, so nothing was uploaded and the
-      Console half carries for the second release running. This is the same blocker 4h recorded, and it is
+      Console half carries for the second release running.
+      ✅ **Unblocked 2026-08-19: the 12-tester / 14-day requirement is satisfied and production access is
+      granted.** It is Phase 9's 9h, and what it leaves is repo-side only — Google is no longer blocking
+      anything. **1.2.0 itself never goes up**: 1.3 superseded it on the tracks while the count ran, and the
+      build that takes production is 1.7. This is the same blocker 4h recorded, and it is
       Play's clock rather than anything in the build — the bundle itself is cut, signed and verified above.
       The upgrade proof, the screenshots and the track uploads therefore all land together in one sitting
       once the count clears, which is cheaper than the three separate device trips 4h imagined.
