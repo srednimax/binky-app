@@ -730,6 +730,23 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
       mismatch, so the update must **arrive from a track**, downstream of the upload above. This is the
       standing gate's item 5, on the release it matters most for.
 
+      **How the diff is read: [`scripts/upgrade-diff.py`](../scripts/upgrade-diff.py) `before.zip`
+      `after.zip`.** ⚠️ **Not a `bunny.db` pulled off the phone** — a release build is not debuggable,
+      `adb shell run-as` is refused, and there is no route to that file at all. The **backup export is
+      the route**, and a faithful one: the archive carries the raw database and `BackupExporter`
+      checkpoints the WAL before zipping (true at `v1.0.0`, not only on `main`, which is what makes the
+      *before* image trustworthy). The script asserts five things in the order they break — `user_version`
+      climbed, no table vanished, every row survives on the columns the two schemas **share**, the
+      droppings values `MIGRATION_6_7` *moves* arrived in the join tables that replaced them, and the
+      media files survived. **The fourth cannot be a column diff**: those columns are gone from both
+      sides by definition, and it is the only place in the whole chain where an owner's data changes
+      tables. Exits non-zero on any of them.
+
+      ⚠️ **The before image is captured — 2026-08-21, exported to Google Drive**, off this machine and
+      so never verified for coverage. It is a valid snapshot of whatever is there; what was skipped is
+      the chance to *top up* the data first. If the fill turns out thin, the diff says so and the proof
+      is narrower than hoped rather than wrong.
+
 ## 5 — Phase 6: the support contact ✅ closed 2026-08-16, ships as 1.3
 
 **Done** — 6a, 6b, 6c and 6d built, driven on the device and written up. The record is
