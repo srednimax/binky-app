@@ -706,8 +706,13 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
       Play cross-checks the two and a mismatch is its own rejection reason.
 - [x] **Artifact checks** ([`RELEASING.md`](RELEASING.md)) — ✅ **all four green 2026-08-21** against
       `app/build/outputs/bundle/release/app-release.aab`, 12.4 MB, built by `bundleRelease` from
-      `54b2e78` (`v1.7.0`). `aab-version.py`: **versionCode 377**, versionName **1.7.0**, the count
-      matching `git rev-list --count HEAD`. `aab-permissions.py`: **8 permissions**, every one
+      `2abfbf9`. `aab-version.py`: **versionCode 379**, versionName **1.7.0**, the count matching
+      `git rev-list --count HEAD`. ⚠️ **This said 377 at `54b2e78` (`v1.7.0`) for twenty minutes.**
+      `versionCode` is the commit count, so the two docs PRs that landed after the first build moved
+      it — same app code, same 12.4 MB, different number. Rebuilt and re-checked rather than left to
+      disagree, because a record that names a versionCode the artifact does not carry is the exact
+      failure `aab-version.py` exists to catch. **Rebuild and re-run all four whenever `main` moves
+      before the upload**; the number is cheap to refresh and expensive to be wrong about. `aab-permissions.py`: **8 permissions**, every one
       accounted for, **none of the four forbidden**, **0 `<uses-feature>`**. `aab-locale.py`: all
       **6 058** translated strings of all **8** shipped locales present in `base/resources.pb` —
       it reads `locales_config.xml` and checks every one where it checked only `pl` until Phase 8;
@@ -720,7 +725,14 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
 
 ### The sitting itself
 
-- [ ] Upload **1.7** to **internal**, verify, promote to **closed**.
+- [ ] Upload **1.7** to **internal**, verify, promote to **closed**. **Uploaded 2026-08-21**:
+      versionCode **379**, versionName **1.7.0**, on the **internal** track — the first build past
+      1.0.0 to reach a track at all. Verify and promote still open. ⚠️ **An internal release needs no
+      review to reach a tester**, and the "send changes for review" banner is the *listing and app
+      content* queue, not this one; what does gate it is the rollout actually being started rather
+      than left a draft, the device's account being on the testers list, and that account having
+      accepted the **opt-in URL**. Google takes a few minutes to process the upload before the track
+      will serve it.
 - [ ] Countries/regions, pricing (free), ads declaration (none).
 - [ ] Production, **if** the count has cleared — whether 1.7 takes it is an ADR-0009 decision made then.
 
@@ -750,10 +762,53 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
       sides by definition, and it is the only place in the whole chain where an owner's data changes
       tables. Exits non-zero on any of them.
 
-      ⚠️ **The before image is captured — 2026-08-21, exported to Google Drive**, off this machine and
-      so never verified for coverage. It is a valid snapshot of whatever is there; what was skipped is
-      the chance to *top up* the data first. If the fill turns out thin, the diff says so and the proof
-      is narrower than hoped rather than wrong.
+      ⚠️ **Read the result below before reading the paragraph above.** The plan it describes is not
+      what happened, and it is kept because the reasoning still holds for the half that is open.
+
+- [x] **The migrations, proven on the phone against real 1.0.0 rows** ✅ **2026-08-21**, clean:
+
+      ```
+      user_version   4 -> 7        tables 8 -> 20
+      bunnies 2, fluffles 1, observation_symptoms 2, observations 39,
+      photos 5, symptoms 13, trend_acknowledgments 0, weights 52   — every row present
+      observations.droppingsForm  36 value(s) -> observation_droppings_appearance
+      observations.droppingsSize  36 value(s) -> observation_droppings_sizes
+      media files 5 -> 5
+      ```
+
+      All three hand-written migrations ran on the Xiaomi against rows a real 1.0.0 build wrote, and
+      **nothing was lost**. The two symptom ticks are the ones that matter most: they are what
+      `MIGRATION_6_7`'s cascade would have taken, and what Room's own `runMigrationsAndValidate` would
+      have passed over without a word. The 36 + 36 droppings values are the second: the only place in
+      the chain where data physically changes tables. `trend_acknowledgments` is empty on both sides,
+      so it is carried but untested.
+
+      **The evidence is two files, and they are outside the repo**:
+      `~/Downloads/bunny-everything-20260821T201940Z.zip` (schema 4, taken 22:19 off the 1.0.0 install)
+      and `~/Downloads/bunny-everything-20260821T213110Z.zip` (schema 7, 23:31). Re-run with
+      `python3 scripts/upgrade-diff.py <before> <after>`. They are ~220 KB of dummy rows and five
+      photos, kept out of git for the same reason the 72 screenshots are — but **the before image
+      cannot be produced again**, so do not delete it.
+
+- [ ] **The in-place update path is still open, and this is the honest half.** The rows above got into
+      1.7 by **restoring the schema-4 export by hand**, not by Play swapping the APK under an existing
+      data directory. What that leaves untested is exactly what 1.5 nearly shipped a refusal screen
+      over: **a cold start against a pre-existing older-schema database the app did not just restore**
+      — ADR-0023's launch gate on a real upgrade. The migrations are proven; the *gate on upgrade* is
+      not.
+
+      **Close it with the release-shaped debug build** ([`phase-7.5.md`](phase-7.5.md) §7), which is
+      why that route exists: the `.debug` variant installs alongside anything, so an old tag can be
+      seeded and the new build laid over it, and the whole thing is on the bench with Google nowhere
+      in it.
+
+      ⚠️ **How the Play install was lost, so it is not repeated.** The **internal track's opt-in page
+      instructs the tester to uninstall the current build first**, and an uninstall wipes the data
+      directory. That destroyed the original 1.0.0 install (`firstInstallTime` 2026-07-29 → 23:14, then
+      → 23:29 for a *fresh* 1.7). **The closed track does not ask for this** — it delivers an ordinary
+      in-place update — which is the track to use for an upgrade proof. The export taken at 22:19 is
+      the only reason any of this was recoverable, and it is the argument for exporting *before*
+      touching a track, not after.
 
 ## 5 — Phase 6: the support contact ✅ closed 2026-08-16, ships as 1.3
 
