@@ -60,14 +60,24 @@ The two things worth stating as reasoning rather than as steps:
 **Trap:** never run `connectedAndroidTest` after arming. `am instrument` force-stops the package, which
 cancels every alarm it placed, and the result is indistinguishable from a broken rebuild.
 
-**One box is still open under §1, and it is not 9a's own question.** The Phase-4 carry came in two
-halves. The sweep half is answered — 2026-08-20, the care sweep posted at 09:02 *inside* an unbroken
-`device_idle=full`, so the freezer does not eat a sweep the way it ate the 18→19 dose alarm. The watch
-half is not: a watch **auto-expiring**, where nagging stops that morning, the prompt shows the *current*
-trend, and dismissing leaves no row behind. After the 2026-08-19 21:25 re-seed the seeded watch ends
-2026-08-22 08:30, so the sweep that reports it is **09:00 on Saturday 2026-08-22** — a day later than
-the "08-21" written before that re-seed. It needs **no arming and no Doze**: the app installed, the job
-enqueued, and `lastNaggedOn` read before the shade is swiped. Box and readings in [`DOD.md`](DOD.md) §1.
+**§1's last box ✅ closed 2026-08-21, and it was never 9a's own question.** The Phase-4 carry came in two
+halves. The sweep half was answered 2026-08-20 — the care sweep posted at 09:02 *inside* an unbroken
+`device_idle=full`, so the freezer does not eat a sweep the way it ate the 18→19 dose alarm. The watch half
+— a watch **auto-expiring**, where nagging stops, the prompt shows the *current* trend, and closing it
+leaves no row behind — was supposed to ride the 09:00 sweep on Saturday 2026-08-22.
+
+**It could not, and 9g is why.** Every screenshot scene but one taps *Close it* on the watch prompt, which
+deletes the row; after eleven reseeds `watches` was empty and the 08-22 expiry no longer existed. The
+reading was taken the evening before instead, as a two-leg A/B in which `endsAt` is the only field that
+differs — leg A nags, leg B does not, and the worker is *seen* to run in both. All three claims hold, and
+the one that had no test anywhere in either tree, the prompt naming the current trend, is the one that
+needed the phone. Readings in [`DOD.md`](DOD.md) §1.
+
+**Two reading traps came out of it and both are worth more than the box.** A forced job that answers
+*"Could not find job 0"* produces output identical to a passing sweep — `am force-stop` cancels an app's
+jobs and WorkManager re-enqueues under a new id — so no sweep result counts until `WM-WorkerWrapper` is seen
+in logcat. And a database pulled without its `-wal` is a stale database: it reported the watch row surviving
+*Close it* three times running, and an app bug that does not exist was most of the way into `DOD.md`.
 
 ## 9b — The gate items parked behind it ✅ closed 2026-08-19
 
@@ -300,12 +310,20 @@ change touches the bottom bar on 21 scenes and cost nothing.
 Write 9a's and 9b's results into [`PLAN.md`](PLAN.md)'s 5a / 5i / 5j entries and tick **Phase 5** in the
 status list.
 
-⚠️ **It waits on the 08-22 reading, or the tick is over an unmade observation.** Phase 4 closed *on the
-build*, with its delivery evidence carried into Phase 5 — and §1's watch half is the last of that carry.
-Ticking Phase 5 before Saturday ticks a box whose evidence does not exist yet. The alternative is to
-track the carry as its own item outside Phase 5 and tick without it; that is a decision, not a default,
-and it should be written down here if it is taken. It has been the one unticked box since 2026-08-05 while four later phases closed around it,
-which is confusing to read and will be more confusing in six months.
+✅ **Closed 2026-08-21.** It waited on the 08-22 reading so the tick would not be over an unmade
+observation — Phase 4 closed *on the build*, with its delivery evidence carried into Phase 5, and §1's watch
+half was the last of that carry. The escape hatch written here was to track the carry outside Phase 5 and
+tick without it; it was not needed. 9g destroyed the 08-22 arming, the reading was taken on the bench the
+same evening instead, and the tick lands over evidence. It had been the one unticked box since 2026-08-05
+while four later phases closed around it.
+
+**What went into `PLAN.md`**: 5a closes on 9a with the answer stated as the conditional it actually is —
+an exact alarm does not reach a frozen app, and autostart is what stops the freeze — plus the two things a
+bare tick would have lost, `DOSE_GRACE` correctly posting nothing at 3h50m late and `Armed` becoming
+`ReminderDelivery.Silent`. 5i closes on 9a and 9b together, carrying the FBE finding that makes ADR-0025's
+"rebuilt from truth at boot" wrong on any phone with a lock screen. 5j's three carried items get pointers
+rather than rewrites, because the detail is Phase 9's. Two stale markers were fixed on the way: 5b read
+"not closed" over a bullet 5j had written, and 5i read "in progress, 2026-08-05".
 
 ## 9e — The front door ✅ closed 2026-08-19
 
@@ -604,8 +622,10 @@ Phase 9 closes when all of these hold:
 
 - `spotlessApply`, `assembleDebug`, `test`, `lint` at 0/0, and the instrumented suite green on the Xiaomi.
 - **9a's outcome recorded** against 5a's three written outcomes, and Phase 5 ticked in `PLAN.md`.
-- **The Phase-4 carry's watch half read** at the 09:00 sweep on **2026-08-22** — §1's last open box, and
-  the only item in this phase with a date it cannot be moved off.
+- ~~**The Phase-4 carry's watch half read** at the 09:00 sweep on **2026-08-22** — §1's last open box, and
+  the only item in this phase with a date it cannot be moved off.~~ ✅ **Read 2026-08-21**, and the date it
+  "cannot be moved off" turned out to be the one thing about it that was wrong: 9g destroyed the arming, and
+  an A/B on the bench answered all three claims the same evening.
 - **9b's six** ticked ✅, ADR-0025 reworded ✅ — the reboot said it must be, though not for the reason
   feared — and the readable half of what the run found *fixed*, not merely recorded ✅. (The seventh
   bullet in §2 is 9c's and is gated on the line below, not this one.)

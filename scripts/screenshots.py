@@ -24,8 +24,16 @@ Each cell runs all three suites in the one order that works: `full` against the 
 then `mismatch`, then `empty` — which wipes the install and is therefore last. Each cell then reseeds,
 so the next one starts from the same place and the phone is left usable rather than blank.
 
-**It wipes the debug install** (`binky.bunny.and.rabbit.tracker.debug`). That is not the Play build
-holding real bunny history — different `applicationId`, separate install, untouched by this.
+**It wipes the debug install** (`binky.bunny.and.rabbit.tracker.debug`). That is not the Play build —
+different `applicationId`, separate install, untouched by this. (The Play install holds dummy data too;
+what is irreplaceable about it is the *install*, not the contents — ADR-0023's Phase 9 amendment.)
+
+**It destroys anything armed on the debug install, and it does so silently.** Every cell reseeds, and a
+cell's first scene answers the watch-expiry prompt with `Close it`, which *deletes the watch row*. A
+2026-08-21 run of nine locales left `watches` empty and took an expiry that had been armed since 08-15
+with it — the reading Phase 9 §1 had been waiting on for two weeks. Nothing warned, because from the
+script's side reseeding is the correct behaviour. **Check for armed state before running this** — a watch,
+a dose slot, a scheduled sweep — or accept that it is gone.
 """
 
 from __future__ import annotations
