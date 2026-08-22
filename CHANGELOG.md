@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.0](https://github.com/srednimax/binky-app/compare/v1.7.0...v1.8.0) (2026-08-22)
+
+
+### Features
+
+* **scripts:** read the upgrade proof out of two backups, not off the phone ([2abfbf9](https://github.com/srednimax/binky-app/commit/2abfbf9835bf7d3fa8c20f94e607c15ea006265a))
+
+
+### Bug Fixes
+
+* **driver:** a tab tap that lands on a sheet is not a tab tap ([d0c17dc](https://github.com/srednimax/binky-app/commit/d0c17dc6d8cb5cbd6812fea119e0a37284a0d8d2))
+
 ## [1.7.0](https://github.com/srednimax/binky-app/compare/v1.6.0...v1.7.0) (2026-08-21)
 
 
