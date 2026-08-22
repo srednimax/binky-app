@@ -737,10 +737,14 @@ Both describe the *only* user-visible change in 1.0.1, which is what the release
 mentions the schema, because nothing about it changed for the person reading this — what changed is
 what the project owes from here (PLAN.md 3j, ADR-0023).
 
-### 1.7 — the release that carries 1.1 through 1.6 with it
+### 1.8.0 — the release that carries 1.1 through 1.7 with it
+
+⚠️ **The build these notes ship with is 1.8.0**, not the 1.7 this heading named until 2026-08-22;
+1.8.0 is 1.7 plus 9k, a driver fix and docs, none of which an owner can see, so **the nine note bodies
+below stand unchanged and need no re-translation** — only the version they are entered against moved.
 
 ⚠️ **This is not a note about one release, and it cannot be.** Nothing since 1.0.1 has ever been
-uploaded, so whoever takes this update sees 1.7's note and no other — everything 1.1 through 1.6
+uploaded, so whoever takes this update sees this note and no other — everything 1.1 through 1.7
 changed is new *to them*. A note scoped to 1.7's own commits would describe the housemates sheet and
 nothing else, which would be true and useless. These nine cover the span, ordered by what a 1.0
 install gains rather than by which release added it.
