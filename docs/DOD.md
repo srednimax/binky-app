@@ -32,8 +32,9 @@ closing notes and hold no work.
 
 **So what is actually open is evidence and Play, not code** — and as of 2026-08-18 that work has a phase
 of its own: **Phase 9**, record in [`phase-9.md`](phase-9.md), **ships as 1.7**. Everything through Phase 8
-is built, device-proven and tagged — `v1.6.0` was cut 2026-08-18 at schema **7** — but **the tracks are
-still on 1.0.0 / 1.3**, so none of it has reached an owner's phone. Closing that gap is what Phase 9 is.
+is built, device-proven and tagged — `v1.6.0` was cut 2026-08-18 at schema **7** — but **production is
+still on 1.0.0 / 1.3**, so it has reached no owner's phone. Closing that gap is what Phase 9 is. As of
+2026-08-22 **closed testing serves 1.7**, and the upgrade into it is proven (§4, 9i).
 
 **§10 is Phase 9's index**: it maps each of 9a–9j to the section that holds its boxes, and carries in full
 the four that are new (9d, 9e, 9f, 9g). The older sections keep their numbers because they also keep the
@@ -663,8 +664,9 @@ Two holds lift with it, and one does not:
 
 Google is not in the list. In rough order: **9b** and **9c** (the gate items parked behind 9a, and the
 75-scene edge-to-edge re-run), **9d–9g** (close Phase 5, the Pages front door, the fluffle, nine locales
-of screenshots), then **9i**, the field upgrade proof 1.0.0 → 1.7 — which is the one that must not be
-skipped, because it is the only thing standing between an existing owner and a refusal screen.
+of screenshots). ✅ **9i, the field upgrade proof 1.0.0 → 1.7, is closed 2026-08-22** — it was the one
+that must not be skipped, being the only thing standing between an existing owner and a refusal screen,
+and with it **production is no longer gated on the upgrade assembly**.
 
 Whether 1.7 takes **production** immediately, or goes to internal → closed → production a step at a time,
 is an ADR-0009 decision to make at upload — the access being granted does not decide it.
@@ -725,7 +727,8 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
 
 ### The sitting itself
 
-- [ ] Upload **1.7** to **internal**, verify, promote to **closed**. **Uploaded 2026-08-21**:
+- [x] Upload **1.7** to **internal**, verify, promote to **closed**. ✅ **Done** — and **closed testing
+      served it in place on 2026-08-22**, which is what 9i below is read off. **Uploaded 2026-08-21**:
       versionCode **379**, versionName **1.7.0**, on the **internal** track — the first build past
       1.0.0 to reach a track at all. Verify and promote still open. ⚠️ **An internal release needs no
       review to reach a tester**, and the "send changes for review" banner is the *listing and app
@@ -738,7 +741,9 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
 
 ### 9i — then, and only then, the field upgrade proof
 
-- [ ] **1.0.0 → 1.7**, every row 1.0.0 wrote still there. ⚠️ **Those rows are dummy data, not real bunny
+- [x] **1.0.0 → 1.7**, every row 1.0.0 wrote still there. ✅ **Closed 2026-08-22** — in two runs, one
+      for the migrations and one for the assembly; both results are below. ⚠️ **Those rows are dummy
+      data, not real bunny
       history** — this line claimed otherwise until 2026-08-21. It does not weaken the proof, which asks
       whether the chain preserves what the old build wrote and does not care what the rows mean. It does
       move the coverage into your hands: **whatever tables the diff should cover have to be filled while
@@ -762,8 +767,10 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
       sides by definition, and it is the only place in the whole chain where an owner's data changes
       tables. Exits non-zero on any of them.
 
-      ⚠️ **Read the result below before reading the paragraph above.** The plan it describes is not
-      what happened, and it is kept because the reasoning still holds for the half that is open.
+      ⚠️ **Read both results below before reading the paragraph above.** The plan it describes is what
+      happened on the **second** run, 2026-08-22, and not on the first: on 2026-08-21 the rows reached
+      1.7 by a hand restore, because the internal track's opt-in page had already taken the install with
+      it. The paragraph is kept because its reasoning is what both runs were read by.
 
 - [x] **The migrations, proven on the phone against real 1.0.0 rows** ✅ **2026-08-21**, clean:
 
@@ -790,30 +797,54 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
       photos, kept out of git for the same reason the 72 screenshots are — but **the before image
       cannot be produced again**, so do not delete it.
 
-- [ ] **The in-place update path is deferred, deliberately, and 1.7 must not reach production until it
-      is done.** The rows above got into 1.7 by **restoring the schema-4 export by hand**, not by Play
-      swapping the APK under an existing data directory.
+- [x] **The in-place update path — the assembly itself** ✅ **2026-08-22**, from the **closed** track,
+      clean. This was the box that gated production, and it is shut. It had been deferred on 2026-08-21
+      with the reasoning below, which is kept because it is what the run was read by.
 
-      **What is untested is narrower than it first looks.** Each component is covered: the migrations
-      by the committed fixtures in CI at API 26/34/36; ADR-0023's launch gate *on upgrade* by
-      `SchemaGateTest`, which asserts `schemaGateDecision(onDiskVersion = 4, appSchemaVersion = 7)`
-      lets the owner in and that 4→7, 5→7 and 6→7 all have paths; and the migrations against real
-      1.0.0 rows on real hardware by the run above. ⚠️ **An earlier draft of this box said "the gate on
-      upgrade is not proven" and that was wrong** — it is unit-tested, and it is what stood in front of
-      the 1.5 near-miss. What is untested is the **assembly**: Play replaces the APK, the process cold
-      starts, and the gate reads an on-disk version out of an installed database rather than a
-      constructed one.
+      **What the first run could not answer.** The rows got into 1.7 by **restoring the schema-4 export
+      by hand**, not by Play swapping the APK under an existing data directory. Each *component* was
+      already covered: the migrations by the committed fixtures in CI at API 26/34/36; ADR-0023's launch
+      gate *on upgrade* by `SchemaGateTest`, which asserts
+      `schemaGateDecision(onDiskVersion = 4, appSchemaVersion = 7)` lets the owner in and that 4→7, 5→7
+      and 6→7 all have paths; and the migrations against real 1.0.0 rows on real hardware. ⚠️ **An
+      earlier draft of this box said "the gate on upgrade is not proven" and that was wrong** — it is
+      unit-tested, and it is what stood in front of the 1.5 near-miss. What was untested was the
+      **assembly**: Play replaces the APK, the process cold starts, and the gate reads an on-disk
+      version out of an *installed* database rather than a constructed one.
 
-      **The decision, 2026-08-21: ship to testers without it, test it properly later.** The exposure is
-      a tester losing dummy rows, against a path whose every component is already green. ⚠️ **That
-      reasoning holds only while 1.7 is on internal or closed.** 1.0.0 has been live on **production**
-      since July, and those installs would take the in-place upgrade for real — so **production is
-      gated on this box**, not on the phase.
+      **What was done.** 1.0.0 taken fresh off **production** (`firstInstallTime` 2026-08-22 01:01:43),
+      then the 2026-08-21 schema-4 export restored into it **through 1.0.0's own restore path**, so the
+      before-image is a database 1.0.0 wrote and not a file dropped into place. Exported 10:35:40 local.
+      The **closed** track's update taken thirty seconds later — `lastUpdateTime` 2026-08-22 10:36:10,
+      `installerPackageName=com.android.vending`, versionCode **379**, versionName **1.7.0**. Exported
+      again 11:38:19. The app opened, and the diff is empty:
 
-      **Close it with the release-shaped debug build** ([`phase-7.5.md`](phase-7.5.md) §7), which is
-      why that route exists: the `.debug` variant installs alongside anything, so an old tag can be
-      seeded and the new build laid over it, and the whole thing is on the bench with Google nowhere
-      in it — no track, no opt-in page, no uninstall prompt, and repeatable.
+      ```
+      user_version   4 -> 7        tables 8 -> 20
+      bunnies 2, fluffles 1, observation_symptoms 2, observations 39,
+      photos 5, symptoms 13, trend_acknowledgments 0, weights 52   — every row present
+      observations.droppingsForm  36 value(s) -> observation_droppings_appearance
+      observations.droppingsSize  36 value(s) -> observation_droppings_sizes
+      media files 5 -> 5
+      ```
+
+      ⚠️ **`firstInstallTime` ≠ `lastUpdateTime` is the whole proof, and the diff alone is not.** An
+      uninstall-and-reinstall sets the two equal; these are nine and a half hours apart, so the data
+      directory was never wiped and the migration ran over rows already on the disk. A hand restore
+      produces **exactly** the same table counts — which is how 2026-08-21 read as a pass for something
+      it had not tested. Whoever repeats this: read the install times off `dumpsys package`, not only
+      the script's output.
+
+      **The evidence is two more files outside the repo**:
+      `~/Downloads/bunny-everything-20260822T083540Z.zip` (schema 4) and
+      `~/Downloads/bunny-everything-20260822T093819Z.zip` (schema 7). Re-run with
+      `python3 scripts/upgrade-diff.py <before> <after>`.
+
+      ✅ **The closed track behaved as this file predicted**: an ordinary in-place update, with no
+      uninstall asked for. That is what made the run possible at all, and it is the reason to keep
+      using it. **The release-shaped debug build** ([`phase-7.5.md`](phase-7.5.md) §7) was the planned
+      fallback and was not needed; it stays the bench route for any future bump, since it needs no
+      track, no opt-in page and no fresh 1.0.0.
 
       ⚠️ **How the Play install was lost, so it is not repeated.** The **internal track's opt-in page
       instructs the tester to uninstall the current build first**, and an uninstall wipes the data
@@ -993,11 +1024,13 @@ entity changes, so the standing gate at the top of this file does not fire in th
 | **9f** | Seeing the whole fluffle ✅ **closed 2026-08-20** — the sheet is built, tested and driven; the archived route and the landscape half-height state were both found on the phone | below |
 | **9g** | Nine locales of screenshots ✅ **closed 2026-08-21** — 72 padded PNGs, and it found a doubled full stop in Ukrainian that no test could see | below |
 | **9h** | The Console sitting ✅ production access granted 2026-08-19 — the release is repo-side only now | §4 |
-| **9i** | The field upgrade proof 1.0.0 → 1.7 | §4 |
+| **9i** | The field upgrade proof 1.0.0 → 1.7 ✅ **closed 2026-08-22** — the in-place assembly, from the closed track, over a real 1.0.0 data directory; it found that a clean diff cannot on its own tell an in-place update from a hand restore | §4 |
 | **9j** | The tester's reply ✅ **replied 2026-08-21** | §9 |
 | **9k** | The debug affordances that ship anyway — swept 2026-08-21, one finding, and it waits for 1.7 | below |
 
-**Four edges must not be reordered**, and everything else is free: **9i before 9k**, because 9k changes what is in the artifact and 9i is the proof about *this* artifact; **9a before 9b and 9c**, because both
+**Four edges must not be reordered**, and everything else is free: ✅ **9i before 9k** — spent, 9i closed
+2026-08-22, so 9k is free to change what is in the artifact now that the proof about *this* artifact is
+taken; **9a before 9b and 9c**, because both
 disturb the armed course and the run costs a night; **9f before 9g**, because 9g photographs a screen 9f
 changes; **9g and the listing copy before 9h before 9i**, because the upgrade proof needs an update that
 arrives from a track.

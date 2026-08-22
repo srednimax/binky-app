@@ -34,9 +34,11 @@ Most of this phase is independent work that can be done in any order. Three edge
 2. **9f before 9g.** 9g photographs the app in nine languages. Shooting a screen you are about to change
    is how the 1.0 screenshots became stale, and this file is written by the project that already paid
    that once.
-3. **9g and the listing copy before 9h, and 9h before 9i.** The upgrade proof needs an update that
-   *arrives from a track*, so it is downstream of the upload by construction — the installed Play build
-   is Play-signed and refuses a local APK on signature mismatch.
+3. **9g and the listing copy before 9h, and 9h before 9i.** ✅ **Spent 2026-08-22.** The upgrade proof
+   needs an update that *arrives from a track*, so it was downstream of the upload by construction — the
+   installed Play build is Play-signed and refuses a local APK on signature mismatch. The closed track
+   delivered it. **A fourth edge is now live: 9i before 9k**, because 9k moves three files between source
+   sets and so changes the artifact 9i is a proof about.
 
 Everything else — 9d, 9e, 9j — can be done whenever. **9e is closed** (2026-08-19), its post-merge probe
 included, and **9j is replied** (08-21).
@@ -523,7 +525,7 @@ moves with it — most importantly the field upgrade proof, which retargets from
 **1.0.0 → 1.7** and now crosses `MIGRATION_4_5`, `MIGRATION_5_6` **and** `MIGRATION_6_7`. Uploading an
 intermediate version first spends a release cycle to prove nothing 1.7 would not.
 
-## 9i — The field upgrade proof
+## 9i — The field upgrade proof ✅ closed 2026-08-22
 
 1.0.0 → 1.7 on the Xiaomi, arriving from a track, with every row 1.0.0 wrote still there. The Play build
 on that phone is **1.0.0**, not the 1.0.1 that 4h assumed, so the chain crosses all three hand-written
@@ -540,6 +542,39 @@ brings 1.7 back down. Check what the install actually contains *before* the uplo
 Both live upgrade paths were watched on the phone at 7.5 — 1.4.0 → 1.5 and the skipped-version
 1.1.0 → 1.5, zero differing rows on common columns both times — but neither of those was a *Play*
 delivery to an install carrying an owner's real records.
+
+### What it took two runs to prove, and why the first one was not enough
+
+**2026-08-21 proved the migrations. 2026-08-22 proved the assembly.** They are different claims and only
+the second one gates production.
+
+The first run got the schema-4 rows into 1.7 by **restoring the export by hand**, because the internal
+track's opt-in page had already instructed the tester to uninstall — which wiped the original 1.0.0 data
+directory. All three hand-written migrations ran against rows a real 1.0.0 build wrote and nothing was
+lost, so what it left open was narrow but load-bearing: Play replacing the APK *under an existing data
+directory*, the process cold starting, and ADR-0023's launch gate reading `user_version` out of an
+installed database rather than a constructed one.
+
+The second run closed it. 1.0.0 fresh off **production** at 01:01:43, the schema-4 export restored
+through 1.0.0's own restore path, exported at 10:35:40, and the **closed** track's update taken thirty
+seconds later at 10:36:10. `installerPackageName=com.android.vending`, versionCode 379. Exported again at
+11:38:19; `scripts/upgrade-diff.py` reports `4 -> 7`, tables `8 -> 20`, every row of all eight surviving
+tables present on shared columns, both droppings moves landed (36 + 36), media files `5 -> 5`.
+
+⚠️ **The finding worth keeping: a clean diff cannot tell an in-place update from a hand restore.** The
+table counts are identical either way, which is exactly why 2026-08-21 looked like a pass for a claim it
+had not tested. What separates them is on the phone, not in the archive:
+
+```
+firstInstallTime = 2026-08-22 01:01:43     # the fresh 1.0.0
+lastUpdateTime   = 2026-08-22 10:36:10     # Play swapped the APK under it
+```
+
+An uninstall-and-reinstall sets those equal. Nine and a half hours apart means the data directory
+survived. **Read `dumpsys package` as part of this proof, not only the script's exit code.**
+
+✅ And the **closed track delivers an ordinary in-place update** with no uninstall demanded — as DOD §4
+predicted, and unlike internal. That is the track to use for an upgrade proof.
 
 ## 9j — The tester's reply ✅ replied 2026-08-21
 
