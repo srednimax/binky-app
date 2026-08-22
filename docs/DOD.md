@@ -711,10 +711,11 @@ and with it **production is no longer gated on the upgrade assembly**.
 Whether 1.7 takes **production** immediately, or goes to internal → closed → production a step at a time,
 is an ADR-0009 decision to make at upload — the access being granted does not decide it.
 
-⚠️ **This section said "upload 1.3" until 2026-08-18, and it had been stale for four releases.** The build
-that goes up is **1.7** — Phase 9's own, carrying everything from 1.4 through 1.7. Every downstream claim
-moves with it, most importantly the upgrade proof. Uploading an intermediate version first spends a
-release cycle to prove nothing 1.7 would not.
+⚠️ **This section said "upload 1.3" until 2026-08-18, and it had been stale for four releases; it then
+said 1.7 until 2026-08-22.** The build that goes up is **1.8.0** (versionCode 386) — Phase 9's own plus
+9k, carrying everything from 1.4 forward. Every downstream claim moves with it, most importantly the
+upgrade proof, which carries because 1.8.0 changes no entity, no migration and no launch gate. Uploading
+an intermediate version first spends a release cycle to prove nothing 1.8.0 would not.
 
 **The listing and the build go up together.** `store-listing.md`'s copy describes 1.6-scope features;
 putting it on a track still serving 1.0.0 is a listing violation, not a rounding error.
@@ -746,17 +747,24 @@ putting it on a track still serving 1.0.0 is a listing violation, not a rounding
 - [ ] **App content, all ten sections** — answers are paste-ready in
       [`play-app-content.md`](play-app-content.md). Data safety must still agree with the privacy policy;
       Play cross-checks the two and a mismatch is its own rejection reason.
-- [x] **Artifact checks** ([`RELEASING.md`](RELEASING.md)) — ✅ **all four green 2026-08-21** against
-      `app/build/outputs/bundle/release/app-release.aab`, 12.4 MB, built by `bundleRelease` from
-      `2abfbf9`. `aab-version.py`: **versionCode 379**, versionName **1.7.0**, the count matching
-      `git rev-list --count HEAD`. ⚠️ **This said 377 at `54b2e78` (`v1.7.0`) for twenty minutes.**
+- [x] **Artifact checks** ([`RELEASING.md`](RELEASING.md)) — ✅ **re-run all four green 2026-08-22** at
+      **1.8.0** against `app/build/outputs/bundle/release/app-release.aab`, 12.3 MB, built by
+      `bundleRelease` from `1ee12dd` (`v1.8.0`). `aab-version.py`: **versionCode 386**, versionName
+      **1.8.0**, the count matching `git rev-list --count HEAD`. ⚠️ **The build that goes up is 1.8.0,
+      not the 1.7 this section named until 2026-08-22** — 9k's merge and release-please's bump moved
+      `main` after 9i closed, and the rule two paragraphs down is the one that caught it. 1.8.0 is
+      1.7.0 plus 9k, the driver fix and docs: **schema stays 7, no entity change, the migration chain
+      and the launch gate 9i proved are byte-for-byte the ones in this artifact**, so the field upgrade
+      proof carries. The bundle is **30 KB smaller** than 1.7.0's, which is the debug surface leaving
+      `main/`. ⚠️ **This said 377 at `54b2e78` (`v1.7.0`) for twenty minutes.**
       `versionCode` is the commit count, so the two docs PRs that landed after the first build moved
       it — same app code, same 12.4 MB, different number. Rebuilt and re-checked rather than left to
       disagree, because a record that names a versionCode the artifact does not carry is the exact
       failure `aab-version.py` exists to catch. **Rebuild and re-run all four whenever `main` moves
       before the upload**; the number is cheap to refresh and expensive to be wrong about. `aab-permissions.py`: **8 permissions**, every one
       accounted for, **none of the four forbidden**, **0 `<uses-feature>`**. `aab-locale.py`: all
-      **6 058** translated strings of all **8** shipped locales present in `base/resources.pb` —
+      **5 954** translated strings of all **8** shipped locales present in `base/resources.pb` — it was
+      6 058 at 1.7.0, and the difference is 9k's thirteen debug strings per locale leaving the gate —
       it reads `locales_config.xml` and checks every one where it checked only `pl` until Phase 8;
       the ninth is `en`, which *is* the base it compares against rather than a locale it can miss.
       `keytool`: `CN=Maksymilian Sredniawa, O=Binky, C=PL`, the upload key, SHA-256
@@ -1301,6 +1309,6 @@ When every box above is ticked: write the results into `PLAN.md`'s 5a / 5i / 5j 
 *and* **Phase 9** in the checklist at the top, and empty this file down to the standing schema gate.
 
 **Both at once, because they are the same boxes.** Phase 5's evidence half is what Phase 9 §1 and §2 are;
-9d is the tick. At that point every phase in the project is closed and 1.7 is on Play in nine languages —
+9d is the tick. At that point every phase in the project is closed and 1.8.0 is on Play in nine languages —
 the first time both sentences are true at once — and what is open stops being a release checklist and
 starts being whatever owners report.
