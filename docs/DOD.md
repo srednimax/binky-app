@@ -495,6 +495,46 @@ reading the phone, both produce output that looks exactly like a pass, and both 
   `bunny.db-wal`, then `PRAGMA wal_checkpoint(TRUNCATE)` on the host, on every read. The arming recipe
   already said so; the reading half did not, and that asymmetry is the whole trap.
 
+### A third leg, unasked for: rule 4 seen in the field, 2026-08-22 09:00 ✅
+
+**The A/B varied `endsAt` and forced the sweep. This one varied nothing and forced nothing**, and it is the
+only reading in this file where `WatchSweep.kt`'s **rule 4** — any observation inside
+`WATCH_SATISFIED_WITHIN` settles it — is what silences the nag. Free, in the sense that nobody armed it: the
+debug install was reinstalled at **00:24:36** that morning for unrelated reasons, so the daily sweep was
+armed at first launch and had to survive the night with no help.
+
+```
+09:01:26.307  am_proc_start        … SystemJobService        WorkManager woke the process
+09:01:27.942  notification_enqueue channel=care groupKey=app.binky.tracker.care
+```
+
+**One post, 87 s after the slot**: `Nail trim` / "Overdue for Bijou.", and `notifiedForDueOn` moved to
+`2026-08-11`, so the stamp landed. 08-19 posted **two** at the same slot; the difference is entirely one
+fresh observation, and all three silences are the app being right:
+
+| what did not post | why, and it is correct |
+| --- | --- |
+| **Weigh-in** | Not due. `CareSchedule.kt` takes `lastCompletedOn` as the later of the care event **and the latest weighing** — Bijou was weighed 2026-08-20 08:30, interval 1 week, so 08-27. Reading `care_events` alone (last completion 2026-07-25) is the same mistake that produced the wrong four-post prediction on 08-19. |
+| **Group summary** | `CareNotifier` posts one only for two or more due. One reminder, correctly none. |
+| **The watch nag** | Rules 2 and 3 both **let it through** — the watch is active (2026-08-18 08:30 → 2026-08-25 08:30) and `lastNaggedOn` is null. Rule 4 stopped it: Bijou's newest observation is 2026-08-21 **18:00**, 15 h before the sweep, inside the 24 h rolling window. |
+
+That last row is the one worth keeping. `WATCH_SATISFIED_WITHIN` is a **rolling** 24 h where `lastNaggedOn`
+is a **calendar day**, and the source argues the shapes must differ so that "an owner who logged at 20:00
+should not be chased at 09:00 the next morning over a calendar-day boundary they had no reason to care
+about". This is that sentence happening: logged 18:00, not chased at 09:01.
+
+⚠️ **This is not the auto-expiry reading, and it does not reopen the box above.** That watch expires
+**2026-08-25 08:30**, three days after this sweep, and its three claims were already answered on the bench
+on 08-21. **The natural expiry is deliberately deferred to after the production deploy** (2026-08-22
+decision) — it is a field confirmation of something already proven, not a gate on anything, and nothing in
+§4 or Phase 9 waits on it.
+
+⚠️ **The arming will be spent before that.** The watch runs out on its own at 08-25 08:30 whether anyone is
+watching or not, so a deploy later than Monday morning arrives to an empty `watches` table. Re-arm by
+writing a row straight into the debug database — the recipe is the A/B's, with `endsAt` set a few minutes
+out — rather than expecting this one to still be there. **9g destroyed the last arming this way**, and an
+arming that expires unobserved is the same loss by a slower route.
+
 ---
 
 ## 2 — The gate items parked behind that run ✅ 9b closed 2026-08-19 — the last bullet is 9c and stays open

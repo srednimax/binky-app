@@ -75,6 +75,15 @@ differs — leg A nags, leg B does not, and the worker is *seen* to run in both.
 the one that had no test anywhere in either tree, the prompt naming the current trend, is the one that
 needed the phone. Readings in [`DOD.md`](DOD.md) §1.
 
+**A third leg arrived unasked for on 2026-08-22**, and it is the only reading that exercises rule 4. The
+debug install had been reinstalled at 00:24 that morning, so the daily sweep was armed at first launch; it
+fired unforced at 09:01:26 and posted the nail trim alone. The watch was *active* with `lastNaggedOn` null —
+rules 2 and 3 both let it through — and what silenced the nag was an observation logged at 18:00 the evening
+before, 15 h inside the rolling 24 h `WATCH_SATISFIED_WITHIN`. The A/B could not show this: it varied
+`endsAt` and forced the job. ⚠️ **The natural auto-expiry, due 2026-08-25 08:30, is deferred to after the
+production deploy** — a field confirmation of claims already answered, gating nothing, and it needs re-arming
+if the deploy slips past Monday morning.
+
 **Two reading traps came out of it and both are worth more than the box.** A forced job that answers
 *"Could not find job 0"* produces output identical to a passing sweep — `am force-stop` cancels an app's
 jobs and WorkManager re-enqueues under a new id — so no sweep result counts until `WM-WorkerWrapper` is seen
