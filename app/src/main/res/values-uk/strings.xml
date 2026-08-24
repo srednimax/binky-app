@@ -606,10 +606,13 @@
     <string name="observation_droppings_size_label">Розмір</string>
     <string name="observation_droppings_appearance_label">Вигляд</string>
     <string name="observation_cecotropes_label">Цекотрофи</string>
-    <string name="observation_tray_photo_label">Фото лотка</string>
+    <string name="observation_tray_photo_label">Фотографії лотка</string>
     <string name="observation_tray_photo_help">Рівне розсіяне світло найкраще показує форму — котяхи в тіні потім важко розібрати.</string>
     <string name="observation_tray_photo_description">Лоток</string>
     <string name="observation_tray_photo_unreadable">Binky не зміг прочитати це зображення, тож нічого не долучено.</string>
+<string name="observation_tray_photo_remove">Прибрати це фото</string>
+<string name="observation_tray_photo_full">Це максимум фото для одного лотка.</string>
+<string name="observation_tray_photo_more">+%1$d</string>
 
     <string name="observation_individual_heading">Цей кролик</string>
     <string name="observation_individual_heading_named">%1$s</string>

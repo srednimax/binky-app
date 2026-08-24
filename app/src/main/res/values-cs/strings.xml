@@ -727,11 +727,14 @@
     <string name="observation_droppings_size_label">Velikost</string>
     <string name="observation_droppings_appearance_label">Vzhled</string>
     <string name="observation_cecotropes_label">Cékotrofy</string>
-    <string name="observation_tray_photo_label">Fotka toalety</string>
+    <string name="observation_tray_photo_label">Fotky toalety</string>
     <!-- About the light, not about the camera. -->
     <string name="observation_tray_photo_help">Rovnoměrné nepřímé světlo ukáže tvar nejlíp — bobky ve stínu se pak čtou špatně.</string>
     <string name="observation_tray_photo_description">Toaleta</string>
     <string name="observation_tray_photo_unreadable">Tenhle obrázek nešel přečíst, takže se nic nepřipojilo.</string>
+<string name="observation_tray_photo_remove">Odebrat tuto fotku</string>
+<string name="observation_tray_photo_full">Tolik fotek může mít jedna toaleta.</string>
+<string name="observation_tray_photo_more">+%1$d</string>
 
     <string name="observation_individual_heading">Tenhle králík</string>
     <string name="observation_individual_heading_named">%1$s</string>

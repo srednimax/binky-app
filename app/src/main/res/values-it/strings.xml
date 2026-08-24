@@ -667,12 +667,15 @@
     <string name="observation_droppings_size_label">Dimensione</string>
     <string name="observation_droppings_appearance_label">Aspetto</string>
     <string name="observation_cecotropes_label">Ciecotrofi</string>
-    <string name="observation_tray_photo_label">Foto della lettiera</string>
+    <string name="observation_tray_photo_label">Fotografie della lettiera</string>
     <!-- About the light, not about the camera: shape in shadow is hard to read at any quality,
          and no file size fixes that. -->
     <string name="observation_tray_photo_help">Una luce uniforme e indiretta mostra meglio la forma: le palline in ombra sono difficili da leggere dopo.</string>
     <string name="observation_tray_photo_description">La lettiera</string>
     <string name="observation_tray_photo_unreadable">Binky non è riuscito a leggere quell’immagine, quindi non è stato allegato niente.</string>
+<string name="observation_tray_photo_remove">Rimuovi questa foto</string>
+<string name="observation_tray_photo_full">È il massimo di foto per una lettiera.</string>
+<string name="observation_tray_photo_more">+%1$d</string>
 
     <string name="observation_individual_heading">Questo coniglio</string>
     <string name="observation_individual_heading_named">%1$s</string>

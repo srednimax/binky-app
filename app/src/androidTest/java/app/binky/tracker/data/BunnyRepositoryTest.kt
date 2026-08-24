@@ -72,7 +72,7 @@ class BunnyRepositoryTest {
             observations.add(
                 listOf(bijou, nugget),
                 Instant.parse("2026-03-04T08:30:00Z"),
-                ObservationFacts(tray = TrayFacts(trayPhotoPath = relativePath)),
+                ObservationFacts(tray = TrayFacts(trayPhotoPaths = listOf(relativePath))),
             )
 
             bunnies.delete(nugget)

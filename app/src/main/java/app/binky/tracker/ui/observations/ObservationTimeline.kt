@@ -52,13 +52,14 @@ data class TimelineEntry(
     val tray: TrayFacts,
     val participants: List<TimelineParticipant>,
     /**
-     * [TrayFacts.trayPhotoPath] resolved to a file to draw, or null when there is no photo.
+     * [TrayFacts.trayPhotoPaths] resolved to files to draw, in the owner's order. Empty when there are
+     * no photos.
      *
-     * **Filled in by the ViewModel afterwards, not here.** The path on the row is relative and only
-     * `MediaFiles` knows what it is relative to — and this file deliberately has no Android in it, so
-     * that the collapse rule stays a JVM test rather than an instrumented one.
+     * **Filled in by the ViewModel afterwards, not here.** The paths on the rows are relative and only
+     * `MediaFiles` knows what they are relative to — and this file deliberately has no Android in it,
+     * so that the collapse rule stays a JVM test rather than an instrumented one.
      */
-    val trayPhoto: File? = null,
+    val trayPhotos: List<File> = emptyList(),
 ) {
     /**
      * **`groupId != null`, never `participants.size > 1`** (ADR-0008).
@@ -93,6 +94,8 @@ data class TimelineDay(
  *   schema 7, so it arrives beside the rows rather than on them (ADR-0029). Absent means nothing was
  *   recorded, and the timeline prints no line at all rather than "not checked".
  * @param droppingsAppearance the same, for what the droppings looked like.
+ * @param trayPhotos every observation's tray photos, by observation id, already in the owner's order —
+ *   a join table since schema 8, on the same terms as the two above. Absent means none were taken.
  * @param focusBunnyId whose row an entry's [TimelineEntry.id] should point at, under a single-bunny
  *   scope. Null under "All bunnies".
  */
@@ -102,6 +105,7 @@ fun buildTimeline(
     symptomIds: Map<String, Set<String>>,
     droppingsSizes: Map<String, Set<DroppingsSize>> = emptyMap(),
     droppingsAppearance: Map<String, Set<DroppingsAppearance>> = emptyMap(),
+    trayPhotos: Map<String, List<String>> = emptyMap(),
     focusBunnyId: String? = null,
     zone: ZoneId = ZoneId.systemDefault(),
 ): List<TimelineDay> {
@@ -147,6 +151,7 @@ fun buildTimeline(
                     first.trayFacts(
                         droppingsSizes = droppingsSizes[first.id].orEmpty(),
                         droppingsAppearance = droppingsAppearance[first.id].orEmpty(),
+                        trayPhotoPaths = trayPhotos[first.id].orEmpty(),
                     ),
                 participants = participants,
             )

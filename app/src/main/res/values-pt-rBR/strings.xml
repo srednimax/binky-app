@@ -706,10 +706,13 @@
     <string name="observation_droppings_size_label">Tamanho</string>
     <string name="observation_droppings_appearance_label">Aparência</string>
     <string name="observation_cecotropes_label">Cecotrofos</string>
-    <string name="observation_tray_photo_label">Foto da caixa de areia</string>
+    <string name="observation_tray_photo_label">Fotos da caixa de areia</string>
     <string name="observation_tray_photo_help">Luz uniforme e indireta mostra melhor o formato — bolinhas na sombra são difíceis de ler depois.</string>
     <string name="observation_tray_photo_description">A caixa de areia</string>
     <string name="observation_tray_photo_unreadable">O Binky não conseguiu ler essa imagem, então nada foi anexado.</string>
+<string name="observation_tray_photo_remove">Remover esta foto</string>
+<string name="observation_tray_photo_full">É o máximo de fotos que uma caixa de areia pode ter.</string>
+<string name="observation_tray_photo_more">+%1$d</string>
 
     <string name="observation_individual_heading">Este coelho</string>
     <string name="observation_individual_heading_named">%1$s</string>

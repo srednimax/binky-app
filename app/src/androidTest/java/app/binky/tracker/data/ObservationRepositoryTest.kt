@@ -315,6 +315,68 @@ class ObservationRepositoryTest {
             assertEquals(0, database.countRows("observation_droppings_sizes"))
         }
 
+    /**
+     * The set lands on **every participant's row, in order** — the schema-8 half of "a tray fact is
+     * identical across the group by construction" (ADR-0029, amended).
+     *
+     * Order is asserted rather than membership, because [ObservationPhotoEntity.position] is the only
+     * thing carrying it: the composite primary key cannot, and a read without an `ORDER BY` would come
+     * back in whatever order the rows happen to sit in. An owner who arranged three frames must find
+     * them arranged when they come back.
+     */
+    @Test
+    fun everyParticipantGetsTheWholeSetOfTrayPhotosInOrder() =
+        runTest {
+            val bijou = addBunny("Bijou")
+            val nugget = addBunny("Nugget")
+            val (first, _) = writeTrayPhoto()
+            val (second, _) = writeTrayPhoto()
+            val (third, _) = writeTrayPhoto()
+            val paths = listOf(first, second, third)
+
+            val (bijouRow, nuggetRow) =
+                observations
+                    .add(
+                        listOf(bijou, nugget),
+                        noticed,
+                        ObservationFacts(tray = worryingTray.copy(trayPhotoPaths = paths)),
+                    ).let { it[0] to it[1] }
+
+            assertEquals(paths, observations.trayFactsNow(bijouRow)!!.trayPhotoPaths)
+            assertEquals(paths, observations.trayFactsNow(nuggetRow)!!.trayPhotoPaths)
+            // Two participants × three photos, denormalised exactly as the tray columns are.
+            assertEquals(6, database.countRows("observation_photos"))
+        }
+
+    /**
+     * Removing **one of several** takes that file and leaves the rest — the refcount rule operating on
+     * a set rather than on a single path.
+     *
+     * The kept photo is the assertion that matters: an edit that rewrote the whole set by deleting
+     * every previous file and re-adding the survivors would pass a "the removed one is gone" check and
+     * destroy the two an owner kept.
+     */
+    @Test
+    fun removingOnePhotoOfSeveralLeavesTheOthersOnDisk() =
+        runTest {
+            val bijou = addBunny("Bijou")
+            val (kept, keptFile) = writeTrayPhoto()
+            val (dropped, droppedFile) = writeTrayPhoto()
+            val id =
+                observations
+                    .add(
+                        listOf(bijou),
+                        noticed,
+                        ObservationFacts(tray = worryingTray.copy(trayPhotoPaths = listOf(kept, dropped))),
+                    ).single()
+
+            observations.updateTray(id, worryingTray.copy(trayPhotoPaths = listOf(kept)))
+
+            assertTrue("the photo the owner kept must still be on disk", keptFile.exists())
+            assertFalse("the removed photo is referenced by nothing and should go", droppedFile.exists())
+            assertEquals(listOf(kept), observations.trayFactsNow(id)!!.trayPhotoPaths)
+        }
+
     @Test
     fun aTrayPhotoSurvivesTheCorrectionThatRemovesOneParticipant() =
         runTest {
@@ -325,7 +387,7 @@ class ObservationRepositoryTest {
                 observations.add(
                     listOf(bijou, nugget),
                     noticed,
-                    ObservationFacts(tray = worryingTray.copy(trayPhotoPath = path)),
+                    ObservationFacts(tray = worryingTray.copy(trayPhotoPaths = listOf(path))),
                 )
 
             observations.removeParticipant(bijouRow, nugget)
@@ -335,7 +397,7 @@ class ObservationRepositoryTest {
             // it** — ADR-0029's one new rule, and the reason a duplicated path was acceptable at all
             // instead of a group table.
             assertTrue("the survivor's photo must not go with the correction", file.exists())
-            assertEquals(path, observations.observationNow(bijouRow)!!.trayPhotoPath)
+            assertEquals(listOf(path), observations.trayFactsNow(bijouRow)!!.trayPhotoPaths)
         }
 
     @Test
@@ -348,7 +410,7 @@ class ObservationRepositoryTest {
                 observations.add(
                     listOf(bijou, nugget),
                     noticed,
-                    ObservationFacts(tray = worryingTray.copy(trayPhotoPath = path)),
+                    ObservationFacts(tray = worryingTray.copy(trayPhotoPaths = listOf(path))),
                 )
 
             observations.delete(bijouRow)
@@ -369,10 +431,10 @@ class ObservationRepositoryTest {
                     .add(
                         listOf(bijou),
                         noticed,
-                        ObservationFacts(tray = worryingTray.copy(trayPhotoPath = firstPath)),
+                        ObservationFacts(tray = worryingTray.copy(trayPhotoPaths = listOf(firstPath))),
                     ).single()
 
-            observations.updateTray(id, worryingTray.copy(trayPhotoPath = secondPath))
+            observations.updateTray(id, worryingTray.copy(trayPhotoPaths = listOf(secondPath)))
 
             assertFalse("the replaced photo is referenced by nothing and should go", firstFile.exists())
             assertTrue(secondFile.exists())

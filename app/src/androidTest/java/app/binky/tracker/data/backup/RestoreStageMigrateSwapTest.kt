@@ -647,9 +647,10 @@ class RestoreStageMigrateSwapTest {
                 droppingsIn(liveName, "observation_droppings_sizes"),
             )
 
-            // Schema 7's other half: the tray photo link exists and is empty on every row, because
-            // `MIGRATION_6_7` writes it as NULL — 1.4.0 had nowhere to have put one.
-            assertEquals(0, rowsIn(liveName, "observations", "`trayPhotoPath` IS NOT NULL"))
+            // Schema 7's other half, carried through schema 8: the tray photos table exists and is
+            // empty, because `MIGRATION_6_7` wrote the column as NULL — 1.4.0 had nowhere to have put
+            // one — and `MIGRATION_7_8` then had no non-null path to turn into a row.
+            assertEquals(0, rowsIn(liveName, "observation_photos"))
 
             // And the media the older fixtures could not carry: the document pages arrive beside the
             // photos. `overlaid` rather than `kept` — the archive's own files are the ones written

@@ -256,3 +256,80 @@ the third customer for that mechanism after the gain card and the five-bunny flu
 
 **The values are stored by name, never ordinal**, so this addition cannot rewrite history — which is what
 made a sixth, seventh and eighth value safe to add at all.
+
+---
+
+## Amendment (Phase 10, 10d): the tray photo is a set, and the release valve is spent
+
+**2026-08-23, from an owner.** *Several photos per litter tray, not one.* Accepted, and it is the shape this
+ADR already argued for twice — the section above calls the single photo "the phase's release valve", cheap
+to cut and cheap to re-add, and what it did not anticipate is that the *cardinality* would be the thing that
+turned out wrong rather than the field itself.
+
+**One frame does not cover a tray, and the reason is the same one that made droppings multi-valued.** A tray
+holds round pellets *and* soft ones, which is why `DroppingsAppearance` is a set; it also holds them in
+places one photograph does not reach, and an owner photographing a tray they are worried about is gathering
+evidence rather than keeping a memento. The single column asked them to pick the most representative frame,
+which is a judgement they were making *because the app could not hold both*.
+
+### It takes the shape the two droppings fields already have
+
+`observations.trayPhotoPath` becomes **`observation_photos`** — a join table keyed on `observationId`,
+written for every participant inside the transaction that writes the rows, and **replaced, not merged** on
+an edit. Keyed on the observation and not on a group, for the reason this ADR gives at length: there is no
+group *table*, so a tray-level set is denormalised onto every participant's row exactly as the tray columns
+are.
+
+It carries one column the droppings tables do not: **`position`**, the owner's order. That is a real
+difference rather than an inconsistency — a tray either has soft droppings in it or does not, and set
+membership is the whole fact, where a strip of photographs the owner arranged has an order that the
+composite primary key cannot carry. There is deliberately **no `createdAt`**: nothing would read it,
+`observation_symptoms` and both droppings tables carry no timestamp either, and the row it hangs off already
+records when the observation was made.
+
+`path` gets its own index, for the same reason `observation_symptoms.symptomId` has one — the composite key
+indexes `observationId` first, so the refcount below, a lookup by path alone, could not use it.
+
+### The one new rule is unchanged, and now guards a set
+
+The section above introduced it for a single duplicated path: **a file goes only when no other row
+references it.** That survives the change with its wording intact and its query moved —
+`SELECT COUNT(*) FROM observation_photos WHERE path = ?` instead of the same count over `observations`.
+Every path that leaves an edit is now diffed against what was there, and each orphan is checked
+individually, because "the photo changed" has become "these two went and these three stayed".
+
+### Six per tray, and the number is arithmetic
+
+`MediaKind.Observation` writes at a 2048px long edge and quality 88 — around half a megabyte a frame — and
+these files sit in Auto Backup's newest-first admission queue against a 20 MB budget shared with document
+pages, after the core has taken its share. **Six is about 3 MB for one thorough tray**: enough that a whole
+observation is never split across the admission boundary, small enough that a handful of trays still fit
+beside the documents.
+
+Nothing silently drops past the cap. The form stops offering *add*, and the exclusion notice this ADR
+already built is what tells an owner which record images did not reach the cloud — the honest answer the app
+already gives, rather than a new one invented for photos.
+
+### What it costs, and what it does not
+
+**Schema 8**, folded into one `MIGRATION_7_8` with an unrelated `events` table (ADR-0031), because
+`observations` has to be rebuilt anyway to lose the column and two migrations would mean testing the
+expensive one twice.
+
+⚠️ **The rebuild has three cascade-carrying children now, not one.** `MIGRATION_6_7`'s recipe staged
+`observation_symptoms`; since 1.5 there are also `observation_droppings_appearance` and
+`observation_droppings_sizes` — created *by this ADR* — and every one of them is emptied by the implicit
+delete that `DROP TABLE observations` performs. `runMigrationsAndValidate` cannot see the difference: a
+database whose every droppings value has been cascaded away has exactly the right schema. `Migration7To8Test`
+therefore counts rows for all three, with values spread across three observations so a partial restore
+cannot pass.
+
+**An existing photo migrates as one row at `position = 0`**, and nothing about it re-encodes or moves on
+disk — the same string, pointing at the same file under `observations/`.
+
+**The timeline shows the first photo with a `+N` badge** rather than the strip. An entry there is a summary,
+and six thumbnails in a feed would make the tray louder than the bunny the entry is about; the set is one
+tap away in the editor.
+
+**`healthyDayFacts()` keeps claiming exactly what it claimed** — no photos, on the same grounds as before.
+One tap is a claim about what was seen, never a photograph of it.

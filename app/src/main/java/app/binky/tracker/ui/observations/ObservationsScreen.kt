@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -225,9 +226,9 @@ private fun EntryCard(
             )
             Spacer(Modifier.height(Spacing.hair))
             TrayFactLines(entry.tray)
-            entry.trayPhoto?.let { file ->
+            if (entry.trayPhotos.isNotEmpty()) {
                 Spacer(Modifier.height(Spacing.tight))
-                TrayPhoto(file)
+                TrayPhotos(entry.trayPhotos)
             }
         }
 
@@ -354,20 +355,39 @@ private fun TrayFactLines(tray: TrayFacts) {
  * gone, which a restore lacking its media legitimately produces (house rule).
  */
 @Composable
-private fun TrayPhoto(file: File) {
+private fun TrayPhotos(files: List<File>) {
     val missing = rememberVectorPainter(Icons.Filled.Info)
-    AsyncImage(
-        model = remember(file) { Uri.fromFile(file) },
-        contentDescription = stringResource(R.string.observation_tray_photo_description),
-        contentScale = ContentScale.Crop,
-        error = missing,
-        fallback = missing,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(TrayPhotoHeight)
-                .clip(RoundedCornerShape(Spacing.tight)),
-    )
+    // The first photo, with a count of the ones behind it — a timeline entry is a summary, and six
+    // thumbnails in a feed would make the tray louder than the bunny the entry is about. The whole
+    // set is one tap away in the editor.
+    Box {
+        AsyncImage(
+            model = remember(files) { Uri.fromFile(files.first()) },
+            contentDescription = stringResource(R.string.observation_tray_photo_description),
+            contentScale = ContentScale.Crop,
+            error = missing,
+            fallback = missing,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(TrayPhotoHeight)
+                    .clip(RoundedCornerShape(Spacing.tight)),
+        )
+        if (files.size > 1) {
+            Surface(
+                color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f),
+                contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                shape = RoundedCornerShape(Spacing.hair),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(Spacing.tight),
+            ) {
+                Text(
+                    text = stringResource(R.string.observation_tray_photo_more, files.size - 1),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(horizontal = Spacing.snug, vertical = Spacing.hair),
+                )
+            }
+        }
+    }
 }
 
 private val TrayPhotoHeight = 160.dp
@@ -398,7 +418,7 @@ private fun TrayFacts.hasAnything(): Boolean =
         droppingsSizes.isNotEmpty() ||
         droppingsAppearance.isNotEmpty() ||
         cecotropes != null ||
-        trayPhotoPath != null
+        trayPhotoPaths.isNotEmpty()
 
 @Composable
 private fun IndividualFactLines(

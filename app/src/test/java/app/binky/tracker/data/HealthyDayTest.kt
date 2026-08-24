@@ -39,7 +39,7 @@ class HealthyDayTest {
     @Test
     fun claimsNothingAboutTheTrayPhoto() {
         // One tap is a claim about what was seen, never a photograph of it.
-        assertNull(facts.tray.trayPhotoPath)
+        assertTrue(facts.tray.trayPhotoPaths.isEmpty())
     }
 
     @Test

@@ -105,8 +105,7 @@ interface ObservationDao {
         """
         UPDATE observations SET
             droppingsAmount = :droppingsAmount,
-            cecotropes = :cecotropes,
-            trayPhotoPath = :trayPhotoPath
+            cecotropes = :cecotropes
         WHERE groupId = :groupId
         """,
     )
@@ -114,7 +113,6 @@ interface ObservationDao {
         groupId: String,
         droppingsAmount: DroppingsAmount?,
         cecotropes: Cecotropes?,
-        trayPhotoPath: String?,
     )
 
     /**
@@ -139,8 +137,7 @@ interface ObservationDao {
         """
         UPDATE observations SET
             droppingsAmount = :droppingsAmount,
-            cecotropes = :cecotropes,
-            trayPhotoPath = :trayPhotoPath
+            cecotropes = :cecotropes
         WHERE id = :id
         """,
     )
@@ -148,17 +145,17 @@ interface ObservationDao {
         id: String,
         droppingsAmount: DroppingsAmount?,
         cecotropes: Cecotropes?,
-        trayPhotoPath: String?,
     )
 
     /**
-     * How many rows still point at a tray photo — the whole of ADR-0029's one new rule.
+     * How many join rows still point at a tray photo — the whole of ADR-0029's one new rule, unchanged
+     * by the photo becoming a set and now guarding one.
      *
-     * The path is duplicated onto every participant, so deleting one bonded bunny cascades a row that
-     * still references the survivor's file. [ObservationRepository] deletes the rows first and asks
-     * this afterwards, so a non-zero answer means somebody else is still using the file.
+     * The path is duplicated onto every participant, so deleting one bonded bunny cascades rows that
+     * still reference a survivor's file. [ObservationRepository] deletes the rows first and asks this
+     * afterwards, so a non-zero answer means somebody else is still using the file.
      */
-    @Query("SELECT COUNT(*) FROM observations WHERE trayPhotoPath = :path")
+    @Query("SELECT COUNT(*) FROM observation_photos WHERE path = :path")
     suspend fun countWithTrayPhoto(path: String): Int
 
     /**
@@ -166,7 +163,13 @@ interface ObservationDao {
      * the same "ask while the rows still exist" step `BunnyRepository.delete` already makes for
      * avatars, photos and document pages. `DISTINCT` because a bonded pair's two rows carry one path.
      */
-    @Query("SELECT DISTINCT trayPhotoPath FROM observations WHERE bunnyId = :bunnyId AND trayPhotoPath IS NOT NULL")
+    @Query(
+        """
+        SELECT DISTINCT p.path FROM observation_photos p
+        JOIN observations o ON o.id = p.observationId
+        WHERE o.bunnyId = :bunnyId
+        """,
+    )
     suspend fun trayPhotoPathsOf(bunnyId: String): List<String>
 
     @Query("SELECT symptomId FROM observation_symptoms WHERE observationId = :observationId")
@@ -230,6 +233,34 @@ interface ObservationDao {
 
     @Query("DELETE FROM observation_droppings_sizes WHERE observationId = :observationId")
     suspend fun clearDroppingsSizes(observationId: String)
+
+    /*
+     * The tray's photos (ADR-0029 as amended at schema 8) — the third multi-valued tray fact, and the
+     * only one whose rows name a file on disk. That is what makes [countWithTrayPhoto] above part of
+     * this set rather than a curiosity: a join row going away can strand a photo, where a droppings
+     * value going away costs nothing.
+     *
+     * Ordered by [ObservationPhotoEntity.position] everywhere, because the owner arranged them and
+     * unordered rows would reshuffle the strip on every read.
+     */
+
+    @Query("SELECT path FROM observation_photos WHERE observationId = :observationId ORDER BY position")
+    suspend fun trayPhotosNow(observationId: String): List<String>
+
+    /**
+     * Every tray photo in the database, for the timeline to index by observation — the same trade
+     * [allSymptomLinks] makes, and for the same reason: one `Flow` per visible row would be a
+     * subscription storm on scrolling.
+     */
+    @Query("SELECT * FROM observation_photos ORDER BY observationId, position")
+    fun allTrayPhotos(): Flow<List<ObservationPhotoEntity>>
+
+    /** `IGNORE` for the same reason [linkSymptoms] takes it: the composite key already forbids a duplicate. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun linkTrayPhotos(links: List<ObservationPhotoEntity>)
+
+    @Query("DELETE FROM observation_photos WHERE observationId = :observationId")
+    suspend fun clearTrayPhotos(observationId: String)
 }
 
 /**

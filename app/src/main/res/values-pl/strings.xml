@@ -533,10 +533,13 @@
     <string name="observation_droppings_size_label">Wielkość</string>
     <string name="observation_droppings_appearance_label">Wygląd</string>
     <string name="observation_cecotropes_label">Cekotrofy</string>
-    <string name="observation_tray_photo_label">Zdjęcie kuwety</string>
+    <string name="observation_tray_photo_label">Zdjęcia kuwety</string>
     <string name="observation_tray_photo_help">Równomierne, rozproszone światło najlepiej pokazuje kształt — bobki w cieniu trudno później ocenić.</string>
     <string name="observation_tray_photo_description">Kuweta</string>
     <string name="observation_tray_photo_unreadable">Binky nie mógł odczytać tego zdjęcia, więc nic nie zostało dołączone.</string>
+<string name="observation_tray_photo_remove">Usuń to zdjęcie</string>
+<string name="observation_tray_photo_full">Tyle zdjęć może mieć jedna kuweta.</string>
+<string name="observation_tray_photo_more">+%1$d</string>
 
     <string name="observation_individual_heading">Ten królik</string>
     <string name="observation_individual_heading_named">%1$s</string>

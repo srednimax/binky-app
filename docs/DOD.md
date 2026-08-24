@@ -55,7 +55,7 @@ Play quality notices against release 386, and one settings request.
 | **10a** | Edge-to-edge off the deprecated bar setters | ✅ **built 2026-08-24** |
 | **10b** | The ML Kit delegate stops being portrait-locked | ✅ **built 2026-08-24**, device check owed |
 | **10c** | R8 on | ✅ **built 2026-08-24**, device proof owed |
-| **10d** | Several photos on a tray — **schema 8** | open |
+| **10d** | Several photos on a tray — **schema 8** | ✅ **built 2026-08-24**, device proof owed |
 | **10e** | Events: a timeline, and dated events an owner writes — **same schema 8** | open |
 | **10f** | A light/dark override in Settings | open |
 
@@ -144,21 +144,30 @@ what it did and the answers were read out of that rather than guessed:
 - **`WeightSource` was removed entirely** and that is correct, not a loss: it is derived from
   `visitId != null` and never stored, and nothing in the release variant reads it.
 
-### 10d — Several photos on a tray (schema 8)
+### 10d — Several photos on a tray (schema 8) ✅ built 2026-08-24
 
-Owner request, 2026-08-23. `observations.trayPhotoPath` becomes `observation_photos`, following
-ADR-0029's own shape for the multi-valued droppings fields. Amendment to **ADR-0029**, not a new ADR.
+Owner request, 2026-08-23. `observations.trayPhotoPath` became `observation_photos`, following ADR-0029's
+own shape for the multi-valued droppings fields. Amendment on **ADR-0029**, not a new ADR.
 
-- [ ] Entity + join table, tray-level, denormalised per participant, **replaced not merged**.
-- [ ] `MIGRATION_7_8` — a create-copy-drop-rename rebuild, because `ALTER TABLE … DROP COLUMN` needs
-      SQLite 3.35 and `minSdk` is 26. ⚠️ **Since 1.5 there are three cascade-carrying children, not
-      one**: `observation_symptoms`, `observation_droppings_appearance`, `observation_droppings_sizes`.
-      All three must be staged and restored, and the existing path is read into the new table *before*
-      anything drops.
-- [ ] The refcount rule survives the change: a file goes only when **no other row references the path**.
-- [ ] Cap the set — 6 proposed; check it against `AutoBackup`'s cloud budget, since observation photos
-      are in the `Records` and `Everything` scopes and multiplying them multiplies that.
-- [ ] Copy ×9.
+- [x] Entity + join table, tray-level, denormalised per participant, **replaced not merged**. It carries a
+      `position` the droppings tables do not — order is part of *this* fact and not of theirs — and no
+      `createdAt`, because nothing would read one.
+- [x] `MIGRATION_7_8` — the create-copy-drop-rename rebuild, with **all three** cascade-carrying children
+      staged and restored, and the old path read into the new table before anything drops.
+- [x] The refcount rule survives, its wording intact and its query moved to `observation_photos`. Every
+      path that leaves an edit is diffed against what was there and each orphan checked on its own.
+- [x] Cap at **6**, checked against `AutoBackup`'s budget rather than picked: ~0.5 MB a frame against a
+      20 MB newest-first queue shared with documents makes six about 3 MB for one thorough tray.
+- [x] Copy ×9 — three new keys and one reworded; `translation-gate.py` reports 683 × 8 complete.
+- [x] **Proven on the phone**: `Migration7To8Test` (6 tests) and the full instrumented suite, **226 tests**,
+      all passing on the device. The migration test counts rows for all three children with values spread
+      across three observations, so a recipe that staged two out of three fails.
+- [ ] The device evidence the *screens* owe — the strip, the remove control, the `+N` badge on a timeline
+      entry — batched with the rest of the phase's device work.
+
+**The SQL was verified against `schemas/8.json` mechanically, not by eye**: every `CREATE TABLE` and
+`CREATE INDEX` in `MIGRATION_7_8` is a byte-for-byte transcription of the exported shape. That is the
+house rule stated in the migration's own doc, and now the way it was actually checked.
 
 ### 10e — Events (same schema 8)
 
