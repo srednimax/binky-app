@@ -57,7 +57,7 @@ for consistency rather than because those languages need it.
 | Privacy policy URL | `https://srednimax.github.io/binky-app/privacy-policy.html` |
 | App icon (512²) | [`art/play-icon-512.png`](../art/play-icon-512.png) |
 | Feature graphic (1024×500) | [`art/play-feature-graphic.png`](../art/play-feature-graphic.png) |
-| Phone screenshots (1526×2713) | [`1-home`](../art/play-screenshot-1-home.png), [`2-weight`](../art/play-screenshot-2-weight.png), [`3-observations`](../art/play-screenshot-3-observations.png), [`4-backup`](../art/play-screenshot-4-backup.png) — English dark, re-shot at 9g. The other eight locales are prepared outside the repo; see *Open* |
+| Phone screenshots (1526×2713) | [`1-home`](../art/play-screenshot-1-home.png), [`2-weight`](../art/play-screenshot-2-weight.png), [`3-observations`](../art/play-screenshot-3-observations.png), [`4-backup`](../art/play-screenshot-4-backup.png) — re-shot at 9g. ⚠️ **The set that goes up is now LIGHT** (changed 2026-08-24); these four are the English *dark* capture from 9g and are superseded. The other eight locales are prepared outside the repo; see *Open* |
 | App category | Lifestyle |
 | Contact email | `binky.support@gmail.com` — the per-app support address, set in Store settings, not the account-level developer email |
 | Website | `https://srednimax.github.io/binky-app/` — the Pages root 9e created, also in Store settings. The privacy-policy URL above is a page *under* it |
@@ -922,9 +922,16 @@ that lists everything gets read as none of it. Add them only if something comes 
   invisible — **`#16130D` dark, `#FFF8EF` light**. ⚠️ This bullet said `#121318` until 2026-08-21: that
   is the *pre*-Phase-7 dark, and it had outlived the palette by four releases. It was never load-bearing
   — `art/pad-screenshot.py` samples the image's own edge rather than reading a constant — which is
-  exactly why nothing caught it. The four in `art/` are now English dark from the 9g run; the other
-  eight locales are at `~/binky-screenshots/phase-9/listing/_play/{light,dark}/<tag>/`, outside the repo
-  because 72 PNGs are not source.
+  exactly why nothing caught it. Both themes are at
+  `~/binky-screenshots/phase-9/listing/_play/{light,dark}/<tag>/`, outside the repo because 72 PNGs are
+  not source.
+
+  ⚠️ **The listing takes the LIGHT set from 2026-08-24.** This file said *dark is the set to upload,
+  because it is what the store already shows* for the whole of Phase 9, and 1.8.0 went up under that
+  rule. The rule is now light-only, and it is a decision about **the Console alone** — the app still
+  ships both themes, `screenshots.py` still captures both cells, and Phase 10 adds an in-app
+  light/dark override. The four in `art/` are still the dark capture and are superseded until
+  re-exported.
 
   **Four, not the five 3h planned.** The gallery shot was dropped: the sample seeder writes
   solid-colour JPEGs (`SampleData.writeSampleJpeg`) because the fixture exists to exercise the media
