@@ -5,22 +5,24 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,6 +30,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -73,6 +76,7 @@ import app.binky.tracker.ui.common.RecordedAtField
 import app.binky.tracker.ui.common.SearchablePickerDialog
 import app.binky.tracker.ui.common.newCameraTarget
 import coil3.compose.AsyncImage
+import java.io.File
 
 /**
  * Add or edit one observation — the screen behind the global "+" (ADR-0015), and the durable review
@@ -307,52 +311,104 @@ private fun TrayPhotoField(
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
         FieldLabel(stringResource(R.string.observation_tray_photo_label))
 
-        state.trayPhoto?.let { file ->
-            val missing = rememberVectorPainter(Icons.Filled.Info)
-            AsyncImage(
-                model = remember(file) { Uri.fromFile(file) },
-                contentDescription = stringResource(R.string.observation_tray_photo_description),
-                contentScale = ContentScale.Crop,
-                // A restore may legitimately lack its media, so a missing file is a placeholder and
-                // never a crash (house rule).
-                error = missing,
-                fallback = missing,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(TrayPhotoHeight)
-                        .clip(RoundedCornerShape(Spacing.tight)),
-            )
-        }
-
-        ChipRow {
-            TextButton(
-                onClick = {
-                    val target = newCameraTarget(context)
-                    cameraTarget = target
-                    takePhoto.launch(target)
-                },
-            ) { Text(stringResource(R.string.photo_add_take)) }
-            TextButton(
-                onClick = {
-                    pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                },
-            ) { Text(stringResource(R.string.photo_add_choose)) }
-            if (state.trayPhoto != null) {
-                TextButton(onClick = viewModel::onTrayPhotoCleared) {
-                    Text(stringResource(R.string.action_clear))
+        // A wrapping row rather than a horizontally scrolling one: at six thumbnails it never needs
+        // more than two lines, and nothing is hidden off the edge at a large font scale.
+        if (state.trayPhotos.isNotEmpty()) {
+            ChipRow {
+                // `zip` walks the paths and their resolved files together, which is what keeps the
+                // remove button pointed at the right stored path rather than at an index into a list
+                // that a concurrent update could have shifted.
+                state.tray.trayPhotoPaths.zip(state.trayPhotos).forEach { (path, file) ->
+                    TrayThumbnail(file = file, onRemove = { viewModel.onTrayPhotoRemoved(path) })
                 }
             }
         }
-        HelpText(stringResource(R.string.observation_tray_photo_help))
+
+        ChipRow {
+            // Hidden rather than disabled at the cap: a dead button invites tapping and then explains
+            // nothing, where the help line below states the ceiling in words.
+            if (!state.trayPhotosFull) {
+                TextButton(
+                    onClick = {
+                        val target = newCameraTarget(context)
+                        cameraTarget = target
+                        takePhoto.launch(target)
+                    },
+                ) { Text(stringResource(R.string.photo_add_take)) }
+                TextButton(
+                    onClick = {
+                        pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                ) { Text(stringResource(R.string.photo_add_choose)) }
+            }
+        }
+        HelpText(
+            stringResource(
+                if (state.trayPhotosFull) {
+                    R.string.observation_tray_photo_full
+                } else {
+                    R.string.observation_tray_photo_help
+                },
+            ),
+        )
         if (state.trayPhotoUnreadable) {
             ErrorText(stringResource(R.string.observation_tray_photo_unreadable))
         }
     }
 }
 
-/** Tall enough to read a tray at a glance, short enough not to push the rest of the card off screen. */
-private val TrayPhotoHeight = 180.dp
+/**
+ * One photo in the strip, with its own remove control.
+ *
+ * The remove button sits **on** the thumbnail rather than under it, because a caption row under six
+ * wrapping squares would double the field's height for a control that is only ever used once.
+ */
+@Composable
+private fun TrayThumbnail(
+    file: File,
+    onRemove: () -> Unit,
+) {
+    val missing = rememberVectorPainter(Icons.Filled.Info)
+    Box {
+        AsyncImage(
+            model = remember(file) { Uri.fromFile(file) },
+            contentDescription = stringResource(R.string.observation_tray_photo_description),
+            contentScale = ContentScale.Crop,
+            // A restore may legitimately lack its media, so a missing file is a placeholder and
+            // never a crash (house rule).
+            error = missing,
+            fallback = missing,
+            modifier =
+                Modifier
+                    .size(TrayThumbnailSize)
+                    .clip(RoundedCornerShape(Spacing.tight)),
+        )
+        // Its own scrim behind the glyph, because the photo underneath is an unknown brightness — a
+        // white cross on a pale tray is invisible exactly when the owner needs it.
+        Surface(
+            color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f),
+            contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+            shape = CircleShape,
+            modifier = Modifier.align(Alignment.TopEnd).padding(Spacing.hair),
+        ) {
+            IconButton(onClick = onRemove, modifier = Modifier.size(TrayThumbnailRemoveSize)) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.observation_tray_photo_remove),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Big enough to tell a round pellet from a soft one at arm's length, small enough that three fit
+ * across a phone with the field's spacing between them.
+ */
+private val TrayThumbnailSize = 96.dp
+
+/** Comfortably inside the 48dp touch target the button keeps around it, without swallowing the photo. */
+private val TrayThumbnailRemoveSize = 28.dp
 
 /**
  * A closed vocabulary where **more than one answer can be true at once** — one tray really does hold

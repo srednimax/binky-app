@@ -556,11 +556,14 @@
     <string name="observation_droppings_size_label">Tamaño</string>
     <string name="observation_droppings_appearance_label">Aspecto</string>
     <string name="observation_cecotropes_label">Cecotrofos</string>
-    <string name="observation_tray_photo_label">Foto del arenero</string>
+    <string name="observation_tray_photo_label">Fotos del arenero</string>
     <!-- About the light, not about the camera. -->
     <string name="observation_tray_photo_help">La luz uniforme e indirecta es la que mejor muestra la forma: las cagarrutas en sombra cuestan de leer después.</string>
     <string name="observation_tray_photo_description">El arenero</string>
     <string name="observation_tray_photo_unreadable">Binky no pudo leer esa imagen, así que no se ha adjuntado nada.</string>
+<string name="observation_tray_photo_remove">Quitar esta foto</string>
+<string name="observation_tray_photo_full">Es el máximo de fotos que puede tener un arenero.</string>
+<string name="observation_tray_photo_more">+%1$d</string>
 
     <string name="observation_individual_heading">Este conejo</string>
     <string name="observation_individual_heading_named">%1$s</string>

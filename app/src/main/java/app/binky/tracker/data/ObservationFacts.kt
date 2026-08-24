@@ -24,15 +24,24 @@ package app.binky.tracker.data
  * [droppingsSizes] and [droppingsAppearance] are **sets**, because one tray genuinely holds more than
  * one kind at once — round pellets *and* soft ones is the commonest early sign of a gut going wrong
  * (ADR-0029). An empty set is the same absence a `null` is, spelt as zero join rows; the app still
- * never reads it as *normal*.
+ * never reads it as *normal*. [trayPhotoPaths] joined them at schema 8, on an owner's request: one
+ * frame does not cover a tray.
  */
 data class TrayFacts(
     val droppingsAmount: DroppingsAmount? = null,
     val droppingsSizes: Set<DroppingsSize> = emptySet(),
     val droppingsAppearance: Set<DroppingsAppearance> = emptySet(),
     val cecotropes: Cecotropes? = null,
-    /** Relative to `filesDir`, under `observations/`. See [ObservationEntity.trayPhotoPath]. */
-    val trayPhotoPath: String? = null,
+    /**
+     * The tray's photos, in the owner's order — relative to `filesDir` under `observations/`, never
+     * absolute (house rule). See [ObservationPhotoEntity].
+     *
+     * A `List` rather than a `Set`, unlike the two droppings fields above, because **order is part of
+     * the fact here and is not there**: an owner arranges the frames, where a tray either has soft
+     * droppings in it or does not. Duplicates are excluded by the table's composite key rather than by
+     * the type, which is where the same rule already lives for the sets.
+     */
+    val trayPhotoPaths: List<String> = emptyList(),
 )
 
 /**
@@ -74,20 +83,22 @@ data class ObservationFacts(
 /**
  * The tray half of a stored row, for the paths that copy it onto a new participant.
  *
- * The two sets are **parameters rather than fields**, because they are not on the row: they are join
- * rows the caller has to have read (ADR-0029). Deliberately without defaults, so a call site cannot
- * quietly produce a tray fact with the sets silently missing — the same reasoning that keeps the
- * symptom links off [individualFacts].
+ * The three multi-valued facts are **parameters rather than fields**, because they are not on the
+ * row: they are join rows the caller has to have read (ADR-0029, and schema 8's photos with them).
+ * Deliberately without defaults, so a call site cannot quietly produce a tray fact with one of them
+ * silently missing — the same reasoning that keeps the symptom links off [individualFacts], and the
+ * reason adding the photos here was a compile error at every call site rather than a silent loss.
  */
 fun ObservationEntity.trayFacts(
     droppingsSizes: Set<DroppingsSize>,
     droppingsAppearance: Set<DroppingsAppearance>,
+    trayPhotoPaths: List<String>,
 ) = TrayFacts(
     droppingsAmount = droppingsAmount,
     droppingsSizes = droppingsSizes,
     droppingsAppearance = droppingsAppearance,
     cecotropes = cecotropes,
-    trayPhotoPath = trayPhotoPath,
+    trayPhotoPaths = trayPhotoPaths,
 )
 
 /**
@@ -109,16 +120,15 @@ fun ObservationEntity.individualFacts() =
  * Applies the **column half** of the tray facts to a row. Used by both the shared write and the
  * add-a-participant path.
  *
- * It can no longer carry the whole tray fact by itself: the two sets are join rows, written per
- * participant by [ObservationRepository] inside the same transaction (ADR-0029). That is the cost of
- * multi-valuing them, and it is stated here because a `copy()` that silently carried four fifths of a
- * fact would be the easiest possible place to lose one.
+ * It can no longer carry the whole tray fact by itself: **three** of the five are join rows now,
+ * written per participant by [ObservationRepository] inside the same transaction (ADR-0029, amended at
+ * schema 8). That is the cost of multi-valuing them, and it is stated here because a `copy()` that
+ * silently carried two fifths of a fact would be the easiest possible place to lose one.
  */
 fun ObservationEntity.withTrayFacts(tray: TrayFacts) =
     copy(
         droppingsAmount = tray.droppingsAmount,
         cecotropes = tray.cecotropes,
-        trayPhotoPath = tray.trayPhotoPath,
     )
 
 /** Applies individual facts to a row. The symptom links are written separately, by the repository. */

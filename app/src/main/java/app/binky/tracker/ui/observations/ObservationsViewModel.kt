@@ -58,7 +58,7 @@ class ObservationsViewModel(
     private val media = container.mediaFiles
 
     /**
-     * Turns each entry's relative tray-photo path into a file to draw.
+     * Turns each entry's relative tray-photo paths into files to draw.
      *
      * Here rather than in [buildTimeline], because that function has no Android in it on purpose —
      * the collapse rule is a JVM test, and only `MediaFiles` knows what a stored path is relative to.
@@ -68,7 +68,7 @@ class ObservationsViewModel(
             day.copy(
                 entries =
                     day.entries.map { entry ->
-                        entry.copy(trayPhoto = entry.tray.trayPhotoPath?.let(media::resolve))
+                        entry.copy(trayPhotos = entry.tray.trayPhotoPaths.map(media::resolve))
                     },
             )
         }
@@ -82,17 +82,19 @@ class ObservationsViewModel(
     )
 
     /**
-     * The three join-table reads the timeline needs, folded into one flow.
+     * The four join-table reads the timeline needs, folded into one flow.
      *
      * Kotlin note: `combine` is typed only up to five flows — past that it degrades to
-     * `Array<Any?>` and every field needs a cast. Two of these arrived with schema 7 (ADR-0029),
-     * which would have taken the outer combine to seven, so they are combined here instead. Nothing
-     * clever: it is the same fan-in, one level down, with the types kept.
+     * `Array<Any?>` and every field needs a cast. Two of these arrived with schema 7 and the photos
+     * with schema 8 (ADR-0029), which would have taken the outer combine to eight, so they are
+     * combined here instead. Nothing clever: it is the same fan-in, one level down, with the types
+     * kept — and this is the ceiling, since a fifth would need the same trick again.
      */
     private data class ObservationLinks(
         val symptomIds: Map<String, Set<String>> = emptyMap(),
         val droppingsAppearance: Map<String, Set<DroppingsAppearance>> = emptyMap(),
         val droppingsSizes: Map<String, Set<DroppingsSize>> = emptyMap(),
+        val trayPhotos: Map<String, List<String>> = emptyMap(),
     )
 
     private val links: kotlinx.coroutines.flow.Flow<ObservationLinks> =
@@ -100,7 +102,8 @@ class ObservationsViewModel(
             observations.symptomLinks,
             observations.droppingsAppearance,
             observations.droppingsSizes,
-        ) { symptomLinks, appearance, sizes ->
+            observations.trayPhotos,
+        ) { symptomLinks, appearance, sizes, photos ->
             ObservationLinks(
                 symptomIds =
                     symptomLinks.groupBy { it.observationId }.mapValues { (_, l) ->
@@ -108,6 +111,7 @@ class ObservationsViewModel(
                     },
                 droppingsAppearance = appearance,
                 droppingsSizes = sizes,
+                trayPhotos = photos,
             )
         }
 
@@ -150,6 +154,7 @@ class ObservationsViewModel(
                                 symptomIds = joins.symptomIds,
                                 droppingsSizes = joins.droppingsSizes,
                                 droppingsAppearance = joins.droppingsAppearance,
+                                trayPhotos = joins.trayPhotos,
                                 focusBunnyId = bunnyId,
                             ).withResolvedTrayPhotos(),
                         symptoms = symptoms,

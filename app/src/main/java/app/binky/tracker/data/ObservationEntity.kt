@@ -124,11 +124,12 @@ enum class WaterIntake { NONE, LESS, NORMAL, MORE }
  * The fields fall into two classes and the edit paths must respect the split (see
  * [ObservationRepository]):
  *
- * - **Tray-level** — the droppings fields, [cecotropes] and [trayPhotoPath]. One tray, one real-world
+ * - **Tray-level** — the droppings fields, [cecotropes] and the tray photos. One tray, one real-world
  *   fact: identical across every row in a group by construction, and editing one propagates to all of
  *   them. Letting them drift would reintroduce the false attribution through editing rather than
- *   tapping. Two of these facts are now sets rather than columns, so "identical across every row"
- *   costs join rows written per participant rather than a `copy()` — see [ObservationRepository].
+ *   tapping. **Three of these facts are sets rather than columns** — the two droppings ones since
+ *   schema 7 and the photos since schema 8 — so "identical across every row" costs join rows
+ *   written per participant rather than a `copy()`, see [ObservationRepository].
  * - **Individual** — [appetite], [mood], [activity], [water], [note], the symptom links and
  *   [symptomsChecked]. These legitimately differ per bunny (one hunched and lethargic while the
  *   other is bouncing around), so editing one bunny's mood never touches another's.
@@ -164,22 +165,9 @@ data class ObservationEntity(
     val recordedAt: Instant,
     val createdAt: Instant = Instant.now(),
     // Tray-level: single per group, identical across every row, edited group-wide. The multi-valued
-    // two live in the join tables below, keyed on this row's id and written for every participant.
+    // three live in the join tables below, keyed on this row's id and written for every participant.
     val droppingsAmount: DroppingsAmount? = null,
     val cecotropes: Cecotropes? = null,
-    /**
-     * One photo of the tray, relative to `filesDir` under `observations/` (house rule, ADR-0029).
-     *
-     * **Duplicated across every row in the group**, like every other tray fact, which buys one rule
-     * the app did not need before: deleting one bonded bunny cascades a row that still references the
-     * survivor's file, so the file goes only when **no other row references the path**. That check
-     * lives on the delete path in [ObservationRepository], and it is the whole reason a duplicated
-     * path was acceptable instead of a group table.
-     *
-     * It takes the ordinary photo capture path and never the document scanner: ML Kit's filter clips
-     * highlights and edge-enhances, which destroys pellet outlines exactly where the light was good.
-     */
-    val trayPhotoPath: String? = null,
     // Individual: per row, edited one row at a time.
     val appetite: Appetite? = null,
     val mood: Mood? = null,
@@ -290,3 +278,68 @@ data class ObservationDroppingsSizeEntity(
     val observationId: String,
     val value: DroppingsSize,
 )
+
+/**
+ * The tray's photos — **a set of them since schema 8**, where schema 7 had one nullable column
+ * (ADR-0029, amended).
+ *
+ * An owner asked for this directly (2026-08-23): one frame does not cover a tray, and the thing being
+ * photographed is evidence rather than a keepsake. The shape is the one the two droppings fields
+ * already took — a join table keyed on `observationId`, written for **every participant** inside the
+ * transaction that writes the rows, and **replaced rather than merged** on an edit.
+ *
+ * **Keyed on the observation, not on a group**, for the reason the droppings tables give at length:
+ * there is no group *table*, so a tray-level set is denormalised onto every participant's row exactly
+ * as the tray columns are. That is what preserves ADR-0029's one extra rule, unchanged and now
+ * guarding a set: deleting one bonded bunny cascades rows that still reference a survivor's file, so
+ * **a file goes only when no other row references the path**.
+ *
+ * These take the ordinary photo capture path and never the document scanner: ML Kit's filter clips
+ * highlights and edge-enhances, which destroys pellet outlines exactly where the light was good.
+ *
+ * [position] is the owner's order, and it has to be a column: the composite primary key cannot carry
+ * it, and without it the display order is whatever the file names happen to sort as. There is
+ * deliberately **no `createdAt`** — nothing reads one, `observation_symptoms` and the two droppings
+ * tables carry no timestamp either, and the row it hangs off already records when the observation was
+ * made. A column nobody queries is a fact the app would have to keep true for nothing.
+ *
+ * [path] needs its own index for the same reason `observation_symptoms.symptomId` does: the composite
+ * key indexes `observationId` first, so the refcount — a lookup by path alone, run on every delete —
+ * could not use it.
+ */
+@Entity(
+    tableName = "observation_photos",
+    // The same file twice on one observation is unrepresentable rather than merely discouraged.
+    primaryKeys = ["observationId", "path"],
+    foreignKeys = [
+        ForeignKey(
+            entity = ObservationEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["observationId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("path")],
+)
+data class ObservationPhotoEntity(
+    val observationId: String,
+    /** Relative to `filesDir`, under `observations/` — house rule, never an absolute path. */
+    val path: String,
+    val position: Int,
+)
+
+/**
+ * How many photos one tray may hold.
+ *
+ * **Six, and the number is an arithmetic result rather than a round figure.** `MediaKind.Observation`
+ * writes at a 2048px long edge and quality 88, which lands a tray shot around half a megabyte, and
+ * these files sit in Auto Backup's newest-first admission queue against `AUTO_BACKUP_BUDGET_BYTES` —
+ * 20 MB shared with document pages, after the core has taken its share (ADR-0029). Six is therefore
+ * about 3 MB for one thorough tray: enough that a whole observation is never split across the
+ * admission boundary, and small enough that a handful of them still fit beside the documents.
+ *
+ * Nothing silently drops past the cap. The form stops offering *add*, and Auto Backup's existing
+ * exclusion notice is what tells an owner which record images did not fit in the cloud — the honest
+ * answer this app already gives rather than a new one invented for photos.
+ */
+const val TRAY_PHOTO_LIMIT = 6

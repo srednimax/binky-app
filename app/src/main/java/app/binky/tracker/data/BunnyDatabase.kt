@@ -12,7 +12,7 @@ import app.binky.tracker.BuildConfig
  * opens it and compares it against this (see `DatabasePreserve.kt`), so the two must stay in step —
  * which is why it is one constant used in both places.
  */
-const val BUNNY_SCHEMA_VERSION = 7
+const val BUNNY_SCHEMA_VERSION = 8
 
 /** The database file name, under the app's standard databases directory. */
 const val BUNNY_DATABASE_FILE = "bunny.db"
@@ -44,9 +44,17 @@ const val BUNNY_DATABASE_FILE = "bunny.db"
  * `runMigrationsAndValidate` cannot see, so [MIGRATION_6_7] stages those links and puts them back and
  * the instrumented test counts **rows** rather than comparing shapes.
  *
- * From here the assertion has **three** halves, because 1.1.0 and 1.2.0 both shipped: a
- * release-shaped open of a schema-4, a schema-5 and a schema-6 file must all succeed. That is the
- * skipped-version upgrade, and it is run per pull request rather than once by hand at the release.
+ * **Version 8 is Phase 10's, and it is one migration carrying two unrelated changes** — which is the
+ * point rather than a compromise. The tray photo becomes a set (`observation_photos`) and owners gain
+ * a dated `events` record, both asked for on the same day, and both ship in 1.9.0. `observations` has
+ * to be rebuilt again to lose `trayPhotoPath`, so the cheap `CREATE TABLE events` rides a rebuild that
+ * is happening anyway; two migrations would have meant testing the expensive one twice.
+ * [MIGRATION_7_8] has **three** cascade-carrying children to stage rather than [MIGRATION_6_7]'s one.
+ *
+ * From here the assertion has **four** halves, because 1.1.0, 1.2.0 and 1.5.0 all shipped: a
+ * release-shaped open of a schema-4, a schema-5, a schema-6 and a schema-7 file must all succeed. That
+ * is the skipped-version upgrade, and it is run per pull request rather than once by hand at the
+ * release.
  */
 @Database(
     entities = [
@@ -61,6 +69,12 @@ const val BUNNY_DATABASE_FILE = "bunny.db"
         // more than one way at a time.
         ObservationDroppingsAppearanceEntity::class,
         ObservationDroppingsSizeEntity::class,
+        // Schema 8's half of the same idea: the tray photo stops being a column and becomes a set,
+        // on an owner's request (ADR-0029, amended).
+        ObservationPhotoEntity::class,
+        // Schema 8's other table, and the only one in this list that is not about a tray: a dated
+        // label an owner writes down (ADR-0031). The timeline that reads it stores nothing.
+        EventEntity::class,
         PhotoEntity::class,
         CareReminderEntity::class,
         CareEventEntity::class,

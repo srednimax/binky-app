@@ -24,6 +24,7 @@ import app.binky.tracker.data.ObservationRepository
 import app.binky.tracker.data.ParticipantCandidate
 import app.binky.tracker.data.SymptomEntity
 import app.binky.tracker.data.SymptomRepository
+import app.binky.tracker.data.TRAY_PHOTO_LIMIT
 import app.binky.tracker.data.TrayFacts
 import app.binky.tracker.data.WatchRepository
 import app.binky.tracker.data.WaterIntake
@@ -68,13 +69,14 @@ data class ObservationEntryUiState(
     val inFuture: Boolean = false,
     val tray: TrayFacts = TrayFacts(),
     /**
-     * The tray photo as a file to draw, resolved from [TrayFacts.trayPhotoPath] — the path on the row
-     * is relative and only [MediaFiles] knows what it is relative to (house rule).
+     * The tray photos as files to draw, in the owner's order and index-for-index with
+     * [TrayFacts.trayPhotoPaths] — the paths on the row are relative and only [MediaFiles] knows what
+     * they are relative to (house rule).
      *
      * A file that has gone missing still resolves; it draws as a placeholder rather than crashing,
      * which is what a restore lacking its media has to do.
      */
-    val trayPhoto: File? = null,
+    val trayPhotos: List<File> = emptyList(),
     /** Set when the picked image could not be read. Stated once, and the form keeps whatever it had. */
     val trayPhotoUnreadable: Boolean = false,
     val individual: IndividualFacts = IndividualFacts(),
@@ -82,6 +84,14 @@ data class ObservationEntryUiState(
     val symptoms: List<SymptomEntity> = emptyList(),
     val saved: Boolean = false,
 ) {
+    /**
+     * Whether the tray is holding as many photos as it may (`TRAY_PHOTO_LIMIT`).
+     *
+     * Kotlin note: a `get()`-only property is computed on read — closer to a JS getter than to a
+     * field — so it cannot drift out of step with the list the way a stored `Boolean` could.
+     */
+    val trayPhotosFull: Boolean get() = tray.trayPhotoPaths.size >= TRAY_PHOTO_LIMIT
+
     /** Minute granularity, because that is what the pickers offer. */
     val recordedAt: Instant
         get() =
@@ -125,15 +135,15 @@ class ObservationEntryViewModel(
     private var storedParticipants: Set<String> = emptySet()
 
     /**
-     * The tray photo the observation already had when the form opened, or null.
+     * The tray photos the observation already had when the form opened.
      *
      * It is the line between a file some row still points at and one only this form has ever seen: a
-     * shot the owner takes here and then retakes is referenced by nothing, so it can be deleted on the
-     * spot rather than becoming an orphan nobody will ever find. The *stored* one is never deleted
+     * shot the owner takes here and then removes is referenced by nothing, so it can be deleted on the
+     * spot rather than becoming an orphan nobody will ever find. A *stored* one is never deleted
      * here — that is [ObservationRepository.updateTray]'s job, after the write commits, and only once
      * no row references it (ADR-0029).
      */
-    private var storedTrayPhotoPath: String? = null
+    private var storedTrayPhotoPaths: Set<String> = emptySet()
 
     init {
         viewModelScope.launch {
@@ -173,7 +183,7 @@ class ObservationEntryViewModel(
 
             val recordedAt = existing?.recordedAt?.atZone(ZoneId.systemDefault())
             val storedTray = existing?.let { observations.trayFactsNow(it.id) } ?: TrayFacts()
-            storedTrayPhotoPath = storedTray.trayPhotoPath
+            storedTrayPhotoPaths = storedTray.trayPhotoPaths.toSet()
             _uiState.update { state ->
                 state.copy(
                     loading = false,
@@ -186,7 +196,7 @@ class ObservationEntryViewModel(
                     // The whole tray fact in one read: the two sets are join rows now, and a form
                     // that assembled them separately could open with one of them silently missing.
                     tray = storedTray,
-                    trayPhoto = storedTray.trayPhotoPath?.let(media::resolve),
+                    trayPhotos = storedTray.trayPhotoPaths.map(media::resolve),
                     individual =
                         existing
                             ?.individualFacts()
@@ -233,7 +243,7 @@ class ObservationEntryViewModel(
     fun onCecotropesChanged(value: Cecotropes?) = updateTray { it.copy(cecotropes = value) }
 
     /**
-     * Stores a tray photo through the media helper and hangs it on the tray facts.
+     * Stores a tray photo through the media helper and **appends** it to the tray facts.
      *
      * **Through [MediaKind.Observation], and from the ordinary camera or the photo picker — never the
      * document scanner** (ADR-0029). ML Kit accepts a tray and then clips the highlights and
@@ -243,6 +253,10 @@ class ObservationEntryViewModel(
      * The file is written now rather than at save, because the form has to draw it. An abandoned form
      * therefore leaves an unreferenced file, which is ADR-0020's chosen failure: an invisible orphan
      * beats a row whose photo is missing.
+     *
+     * The cap is re-checked **after** the write and not only before it. The form hides *add* at the
+     * limit, but a picker already in flight when the sixth arrives would otherwise land a seventh —
+     * and the file is deleted rather than kept, because nothing will ever reference it.
      */
     fun onTrayPhotoPicked(source: Uri) {
         viewModelScope.launch {
@@ -251,25 +265,37 @@ class ObservationEntryViewModel(
                 _uiState.update { it.copy(trayPhotoUnreadable = true) }
                 return@launch
             }
-            replaceTrayPhoto(stored.path)
+            val current = _uiState.value.tray.trayPhotoPaths
+            if (current.size >= TRAY_PHOTO_LIMIT || stored.path in current) {
+                media.delete(stored.path)
+                return@launch
+            }
+            setTrayPhotoPaths(current + stored.path)
         }
     }
 
-    fun onTrayPhotoCleared() = replaceTrayPhoto(null)
+    /**
+     * Removes one photo from the strip.
+     *
+     * A file this form minted goes immediately: nothing references it, so leaving it would be an
+     * orphan nobody can ever find. A *stored* one is left alone here even though the owner has just
+     * removed it — [ObservationRepository.updateTray] deletes it after the write commits, and only
+     * once no other participant's row still points at it.
+     */
+    fun onTrayPhotoRemoved(path: String) {
+        if (path !in storedTrayPhotoPaths) media.delete(path)
+        setTrayPhotoPaths(_uiState.value.tray.trayPhotoPaths - path)
+    }
 
     fun trayPhotoMessageShown() {
         _uiState.update { it.copy(trayPhotoUnreadable = false) }
     }
 
-    private fun replaceTrayPhoto(path: String?) {
-        val previous = _uiState.value.tray.trayPhotoPath
-        // Only ever a file this form minted: see [storedTrayPhotoPath] for why the stored one is
-        // somebody else's to delete.
-        if (previous != null && previous != storedTrayPhotoPath) media.delete(previous)
+    private fun setTrayPhotoPaths(paths: List<String>) {
         _uiState.update {
             it.copy(
-                tray = it.tray.copy(trayPhotoPath = path),
-                trayPhoto = path?.let(media::resolve),
+                tray = it.tray.copy(trayPhotoPaths = paths),
+                trayPhotos = paths.map(media::resolve),
                 trayPhotoUnreadable = false,
             )
         }

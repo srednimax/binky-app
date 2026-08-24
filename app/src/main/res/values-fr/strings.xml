@@ -619,11 +619,14 @@
     <string name="observation_droppings_size_label">Taille</string>
     <string name="observation_droppings_appearance_label">Aspect</string>
     <string name="observation_cecotropes_label">Caecotrophes</string>
-    <string name="observation_tray_photo_label">Photo du bac</string>
+    <string name="observation_tray_photo_label">Photos du bac</string>
     <!-- About the light, not about the camera. -->
     <string name="observation_tray_photo_help">Une lumière douce et indirecte montre le mieux les formes — dans l’ombre, les crottes sont difficiles à lire plus tard.</string>
     <string name="observation_tray_photo_description">Le bac à litière</string>
     <string name="observation_tray_photo_unreadable">Binky n’a pas pu lire cette image, donc rien n’a été joint.</string>
+<string name="observation_tray_photo_remove">Retirer cette photo</string>
+<string name="observation_tray_photo_full">C’est le maximum de photos pour un bac.</string>
+<string name="observation_tray_photo_more">+%1$d</string>
 
     <string name="observation_individual_heading">Ce lapin</string>
     <string name="observation_individual_heading_named">%1$s</string>

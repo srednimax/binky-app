@@ -499,10 +499,13 @@
     <string name="observation_droppings_size_label">Größe</string>
     <string name="observation_droppings_appearance_label">Aussehen</string>
     <string name="observation_cecotropes_label">Blinddarmkot</string>
-    <string name="observation_tray_photo_label">Foto vom Klo</string>
+    <string name="observation_tray_photo_label">Fotos vom Klo</string>
     <string name="observation_tray_photo_help">Gleichmäßiges, indirektes Licht zeigt die Form am besten — Köttel im Schatten sind später schwer zu erkennen.</string>
     <string name="observation_tray_photo_description">Das Klo</string>
     <string name="observation_tray_photo_unreadable">Binky konnte dieses Bild nicht lesen, deshalb wurde nichts angehängt.</string>
+<string name="observation_tray_photo_remove">Dieses Foto entfernen</string>
+<string name="observation_tray_photo_full">Mehr Fotos kann ein Klo nicht haben.</string>
+<string name="observation_tray_photo_more">+%1$d</string>
 
     <string name="observation_individual_heading">Dieses Kaninchen</string>
     <string name="observation_individual_heading_named">%1$s</string>

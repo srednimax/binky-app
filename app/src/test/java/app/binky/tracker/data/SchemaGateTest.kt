@@ -21,29 +21,31 @@ class SchemaGateTest {
 
     @Test
     fun `the shipped migrations walk every schema a released build ever wrote`() {
-        // 1.0.1 wrote 4, 1.1.0 wrote 5, 1.2.0 through 1.4.0 wrote 6. Each has to reach 7.
-        assertTrue("4 → 7", migrationPathExists(4, 7, shipped))
-        assertTrue("5 → 7", migrationPathExists(5, 7, shipped))
-        assertTrue("6 → 7", migrationPathExists(6, 7, shipped))
+        // 1.0.1 wrote 4, 1.1.0 wrote 5, 1.2.0 through 1.4.0 wrote 6, 1.5.0 onwards wrote 7. Each
+        // has to reach 8, and the oldest of them by walking four migrations in a row.
+        assertTrue("4 → 8", migrationPathExists(4, 8, shipped))
+        assertTrue("5 → 8", migrationPathExists(5, 8, shipped))
+        assertTrue("6 → 8", migrationPathExists(6, 8, shipped))
+        assertTrue("7 → 8", migrationPathExists(7, 8, shipped))
     }
 
     @Test
     fun `a version nothing was ever written from is not reachable`() {
         // The disposable era: 1, 2 and 3 were wiped rather than migrated, and no migration starts there.
-        assertFalse("3 → 7", migrationPathExists(3, 7, shipped))
+        assertFalse("3 → 8", migrationPathExists(3, 8, shipped))
     }
 
     @Test
     fun `no path runs backwards, however many steps exist forwards`() {
-        assertFalse("a downgrade", migrationPathExists(7, 6, shipped))
-        assertFalse("nowhere to go", migrationPathExists(7, 7, shipped))
+        assertFalse("a downgrade", migrationPathExists(8, 7, shipped))
+        assertFalse("nowhere to go", migrationPathExists(8, 8, shipped))
     }
 
     @Test
     fun `a step that skips a version counts, because Room would take it`() {
         assertTrue("4 → 6 in one jump", migrationPathExists(4, 6, listOf(4 to 6)))
         // …but never past the target: a 4 → 8 migration cannot land a file on a build that is at 7.
-        assertFalse("overshooting", migrationPathExists(4, 7, listOf(4 to 8)))
+        assertFalse("overshooting", migrationPathExists(4, 8, listOf(4 to 9)))
     }
 
     @Test
@@ -51,26 +53,31 @@ class SchemaGateTest {
         assertEquals(
             "a fresh install has no file",
             SchemaGate.Open,
-            schemaGateDecision(onDiskVersion = 0, appSchemaVersion = 7, steps = shipped, destructiveAllowed = false),
+            schemaGateDecision(onDiskVersion = 0, appSchemaVersion = 8, steps = shipped, destructiveAllowed = false),
         )
         assertEquals(
             "already at this build's shape",
             SchemaGate.Open,
-            schemaGateDecision(onDiskVersion = 7, appSchemaVersion = 7, steps = shipped, destructiveAllowed = false),
+            schemaGateDecision(onDiskVersion = 8, appSchemaVersion = 8, steps = shipped, destructiveAllowed = false),
         )
     }
 
     @Test
     fun `an owner updating across a schema bump is let in, and Room migrates`() {
         assertEquals(
-            "the case that shipped broken: 1.4.0's database under 1.5",
+            "1.8.0's database under 1.9 — the upgrade every existing owner is about to take",
             SchemaGate.Open,
-            schemaGateDecision(onDiskVersion = 6, appSchemaVersion = 7, steps = shipped, destructiveAllowed = false),
+            schemaGateDecision(onDiskVersion = 7, appSchemaVersion = 8, steps = shipped, destructiveAllowed = false),
+        )
+        assertEquals(
+            "the case that shipped broken: 1.4.0's database, now two bumps behind",
+            SchemaGate.Open,
+            schemaGateDecision(onDiskVersion = 6, appSchemaVersion = 8, steps = shipped, destructiveAllowed = false),
         )
         assertEquals(
             "and the skipped-version upgrade, from a phone that never took 1.1 or 1.2",
             SchemaGate.Open,
-            schemaGateDecision(onDiskVersion = 4, appSchemaVersion = 7, steps = shipped, destructiveAllowed = false),
+            schemaGateDecision(onDiskVersion = 4, appSchemaVersion = 8, steps = shipped, destructiveAllowed = false),
         )
     }
 
@@ -79,12 +86,12 @@ class SchemaGateTest {
         assertEquals(
             "no migration starts at 3",
             SchemaGate.Refuse,
-            schemaGateDecision(onDiskVersion = 3, appSchemaVersion = 7, steps = shipped, destructiveAllowed = false),
+            schemaGateDecision(onDiskVersion = 3, appSchemaVersion = 8, steps = shipped, destructiveAllowed = false),
         )
         assertEquals(
             "a file from a newer Binky, which no migration runs backwards to reach",
             SchemaGate.Refuse,
-            schemaGateDecision(onDiskVersion = 8, appSchemaVersion = 7, steps = shipped, destructiveAllowed = false),
+            schemaGateDecision(onDiskVersion = 9, appSchemaVersion = 8, steps = shipped, destructiveAllowed = false),
         )
     }
 
@@ -99,11 +106,11 @@ class SchemaGateTest {
     @Test
     fun `background work is blocked by exactly the decisions that are not Open`() {
         val migratableUpgrade =
-            schemaGateDecision(onDiskVersion = 6, appSchemaVersion = 7, steps = shipped, destructiveAllowed = false)
+            schemaGateDecision(onDiskVersion = 6, appSchemaVersion = 8, steps = shipped, destructiveAllowed = false)
         val debugWipe =
-            schemaGateDecision(onDiskVersion = 6, appSchemaVersion = 7, steps = shipped, destructiveAllowed = true)
+            schemaGateDecision(onDiskVersion = 6, appSchemaVersion = 8, steps = shipped, destructiveAllowed = true)
         val unreadable =
-            schemaGateDecision(onDiskVersion = 3, appSchemaVersion = 7, steps = shipped, destructiveAllowed = false)
+            schemaGateDecision(onDiskVersion = 3, appSchemaVersion = 8, steps = shipped, destructiveAllowed = false)
 
         assertEquals("a worker may run through an upgrade it can migrate", SchemaGate.Open, migratableUpgrade)
         assertTrue("but never through a wipe with nobody looking", debugWipe != SchemaGate.Open)
@@ -122,17 +129,17 @@ class SchemaGateTest {
     fun `a debug build still consents before it wipes, even where a migration exists on paper`() {
         assertEquals(
             SchemaGate.Consent,
-            schemaGateDecision(onDiskVersion = 6, appSchemaVersion = 7, steps = shipped, destructiveAllowed = true),
+            schemaGateDecision(onDiskVersion = 6, appSchemaVersion = 8, steps = shipped, destructiveAllowed = true),
         )
         assertEquals(
             "and where one does not",
             SchemaGate.Consent,
-            schemaGateDecision(onDiskVersion = 3, appSchemaVersion = 7, steps = shipped, destructiveAllowed = true),
+            schemaGateDecision(onDiskVersion = 3, appSchemaVersion = 8, steps = shipped, destructiveAllowed = true),
         )
         assertEquals(
             "but an untouched file is still just a launch",
             SchemaGate.Open,
-            schemaGateDecision(onDiskVersion = 7, appSchemaVersion = 7, steps = shipped, destructiveAllowed = true),
+            schemaGateDecision(onDiskVersion = 8, appSchemaVersion = 8, steps = shipped, destructiveAllowed = true),
         )
     }
 }

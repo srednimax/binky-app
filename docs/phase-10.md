@@ -181,7 +181,75 @@ Both artifact scripts were re-run against the minified bundle, which is the enti
 still finds zero `screenOrientation`. What is owed is behaviour on the phone — enums round-tripping, an
 export→restore, the daily sweep firing — batched with the rest of the phase's device work.
 
-## §4–§6
+## §4 — Several photos on a tray ✅ built 2026-08-24
+
+The feature is three lines of shape: the column becomes a join table, the join table is written per
+participant, and the refcount that already existed now guards a set. Everything interesting is in the
+migration.
+
+### The rebuild had grown two children since the recipe was written
+
+ADR-0029 wrote the create-copy-drop-rename recipe and named its trap once: `DROP TABLE observations`
+performs an implicit delete of every row, which fires `ON DELETE CASCADE`, and `PRAGMA foreign_keys = OFF`
+is a no-op inside the transaction Room has already begun — so the cascade cannot be switched off, only
+survived. What that ADR could not know is that **it was itself about to add two more children**.
+`observation_droppings_appearance` and `observation_droppings_sizes` arrived with schema 7, so schema 8's
+rebuild has three tables to stage where the recipe stages one.
+
+⚠️ **`runMigrationsAndValidate` cannot see the difference.** A database whose every droppings value has
+been cascaded away has exactly the right *shape*. A migration that staged two children out of three would
+have been green in CI and would have deleted an owner's history on upgrade day. `Migration7To8Test` counts
+rows for all three, with values spread across three observations so a partial restore passes nothing, and
+a bonded pair sharing one photo path so a migration inserting per-*path* rather than per-*row* fails.
+
+### The SQL was checked against the exported schema by machine
+
+The house rule is that a migration's SQL is a **transcription of `schemas/8.json`, not a paraphrase of the
+entities**. This time that was verified rather than intended: a short script pulled every `execSQL` out of
+`MIGRATION_7_8`, stitched its concatenated string fragments back into statements, and compared each against
+the `createSql` Room exported. Every `CREATE TABLE` and `CREATE INDEX` matches byte for byte. It is a cheap
+check for a class of bug — a missing `NOT NULL`, a foreign key with the wrong `ON DELETE` — that otherwise
+surfaces as a validation failure on a phone rather than on a laptop.
+
+### `position` is there and `createdAt` is not
+
+The plan proposed both columns; only one earned its place. `position` has to be a column — the composite
+key `(observationId, path)` cannot carry order, and without it the strip comes back in whatever order the
+rows happen to sit in, which an owner who arranged their frames would notice. `createdAt` would have been
+read by nothing: `observation_symptoms` and both droppings tables carry no timestamp, and the observation
+the row hangs off already records when it was made. A column nobody queries is a fact the app has to keep
+true for nothing.
+
+That is also why `TrayFacts.trayPhotoPaths` is a `List` where the two droppings fields are `Set`s: order is
+part of this fact and is not part of theirs. Duplicates are excluded by the table's key rather than by the
+type, which is where the same rule already lived.
+
+### The refcount rule survives with its wording intact
+
+ADR-0029's one extra rule — *a file goes only when no other row references the path* — reads the same and
+runs against a different table. What changed is that "the photo changed" became "these two went and these
+three stayed", so each edit diffs the previous set against the new one and checks each departing path on
+its own. The check is made **after** every participant's rows are rewritten, so the count is the truth
+about the whole group rather than about the row that happened to be on screen.
+
+The cap is **6**, and it is arithmetic rather than a round number: ~0.5 MB a frame at `MediaKind.Observation`'s
+2048px/q88, against Auto Backup's 20 MB newest-first queue shared with document pages, is about 3 MB for one
+thorough tray. Past the cap the form stops offering *add* — hidden rather than disabled, since a dead button
+invites tapping and explains nothing — and the exclusion notice ADR-0029 already built is what reports what
+did not reach the cloud.
+
+### Evidence
+
+**226 instrumented tests on the phone**, all passing, including `Migration7To8Test`'s six and two new ones
+covering propagation across a bonded group and the refcount on removing one photo of several. 407 JVM tests.
+`translation-gate.py`: 683 resources × 8 locales complete.
+
+⚠️ **The HyperOS split-install prompt bit twice** and the documented two-plain-installs fallback hit the
+same wall, because Gradle uninstalls the test package after every run — so each run is a *first* install of
+`…debug.test`, which is the case CLAUDE.md records as an outright refusal. What worked was installing both
+APKs plain and then running `am instrument` directly, which skips Gradle's install cycle entirely.
+
+## §5–§6
 
 Not yet built. The reasoning for each is in [`DOD.md`](DOD.md)'s boxes while they are live; it moves here
 as each closes. The two worth flagging in advance:

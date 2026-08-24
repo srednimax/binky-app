@@ -394,7 +394,213 @@ val MIGRATION_6_7 =
     }
 
 /**
+ * **The same rebuild as [MIGRATION_6_7], with three children to lose instead of one** — and one extra
+ * table riding along that has nothing to do with any of it.
+ *
+ * Phase 10 takes two requests an owner made on the same day (2026-08-23) and ships them as 1.9.0. The
+ * tray photo becomes a set, which means `trayPhotoPath` comes *off* `observations`; and owners gain a
+ * dated `events` record, which is a plain `CREATE TABLE`. **They share this migration on purpose.**
+ * `observations` has to be rebuilt for the first, so the second rides a rebuild that is happening
+ * anyway — two migrations would have meant writing and testing the expensive one twice, over the same
+ * release.
+ *
+ * **What is different from last time, and it is the dangerous part.** ADR-0029's recipe was written
+ * when `observations` had exactly one cascade-carrying child. **Since 1.5 it has three**:
+ * `observation_symptoms`, and the two droppings tables that migration itself created. Every one of
+ * them cascades, so every one of them has to be staged and put back — and
+ * `runMigrationsAndValidate` cannot tell the difference, because a database whose every symptom tick
+ * and droppings value has been cascaded away has exactly the right *shape*. Missing one child would
+ * pass CI and silently delete an owner's history. The instrumented test counts rows for all three.
+ *
+ * The mechanism, restated once so it is not re-derived: `DROP TABLE observations` performs an implicit
+ * delete of every row, which fires `ON DELETE CASCADE` on the children. Foreign keys are enforced on
+ * the connection and `PRAGMA foreign_keys = OFF` is a no-op inside the transaction Room has already
+ * begun, so the cascade cannot be switched off — it has to be survived.
+ *
+ * The children are **dropped and recreated** rather than emptied and refilled, which buys the rename a
+ * schema with no dangling reference in it: at the moment `observations_new` takes the name
+ * `observations`, nothing anywhere references that name. SQLite 3.25 changed what
+ * `ALTER TABLE … RENAME` does to other objects' definitions and this app spans API 26 to 36.
+ *
+ * **The photo migrates as one row at `position = 0`.** An owner who had a tray photo in 1.8 has one
+ * photo in 1.9, first in the set, and nothing about it re-encodes or moves on disk — the path is the
+ * same string, pointing at the same file under `observations/`.
+ *
+ * **The SQL is a transcription of `schemas/8.json`, not a paraphrase of the entities** — same rule as
+ * the three migrations above, and re-transcribed rather than patched if the shape churns before the
+ * phase closes (ADR-0007's pending-migration rule).
+ */
+val MIGRATION_7_8 =
+    object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // 1. Read the column the rebuild is about to remove, before anything touches it. This is
+            //    the only copy of an owner's tray photos there will ever be.
+            db.execSQL(
+                "CREATE TABLE `tray_photos_backup` AS " +
+                    "SELECT `id` AS `observationId`, `trayPhotoPath` AS `path` FROM `observations` " +
+                    "WHERE `trayPhotoPath` IS NOT NULL",
+            )
+
+            // 2. Stage all **three** cascade-carrying children. `CREATE TABLE … AS SELECT` makes a
+            //    constraint-free copy, which is the point: a staged table carrying the original's
+            //    foreign keys would cascade away with the original.
+            db.execSQL(
+                "CREATE TABLE `observation_symptoms_backup` AS " +
+                    "SELECT `observationId`, `symptomId` FROM `observation_symptoms`",
+            )
+            db.execSQL(
+                "CREATE TABLE `droppings_appearance_backup` AS " +
+                    "SELECT `observationId`, `value` FROM `observation_droppings_appearance`",
+            )
+            db.execSQL(
+                "CREATE TABLE `droppings_sizes_backup` AS " +
+                    "SELECT `observationId`, `value` FROM `observation_droppings_sizes`",
+            )
+
+            // 3. Take all three out of the schema, so the rename in step 5 happens with nothing
+            //    referencing the name it is about to claim.
+            db.execSQL("DROP TABLE `observation_symptoms`")
+            db.execSQL("DROP TABLE `observation_droppings_appearance`")
+            db.execSQL("DROP TABLE `observation_droppings_sizes`")
+
+            // 4. The new shape, one column shorter, then the rows, then the old table.
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `observations_new` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`bunnyId` TEXT NOT NULL, " +
+                    "`groupId` TEXT, " +
+                    "`recordedAt` INTEGER NOT NULL, " +
+                    "`createdAt` INTEGER NOT NULL, " +
+                    "`droppingsAmount` TEXT, " +
+                    "`cecotropes` TEXT, " +
+                    "`appetite` TEXT, " +
+                    "`mood` TEXT, " +
+                    "`activity` TEXT, " +
+                    "`water` TEXT, " +
+                    "`note` TEXT, " +
+                    "`symptomsChecked` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`bunnyId`) REFERENCES `bunnies`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            // Columns named on both sides rather than `SELECT *`: the shapes differ by one column,
+            // which is exactly the case a positional copy gets silently wrong.
+            db.execSQL(
+                "INSERT INTO `observations_new` (" +
+                    "`id`, `bunnyId`, `groupId`, `recordedAt`, `createdAt`, `droppingsAmount`, " +
+                    "`cecotropes`, `appetite`, `mood`, `activity`, `water`, `note`, `symptomsChecked`) " +
+                    "SELECT `id`, `bunnyId`, `groupId`, `recordedAt`, `createdAt`, `droppingsAmount`, " +
+                    "`cecotropes`, `appetite`, `mood`, `activity`, `water`, `note`, `symptomsChecked` " +
+                    "FROM `observations`",
+            )
+            db.execSQL("DROP TABLE `observations`")
+
+            // 5. The rename, and the two indices the old table carried.
+            db.execSQL("ALTER TABLE `observations_new` RENAME TO `observations`")
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_observations_bunnyId_recordedAt` " +
+                    "ON `observations` (`bunnyId`, `recordedAt`)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_observations_groupId` ON `observations` (`groupId`)",
+            )
+
+            // 6. Put all three children back, exactly as they were. This is the step whose absence
+            //    `runMigrationsAndValidate` cannot see.
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `observation_symptoms` (" +
+                    "`observationId` TEXT NOT NULL, " +
+                    "`symptomId` TEXT NOT NULL, " +
+                    "PRIMARY KEY(`observationId`, `symptomId`), " +
+                    "FOREIGN KEY(`observationId`) REFERENCES `observations`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE , " +
+                    "FOREIGN KEY(`symptomId`) REFERENCES `symptoms`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE NO ACTION )",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_observation_symptoms_symptomId` " +
+                    "ON `observation_symptoms` (`symptomId`)",
+            )
+            db.execSQL(
+                "INSERT INTO `observation_symptoms` (`observationId`, `symptomId`) " +
+                    "SELECT `observationId`, `symptomId` FROM `observation_symptoms_backup`",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `observation_droppings_appearance` (" +
+                    "`observationId` TEXT NOT NULL, " +
+                    "`value` TEXT NOT NULL, " +
+                    "PRIMARY KEY(`observationId`, `value`), " +
+                    "FOREIGN KEY(`observationId`) REFERENCES `observations`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "INSERT INTO `observation_droppings_appearance` (`observationId`, `value`) " +
+                    "SELECT `observationId`, `value` FROM `droppings_appearance_backup`",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `observation_droppings_sizes` (" +
+                    "`observationId` TEXT NOT NULL, " +
+                    "`value` TEXT NOT NULL, " +
+                    "PRIMARY KEY(`observationId`, `value`), " +
+                    "FOREIGN KEY(`observationId`) REFERENCES `observations`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "INSERT INTO `observation_droppings_sizes` (`observationId`, `value`) " +
+                    "SELECT `observationId`, `value` FROM `droppings_sizes_backup`",
+            )
+
+            // 7. The tray photo's new home, created after the rename so its foreign key names a table
+            //    that exists. Every migrated photo is the first of its set.
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `observation_photos` (" +
+                    "`observationId` TEXT NOT NULL, " +
+                    "`path` TEXT NOT NULL, " +
+                    "`position` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`observationId`, `path`), " +
+                    "FOREIGN KEY(`observationId`) REFERENCES `observations`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_observation_photos_path` " +
+                    "ON `observation_photos` (`path`)",
+            )
+            db.execSQL(
+                "INSERT INTO `observation_photos` (`observationId`, `path`, `position`) " +
+                    "SELECT `observationId`, `path`, 0 FROM `tray_photos_backup`",
+            )
+
+            // 8. The cheap half of the migration: a table nothing else in this file touches.
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `events` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`bunnyId` TEXT NOT NULL, " +
+                    "`label` TEXT NOT NULL, " +
+                    "`occursOn` INTEGER NOT NULL, " +
+                    "`note` TEXT, " +
+                    "`notifiedAt` INTEGER, " +
+                    "`calendarHandedOffAt` INTEGER, " +
+                    "`createdAt` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`bunnyId`) REFERENCES `bunnies`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_events_bunnyId_occursOn` " +
+                    "ON `events` (`bunnyId`, `occursOn`)",
+            )
+
+            // 9. The staging tables are not part of any schema and must not survive the migration.
+            db.execSQL("DROP TABLE `tray_photos_backup`")
+            db.execSQL("DROP TABLE `observation_symptoms_backup`")
+            db.execSQL("DROP TABLE `droppings_appearance_backup`")
+            db.execSQL("DROP TABLE `droppings_sizes_backup`")
+        }
+    }
+
+/**
  * Every migration this app has, in one array so `buildBunnyDatabase` and the instrumented tests
  * register the same set — a test that listed its own would be proving a configuration nothing ships.
  */
-val BUNNY_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+val BUNNY_MIGRATIONS: Array<Migration> =
+    arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)

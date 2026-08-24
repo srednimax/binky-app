@@ -537,12 +537,19 @@
     <string name="observation_droppings_size_label">Size</string>
     <string name="observation_droppings_appearance_label">Appearance</string>
     <string name="observation_cecotropes_label">Cecotropes</string>
-    <string name="observation_tray_photo_label">Photo of the tray</string>
+    <string name="observation_tray_photo_label">Photos of the tray</string>
     <!-- About the light, not about the camera: on a tray half in sun and half in shade, shape is
          already hard to read in the shadow at any quality, and no file size fixes that. -->
     <string name="observation_tray_photo_help">Even, indirect light shows shape best — pellets in shadow are hard to read later.</string>
     <string name="observation_tray_photo_description">The litter tray</string>
     <string name="observation_tray_photo_unreadable">Binky could not read that image, so nothing was attached.</string>
+    <string name="observation_tray_photo_remove">Remove this photo</string>
+    <!-- Shown once the tray is holding as many photos as it may. It states the ceiling rather than
+         apologising for it: the owner has not done anything wrong by reaching it. -->
+    <string name="observation_tray_photo_full">That is as many photos as one tray can hold.</string>
+    <!-- The badge over the first photo in a timeline entry, counting the ones behind it. A bare
+         numeral, but still translated: not every language writes digits the way English does. -->
+    <string name="observation_tray_photo_more">+%1$d</string>
 
     <string name="observation_individual_heading">This bunny</string>
     <string name="observation_individual_heading_named">%1$s</string>
