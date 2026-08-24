@@ -132,15 +132,15 @@ private suspend fun seedVariant(
 private suspend fun seedDueDose(container: AppContainer): String {
     val medications = container.medicationRepository
     val bunnies = container.bunnyRepository
-    val bijou =
-        bunnies.activeBunnies.first().firstOrNull { it.name == "Bijou" }
+    val lily =
+        bunnies.activeBunnies.first().firstOrNull { it.name == "Lily" }
             ?: error("seed the sample data first")
 
     val zone = ZoneId.systemDefault()
     val slot = LocalTime.now(zone).minusMinutes(OFFSET_MINUTES).truncatedTo(ChronoUnit.MINUTES)
 
     val existing =
-        medications.courses(bijou.id).first().firstOrNull { it.course.name == DUE_DOSE_NAME }
+        medications.courses(lily.id).first().firstOrNull { it.course.name == DUE_DOSE_NAME }
     if (existing != null) {
         // Replace rather than append: the schedule must hold exactly one slot, or an hour of
         // re-arming would derive a row of missed doses down the Care screen by the end of a cell.
@@ -153,7 +153,7 @@ private suspend fun seedDueDose(container: AppContainer): String {
 
     medications.add(
         MedicationCourseEntity(
-            bunnyId = bijou.id,
+            bunnyId = lily.id,
             name = DUE_DOSE_NAME,
             doseAmount = "0.5 ml",
             startOn = LocalDate.now(zone),
@@ -181,13 +181,13 @@ private const val OFFSET_MINUTES = 1L
  * capture is cheaper when one seed serves both. Home renders the housemates line at two sites — the
  * profile card and the switcher-style row — and neither bounds it, so:
  *
- * - **Bijou gains three housemates**, taking the fluffle to five. Four housemates is where the count
+ * - **Lily gains three housemates**, taking the fluffle to five. Four housemates is where the count
  *   cap fires ("Thumper, Clover & 3 others"), and *Pumpkin* is archived, because archived housemates
  *   render longer (*"Pumpkin (archived)"*) and are the first names the cap is meant to fold away.
  * - **A second, separate group carries the long names**, which is the case a count cap cannot fix.
  *   *Pip* lives with both of them, so its line is §8's own example word for word — *"Lives with
  *   Bartholomew-Maximilian & Wolfgang-Ferdinand"*: two names, no cap fires, and it still wraps.
- *   Keeping them out of Bijou's fluffle is the whole point — inside it they would be folded into
+ *   Keeping them out of Lily's fluffle is the whole point — inside it they would be folded into
  *   the count and prove nothing. **Two long housemates and not one**, which the first capture
  *   settled: a single long name fits the row site on one line, so a pair is what the defect needs.
  *
@@ -203,7 +203,7 @@ private suspend fun seedCrowded(container: AppContainer): String {
     val existing = bunnies.activeBunnies.first()
     // The variant is additive, so it needs something to add *to*. Failing loudly here is what stops
     // a scene shooting a two-bunny Home under a five-bunny name.
-    val bijou = existing.firstOrNull { it.name == "Bijou" } ?: error("seed the sample data first")
+    val lily = existing.firstOrNull { it.name == "Lily" } ?: error("seed the sample data first")
     if (existing.any { it.name == LONG_NAMES.first }) return "already present"
 
     val now = Instant.now()
@@ -231,9 +231,9 @@ private suspend fun seedCrowded(container: AppContainer): String {
         return id
     }
 
-    add("Clover", 1950, livesWith = bijou.id)
-    add("Thistle", 2120, livesWith = bijou.id)
-    val pumpkin = add("Pumpkin", 1840, livesWith = bijou.id)
+    add("Clover", 1950, livesWith = lily.id)
+    add("Thistle", 2120, livesWith = lily.id)
+    val pumpkin = add("Pumpkin", 1840, livesWith = lily.id)
     // Archived *after* the bond, because archiving deliberately leaves fluffle membership alone —
     // the survivor of a pair keeps having lived with them (ADR-0004, ADR-0008), which is exactly the
     // longer label the cap has to fold first.
@@ -284,7 +284,7 @@ private suspend fun seedGaining(container: AppContainer): String {
     val existing = bunnies.activeBunnies.first()
     // Additive, like `crowded`: it needs the sample data to add to, and failing here is what stops a
     // scene shooting an ordinary Home under the gain card's name.
-    if (existing.none { it.name == "Bijou" }) error("seed the sample data first")
+    if (existing.none { it.name == "Lily" }) error("seed the sample data first")
     if (existing.any { it.name == RISING.first }) return "already present"
 
     val today = LocalDate.now()
