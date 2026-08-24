@@ -99,19 +99,48 @@ def set_theme(theme: str) -> None:
 set_locale = e2e.set_locale
 
 
+def locale_tag(locale: str | None) -> str:
+    """The BCP-47 tag a screenshot was actually taken in, for its filename.
+
+    The tag goes in the **filename** rather than only in the manifest because a PNG gets moved,
+    renamed, pasted into the Console and mailed to a translator, and every one of those strips the
+    directory it came from. Nine locales of one scene are otherwise nine files called `home.png`
+    that differ only by which folder they sit in — which is exactly the state a mis-upload is made
+    of, and no amount of care at upload time can recover the language from the pixels.
+
+    When `--locale` is omitted the app runs in the *phone's* language, so the tag is read back off
+    the device rather than left blank. `getprop` returns a POSIX-flavoured `pl_PL`; the separator is
+    normalised to BCP-47's hyphen so a device-default run and an explicit `--locale pl-PL` produce
+    the same name for the same thing.
+    """
+    if locale is not None:
+        return locale
+    for prop in ("persist.sys.locale", "ro.product.locale"):
+        value = e2e.shell(f"getprop {prop}").strip()
+        if value:
+            return value.replace("_", "-")
+    # Never seen on a real device; a name that says so beats a name that quietly omits the tag,
+    # because the whole point of the suffix is that it is always there to read.
+    return "unknown"
+
+
 # --------------------------------------------------------------------------------------------
 # Capture
 # --------------------------------------------------------------------------------------------
 
 
-def capture(scene, out_dir: Path) -> dict:
-    """Walk to one scene and shoot it. No inset checking — that is `edge-to-edge.py`'s job."""
+def capture(scene, out_dir: Path, tag: str) -> dict:
+    """Walk to one scene and shoot it. No inset checking — that is `edge-to-edge.py`'s job.
+
+    [tag] is the locale suffix the file is named with — see [locale_tag] for why it is in the name
+    and not only in the manifest.
+    """
     error = e2e.reach_scene(scene)
     if error is not None:
         return {"scene": scene.name, "family": scene.family, "error": error}
 
     e2e.settle(0.8)
-    shot = out_dir / f"{scene.name}.png"
+    shot = out_dir / f"{scene.name}-{tag}.png"
     shot.write_bytes(e2e.adb("exec-out", "screencap", "-p", binary=True))
     return {
         "scene": scene.name,
@@ -134,6 +163,9 @@ def run_cell(theme: str, locale: str | None, scenes: list, out: Path, reseed: bo
     """
     out_dir = out / theme
     out_dir.mkdir(parents=True, exist_ok=True)
+    # Resolved once per cell rather than per scene: it is a `getprop` round trip when the run
+    # has no --locale, and the phone's language cannot change underneath a single cell.
+    tag = locale_tag(locale)
 
     if reseed:
         # Invalidated first, so a cell always reseeds even when the previous one left the same seed
@@ -181,7 +213,7 @@ def run_cell(theme: str, locale: str | None, scenes: list, out: Path, reseed: bo
                     )
                     print(f"     {scene.name:28s} SKIPPED  needs seed {scene.seed!r}")
                     continue
-                result = capture(scene, out_dir)
+                result = capture(scene, out_dir, tag)
                 results.append(result)
                 if "error" in result:
                     print(f"     {scene.name:28s} SKIPPED  {result['error'][:80]}")
