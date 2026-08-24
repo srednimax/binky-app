@@ -244,6 +244,24 @@ did not reach the cloud.
 covering propagation across a bonded group and the refcount on removing one photo of several. 407 JVM tests.
 `translation-gate.py`: 683 resources × 8 locales complete.
 
+**And the screens seen running**, which needed a fourth seed variant — `tray_photos`, because the default
+seed records no tray photo at all and both states are unreachable without one. Four photos rather than one
+or six: one would not show that the strip is a strip, and six is the cap, where a scene photographs the
+*absence* of the add buttons — a real state, but a different question. Four wraps onto a second line and
+leaves the buttons on screen, which is the layout question the strip actually raises.
+
+The timeline reads as intended: one photo, a `+3` badge legible against its own scrim, and the entry still
+about the bunny rather than about the tray. The form wraps 3 + 1 with a remove control on each thumbnail,
+both add buttons and the help line below them.
+
+⚠️ **One inset finding, and it is not a regression.** `observation-entry-tray-photos` reports
+`drawn=0 touch=3`. The *unmodified* `observation-entry` scene reports `touch=2` with a **larger** overlap
+(21 264 px against 1 605 px) — a different scroll position on the same screen. phase-7.5.md settled how to
+read this: a `touch` node has no label, so it is a hit area inflated by `minimumInteractiveComponentSize`
+and its overlap says nothing on its own; `drawn` is the tier that means something legible sits under a bar,
+and it is zero here. Checked rather than assumed, because "my change added a finding" and "my change moved
+the scroll position" look identical in the report.
+
 ⚠️ **The HyperOS split-install prompt bit twice** and the documented two-plain-installs fallback hit the
 same wall, because Gradle uninstalls the test package after every run — so each run is a *first* install of
 `…debug.test`, which is the case CLAUDE.md records as an outright refusal. What worked was installing both

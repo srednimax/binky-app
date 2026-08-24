@@ -9,13 +9,17 @@ import app.binky.tracker.data.BunnyEntity
 import app.binky.tracker.data.MedicationCourseEntity
 import app.binky.tracker.data.MedicationTimeEntity
 import app.binky.tracker.data.NeuterStatus
+import app.binky.tracker.data.SamplePhoto
 import app.binky.tracker.data.Sex
 import app.binky.tracker.data.WeightEntity
+import app.binky.tracker.data.writeSampleJpeg
+import app.binky.tracker.media.MediaKind
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -97,7 +101,8 @@ private suspend fun seedVariant(
         "crowded" -> seedCrowded(container)
         "gaining" -> seedGaining(container)
         "due_dose" -> seedDueDose(container)
-        else -> error("unknown variant '$variant'; known: crowded, gaining, due_dose")
+        "tray_photos" -> seedTrayPhotos(container)
+        else -> error("unknown variant '$variant'; known: crowded, gaining, due_dose, tray_photos")
     }
 
 /**
@@ -342,3 +347,57 @@ private suspend fun seedGaining(container: AppContainer): String {
 
 /** The pair, in the order the states are argued: birthday known, then absent. */
 private val RISING = "Rosemary" to "Juniper"
+
+/**
+ * **A shared tray with four photos on it** (Phase 10 §4) — a state the default seed cannot reach,
+ * because the sample data records no tray photo at all.
+ *
+ * It exists for the same reason the three variants above do: the default seed is what sixty-one
+ * matrix scenes and the Play listing screenshots rest on, so a tray photo added *there* would move
+ * evidence that is already banked. Asked for by name, added on top, and additive like the rest.
+ *
+ * **Four rather than one or six**, and both ends are deliberate. One would not show the strip is a
+ * strip. Six is the cap, and a scene shot at the cap photographs the *absence* of the add buttons —
+ * which is a real state worth its own look, but not the one this variant is for. Four wraps onto a
+ * second line at a large font scale and leaves the buttons on screen, which is the layout question
+ * the strip actually raises. In the timeline the same set draws as one photo and a **+3** badge.
+ *
+ * The photos go in through [ObservationRepository.updateTray], which means through
+ * `MediaFiles.persist(Observation)` — the house rule, and the reason this seeds a state the app
+ * could genuinely have produced rather than four rows pointing at files nothing downsampled. Four
+ * distinct colours, so a strip that renders the same frame four times is visible as a bug rather
+ * than plausible.
+ */
+private suspend fun seedTrayPhotos(container: AppContainer): String {
+    val observations = container.observationRepository
+    val bunnies = container.bunnyRepository
+    val lily = bunnies.activeBunnies.first().firstOrNull { it.name == "Lily" } ?: error("seed the sample data first")
+
+    // The newest observation covering Lily — the one a timeline scene shows first, so the badge
+    // lands in the top card rather than somewhere a screenshot has to scroll to.
+    val entry = observations.forBunny(lily.id).first().firstOrNull() ?: error("seed the sample data first")
+    val tray = observations.trayFactsNow(entry.id) ?: error("the observation vanished mid-seed")
+    if (tray.trayPhotoPaths.isNotEmpty()) return "already present"
+
+    val paths =
+        TRAY_COLOURS.map { colour ->
+            val source =
+                writeSampleJpeg(
+                    container.cacheDir,
+                    SamplePhoto(bunnyId = lily.id, width = 1600, height = 1200, colour = colour, takenDaysAgo = null),
+                    Instant.now(),
+                )
+            val stored = container.mediaFiles.persist(source, MediaKind.Observation)
+            // The original is rubbish the moment the pipeline has re-encoded it.
+            source.path?.let { File(it).delete() }
+            stored.path
+        }
+
+    // One call, so the whole set lands on every participant's row inside one transaction — which is
+    // the behaviour the scene is there to look at, not a shortcut past it.
+    observations.updateTray(entry.id, tray.copy(trayPhotoPaths = paths))
+    return "4 tray photos on ${entry.id}"
+}
+
+/** Four flat colours a strip cannot render as one frame by accident. */
+private val TRAY_COLOURS = listOf(0xFF6D4C41.toInt(), 0xFF4E6E58.toInt(), 0xFF8D6E63.toInt(), 0xFF5D737E.toInt())

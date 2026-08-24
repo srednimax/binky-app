@@ -1376,6 +1376,26 @@ SCENES = [
     # with no `maxLines` and no `overflow`. These three are the states that defect actually has, one
     # per site, and they exist because a seed variant can reach them without touching the fixture 61
     # other scenes rest on.
+    # **The tray photo as a set** (Phase 10 §4). The default seed records no tray photo at all, so
+    # both of these states are unreachable without a variant — and the two are different questions.
+    # The timeline entry asks whether one photo plus a **+3** badge reads as "there are more" without
+    # shouting over the bunny the entry is about; the form asks whether four thumbnails and their
+    # remove controls wrap without pushing the add buttons off screen. The form is the one landscape
+    # earns its keep on, a strip being the widest thing in that column.
+    Scene(
+        "observations-tray-photos",
+        "tab",
+        [*SELECT_BUNNY, ("tap", "Observations")],
+        seed="tray_photos",
+        note="a timeline entry whose tray carries four photos: the first, and a +3 badge",
+    ),
+    Scene(
+        "observation-entry-tray-photos",
+        "form",
+        [*SELECT_BUNNY, ("tap", "Observations"), ("tap", "Edit"), ("swipe_up", "")],
+        seed="tray_photos",
+        note="the editable strip, four thumbnails with per-photo remove, under the tray heading",
+    ),
     Scene(
         "home-crowded",
         "tab",

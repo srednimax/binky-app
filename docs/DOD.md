@@ -162,8 +162,14 @@ own shape for the multi-valued droppings fields. Amendment on **ADR-0029**, not 
 - [x] **Proven on the phone**: `Migration7To8Test` (6 tests) and the full instrumented suite, **226 tests**,
       all passing on the device. The migration test counts rows for all three children with values spread
       across three observations, so a recipe that staged two out of three fails.
-- [ ] The device evidence the *screens* owe — the strip, the remove control, the `+N` badge on a timeline
-      entry — batched with the rest of the phase's device work.
+- [x] **The screens seen running**, on a new `tray_photos` seed variant — the default seed records no
+      tray photo at all, so both states were unreachable without one. The timeline draws the first photo
+      with a **+3** badge; the form wraps four thumbnails onto two lines with their remove controls and
+      leaves both add buttons on screen. `observations-tray-photos` reports **clean**;
+      `observation-entry-tray-photos` reports `drawn=0 touch=3`, which is **not** a regression — the
+      unmodified `observation-entry` scene already reports two such findings with a *larger* overlap, and
+      phase-7.5.md's rule is that an unlabelled `touch` hit area says nothing on its own.
+- [ ] The other three configurations, with the rest of the phase's device work.
 
 **The SQL was verified against `schemas/8.json` mechanically, not by eye**: every `CREATE TABLE` and
 `CREATE INDEX` in `MIGRATION_7_8` is a byte-for-byte transcription of the exported shape. That is the
