@@ -105,6 +105,39 @@
         </activity>
 
         <!--
+            **Not our activity — ML Kit's, overridden.** Play flagged it against release 386: from
+            Android 16 the platform ignores resizability and orientation restrictions on large
+            screens, and the AAR pins to portrait the delegate activity that ADR-0009's scanner
+            goes through. Nothing else in this app restricts orientation, so that one attribute
+            was the whole of the finding.
+
+            The library's own comment says why it is there: *"an invisible delegate activity to
+            start scanner activity and receive result … we can avoid any side effect from activity
+            recreation in any case."* That is a real concern and lifting the restriction alone would
+            walk straight into it — a rotation mid-scan would recreate the activity holding the
+            pending result.
+
+            So the restriction is replaced **and the recreation is prevented**, which is a better
+            answer than either half. `configChanges` means the system hands the activity a
+            configuration change instead of destroying it, and `Activity.onConfigurationChanged`
+            does nothing by default — which is exactly right for something that draws no pixels.
+            The delegate now survives a rotation rather than being forbidden from seeing one.
+
+            `tools:remove` rather than `tools:replace` with a value: removing the attribute
+            leaves the platform default, which *is* unspecified, and writing it out explicitly trips
+            lint's own `DiscouragedApi` — it flags any fixed `screenOrientation` without reading the
+            value, and this project's gate is 0 warnings. Nothing declared is cleaner than the right
+            value declared. `configChanges` the library does not declare, so that one simply merges.
+            **Verify by rotating the phone mid-scan** — if the page is lost, this override comes back
+            out and the notice is recorded as accepted (Android 16 ignores the restriction on large
+            screens anyway, which is the outcome Play is asking for).
+        -->
+        <activity
+            android:name="com.google.mlkit.vision.documentscanner.internal.GmsDocumentScanningDelegateActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode"
+            tools:remove="android:screenOrientation" />
+
+        <!--
             The camera app writes the photo it takes into a file we own, and hands us back a Uri
             for it. A file:// Uri has been illegal to pass across apps since Android 7, so this
             provider vends a content:// one instead, scoped to the single cache directory in
