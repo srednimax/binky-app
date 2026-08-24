@@ -446,7 +446,7 @@ private suspend fun seedPhotos(
     }
 }
 
-private data class SamplePhoto(
+internal data class SamplePhoto(
     val bunnyId: String,
     val width: Int,
     val height: Int,
@@ -461,7 +461,7 @@ private data class SamplePhoto(
  * `saveAttributes` when the sample carries one, so the media pipeline reads the same tag a camera
  * would rather than a value handed to it directly.
  */
-private fun writeSampleJpeg(
+internal fun writeSampleJpeg(
     cacheDir: File,
     sample: SamplePhoto,
     now: Instant,
