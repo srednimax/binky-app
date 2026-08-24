@@ -157,7 +157,7 @@ def run_cell(theme: str, locale: str | None, scenes: list, out: Path, reseed: bo
             if not wanted:
                 continue
             # `keeps_watch_prompt` scenes go first, and this is a fix rather than a preference. The
-            # seed leaves exactly one expired watch (Nugget's 3-day, started 4 days ago; Bijou's
+            # seed leaves exactly one expired watch (Sznycel's 3-day, started 4 days ago; Lily's
             # 7-day is still running), and every other scene opens by tapping `Close it` — which
             # *deletes the row*, per WatchExpiry.kt's "close, dismiss and swipe-away are one
             # action". In SCENES order `home` runs ~20 scenes before `watch-expiry`, so the prompt

@@ -973,8 +973,8 @@ class Scene:
 # The app-wide bunny selection is a preference, so it survives the relaunch each scene starts with
 # — which makes it shared state between scenes rather than something each one sets. Every scene that
 # needs a bunny in scope says so, and pays two taps for the privilege of not depending on its
-# neighbours. "Bijou" is the debug sample data's first bunny.
-SELECT_BUNNY = [("tap", "Choose which bunny"), ("tap", "Bijou")]
+# neighbours. "Lily" is the debug sample data's first bunny.
+SELECT_BUNNY = [("tap", "Choose which bunny"), ("tap", "Lily")]
 
 # The weight form, reached through the weigh-in care reminder rather than the Weight tab's own
 # button. Same screen either way, and this route is the one that survives landscape: the Weight tab
@@ -1085,7 +1085,7 @@ SCENES = [
     # By name since Phase 7's `3a`, not by "Every". `find` returns the *smallest* matching node, and
     # a course row and a reminder row are now both exactly 64dp of full-width merged semantics — an
     # exact tie, broken by list order, which puts the course first. "Every" also appears in a course's
-    # own schedule line ("…every day"). "Nail trim" is Bijou's first seeded reminder and names only
+    # own schedule line ("…every day"). "Nail trim" is Lily's first seeded reminder and names only
     # itself.
     Scene("care-reminder", "detail", [*SELECT_BUNNY, ("tap", "Care & Meds"), ("tap", "Nail trim")]),
     # Reached without SELECT_BUNNY on purpose: Support is the one More row that stays live with no
@@ -1379,12 +1379,12 @@ SCENES = [
     Scene(
         "home-crowded",
         "tab",
-        [("tap", "Choose which bunny"), ("tap", "Bijou")],
+        [("tap", "Choose which bunny"), ("tap", "Lily")],
         seed="crowded",
         note="the profile card with four housemates, one of them archived",
     ),
     # **Where the folded names actually live** (Phase 9f). `home-crowded` above is the defect this
-    # is the fix for: the line names two of Bijou's four and counts the rest, and until this sheet
+    # is the fix for: the line names two of Lily's four and counts the rest, and until this sheet
     # existed the other two were unreachable anywhere in the app. Captured in all four
     # configurations because it is the phase's one piece of new UI, and because a sheet is anchored
     # to the bottom edge — which is exactly where the navigation bar is, and the inset case a dialog
@@ -1562,7 +1562,7 @@ def resolve_needles(locale: str) -> None:
       still matches because `find` is a substring match against the node's label. That is what
       carries deliberate fragments like `"What you noticed"`;
     - **no match at all** → the literal, unchanged. Sample data is identical in every locale, so
-      `Bijou`, `Metacam` and `Nail trim` want exactly this. It is also where a typo lands, which is
+      `Lily`, `Metacam` and `Nail trim` want exactly this. It is also where a typo lands, which is
       why they are listed rather than passed over.
 
     **Resolved up front rather than at tap time**, because a run is ~40 s per scene per cell: the
@@ -1682,7 +1682,7 @@ def reach_scene(scene: Scene) -> str | None:
     # alarm the app has placed. Arming into a live process is also the honest order — the banner
     # arrives *during* the scene, which is the case the driver has to survive.
     #
-    # **`full` only**, for the same reason [return_to_home] is: the variant needs Bijou to hang a
+    # **`full` only**, for the same reason [return_to_home] is: the variant needs Lily to hang a
     # course on, and `empty` opens on a wiped install while `mismatch` replaces the whole screen
     # before anything is captured. Arming there would fail every scene in both suites on a seed that
     # is deliberately absent.

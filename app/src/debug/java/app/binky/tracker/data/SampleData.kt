@@ -30,8 +30,8 @@ import kotlin.random.Random
 private const val SAMPLE_SEED = 20260726L
 
 /** Debug fixture names, deliberately not in `strings.xml`: no owner ever sees this action. */
-private const val SAMPLE_BUNNY = "Bijou"
-private const val SAMPLE_HOUSEMATE = "Nugget"
+private const val SAMPLE_BUNNY = "Lily"
+private const val SAMPLE_HOUSEMATE = "Sznycel"
 
 /** Every weighing is stamped at the same clock time, so a tie has to be made deliberately. */
 private val WEIGHING_TIME: LocalTime = LocalTime.of(8, 30)
@@ -69,31 +69,31 @@ suspend fun seedSampleData(
     val existing = bunnies.activeBunnies.first()
     if (existing.any { it.name == SAMPLE_BUNNY || it.name == SAMPLE_HOUSEMATE }) return false
 
-    val bijou = bunnies.add(BunnyEntity(name = SAMPLE_BUNNY, sex = Sex.FEMALE, neutered = NeuterStatus.YES))
-    val nugget = bunnies.add(BunnyEntity(name = SAMPLE_HOUSEMATE, sex = Sex.MALE, neutered = NeuterStatus.YES))
+    val lily = bunnies.add(BunnyEntity(name = SAMPLE_BUNNY, sex = Sex.FEMALE, neutered = NeuterStatus.YES))
+    val sznycel = bunnies.add(BunnyEntity(name = SAMPLE_HOUSEMATE, sex = Sex.MALE, neutered = NeuterStatus.YES))
     // A bonded pair, so the shared observation below has somewhere to land (ADR-0008).
-    fluffles.livesWith(bijou, nugget)
+    fluffles.livesWith(lily, sznycel)
 
-    for ((daysAgo, grams) in bijouSeries()) {
-        weights.add(WeightEntity(bunnyId = bijou, grams = grams, recordedAt = now.daysAgo(daysAgo)))
+    for ((daysAgo, grams) in lilySeries()) {
+        weights.add(WeightEntity(bunnyId = lily, grams = grams, recordedAt = now.daysAgo(daysAgo)))
     }
-    // Nugget stays steady, so the two cards on Home show a flagged bunny beside an unflagged one.
+    // Sznycel stays steady, so the two cards on Home show a flagged bunny beside an unflagged one.
     for ((daysAgo, grams) in listOf(28L to 1780, 21L to 1795, 14L to 1785, 7L to 1790, 1L to 1788)) {
-        weights.add(WeightEntity(bunnyId = nugget, grams = grams, recordedAt = now.daysAgo(daysAgo)))
+        weights.add(WeightEntity(bunnyId = sznycel, grams = grams, recordedAt = now.daysAgo(daysAgo)))
     }
 
-    seedObservations(observations, symptoms, bijou, nugget, now)
-    seedPhotos(photos, cacheDir, bijou, nugget, now)
-    seedCare(care, bijou, nugget, now)
-    seedWatches(watches, bijou, nugget, now)
-    val seededVisits = seedVisits(vets, visits, bijou, nugget, now)
-    seedMedications(medications, bijou, now)
-    seedDocuments(documents, cacheDir, bijou, nugget, seededVisits, now)
+    seedObservations(observations, symptoms, lily, sznycel, now)
+    seedPhotos(photos, cacheDir, lily, sznycel, now)
+    seedCare(care, lily, sznycel, now)
+    seedWatches(watches, lily, sznycel, now)
+    val seededVisits = seedVisits(vets, visits, lily, sznycel, now)
+    seedMedications(medications, lily, now)
+    seedDocuments(documents, cacheDir, lily, sznycel, seededVisits, now)
     return true
 }
 
 /**
- * The medication half: **three courses, all on Bijou**, chosen so every state 5e draws is on screen
+ * The medication half: **three courses, all on Lily**, chosen so every state 5e draws is on screen
  * without waiting a week for one — and so 5f has something real to arm tonight.
  *
  * - **An open twice-daily course with a partial history**, which is the one that has to be looked at
@@ -107,7 +107,7 @@ suspend fun seedSampleData(
  *   no slots ever, no reminder switch in the editor, and an ad-hoc dose as the only way to record
  *   anything — three branches nothing else here exercises.
  *
- * **Nugget deliberately gets none**, which puts the medications empty state on screen in the same
+ * **Sznycel deliberately gets none**, which puts the medications empty state on screen in the same
  * fixture. The per-bunny scoping is already proven by the visits above.
  *
  * Written **through the repository**, like everything else here. The past days go in as hand-built
@@ -118,7 +118,7 @@ suspend fun seedSampleData(
  */
 private suspend fun seedMedications(
     medications: MedicationRepository,
-    bijou: String,
+    lily: String,
     now: Instant,
 ) {
     val zone = ZoneId.systemDefault()
@@ -129,7 +129,7 @@ private suspend fun seedMedications(
     val metacam =
         medications.add(
             MedicationCourseEntity(
-                bunnyId = bijou,
+                bunnyId = lily,
                 name = "Metacam",
                 doseAmount = "0.3 ml",
                 startOn = today.minusDays(6),
@@ -169,14 +169,14 @@ private suspend fun seedMedications(
     // Today's earliest slot answered and the rest left open — so the tab opens on one of each, and
     // 5f has an unanswered slot to arm tonight.
     medications
-        .scheduleNow(bijou, zone = zone, today = today)
+        .scheduleNow(lily, zone = zone, today = today)
         .firstOrNull { it.course.id == metacam }
         ?.let { medications.answer(slot = it.due, status = DoseStatus.GIVEN, recordedAt = now) }
 
     val panacur =
         medications.add(
             MedicationCourseEntity(
-                bunnyId = bijou,
+                bunnyId = lily,
                 name = "Panacur",
                 doseAmount = "1 ml",
                 startOn = today.minusDays(20),
@@ -206,7 +206,7 @@ private suspend fun seedMedications(
     val recovery =
         medications.add(
             MedicationCourseEntity(
-                bunnyId = bijou,
+                bunnyId = lily,
                 name = "Recovery food",
                 // The case the free-text amount exists for: nobody was given a number to type.
                 doseAmount = "one syringe, as often as she will take it",
@@ -227,7 +227,7 @@ private suspend fun seedMedications(
  * screen without waiting for a real appointment.
  *
  * - **A visit with a weighing**, which is the one that has to be looked at hardest: it puts a
- *   visit-tagged row in Bijou's weight history, where *Edit* and *Delete* are replaced by *Open the
+ *   visit-tagged row in Lily's weight history, where *Edit* and *Delete* are replaced by *Open the
  *   visit*, and it is the row the entry form refuses to overwrite (ADR-0021's amendment).
  * - **A visit with no vet**, because `vetId` is nullable and a visit that names nobody still has to
  *   render — an owner who saw an out-of-hours locum has no directory entry for them.
@@ -240,8 +240,8 @@ private suspend fun seedMedications(
 private suspend fun seedVisits(
     vets: VetRepository,
     visits: VisitRepository,
-    bijou: String,
-    nugget: String,
+    lily: String,
+    sznycel: String,
     now: Instant,
 ): SeededVisits {
     val zone = ZoneId.systemDefault()
@@ -263,7 +263,7 @@ private suspend fun seedVisits(
     val molars =
         visits.add(
             VisitEntity(
-                bunnyId = bijou,
+                bunnyId = lily,
                 vetId = kowalska,
                 visitedOn = today.minusDays(9),
                 reason = "Molar check",
@@ -276,7 +276,7 @@ private suspend fun seedVisits(
     val vaccination =
         visits.add(
             VisitEntity(
-                bunnyId = bijou,
+                bunnyId = lily,
                 visitedOn = today.minusMonths(7),
                 reason = "Vaccination",
             ),
@@ -286,7 +286,7 @@ private suspend fun seedVisits(
     val eye =
         visits.add(
             VisitEntity(
-                bunnyId = nugget,
+                bunnyId = sznycel,
                 vetId = nowak,
                 visitedOn = today.minusDays(40),
                 reason = "Scratched eye",
@@ -295,7 +295,7 @@ private suspend fun seedVisits(
             now = now,
             zone = zone,
         )
-    return SeededVisits(molars = molars, vaccination = vaccination, nuggetEye = eye)
+    return SeededVisits(molars = molars, vaccination = vaccination, sznycelEye = eye)
 }
 
 /**
@@ -307,33 +307,33 @@ private suspend fun seedVisits(
 private data class SeededVisits(
     val molars: String,
     val vaccination: String,
-    val nuggetEye: String,
+    val sznycelEye: String,
 )
 
 /**
  * The watch half: **one running and one already run out**, which is both of the states 4d has to
  * show and neither of which can otherwise be looked at without waiting days for it.
  *
- * - **Bijou's is running**, four days in of seven, so Home's card carries *"Watch active · 3 days
- *   left"* with close-early beside it, the flag stops offering *Start a watch*, and Bijou is the
+ * - **Lily's is running**, four days in of seven, so Home's card carries *"Watch active · 3 days
+ *   left"* with close-early beside it, the flag stops offering *Start a watch*, and Lily is the
  *   bunny the next morning's sweep nags about.
- * - **Nugget's ran out yesterday**, so the auto-expiry prompt is on screen the moment the fixture
- *   lands rather than a week later — and because Nugget's series is deliberately steady, it is also
+ * - **Sznycel's ran out yesterday**, so the auto-expiry prompt is on screen the moment the fixture
+ *   lands rather than a week later — and because Sznycel's series is deliberately steady, it is also
  *   the prompt's *no live flag* branch, where it has to report the record without letting the
  *   absence of a flag read as reassurance (ADR-0001).
  *
- * That pairing is the point: it puts Bijou under a running watch and Nugget under an expired one, so
+ * That pairing is the point: it puts Lily under a running watch and Sznycel under an expired one, so
  * the healthy day excludes exactly one of them, with the reason shown, and the difference between
  * "active" and "expired" is visible in the same tap rather than argued about from a test.
  */
 private suspend fun seedWatches(
     watches: WatchRepository,
-    bijou: String,
-    nugget: String,
+    lily: String,
+    sznycel: String,
     now: Instant,
 ) {
-    watches.start(bijou, WatchDuration.DAYS_7, now.daysAgo(4))
-    watches.start(nugget, WatchDuration.DAYS_3, now.daysAgo(4))
+    watches.start(lily, WatchDuration.DAYS_7, now.daysAgo(4))
+    watches.start(sznycel, WatchDuration.DAYS_3, now.daysAgo(4))
 }
 
 /**
@@ -353,15 +353,15 @@ private suspend fun seedWatches(
  */
 private suspend fun seedCare(
     care: CareRepository,
-    bijou: String,
-    nugget: String,
+    lily: String,
+    sznycel: String,
     now: Instant,
 ) {
     val today = now.atZone(ZoneId.systemDefault()).toLocalDate()
 
     care.add(
         CareReminderEntity(
-            bunnyId = bijou,
+            bunnyId = lily,
             type = CareType.NAIL_TRIM,
             intervalCount = 6,
             intervalUnit = CareIntervalUnit.WEEK,
@@ -371,7 +371,7 @@ private suspend fun seedCare(
 
     care.add(
         CareReminderEntity(
-            bunnyId = bijou,
+            bunnyId = lily,
             type = CareType.VACCINATION,
             intervalCount = 1,
             intervalUnit = CareIntervalUnit.YEAR,
@@ -382,7 +382,7 @@ private suspend fun seedCare(
     val weighIn =
         care.add(
             CareReminderEntity(
-                bunnyId = bijou,
+                bunnyId = lily,
                 type = CareType.WEIGH_IN,
                 intervalCount = 1,
                 intervalUnit = CareIntervalUnit.WEEK,
@@ -396,7 +396,7 @@ private suspend fun seedCare(
 
     care.add(
         CareReminderEntity(
-            bunnyId = nugget,
+            bunnyId = sznycel,
             label = "Hay order",
             intervalCount = 2,
             intervalUnit = CareIntervalUnit.MONTH,
@@ -423,18 +423,18 @@ private suspend fun seedCare(
 private suspend fun seedPhotos(
     photos: PhotoRepository,
     cacheDir: File,
-    bijou: String,
-    nugget: String,
+    lily: String,
+    sznycel: String,
     now: Instant,
 ) {
     val samples =
         listOf(
-            SamplePhoto(bijou, 1600, 1200, 0xFF8D6E63.toInt(), takenDaysAgo = null, caption = "Flopped on the rug"),
-            SamplePhoto(bijou, 1200, 1600, 0xFF6D4C41.toInt(), takenDaysAgo = null),
-            SamplePhoto(nugget, 1600, 1200, 0xFF9E9D24.toInt(), takenDaysAgo = null),
+            SamplePhoto(lily, 1600, 1200, 0xFF8D6E63.toInt(), takenDaysAgo = null, caption = "Flopped on the rug"),
+            SamplePhoto(lily, 1200, 1600, 0xFF6D4C41.toInt(), takenDaysAgo = null),
+            SamplePhoto(sznycel, 1600, 1200, 0xFF9E9D24.toInt(), takenDaysAgo = null),
             // Added last, taken first: the two rows that prove the gallery orders by capture date.
-            SamplePhoto(bijou, 1600, 1200, 0xFF00796B.toInt(), takenDaysAgo = 200, caption = "First week home"),
-            SamplePhoto(bijou, 1200, 1600, 0xFF5D4037.toInt(), takenDaysAgo = 320),
+            SamplePhoto(lily, 1600, 1200, 0xFF00796B.toInt(), takenDaysAgo = 200, caption = "First week home"),
+            SamplePhoto(lily, 1200, 1600, 0xFF5D4037.toInt(), takenDaysAgo = 320),
         )
 
     samples.forEach { sample ->
@@ -519,8 +519,8 @@ private val EXIF_DATE: DateTimeFormatter =
 private suspend fun seedDocuments(
     documents: DocumentRepository,
     cacheDir: File,
-    bijou: String,
-    nugget: String,
+    lily: String,
+    sznycel: String,
     visits: SeededVisits,
     now: Instant,
 ) {
@@ -547,7 +547,7 @@ private suspend fun seedDocuments(
     }
 
     scan(
-        bunnyId = bijou,
+        bunnyId = lily,
         title = "Vaccination record",
         pages = 2,
         visitId = visits.vaccination,
@@ -556,7 +556,7 @@ private suspend fun seedDocuments(
         datedDaysAgo = 213,
     )
     scan(
-        bunnyId = bijou,
+        bunnyId = lily,
         title = "Dental X-ray report",
         pages = 3,
         visitId = visits.molars,
@@ -566,12 +566,12 @@ private suspend fun seedDocuments(
     )
     // Deliberately attached to nothing and dated by nothing: the two states the screens render
     // differently, and the row the attach picker is allowed to offer.
-    scan(bunnyId = bijou, title = "Pet insurance policy", pages = 1)
+    scan(bunnyId = lily, title = "Pet insurance policy", pages = 1)
     scan(
-        bunnyId = nugget,
+        bunnyId = sznycel,
         title = "Eye drops instructions",
         pages = 1,
-        visitId = visits.nuggetEye,
+        visitId = visits.sznycelEye,
         datedDaysAgo = 40,
     )
 }
@@ -655,7 +655,7 @@ private fun writeSamplePage(
  * The observation half: three entries carrying the cases the timeline is reviewed against.
  *
  * - **A shared observation with individual facts that differ** — which is the whole tray/individual
- *   split on one card: the droppings appear once, and only Bijou is subdued and hunched. Reviewing
+ *   split on one card: the droppings appear once, and only Lily is subdued and hunched. Reviewing
  *   the collapse needs a group whose participants genuinely disagree, or a bug that copied one
  *   bunny's mood onto the other would look correct.
  * - **A healthy day**, written through exactly the shortcut's own field set, so what the button
@@ -667,8 +667,8 @@ private fun writeSamplePage(
 private suspend fun seedObservations(
     observations: ObservationRepository,
     symptoms: SymptomRepository,
-    bijou: String,
-    nugget: String,
+    lily: String,
+    sznycel: String,
     now: Instant,
 ) {
     // A built-in's id is minted by the seed callback, so it can only be looked up by key here.
@@ -676,7 +676,7 @@ private suspend fun seedObservations(
 
     val shared =
         observations.add(
-            participants = listOf(bijou, nugget),
+            participants = listOf(lily, sznycel),
             recordedAt = now.daysAgo(1, OBSERVATION_TIME),
             facts =
                 ObservationFacts(
@@ -694,7 +694,7 @@ private suspend fun seedObservations(
                         ),
                 ),
         )
-    // Individual facts for Bijou alone, through the path that touches exactly one row.
+    // Individual facts for Lily alone, through the path that touches exactly one row.
     observations.updateIndividual(
         observationId = shared.first(),
         individual =
@@ -709,13 +709,13 @@ private suspend fun seedObservations(
     )
 
     observations.add(
-        participants = listOf(bijou, nugget),
+        participants = listOf(lily, sznycel),
         recordedAt = now.daysAgo(3, OBSERVATION_TIME),
         facts = healthyDayFacts(),
     )
 
     observations.add(
-        participants = listOf(nugget),
+        participants = listOf(sznycel),
         recordedAt = now.daysAgo(5, OBSERVATION_TIME),
         facts =
             ObservationFacts(
@@ -740,7 +740,7 @@ private suspend fun seedObservations(
  * - **a long gap before an acute drop**, which must still fire: damping by elapsed time is the one
  *   thing ADR-0001 says must never silence this signal.
  */
-private fun bijouSeries(): List<Pair<Long, Int>> {
+private fun lilySeries(): List<Pair<Long, Int>> {
     val random = Random(SAMPLE_SEED)
     val series = mutableListOf<Pair<Long, Int>>()
 

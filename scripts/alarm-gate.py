@@ -658,7 +658,7 @@ def open_care() -> None:
     e2e.relaunch()
     e2e.return_to_home()
     e2e.tap("Choose which bunny")
-    e2e.tap("Bijou")
+    e2e.tap("Lily")
     e2e.tap("Care & Meds")
 
 
@@ -687,7 +687,7 @@ def tomorrow_at(hour: int, minute: int = 0) -> str:
 def check_writes() -> None:
     """DOD §2 bullet 1 — *add, edit, shorten, record and skip*, against the armed course.
 
-    The seed arms Bijou's Metacam at 08:00 and 20:00 with today's morning dose already answered, so
+    The seed arms Lily's Metacam at 08:00 and 20:00 with today's morning dose already answered, so
     the run starts with exactly one alarm at today 20:00 and every step below moves it somewhere
     provable. Two steps end at **zero**, which is the half of the invariant a stale alarm breaks in
     silence — an alarm left behind by a deleted course fires into a database that no longer has a
@@ -813,7 +813,7 @@ def check_bunny() -> None:
     e2e.relaunch()
     e2e.return_to_home()
     tap_exact("Archive")
-    confirm("Archive Bijou?", "Archive")
+    confirm("Archive Lily?", "Archive")
     disarmed("archive the bunny")
 
     e2e.relaunch()
@@ -826,12 +826,12 @@ def check_bunny() -> None:
     e2e.relaunch()
     e2e.return_to_home()
     e2e.tap("Choose which bunny")
-    e2e.tap("Bijou")
+    e2e.tap("Lily")
     tap_exact("Delete")
     # **Two stages, and the counts are on the second one.** The first dialog offers archiving
     # instead; only once that is declined does the app say what is actually destroyed, in ADR-0004's
     # two buckets — records solely this bunny's, and shared entries that survive for the others.
-    confirm("Delete Bijou?", "Delete")
+    confirm("Delete Lily?", "Delete")
     e2e.settle(1.0)
     counted = [line for line in visible() if "record" in line.casefold()]
     observe(
@@ -840,7 +840,7 @@ def check_bunny() -> None:
         "; ".join(counted) or "nothing counted",
         bool(counted),
     )
-    confirm("Delete Bijou and their records?", "Delete")
+    confirm("Delete Lily and their records?", "Delete")
     disarmed("delete the bunny")
 
 
@@ -862,7 +862,7 @@ def check_dialogs() -> None:
     e2e.relaunch()
     e2e.return_to_home()
     e2e.tap("Choose which bunny")
-    e2e.tap("Bijou")
+    e2e.tap("Lily")
     e2e.tap("Weight")
     before = anywhere("2.380")
     observe("the seeded weighing is on the Weight tab", "2.380 kg present", str(before), before)
@@ -882,7 +882,7 @@ def check_dialogs() -> None:
     e2e.relaunch()
     e2e.return_to_home()
     e2e.tap("Choose which bunny")
-    e2e.tap("Bijou")
+    e2e.tap("Lily")
     e2e.tap("Weight")
     after = anywhere("2.380")
     observe("the weighing went with the visit", "False", str(after), not after)
@@ -900,7 +900,7 @@ def check_dialogs() -> None:
     e2e.relaunch()
     e2e.return_to_home()
     e2e.tap("Choose which bunny")
-    e2e.tap("Bijou")
+    e2e.tap("Lily")
     e2e.tap("Care & Meds")
     gone = not anywhere("Kowalska")
     observe("the vet's name is gone from the visit", "True", str(gone), gone)
