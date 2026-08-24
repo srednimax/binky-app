@@ -9,9 +9,11 @@ care. Free, ad-free, no server, all data on the device.
 - **What's still open:** [`docs/DOD.md`](docs/DOD.md) — the live checklist. **Read this one first**;
   it is short by design, and `PLAN.md` is the long record behind it.
 - **The phases big enough for a file of their own:** [`phase-6.md`](docs/phase-6.md),
-  [`phase-7.md`](docs/phase-7.md), [`phase-7.5.md`](docs/phase-7.5.md), [`phase-8.md`](docs/phase-8.md) —
-  all four **closed**, each holding its own record — and [`phase-9.md`](docs/phase-9.md), the one still
-  **open**. Every other phase's record is in `PLAN.md`; don't load it to build one.
+  [`phase-7.md`](docs/phase-7.md), [`phase-7.5.md`](docs/phase-7.5.md), [`phase-8.md`](docs/phase-8.md),
+  [`phase-9.md`](docs/phase-9.md) — all five **closed**, each holding its own record, and phase 9's
+  carries an appendix with the run narratives `DOD.md` used to hold — and
+  [`phase-10.md`](docs/phase-10.md), the one still **open**. Every other phase's record is in `PLAN.md`;
+  don't load it to build one.
 - **Roadmap and status:** [`docs/PLAN.md`](docs/PLAN.md) — read the phase you're in, not the file.
 - **Commits & releasing:** [`docs/RELEASING.md`](docs/RELEASING.md). Commit subjects **must** be
   [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `feat!:`, `docs:`, …) — a

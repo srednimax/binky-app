@@ -20,6 +20,14 @@ Run it before the redesign starts and again at the gate, same scenes, same cells
     scripts/screenshots.py --out DIR --scene home,weight    # one screen, while iterating
     scripts/screenshots.py --restore                        # hand the phone back
 
+**The Play listing takes the LIGHT set** (changed 2026-08-24; it was dark for the whole of Phase 9, and
+1.8.0 went up under the old rule). Both cells are still captured, because the app ships both themes and
+the before/after comparison needs the pair — this is a decision about what goes in the Console. Use
+`--theme light` when the run is only for the listing.
+
+Filenames carry the locale they were taken in — `home-pl.png`, not `home.png` — because a PNG loses the
+directory that used to carry its language the moment anyone moves it. See [locale_tag].
+
 Each cell runs all three suites in the one order that works: `full` against the seeded sample data,
 then `mismatch`, then `empty` — which wipes the install and is therefore last. Each cell then reseeds,
 so the next one starts from the same place and the phone is left usable rather than blank.

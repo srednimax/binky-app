@@ -13,8 +13,9 @@ its *result* is written back into the checkpoint below and its detail deleted fr
 working on it costs the phase rather than the whole history. It moves in here, or simply stops being
 read, once it closes. Phases 0–5 are finished and live below; **Phases 6 and 7 are finished and stay in
 [`phase-6.md`](phase-6.md) and [`phase-7.md`](phase-7.md)** rather than being copied in, and **Phases 7.5
-and 8 are in [`phase-7.5.md`](phase-7.5.md) and [`phase-8.md`](phase-8.md)**. **Phase 9 is the one still
-open**, in [`phase-9.md`](phase-9.md).
+and 8 are in [`phase-7.5.md`](phase-7.5.md) and [`phase-8.md`](phase-8.md)**. **Phase 9 closed 2026-08-24**
+and its record — including the run narratives that used to live in `DOD.md` — is in
+[`phase-9.md`](phase-9.md). **Phase 10 is the one still open**, in [`phase-10.md`](phase-10.md).
 
 ## Status
 
@@ -61,7 +62,7 @@ open**, in [`phase-9.md`](phase-9.md).
   the rules that outrank fluency, checked without a native speaker — plus an in-app report row for the
   fluency half, per
   [ADR-0030](adr/0030-a-language-ships-on-an-audit-not-a-native-read-through.md).*)
-- [ ] **Phase 9** — Ship it — **ships as 1.7** — record in [`phase-9.md`](phase-9.md), not here
+- [x] **Phase 9** — Ship it — **shipped as 1.8.0** — record in [`phase-9.md`](phase-9.md), not here
   *(opened 2026-08-18. **Not a build phase**: everything through Phase 8 is built, device-proven and
   tagged at `v1.6.0`, schema **7** — and the tracks are still on 1.0.0 / 1.3, so none of it has reached an
   owner's phone. Phase 9 closes the evidence Phase 5 never finished (the overnight Doze run and the seven
@@ -70,7 +71,19 @@ open**, in [`phase-9.md`](phase-9.md).
   be, and a fluffle line that names two bunnies out of five. One `feat:` is what makes it 1.7 rather than
   1.6.1. **Schema stays at 7 on purpose**: the release that finally crosses 1.0.0 → 1.7 on a real owner's
   phone should carry no migration of its own, so if anything goes wrong the suspect list is the three
-  already proven rather than a fourth written the same week. Boxes in [`DOD.md`](DOD.md) §10)*
+  already proven rather than a fourth written the same week. Boxes in [`DOD.md`](DOD.md) §10.
+  **Closed 2026-08-24: 1.8.0 is live in production in nine languages**, listing copy, release notes,
+  screenshots, feature graphic and icon all entered. ⚠️ **It shipped as 1.8.0, not the 1.7 this entry was
+  written for** — 9k's merge and release-please's bump moved `main` after 9i closed. The upgrade proof
+  carries unchanged because 1.8.0 changes no entity, no migration and no launch gate. This is the first
+  moment in the project when every phase is closed *and* the build owners have is the build `main` holds.
+  `DOD.md` was emptied the same day and its detail moved into `phase-9.md`'s appendix rather than deleted)*
+- [ ] **Phase 10** — What owners report, and what Play's Console says — **ships as 1.9.0** — record in
+  [`phase-10.md`](phase-10.md), not here
+  *(opened 2026-08-24, and the first phase whose contents were not chosen by this plan: two feature
+  requests from an owner, three Play quality notices against release 386, and one settings request.
+  Takes the schema to **8** — one `MIGRATION_7_8` shared by both features, which is the saving that made
+  a single release the cheaper shape rather than only the faster one. Boxes in [`DOD.md`](DOD.md))*
 
 The rule is **no release before the data is safe**, which Phase 3 satisfies (ADR-0019). It replaces the
 former blanket ban on shipping before every phase was complete — a rule that held the weight trend flag,
