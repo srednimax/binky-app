@@ -5,13 +5,13 @@ import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.binky.tracker.theme.BinkyTheme
 import app.binky.tracker.ui.wipe.SchemaMismatchScreen
@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 // AppCompatDelegate lives, and AppCompatDelegate is what applies a per-app language on the
 // pre-13 half of the supported range (ADR-0013). Nothing else here uses AppCompat — no views,
 // no action bar, no AppCompat widgets — and AppCompatActivity is a ComponentActivity subclass,
-// so setContent, enableEdgeToEdge and the activity-result APIs all still work unchanged.
+// so setContent, the window itself and the activity-result APIs all still work unchanged.
 class MainActivity : AppCompatActivity() {
     /**
      * What a tapped reminder notification asked for, waiting to be acted on — a care reminder's
@@ -47,13 +47,20 @@ class MainActivity : AppCompatActivity() {
         val app = application as BinkyApplication
         notificationTarget.value = intent.reminderTap()
 
-        enableEdgeToEdge()
+        // Edge-to-edge, and **not** `enableEdgeToEdge()` — Play flagged that call against release
+        // 386 and it was right: every path in androidx.activity 1.13.0, `EdgeToEdgeApi35` included,
+        // reaches `Window.setStatusBarColor` and `setNavigationBarColor`, deprecated in Android 15.
+        // There is no version of the call that avoids them, so what it did is split in two: this
+        // line, which is all Compose actually depends on, and the bar colours, which moved to
+        // `themes.xml` where an attribute is not a deprecated method. `values/colors.xml` carries
+        // the reasoning and `BinkyTheme` writes the icon appearance at runtime.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         // **Nobody pans this window; the content pads itself** (PLAN 4f).
         //
         // The manifest asks for `adjustResize`, and on API 26-29 that is the only thing that works:
         // `WindowInsets.ime` is not reported before API 30, so the older half of the supported range
         // depends on the window actually being resized. From API 30 the same request is inert —
-        // `enableEdgeToEdge()` above sets `decorFitsSystemWindows = false`, and the window manager
+        // the line above sets `decorFitsSystemWindows = false`, and the window manager
         // downgrades the resize to a *pan*. Panning is worse than doing nothing: with the keyboard
         // open on the observation form it slid the top of the form under the status bar and carried
         // the `TopAppBar`, Save button and all, off the top of the screen.
