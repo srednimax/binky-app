@@ -125,7 +125,63 @@ which is exactly the false positive a naive check would produce.
 Still owed: rotate the phone mid-scan. If the page is lost the override comes back out and the notice is
 recorded as accepted, since Android 16 ignores the restriction on large screens regardless.
 
-## §3–§6
+## §3 — R8 ✅ built 2026-08-24
+
+Turning it on was one line. The work was **deciding what to write in `proguard-rules.pro`**, and the
+answer was *nothing* — which is a conclusion that had to be earned, because the alternative is a pile of
+keeps nobody can ever remove.
+
+### The file is empty on purpose, and the method is why that is safe
+
+R8 writes down everything it did. Three files under `app/build/outputs/mapping/release/` answer every
+question a keep rule would have been guessing at: `configuration.txt` is every rule it actually ran with,
+consumer rules from all 69 AAR `proguard.txt` sections included; `mapping.txt` is what got renamed;
+`usage.txt` is what got removed. Every hazard below was settled by reading those rather than by adding a
+rule and hoping.
+
+The dependencies turned out to be uniformly well-behaved. `androidx.work` ships `-keepnames class *
+extends androidx.work.ListenableWorker`; Room ships `-keep class * extends androidx.room.RoomDatabase`;
+kotlinx.serialization ships rules preserving `Companion` and `serializer()`, the reflective path
+`serializer(KClass)` takes. And AGP generates `aapt_rules.txt` from the merged manifest, which is why the
+`-keep` DOD had pencilled in for `BinkyBackupAgent` turned out to be unnecessary: `android:backupAgent` is
+one of the attributes aapt reads, and the agent survives under its own name with its overrides intact.
+
+That last one is the shape of the whole exercise. The rule would have done nothing, would have looked
+prudent, and could never have been deleted afterwards — because nobody can prove a keep rule is a no-op
+without removing it and shipping. Checking cost one grep.
+
+### The one that could have rewritten history
+
+**Enum names are the database's storage format** (house rule: by name, never ordinal), so the question
+that mattered was whether R8 touches them. It renames the constant *fields* — `DoseStatus.GIVEN` becomes
+`e` — which reads alarmingly in `mapping.txt` and is in fact harmless: `.name` returns the string handed
+to the enum constructor, not the field's name, and R8 never rewrites that string because `Enum.valueOf`
+depends on it. Grepping the compiled dex confirms it: `WITHDRAWN`, `LEFT_UNEATEN`, `KILOGRAMS` are all
+there verbatim.
+
+⚠️ **This cannot be pinned by a rule.** The `-keepclassmembers enum *` that everyone reaches for keeps
+*field* names, which is not what `.name` returns — it would be a rule that looks like it addresses the
+hazard and does not. The guarantee is a property of how R8 works, so it stays on the device list as a
+behaviour check rather than being closed by the dex reading.
+
+⚠️ **And one false alarm worth recording, because it cost time.** The first dex check used
+`strings classes.dex | grep -x WITHDRAWN` and reported it missing. `strings` concatenates adjacent dex
+entries onto one output line, so `-x` — whole-line match — is the wrong tool and reports absence for
+something present. `grep -a -o` on the raw file is the honest reading.
+
+### What it bought, and what is still owed
+
+The AAB goes **12.3 MB → 8.1 MB**, a third off, with `isShrinkResources` still **false** — one variable
+at a time, and resource shrinking argues with nine locales. `mapping.txt` rides inside the bundle at
+`BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map`, so Play deobfuscates crashes with no
+upload step.
+
+Both artifact scripts were re-run against the minified bundle, which is the entire reason §3 goes first:
+`aab-permissions.py` still reads 8 permissions and 0 `<uses-feature>`, and §2's compiled-manifest check
+still finds zero `screenOrientation`. What is owed is behaviour on the phone — enums round-tripping, an
+export→restore, the daily sweep firing — batched with the rest of the phase's device work.
+
+## §4–§6
 
 Not yet built. The reasoning for each is in [`DOD.md`](DOD.md)'s boxes while they are live; it moves here
 as each closes. The two worth flagging in advance:
