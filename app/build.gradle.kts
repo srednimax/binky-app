@@ -143,28 +143,29 @@ android {
         }
 
         release {
-            // R8 stays off deliberately, not by template default: 1.0 already differs from any
-            // tested build in several ways, and a sixth divergence whose failures are release-only,
-            // runtime and reflection-shaped is the opposite of what this checkpoint proves.
-            // See docs/PLAN.md 3a.
+            // **R8 is on as of 1.9.0 (10c).** The comment this replaces set a condition rather
+            // than a date — "turn it on when there is a shipped build to turn it on *against*, and
+            // watch that build run" — and the reasoning is kept here rather than deleted, because
+            // the condition is the interesting part and it took three phases to satisfy.
             //
-            // **Revisited at 9k**, which is the revisit the "at 1.1" note asked for rather than
-            // another deferral of it. Two things changed and they point opposite ways.
+            // Why it was off. 1.0 already differed from every tested build in several ways, and a
+            // sixth divergence whose failures are release-only, runtime and reflection-shaped is the
+            // opposite of what that checkpoint proved (docs/PLAN.md 3a). Revisited at 9k: the
+            // *reason* R8 was wanted had by then gone — it had been the cheap way to strip the debug
+            // affordances, and 9k moved those to `src/debug/`, where the release variant never
+            // compiles them at all. What remained was the condition, and it could not be met on the
+            // bench: a locally-signed release APK cannot be installed over the Play one, so
+            // `assembleRelease` succeeding is not evidence about a phone.
             //
-            // The *reason* R8 was wanted here is gone. It was the cheap way to strip the debug
-            // affordances out of the release build, because with minification off nothing removes a
-            // branch whose condition is a compile-time `false`. 9k moved them to `src/debug/`
-            // instead, so the release variant never compiles them and there is nothing left for R8
-            // to strip that the source sets do not already exclude.
+            // What changed: **1.8.0 is live in production.** There is now a shipped build to turn
+            // this on against, and 1.9.0 crosses to it as an ordinary Play update — which is the run
+            // the original condition asked to watch. `app/proguard-rules.pro` records what was
+            // checked and why it holds no keep rules.
             //
-            // The *condition* has not changed, only its subject. "Against a known-good 1.0" was
-            // never met — 1.0 is the install the field upgrade proof is still crossing from — so it
-            // now reads against a known-good **1.7**, and 1.7 is not on a track yet. Nor can this
-            // be proven on the bench in the meantime: a release build cannot be installed over the
-            // Play one, which refuses a locally-signed APK on signature mismatch, so `assembleRelease`
-            // succeeding is not evidence about a phone. Turn it on when there is a shipped build to
-            // turn it on *against*, and watch that build run.
-            isMinifyEnabled = false
+            // `isShrinkResources` stays **false**, and not by omission: one variable at a time, and
+            // resource shrinking argues with nine locales and the string count `aab-locale.py`
+            // asserts. R8 alone takes the AAB from 12.3 MB to 8.1 MB.
+            isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             // Google holds the permanent *app signing* key; this is only the *upload* key proving
             // the artifact came from us, and an upload key can be reset (ADR-0009). Losing it is

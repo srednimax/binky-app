@@ -816,6 +816,8 @@ screen, the debug build and restore all have to move, which is **ADR-0023**.
      sample-data gate) and is obtainable only through a Play round-trip. A sixth divergence whose failures
      are release-only, runtime, and reflection-shaped is the opposite of what this checkpoint is for.
      Revisit at 1.1, against a known-good 1.0 and with testers already on the track.
+     *Closed at 10c (2026-08-24): turned on for 1.9.0, against a known-good 1.8.0 live in
+     production. See [`phase-10.md`](phase-10.md) §3 — the rules file is empty, and why.*
    - One signed build on the **internal testing track**, at Phase 2's feature set. Nothing about the payload
      is new, which is the point: upload, track configuration, Play's review and install-from-Play on the
      Xiaomi are each proven while none of them are entangled with a feature under review.

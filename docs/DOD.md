@@ -54,7 +54,7 @@ Play quality notices against release 386, and one settings request.
 | --- | --- | --- |
 | **10a** | Edge-to-edge off the deprecated bar setters | ✅ **built 2026-08-24** |
 | **10b** | The ML Kit delegate stops being portrait-locked | ✅ **built 2026-08-24**, device check owed |
-| **10c** | R8 on | open |
+| **10c** | R8 on | ✅ **built 2026-08-24**, device proof owed |
 | **10d** | Several photos on a tray — **schema 8** | open |
 | **10e** | Events: a timeline, and dated events an owner writes — **same schema 8** | open |
 | **10f** | A light/dark override in Settings | open |
@@ -95,23 +95,54 @@ a rotation instead of being recreated — which is the concern the library's own
       AAB. Needs a new primitive decoder — in the protobuf manifest the value compiles to an int with no
       source string, so the existing string-reading path cannot see it.
 
-### 10c — R8
+### 10c — R8 ✅ built 2026-08-24
 
 The comment in `app/build.gradle.kts` set the condition: *"turn it on when there is a shipped build to
 turn it on against, and watch that build run."* **1.8.0 is live in production.** The condition is met.
 
-- [ ] `isMinifyEnabled = true`; **rewrite** the comment to record the condition being met rather than
-      deleting the reasoning.
-- [ ] Create `app/proguard-rules.pro` — it is referenced by the build and **does not exist**, harmless
-      only because minification is off today.
-- [ ] Leave `isShrinkResources` **false**. One variable at a time; resource shrinking argues with nine
-      locales and `aab-locale.py`'s string count.
-- [ ] `-keep` for `BinkyBackupAgent` — reachable only from `android:backupAgent`, and the failure mode is
-      a backup that silently does nothing.
-- [ ] Prove by behaviour, not by reading rules: **enums round-trip by name** (the house rule, and the one
-      that can silently rewrite history), an export→restore under kotlinx.serialization, and the daily
-      sweep actually firing.
-- [ ] Confirm `mapping.txt` rides inside the AAB so Play deobfuscates crashes.
+- [x] `isMinifyEnabled = true`; the comment **rewritten**, not deleted — it now records the condition
+      being met, and why it took from 3a to here to meet it.
+- [x] `app/proguard-rules.pro` created. It holds **no keep rules**, and that is the finding: every
+      reflection-shaped thing here is already covered by a rule a dependency ships. The file records
+      what was checked against `mapping.txt` / `usage.txt` / `configuration.txt`, so the next person
+      adds a keep with evidence rather than on suspicion.
+- [x] `isShrinkResources` left **false**. One variable at a time; `aab-locale.py` still counts 737
+      base strings and all 8 shipped locales in the minified bundle.
+- [x] `-keep` for `BinkyBackupAgent` — **not needed, and that was checked rather than assumed.** AGP
+      generates `aapt_rules.txt` from the merged manifest and `android:backupAgent` is one of the
+      attributes it reads, so the agent survives under its own name with `onFullBackup` and
+      `onRestoreFinished` intact. A rule here would have been a no-op nobody could later prove was one.
+- [x] `mapping.txt` rides inside the AAB — `BUNDLE-METADATA/com.android.tools.build.obfuscation/
+      proguard.map`, 65 MB uncompressed. Play deobfuscates crashes without an upload step.
+- [x] **The artifact checks re-run on the minified bundle**, which is the whole reason 10c goes first:
+      `aab-permissions.py` still reads 8 permissions and 0 `<uses-feature>`, and 10b's compiled-manifest
+      check still finds zero `screenOrientation` with `configChanges` intact.
+- [ ] **Prove by behaviour, not by reading rules** — the device half, batched with the rest:
+      **enums round-trip by name** (the house rule, and the one that can silently rewrite history),
+      an export→restore under kotlinx.serialization, and the daily sweep actually firing.
+
+**Size:** the AAB goes **12.3 MB → 8.1 MB**, a third off, with resource shrinking still switched off.
+
+**What was verified, and what it rules out.** The static half is genuinely done, because R8 writes down
+what it did and the answers were read out of that rather than guessed:
+
+- **Enum names survive.** R8 renames the constant *fields* (`DoseStatus.GIVEN -> e`) but never the name
+  string passed to the enum constructor, because `Enum.valueOf` reads it — so `.name`, which is what the
+  converters write to the database, is unchanged. Confirmed by grepping the compiled dex: `WITHDRAWN`,
+  `LEFT_UNEATEN`, `KILOGRAMS` and the rest are all present verbatim. ⚠️ **No rule pins this** — the usual
+  `-keepclassmembers enum *` keeps *field* names, which is not what `.name` returns. That is why the
+  behaviour proof above stays open rather than being closed by the dex reading.
+- **Worker class names survive**, which is the cross-version one: WorkManager persists the worker's class
+  name in its own database, so a sweep enqueued by 1.9.0 has to still resolve after the update to 1.10.
+  `androidx.work` ships `-keepnames class * extends androidx.work.ListenableWorker` for exactly this, and
+  `ReminderSweepWorker` and `UpdateCatchUpWorker` are both unrenamed in `mapping.txt`.
+- **`BunnyDatabase_Impl` is unrenamed**; the DAOs are renamed, which is fine — nothing looks those up by
+  name.
+- **`@Serializable` survives**: `Companion -> Companion` and the `$$serializer` INSTANCE fields are kept
+  by kotlinx.serialization's own rules. Renaming the classes is harmless — a `serialName` is a compile-time
+  string literal, so an owner's archive does not change shape when R8 renames the class that reads it.
+- **`WeightSource` was removed entirely** and that is correct, not a loss: it is derived from
+  `visitId != null` and never stored, and nothing in the release variant reads it.
 
 ### 10d — Several photos on a tray (schema 8)
 
