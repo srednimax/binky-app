@@ -10,20 +10,33 @@ on:
   workflow_dispatch:
     inputs:
       track:
-        description: Play track
+        description: 'Track — production reaches real owners; internal is the safe rehearsal'
         type: choice
         default: production
-        options: [production, beta, alpha, internal]
+        options:
+          - production
+          - beta
+          - alpha
+          - internal
       rollout:
-        description: Fraction of users for a staged rollout (1.0 = everyone)
-        type: string
+        # A choice, not free text: supply wants a FRACTION, so typing 10 to mean "10%" would ask
+        # Play for 1000%. The options are the only values anyone actually wants.
+        description: 'Staged rollout — 0.1 means 10% of owners. Widen later from the Console.'
+        type: choice
         default: '0.1'
+        options:
+          - '0.01'
+          - '0.05'
+          - '0.1'
+          - '0.2'
+          - '0.5'
+          - '1.0'
       update_listing:
-        description: Also push descriptions and screenshots from store-listing.md
+        description: 'Push descriptions + screenshots too — ONLY if store-listing.md changed'
         type: boolean
         default: false
       dry_run:
-        description: Validate against Play without committing anything
+        description: 'Validate against Play, publish nothing — leave ON for a first run'
         type: boolean
         default: true
 
