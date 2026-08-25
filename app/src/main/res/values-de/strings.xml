@@ -146,6 +146,8 @@
     <string name="weight_grams_help">Gewicht in Gramm. Ganze Gramm, so wie die Waage es anzeigt.</string>
     <string name="weight_recent">Zuletzt gewogen: %1$s.</string>
     <string name="weight_grams_required">Gib das Gewicht in Gramm ein.</string>
+    <string name="weight_kilograms_help">Gewicht in Kilogramm. Bis zu drei Nachkommastellen — 1,2 oder 1,234.</string>
+    <string name="weight_kilograms_required">Gib das Gewicht in Kilogramm ein.</string>
     <string name="weight_grams_as_kilograms">Das sind %1$s.</string>
     <string name="weight_recorded_at_label">Wann das Kaninchen auf der Waage stand</string>
     <string name="weight_backdating_help">Standard ist jetzt. Morgens wiegen und abends eintragen ist völlig in Ordnung — es zählt die Zeit, die du einstellst.</string>
@@ -215,7 +217,7 @@
     <string name="settings_weight_unit">Gewichte anzeigen in</string>
     <string name="settings_unit_kilograms">Kilogramm</string>
     <string name="settings_unit_grams">Gramm</string>
-    <string name="settings_weight_unit_help">Das ändert nur, wie Gewichte angezeigt werden, nicht wie sie eingegeben werden — eingegeben wird immer in Gramm, und Änderungen werden immer in Gramm angezeigt.</string>
+    <string name="settings_weight_unit_help">Das ändert nur, wie Gewichte angezeigt werden, nicht wie sie eingegeben werden — die Eingabeeinheit wählst du bei der Wägung selbst, und Änderungen werden immer in Gramm angezeigt.</string>
     <string name="settings_backup">Sicherung &amp; Wiederherstellung</string>
     <string name="settings_backup_summary">Exportiere deine Aufzeichnungen in eine Datei, stelle sie daraus wieder her, und sieh dir die Kopien auf diesem Handy an.</string>
     <string name="settings_language">Sprache</string>

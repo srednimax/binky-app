@@ -59,13 +59,111 @@ fun gramsNumber(
     locale: Locale,
 ): String = NumberFormat.getIntegerInstance(locale).format(grams)
 
+// ---------------------------------------------------------------------------
+// Entry. Everything below reads or writes the *text in the field*, which is a different job from
+// rendering a stored weight: the output goes back into an editable box, so it carries no unit
+// suffix and — the part that is easy to get wrong — **no grouping separators**. A French or Polish
+// rendering of 2495 g is "2 495", and putting that back in the field makes the next parse read a
+// different number, or none.
+
+/**
+ * Read the typed text as whole grams, or `null` if it is not a weight yet.
+ *
+ * `null` covers "" and "1." on the way to "1.2" as much as it covers nonsense — a form that could
+ * not hold an incomplete number would fight the keyboard.
+ *
+ * **Both `.` and `,` are accepted as the decimal separator, always, in either direction.** Which one
+ * an owner types is decided by their keyboard, not by the app's locale: a Polish phone offers a
+ * comma, and a value converted *into* the field is rendered with the locale's separator, so the two
+ * have to agree without anyone choosing. Rejecting the "wrong" one would fail the ordinary case.
+ *
+ * Kilograms are rounded to the nearest whole gram, half away from zero. Storage is `Int` grams
+ * (house rule), so a third decimal is the finest reading that survives — `1.2345` kg is not a whole
+ * number of grams and something has to give.
+ */
+fun parseWeightGrams(
+    text: String,
+    unit: WeightUnit,
+): Int? {
+    val trimmed = text.trim()
+    if (trimmed.isEmpty()) return null
+    return when (unit) {
+        WeightUnit.GRAMS -> trimmed.toIntOrNull()?.takeIf { it > 0 }
+        WeightUnit.KILOGRAMS -> {
+            val normalised = trimmed.replace(',', '.')
+            if (normalised.count { it == '.' } > 1) return null
+            val kilograms = normalised.toDoubleOrNull() ?: return null
+            if (!kilograms.isFinite() || kilograms <= 0) return null
+            Math.round(kilograms * GRAMS_PER_KILOGRAM).toInt().takeIf { it > 0 }
+        }
+    }
+}
+
+/**
+ * A stored weight as the text the field should hold in [unit] — what the toggle converts *to*.
+ *
+ * Trailing zeros are trimmed, because this is a box someone is about to type in: 1200 g reads back
+ * as "1.2", not "1.200". That is the opposite of [weightNumber]'s fixed three decimals, which exist
+ * so a *history column* scans straight down, and the two must not be confused for each other.
+ */
+fun weightEntryText(
+    grams: Int,
+    unit: WeightUnit,
+    locale: Locale,
+): String =
+    when (unit) {
+        // Deliberately not `gramsNumber`: that one groups, and this string goes back into the field.
+        WeightUnit.GRAMS -> grams.toString()
+        WeightUnit.KILOGRAMS ->
+            NumberFormat
+                .getNumberInstance(locale)
+                .apply {
+                    minimumFractionDigits = 0
+                    maximumFractionDigits = KILOGRAM_DECIMALS
+                    isGroupingUsed = false
+                }.format(grams / GRAMS_PER_KILOGRAM)
+    }
+
+/**
+ * Keep only what can still become a weight in [unit], applied on every keystroke.
+ *
+ * Grams stay digits-only, exactly as before. Kilograms additionally allow **one** separator and at
+ * most [KILOGRAM_DECIMALS] digits after it — the cap is what stops a fourth decimal being typed and
+ * then silently rounded away at save time, which would show the owner a number the app did not keep.
+ *
+ * A leading separator is allowed through: ".5" is a real way to type half a kilogram, and it parses.
+ */
+fun filterWeightInput(
+    text: String,
+    unit: WeightUnit,
+): String {
+    if (unit == WeightUnit.GRAMS) return text.filter(Char::isDigit)
+    val kept = StringBuilder()
+    var separatorSeen = false
+    var decimals = 0
+    for (character in text) {
+        when {
+            character.isDigit() && separatorSeen && decimals < KILOGRAM_DECIMALS -> {
+                kept.append(character)
+                decimals++
+            }
+            character.isDigit() && !separatorSeen -> kept.append(character)
+            (character == '.' || character == ',') && !separatorSeen -> {
+                kept.append(character)
+                separatorSeen = true
+            }
+        }
+    }
+    return kept.toString()
+}
+
 /**
  * Kotlin note: `LocalConfiguration`, not `LocalContext.resources.configuration` — only the former
  * recomposes when the system locale changes, so a formatter built from the latter would keep its old
  * grouping and decimal separator until the screen was rebuilt for some other reason.
  */
 @Composable
-private fun currentLocale(): Locale = LocalConfiguration.current.locales[0]
+internal fun currentLocale(): Locale = LocalConfiguration.current.locales[0]
 
 /** A stored weight in the owner's chosen display unit — "2.495 kg" or "2,495 g". */
 @Composable

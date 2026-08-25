@@ -40,8 +40,10 @@ import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.common.BinkyDialog
+import app.binky.tracker.ui.common.ChipRow
 import app.binky.tracker.ui.common.ErrorText
 import app.binky.tracker.ui.common.FieldRadius
+import app.binky.tracker.ui.common.FormChip
 import app.binky.tracker.ui.common.GroupedCard
 import app.binky.tracker.ui.common.HelpText
 import app.binky.tracker.ui.common.RecordedAtField
@@ -138,7 +140,11 @@ fun WeightEntryScreen(
                     }
                 }
             }
-            GramsField(state = state, onGramsChanged = viewModel::onGramsChanged)
+            AmountField(
+                state = state,
+                onAmountChanged = viewModel::onAmountChanged,
+                onEntryUnitChanged = viewModel::onEntryUnitChanged,
+            )
             // Shared with the observation form: back-dating allowed, the future refused with the
             // reason stated. Only the wording differs between the two.
             RecordedAtField(
@@ -228,9 +234,14 @@ fun WeightEntryScreen(
 }
 
 /**
- * **Entry is always in grams**, whatever the display preference is set to — that is what a scale
- * reads out (house rule). When the owner reads kilograms, the conversion is echoed underneath rather
- * than the field switching unit, so what they type and what they see are never the same box.
+ * **Entry defaults to grams** — that is what a scale reads out — with a chip row to switch the field
+ * to kilograms, because the number is not always coming off a scale and a vet writes kilograms. The
+ * choice is a preference, so it is made once; the *stored* value is `Int` grams either way.
+ *
+ * Whichever unit is selected, the **other** one is echoed underneath. That echo is the safety net
+ * that makes the toggle safe to ship: a `2495` typed while the field is set to kilograms reads back
+ * as "That is 2 495 000 g." in the line below, which is unmissable in a way a silently-accepted
+ * number is not.
  *
  * **`6e` makes this the only oversized input in the app**: 72dp at `headlineMedium`, because one
  * number is the whole point of the route and everything else here is a qualifier on it. The floating
@@ -243,43 +254,98 @@ fun WeightEntryScreen(
  * themes for free. The 2dp is M3's own focused-indicator default.
  */
 @Composable
-private fun GramsField(
+private fun AmountField(
     state: WeightEntryUiState,
-    onGramsChanged: (String) -> Unit,
+    onAmountChanged: (String) -> Unit,
+    onEntryUnitChanged: (WeightUnit) -> Unit,
 ) {
+    val locale = currentLocale()
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
         OutlinedTextField(
-            value = state.grams,
-            onValueChange = onGramsChanged,
-            isError = state.gramsInvalid,
+            value = state.amount,
+            onValueChange = onAmountChanged,
+            isError = state.amountInvalid,
             textStyle = MaterialTheme.typography.headlineMedium,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            // Decimal, not Number, once kilograms are in play — `Number` offers no separator key
+            // on most keyboards, so the field would refuse the very input it is asking for.
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType =
+                        if (state.entryUnit == WeightUnit.KILOGRAMS) {
+                            KeyboardType.Decimal
+                        } else {
+                            KeyboardType.Number
+                        },
+                ),
             enabled = state.visitId == null,
             singleLine = true,
             shape = RoundedCornerShape(FieldRadius),
             modifier = Modifier.fillMaxWidth().height(HeroFieldHeight),
         )
+        // The toggle sits *under* the box rather than over it: `6e` gives the number the top of the
+        // route, and a chip row above the field would push the one thing this screen is for down.
+        // Absent on a visit-owned weighing, where the field is read-only anyway (ADR-0017).
+        if (state.visitId == null) {
+            ChipRow {
+                FormChip(
+                    selected = state.entryUnit == WeightUnit.GRAMS,
+                    onClick = { onEntryUnitChanged(WeightUnit.GRAMS) },
+                    label = stringResource(R.string.settings_unit_grams),
+                )
+                FormChip(
+                    selected = state.entryUnit == WeightUnit.KILOGRAMS,
+                    onClick = { onEntryUnitChanged(WeightUnit.KILOGRAMS) },
+                    label = stringResource(R.string.settings_unit_kilograms),
+                )
+            }
+        }
+
         // Help and error are siblings rather than `supportingText`, which is Forms.kt's rule and
         // also the only way to keep the box itself 72dp: a text field's height modifier covers its
         // supporting slot too, so a supporting line would come out of the number's own room.
-        if (state.gramsInvalid) {
-            ErrorText(stringResource(R.string.weight_grams_required))
+        if (state.amountInvalid) {
+            ErrorText(
+                stringResource(
+                    if (state.entryUnit == WeightUnit.KILOGRAMS) {
+                        R.string.weight_kilograms_required
+                    } else {
+                        R.string.weight_grams_required
+                    },
+                ),
+            )
         } else {
-            HelpText(stringResource(R.string.weight_grams_help))
+            HelpText(
+                stringResource(
+                    if (state.entryUnit == WeightUnit.KILOGRAMS) {
+                        R.string.weight_kilograms_help
+                    } else {
+                        R.string.weight_grams_help
+                    },
+                ),
+            )
         }
 
-        val grams = state.parsedGrams
-        if (grams != null && state.unit == WeightUnit.KILOGRAMS) {
-            HelpText(
-                stringResource(R.string.weight_grams_as_kilograms, weightLabel(grams, WeightUnit.KILOGRAMS)),
-            )
+        // The echo, now unconditional: whatever unit the field is in, the other one is spelled out.
+        // `weight_grams_as_kilograms` keeps its original name — its text is "That is %1${'$'}s.", which
+        // was never about grams, and renaming a shipped key would cost eight re-translations of a
+        // sentence that does not change.
+        state.parsedGrams?.let { grams ->
+            HelpText(stringResource(R.string.weight_grams_as_kilograms, weightLabel(grams, state.echoUnit)))
         }
 
         // `6e`'s one addition. Absent rather than empty on a bunny with no history: "Recent
         // weighings:" followed by nothing would be a sentence about missing data, which is the one
         // thing this app does not do (ADR-0001).
+        //
+        // Shown in the **entry** unit, so the comparison the line exists for is like-for-like: a
+        // digit too many is only obvious beside numbers written the same way as the one being typed.
         if (state.recentGrams.isNotEmpty()) {
-            HelpText(stringResource(R.string.weight_recent, state.recentGrams.joinToString(", ")))
+            HelpText(
+                stringResource(
+                    R.string.weight_recent,
+                    state.recentGrams.joinToString(", ") { weightEntryText(it, state.entryUnit, locale) },
+                ),
+            )
         }
     }
 }

@@ -328,6 +328,8 @@
     <string name="weight_grams_help">Peso em gramas. Gramas inteiros, como a balança mostra.</string>
     <string name="weight_recent">Pesagens recentes: %1$s.</string>
     <string name="weight_grams_required">Digite o peso em gramas.</string>
+    <string name="weight_kilograms_help">Peso em quilogramas. Até três casas decimais — 1,2 ou 1,234.</string>
+    <string name="weight_kilograms_required">Digite o peso em quilogramas.</string>
     <string name="weight_grams_as_kilograms">Isso é %1$s.</string>
     <string name="weight_recorded_at_label">Quando o coelho estava na balança</string>
     <string name="weight_backdating_help">O padrão é agora. Pese de manhã e registre à noite, se preferir — a hora que você definir é a que vale.</string>
@@ -400,7 +402,7 @@
     <string name="settings_weight_unit">Mostrar pesos em</string>
     <string name="settings_unit_kilograms">Quilogramas</string>
     <string name="settings_unit_grams">Gramas</string>
-    <string name="settings_weight_unit_help">Isto muda como os pesos são mostrados, não como são digitados — a entrada é sempre em gramas, e as mudanças são sempre mostradas em gramas.</string>
+    <string name="settings_weight_unit_help">Isto muda como os pesos são mostrados, não como são digitados — a unidade de entrada é escolhida na própria pesagem, e as mudanças são sempre mostradas em gramas.</string>
     <string name="settings_backup">Backup e restauração</string>
     <string name="settings_backup_summary">Exporte seus registros para um arquivo, restaure a partir de um, e veja as cópias guardadas neste celular.</string>
     <string name="settings_language">Idioma</string>

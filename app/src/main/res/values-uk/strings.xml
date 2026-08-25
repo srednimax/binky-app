@@ -246,6 +246,8 @@
     <string name="weight_grams_help">Вага в грамах. Цілі грами, як показують ваги.</string>
     <string name="weight_recent">Останні зважування: %1$s.</string>
     <string name="weight_grams_required">Введи вагу в грамах.</string>
+    <string name="weight_kilograms_help">Вага в кілограмах. До трьох знаків після коми — 1,2 або 1,234.</string>
+    <string name="weight_kilograms_required">Введи вагу в кілограмах.</string>
     <string name="weight_grams_as_kilograms">Це %1$s.</string>
     <string name="weight_recorded_at_label">Коли кролик був на вагах</string>
     <string name="weight_backdating_help">За замовчуванням — зараз. Зваж уранці, а запиши ввечері, якщо так зручніше: рахується той час, який ти вкажеш.</string>
@@ -319,7 +321,7 @@
     <string name="settings_weight_unit">Показувати вагу в</string>
     <string name="settings_unit_kilograms">Кілограмах</string>
     <string name="settings_unit_grams">Грамах</string>
-    <string name="settings_weight_unit_help">Це змінює те, як вага показується, а не те, як її вводять: вводиться завжди в грамах, і зміни завжди показуються в грамах.</string>
+    <string name="settings_weight_unit_help">Це змінює те, як вага показується, а не те, як її вводять: одиницю введення ти обираєш на самому зважуванні, і зміни завжди показуються в грамах.</string>
     <string name="settings_backup">Резервні копії та відновлення</string>
     <string name="settings_backup_summary">Експортуй записи у файл, віднови їх із файлу та переглянь копії, збережені на цьому телефоні.</string>
     <string name="settings_language">Мова</string>

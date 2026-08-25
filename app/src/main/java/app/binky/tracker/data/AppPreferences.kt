@@ -92,6 +92,33 @@ class AppPreferences(
     }
 
     /**
+     * The unit the **entry field** takes, which is deliberately a different preference from
+     * [weightUnit].
+     *
+     * **Grams by default**, so nothing changes for an owner who never opens the toggle — a scale
+     * reads out grams, and that stays the assumption the app is built on. Kilograms is offered
+     * because the number is not always coming off a scale: a vet's note is usually written in
+     * kilograms, and turning `1.2` into `1200` is arithmetic the app can do rather than ask for.
+     *
+     * **Not [weightUnit], and not merely form state.** Reusing the display preference would move
+     * every existing owner's entry field to kilograms at once, since that one defaults to
+     * kilograms — and `2495` typed into a kilogram field is precisely the fat-fingered reading the
+     * *recent weighings* line exists to catch. Keeping it out of the form, meanwhile, would make an
+     * owner who thinks in kilograms re-choose on every single weighing.
+     *
+     * Storage is unaffected either way: weight is `Int` grams on disk whatever this says (house
+     * rule). This decides how the typed text is *read*, nothing more.
+     */
+    val weightEntryUnit: Flow<WeightUnit> =
+        dataStore.data
+            .catch { cause -> if (cause is IOException) emit(emptyPreferences()) else throw cause }
+            .map { preferences -> decodeEntryUnit(preferences[WEIGHT_ENTRY_UNIT]) }
+
+    suspend fun setWeightEntryUnit(unit: WeightUnit) {
+        dataStore.edit { preferences -> preferences[WEIGHT_ENTRY_UNIT] = unit.name }
+    }
+
+    /**
      * What a manual export defaults to. **Records**, per ADR-0005: everything the owner may need
      * again, without the gallery that makes an export large enough to put someone off running one.
      *
@@ -357,6 +384,7 @@ class AppPreferences(
     private companion object {
         val SELECTED_BUNNY = stringPreferencesKey("selected_bunny")
         val WEIGHT_UNIT = stringPreferencesKey("weight_unit")
+        val WEIGHT_ENTRY_UNIT = stringPreferencesKey("weight_entry_unit")
         val BACKUP_SCOPE = stringPreferencesKey("backup_scope")
         val SETUP_PROGRESS = stringPreferencesKey("setup_progress")
         val BATTERY_EXEMPTION_ASKED = booleanPreferencesKey("battery_exemption_asked")
@@ -387,6 +415,13 @@ class AppPreferences(
         // database's enums follow, for the same reason.
         fun decodeUnit(value: String?): WeightUnit =
             WeightUnit.entries.firstOrNull { it.name == value } ?: WeightUnit.KILOGRAMS
+
+        /**
+         * The same rule as [decodeUnit] with the **other** default: entry stays in grams until an
+         * owner says otherwise, so an unreadable or absent value cannot quietly move the field.
+         */
+        fun decodeEntryUnit(value: String?): WeightUnit =
+            WeightUnit.entries.firstOrNull { it.name == value } ?: WeightUnit.GRAMS
 
         fun decodeScope(value: String?): BackupScope =
             BackupScope.entries.firstOrNull { it.name == value } ?: BackupScope.Records

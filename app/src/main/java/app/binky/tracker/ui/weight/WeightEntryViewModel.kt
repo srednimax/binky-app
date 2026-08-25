@@ -32,21 +32,29 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 
 /**
  * The entry form, as one immutable data class (house rule).
  *
- * [grams] is a `String` rather than an `Int` because it is what the owner has typed so far, which
+ * [amount] is a `String` rather than an `Int` because it is what the owner has typed so far, which
  * includes "" and "2" on the way to "2495" — a form field that could not hold an incomplete number
- * would fight the keyboard.
+ * would fight the keyboard. It is **not** necessarily grams: it is read in [entryUnit], which is why
+ * it is no longer called `grams`.
  */
 data class WeightEntryUiState(
     val loading: Boolean = true,
     val isNew: Boolean = true,
     val bunnyName: String = "",
+    /** How stored weights are *shown* — the delete confirmation's figure, and the echo's target. */
     val unit: WeightUnit = WeightUnit.KILOGRAMS,
-    val grams: String = "",
-    val gramsInvalid: Boolean = false,
+    /**
+     * How the field's text is *read*. A separate preference from [unit] and grams by default, so an
+     * owner who never touches the toggle keeps the behaviour the app has always had.
+     */
+    val entryUnit: WeightUnit = WeightUnit.GRAMS,
+    val amount: String = "",
+    val amountInvalid: Boolean = false,
     val date: LocalDate = LocalDate.now(),
     val time: LocalTime = LocalTime.now().truncatedTo(ChronoUnit.MINUTES),
     /** Set when the owner tried to save a timestamp in the future — stated, never silently clamped. */
@@ -97,7 +105,13 @@ data class WeightEntryUiState(
                 .toInstant()
                 .truncatedTo(ChronoUnit.MINUTES)
 
-    val parsedGrams: Int? get() = grams.trim().toIntOrNull()?.takeIf { it > 0 }
+    /** The typed text as whole grams — the one place [entryUnit] is turned back into storage. */
+    val parsedGrams: Int? get() = parseWeightGrams(amount, entryUnit)
+
+    /** The same weight in the *other* unit, for the line echoed under the field. */
+    val echoUnit: WeightUnit
+        get() =
+            if (entryUnit == WeightUnit.GRAMS) WeightUnit.KILOGRAMS else WeightUnit.GRAMS
 
     /**
      * The visit a *clashing* row belongs to, if one of them does (ADR-0021's amendment).
@@ -112,10 +126,14 @@ data class WeightEntryUiState(
 /**
  * Add or edit one weighing.
  *
- * **Entry is in grams** whatever the display preference says — that is what a scale reads out
- * (house rule) — and back-dating is normal: weighing in the morning and logging in the evening is
- * the ordinary case, so the timestamp defaults to now and is editable in both directions except
- * forward past now.
+ * **Entry defaults to grams** — that is what a scale reads out — but the unit is an owner's choice
+ * since 1.9.0, because the number is not always coming off a scale and a vet's note is usually
+ * written in kilograms. The choice is a preference of its own, so it is made once rather than on
+ * every weighing, and it never changes what is stored: weight is `Int` grams on disk either way
+ * (house rule).
+ *
+ * Back-dating is normal: weighing in the morning and logging in the evening is the ordinary case, so
+ * the timestamp defaults to now and is editable in both directions except forward past now.
  */
 class WeightEntryViewModel(
     private val bunnyId: String,
@@ -123,7 +141,7 @@ class WeightEntryViewModel(
     private val weights: WeightRepository,
     private val bunnies: BunnyRepository,
     private val watches: WatchRepository,
-    preferences: AppPreferences,
+    private val preferences: AppPreferences,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(WeightEntryUiState(isNew = weightId == null))
     val uiState: StateFlow<WeightEntryUiState> = _uiState.asStateFlow()
@@ -140,12 +158,16 @@ class WeightEntryViewModel(
             val weight = weightId?.let { id -> series.firstOrNull { it.id == id } }
             existing = weight
             val recordedAt = weight?.recordedAt?.atZone(ZoneId.systemDefault())
+            // Read once, like the row itself: collecting the preference would rewrite the field
+            // under an owner who changed the unit in Settings in another window.
+            val entryUnit = preferences.weightEntryUnit.first()
             _uiState.update { state ->
                 state.copy(
                     loading = false,
                     bunnyName = bunnies.bunnyNow(bunnyId)?.name.orEmpty(),
                     unit = preferences.weightUnit.first(),
-                    grams = weight?.grams?.toString() ?: "",
+                    entryUnit = entryUnit,
+                    amount = weight?.grams?.let { weightEntryText(it, entryUnit, Locale.getDefault()) }.orEmpty(),
                     date = recordedAt?.toLocalDate() ?: state.date,
                     time = recordedAt?.toLocalTime()?.truncatedTo(ChronoUnit.MINUTES) ?: state.time,
                     visitId = weight?.visitId,
@@ -166,9 +188,39 @@ class WeightEntryViewModel(
         }
     }
 
-    fun onGramsChanged(grams: String) {
-        // Digits only: the field is grams, and a stray separator would parse as a different number.
-        _uiState.update { it.copy(grams = grams.filter(Char::isDigit), gramsInvalid = false) }
+    fun onAmountChanged(amount: String) {
+        _uiState.update { state ->
+            state.copy(
+                amount = filterWeightInput(amount, state.entryUnit),
+                amountInvalid = false,
+            )
+        }
+    }
+
+    /**
+     * Switch the field between grams and kilograms, **carrying the number across** rather than
+     * clearing it: 1200 becomes 1.2, and back again. Converting from the parsed value and not from
+     * the text is what makes the round trip stable — half-typed input has nothing to convert, so it
+     * is left exactly as it is instead of being mangled into something the owner did not type.
+     *
+     * The choice is persisted, which is the whole reason it is a preference and not form state.
+     */
+    fun onEntryUnitChanged(unit: WeightUnit) {
+        _uiState.update { state ->
+            if (unit == state.entryUnit) {
+                state
+            } else {
+                val carried = state.parsedGrams
+                state.copy(
+                    entryUnit = unit,
+                    amount =
+                        carried?.let { weightEntryText(it, unit, Locale.getDefault()) }
+                            ?: filterWeightInput(state.amount, unit),
+                    amountInvalid = false,
+                )
+            }
+        }
+        viewModelScope.launch { preferences.setWeightEntryUnit(unit) }
     }
 
     fun onDateChanged(date: LocalDate) {
@@ -185,7 +237,7 @@ class WeightEntryViewModel(
         // so this is the belt to that pair of braces rather than a path anyone can reach.
         if (state.visitId != null) return
         if (state.parsedGrams == null) {
-            _uiState.update { it.copy(gramsInvalid = true) }
+            _uiState.update { it.copy(amountInvalid = true) }
             return
         }
         // **Rejected with the reason stated, never silently clamped** — a clamp would store a
