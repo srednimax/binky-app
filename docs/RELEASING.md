@@ -165,6 +165,51 @@ install demands an uninstall on the device where a closed-track one updates in p
 build that arrives this way cannot stand in for "an existing owner's install survived the
 update". Promoting to closed or production stays a Console decision, made by a human.
 
+## Going to production (manual, gated, staged)
+
+`.github/workflows/publish-play-production.yml` — **Run workflow**, never automatic. It is the only
+path that can reach every owner, so it carries three independent brakes:
+
+1. **You trigger it.** `workflow_dispatch` only; no push, tag or schedule reaches it.
+2. **You approve it.** The job declares `environment: production`. ⚠️ **Add yourself as the sole
+   required reviewer on that environment in repo settings** — without a reviewer configured the
+   environment is just a label and gates nothing.
+3. **Staged rollout.** `rollout` defaults to `0.1`, so a bad build reaches a tenth of installs and
+   you widen from the Console once it looks clean.
+
+And a fourth for the first run: **`dry_run` defaults to true**, which passes `--validate_only` —
+Play validates the whole edit and discards it. Nothing publishes, nothing is sent for review. Untick
+it when you mean it.
+
+| Input | Default | What it does |
+| --- | --- | --- |
+| `track` | `production` | also `beta` / `alpha` / `internal` |
+| `rollout` | `0.1` | fraction of users; `1.0` is everyone |
+| `update_listing` | `false` | push descriptions + screenshots as well |
+| `dry_run` | `true` | validate against Play, commit nothing |
+
+### One edit, one review
+
+The bundle, the release notes and — when `update_listing` is on — the descriptions and screenshots
+all go up in a **single** `supply` invocation, which is a single Play edit. Play reviews an *edit*,
+not a field, so that is **one** review cycle. Uploading the build now and fixing the listing after is
+two edits, two reviews and two waits.
+
+Release notes always accompany the build; they are scoped to a version and mean nothing without it.
+`update_listing` governs only the descriptions, screenshots and graphics.
+
+### Why fastlane here and Python everywhere else
+
+`scripts/play-metadata.py` renders `docs/store-listing.md` into the tree `supply` expects, at run
+time, and it is gitignored — the markdown stays the only authored copy, so a listing change is still
+one reviewable diff. What `supply` is bought for is one specific transaction: replacing a listing's
+screenshots means **deleting the old set before uploading the new one**, and first-time code that
+dies between those steps leaves the public listing with no screenshots at all. That is worth someone
+else's mileage. Ruby is confined to this workflow; the internal-track one never loads the `Gemfile`.
+
+⚠️ **Changelog files are named by `versionCode`, not semver** — `409.txt`, not `1.9.0.txt`. supply
+keys notes to the build, and a name Play cannot match is ignored in silence rather than rejected.
+
 ## Gotchas
 
 - **`versionCode` in CI debug builds is `1`.** GitHub's checkout is shallow, so the

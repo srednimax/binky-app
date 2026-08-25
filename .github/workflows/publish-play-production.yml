@@ -1,0 +1,146 @@
+name: Publish to Play (production)
+
+# Manual only, and gated twice more on top of that. This is the one workflow that can put a build
+# in front of every owner, so nothing about it is automatic: you trigger it, the `production`
+# environment holds it until you approve, and the rollout reaches a fraction of installs first.
+#
+# The internal-track workflow (publish-play.yml) stays the automatic one, because a bad build there
+# is visible only to you. Nothing about that reasoning transfers here.
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: Play track
+        type: choice
+        default: production
+        options: [production, beta, alpha, internal]
+      rollout:
+        description: Fraction of users for a staged rollout (1.0 = everyone)
+        type: string
+        default: '0.1'
+      update_listing:
+        description: Also push descriptions and screenshots from store-listing.md
+        type: boolean
+        default: false
+      dry_run:
+        description: Validate against Play without committing anything
+        type: boolean
+        default: true
+
+concurrency:
+  group: publish-play-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Production release
+    runs-on: ubuntu-latest
+    # The approval gate. Add yourself as the sole required reviewer on this environment in repo
+    # settings; the job then waits for a human click no matter who or what started the workflow.
+    # ⚠️ Without that reviewer configured the environment is a label and gates nothing.
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # versionCode is the commit count; a shallow checkout silently makes it 1.
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Materialise the upload key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.UPLOAD_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KEYSTORE_BASE64}" ]; then
+            echo "::error::UPLOAD_KEYSTORE_BASE64 is not set — see docs/RELEASING.md."
+            exit 1
+          fi
+          keystore="${RUNNER_TEMP}/upload.jks"
+          printf '%s' "${KEYSTORE_BASE64}" | base64 -d > "${keystore}"
+          {
+            echo "binky.upload.storeFile=${keystore}"
+            echo "binky.upload.storePassword=${STORE_PASSWORD}"
+            echo "binky.upload.keyAlias=${KEY_ALIAS}"
+            echo "binky.upload.keyPassword=${KEY_PASSWORD}"
+          } >> local.properties
+
+      - name: Build the bundle
+        run: ./gradlew bundleRelease
+
+      # Same three checks as the internal workflow, and for the same reason: the artifact is read,
+      # never the config that was meant to produce it. They matter more here — this is the copy that
+      # reaches the public.
+      - name: Verify the artifact
+        run: |
+          python3 scripts/aab-version.py
+          python3 scripts/aab-permissions.py
+          python3 scripts/aab-locale.py
+
+      # Generated, not committed: docs/store-listing.md is the authored copy and this is a rendering
+      # of it. Runs unconditionally because it also writes the release notes, which accompany every
+      # build; whether the *descriptions and screenshots* are uploaded is the update_listing input,
+      # applied at the supply step below.
+      - name: Render the listing metadata
+        run: python3 scripts/play-metadata.py --out fastlane/metadata/android
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Upload to Play
+        env:
+          SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          # One edit, committed once: the bundle, the release notes and — when asked — the listing
+          # all go up together, so Play reviews them as a single change instead of two. Splitting
+          # them is what turns one review wait into two.
+          args=(
+            --aab app/build/outputs/bundle/release/app-release.aab
+            --mapping app/build/outputs/mapping/release/mapping.txt
+            --metadata_path fastlane/metadata/android
+            --track '${{ inputs.track }}'
+            --rollout '${{ inputs.rollout }}'
+          )
+          if [ '${{ inputs.update_listing }}' != 'true' ]; then
+            # Release notes still go up — they belong to this build. Descriptions, screenshots and
+            # graphics are left exactly as they are.
+            args+=(--skip_upload_metadata --skip_upload_images --skip_upload_screenshots)
+          fi
+          if [ '${{ inputs.dry_run }}' = 'true' ]; then
+            # Play validates the whole edit and then discards it. Nothing is published, nothing is
+            # sent for review — the honest way to prove this workflow before trusting it.
+            args+=(--validate_only)
+            echo "::notice::DRY RUN — validating against Play, committing nothing"
+          fi
+          bundle exec fastlane supply "${args[@]}"
+
+      - name: Keep the bundle and its mapping
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-${{ github.run_id }}
+          path: |
+            app/build/outputs/bundle/release/app-release.aab
+            app/build/outputs/mapping/release/mapping.txt
+          retention-days: 90
+
+      - name: Remove the key
+        if: always()
+        run: rm -f "${RUNNER_TEMP}/upload.jks" local.properties

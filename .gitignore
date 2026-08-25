@@ -27,3 +27,6 @@ local.properties
 
 # Byte-code from the art generators in art/ — they are plain scripts, run in place.
 __pycache__/
+fastlane/report.xml
+fastlane/README.md
+fastlane/metadata/
