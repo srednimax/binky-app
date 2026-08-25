@@ -106,6 +106,65 @@ produced a *signed* bundle carrying `versionCode` 1 and didn't find out until
 later. `scripts/aab-version.py` decodes the protobuf and asserts the count matches
 `git rev-list --count HEAD`.
 
+## Reaching Play automatically (internal testing)
+
+`.github/workflows/publish-play.yml` builds and uploads to the **internal testing** track
+when a **GitHub Release is published** — that is, when you merge the release-please PR.
+Nothing uploads on a bare push to `main`, so cutting a version is still a deliberate act;
+this only removes the hand-build that used to follow it.
+
+What the workflow does, in order: full checkout (`fetch-depth: 0`, because `versionCode`
+is the commit count), materialise the upload key from secrets, `bundleRelease`, run all
+three `aab-*.py` artifact checks, print the signing certificate, upload the AAB **and its
+R8 mapping**, keep both as a build artifact for 90 days, delete the key.
+
+The mapping matters from 1.9.0: R8 is on, so without it every Play crash report is
+obfuscated frames.
+
+### The five secrets it needs
+
+Four for the upload key, one for Play. Set them under *Settings → Secrets and variables →
+Actions*:
+
+| Secret | What it is |
+| --- | --- |
+| `UPLOAD_KEYSTORE_BASE64` | the keystore file itself, base64: `base64 -w0 /path/to/upload.jks` |
+| `UPLOAD_STORE_PASSWORD` | same value as `binky.upload.storePassword` in `local.properties` |
+| `UPLOAD_KEY_ALIAS` | same value as `binky.upload.keyAlias` |
+| `UPLOAD_KEY_PASSWORD` | same value as `binky.upload.keyPassword` |
+| `PLAY_SERVICE_ACCOUNT_JSON` | the whole service-account JSON, pasted as-is |
+
+⚠️ **The keystore is still never committed** — this changes where a copy *lives*, not the
+rule. The one on disk stays outside the repo (ADR-0009); base64 in a GitHub secret is a
+second copy, and losing control of it means resetting the upload key. That is recoverable
+(Google holds the permanent app-signing key) but it is not free.
+
+### Creating the service account — the part that is not in this repo
+
+Once, by hand, and it is the only step CI cannot do for itself:
+
+1. Google Cloud console → the project linked to your Play developer account → **enable the
+   Google Play Android Developer API**.
+2. **IAM & Admin → Service Accounts → Create**. No project roles are needed; its authority
+   comes from Play, not from GCP.
+3. On that account, **Keys → Add key → JSON**. The file downloads once — that is the
+   `PLAY_SERVICE_ACCOUNT_JSON` value.
+4. Play Console → **Users and permissions → Invite new user**, the service account's email.
+   Grant it **Release to testing tracks** on this app (`binky.bunny.and.rabbit.tracker`)
+   and nothing wider. It does not need production rights to do this job.
+
+Propagation between Play and the API is not instant — a permission granted in the Console
+can take a few minutes to be visible to the API, so a first run that 401s is worth simply
+re-running before debugging it.
+
+### Why internal, and what it does not prove
+
+Internal processes in minutes with no Google review, which is what makes it a sane
+automatic target. ⚠️ **It is not the track for an upgrade proof.** An internal-track
+install demands an uninstall on the device where a closed-track one updates in place, so a
+build that arrives this way cannot stand in for "an existing owner's install survived the
+update". Promoting to closed or production stays a Console decision, made by a human.
+
 ## Gotchas
 
 - **`versionCode` in CI debug builds is `1`.** GitHub's checkout is shallow, so the
