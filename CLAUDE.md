@@ -159,10 +159,13 @@ package above is `binky.bunny.and.rabbit.tracker.debug.test`. Note the **`applic
 `binky.bunny.and.rabbit.tracker` while the `namespace` stays `app.binky.tracker`** — install identity and
 source package deliberately disagree, because a Play Console package name cannot be changed after the
 app entry is created (PLAN.md 3h). Kotlin packages and imports follow the namespace. The debug app installs
-alongside the Play one as a separate install labelled **Binky Debug**; the two never replace each other,
-which is the whole point — the Play build is the **1.0.0 install** the field upgrade proof needs, and it
-cannot be recreated: a Play-signed install refuses a local APK on signature mismatch. Its rows are dummy
-data, not real bunny history; what is irreplaceable about it is the *install*, not the contents.
+alongside a Play one as a separate install labelled **Binky Debug**, and the two never replace each other
+— a Play-signed install refuses a local APK on signature mismatch, so a track build and a local one can
+only ever coexist, never update one another. **The phone no longer carries a Play install at all**
+(checked 2026-08-25: absent from user 0, from XSpace, and from `pm list packages -u`). Nothing outstanding
+needs one — the field upgrade proof it existed for is discharged, 1.0.0 → 1.7 in place off the closed
+track on 2026-08-22 — but a future proof would have to start by installing from a track again, which is
+strictly downstream of an upload.
 
 Xiaomi also kills background work aggressively; scheduled notifications need battery-optimisation
 exemption and **autostart**, and autostart is the load-bearing one: 9a watched a 03:00 exact alarm land at
