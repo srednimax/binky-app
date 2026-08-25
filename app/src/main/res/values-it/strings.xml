@@ -860,6 +860,8 @@
     <string name="visit_weight_label">Peso in grammi, se è stato rilevato</string>
     <string name="visit_weight_help">Facoltativo. Viene registrato una volta sola, come pesata di questo coniglio per quel giorno.</string>
     <string name="visit_weight_invalid">Grammi interi, oppure lascia vuoto.</string>
+    <string name="visit_weight_label_kilograms">Peso in chilogrammi, se l’hanno pesato</string>
+    <string name="visit_weight_invalid_kilograms">Un peso in chilogrammi, oppure lascia vuoto.</string>
 
     <string name="visit_delete_title">Eliminare questa visita?</string>
     <string name="visit_delete_body">La visita del %1$s sparisce, con le sue note.</string>

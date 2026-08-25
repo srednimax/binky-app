@@ -750,6 +750,8 @@
     <string name="visit_weight_label">Weight in grams, if they weighed them</string>
     <string name="visit_weight_help">Optional. It is recorded once, as this bunny\'s weighing for that day.</string>
     <string name="visit_weight_invalid">Whole grams, or leave it empty.</string>
+    <string name="visit_weight_label_kilograms">Weight in kilograms, if they weighed them</string>
+    <string name="visit_weight_invalid_kilograms">A weight in kilograms, or leave it empty.</string>
 
     <string name="visit_delete_title">Delete this visit?</string>
     <string name="visit_delete_body">The visit on %1$s goes, with its notes.</string>

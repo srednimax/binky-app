@@ -720,6 +720,8 @@
     <string name="visit_weight_label">Waga w gramach, jeśli zważono</string>
     <string name="visit_weight_help">Opcjonalne. Zapisuje się raz, jako ważenie tego królika w tym dniu.</string>
     <string name="visit_weight_invalid">Pełne gramy albo zostaw puste.</string>
+    <string name="visit_weight_label_kilograms">Waga w kilogramach, jeśli go ważyli</string>
+    <string name="visit_weight_invalid_kilograms">Waga w kilogramach albo zostaw puste.</string>
 
     <string name="visit_delete_title">Usunąć tę wizytę?</string>
     <string name="visit_delete_body">Wizyta z dnia %1$s znika wraz z notatkami.</string>

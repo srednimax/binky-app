@@ -68,6 +68,7 @@ import app.binky.tracker.ui.documents.DocumentRow
 import app.binky.tracker.ui.documents.ScanNoticeHost
 import app.binky.tracker.ui.documents.rememberDocumentScan
 import app.binky.tracker.ui.documents.rememberDocumentScanner
+import app.binky.tracker.ui.weight.WeightUnitChips
 import app.binky.tracker.ui.weight.gramsLabel
 import app.binky.tracker.ui.weight.weightLabel
 import java.time.Instant
@@ -358,29 +359,59 @@ private fun WhatHappenedCard(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
-            FieldLabel(stringResource(R.string.visit_weight_label))
+            val kilograms = state.weight.unit == WeightUnit.KILOGRAMS
+            FieldLabel(
+                stringResource(
+                    if (kilograms) R.string.visit_weight_label_kilograms else R.string.visit_weight_label,
+                ),
+            )
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.hair)) {
                 SingleLineField(
-                    value = state.grams,
-                    onValueChange = viewModel::onGramsChanged,
-                    isError = state.gramsInvalid,
+                    value = state.weight.text,
+                    onValueChange = viewModel::onWeightChanged,
+                    isError = state.weight.invalid,
                     enabled = enabled,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    // Decimal once kilograms are in play: `Number` offers no separator key on most
+                    // keyboards, so the field would refuse the very input it is asking for.
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = if (kilograms) KeyboardType.Decimal else KeyboardType.Number,
+                        ),
                 )
-                if (state.gramsInvalid) {
-                    ErrorText(stringResource(R.string.visit_weight_invalid))
+                // The same shared chips as the weighing form, on the same shared preference: this is
+                // the field where kilograms matter most, since the number is usually being copied
+                // off a vet's note.
+                WeightUnitChips(
+                    selected = state.weight.unit,
+                    onSelected = viewModel::onWeightUnitChanged,
+                    enabled = enabled,
+                )
+                if (state.weight.invalid) {
+                    ErrorText(
+                        stringResource(
+                            if (kilograms) {
+                                R.string.visit_weight_invalid_kilograms
+                            } else {
+                                R.string.visit_weight_invalid
+                            },
+                        ),
+                    )
                 } else {
                     HelpText(stringResource(R.string.visit_weight_help))
                 }
                 // Kotlin note: pulled into a local because `parsedGrams` has a custom getter, so
                 // the compiler cannot prove it returns the same value twice — the null check and
                 // the use would be two separate calls.
+                //
+                // The echo names the *other entry unit*, not the display preference: the question it
+                // answers is "did you mean this in the other unit", which is nothing to do with how
+                // history is drawn.
                 val parsed = state.parsedGrams
-                if (parsed != null && state.unit == WeightUnit.KILOGRAMS) {
+                if (parsed != null) {
                     HelpText(
                         stringResource(
                             R.string.weight_grams_as_kilograms,
-                            weightLabel(parsed, WeightUnit.KILOGRAMS),
+                            weightLabel(parsed, state.weight.echoUnit),
                         ),
                     )
                 }

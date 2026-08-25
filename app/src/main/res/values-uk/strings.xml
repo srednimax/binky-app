@@ -796,6 +796,8 @@
     <string name="visit_weight_label">Вага в грамах, якщо зважували</string>
     <string name="visit_weight_help">Необовʼязково. Записується один раз, як зважування цього кролика за той день.</string>
     <string name="visit_weight_invalid">Цілі грами або залиш порожнім.</string>
+    <string name="visit_weight_label_kilograms">Вага в кілограмах, якщо зважували</string>
+    <string name="visit_weight_invalid_kilograms">Вага в кілограмах, або залиш поле порожнім.</string>
 
     <string name="visit_delete_title">Видалити цей візит?</string>
     <string name="visit_delete_body">Візит %1$s зникне разом із нотатками.</string>

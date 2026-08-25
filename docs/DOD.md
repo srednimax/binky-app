@@ -68,7 +68,7 @@ Play quality notices against release 386, and one settings request.
 | **10d** | Several photos on a tray — **schema 8** | ✅ **done**, upgrade watched on the phone 2026-08-25 |
 | **10e** | Events: a timeline, and dated events an owner writes — **same schema 8** | ✅ **done**, driven on the phone 2026-08-25 |
 | **10f** | A light/dark override in Settings | ✅ **done**, proved on the phone 2026-08-25 |
-| **10g** | Weight entry gains a kg/g toggle | ✅ **done**, driven on the phone 2026-08-25 |
+| **10g** | Weight entry gains a kg/g toggle — **both** weight fields | ✅ **done**, driven on the phone 2026-08-25 |
 
 **One edge must not be reordered**: **10c before 10d/10e**, so every artifact check after R8 goes on
 runs against a minified build rather than proving something about a build nobody ships. Everything else
@@ -318,20 +318,21 @@ in grams"*, and the app said so to the owner in two places. All three moved toge
       Gate green at **720 × 8**.
 - [x] 13 JVM tests in `WeightFormatTest`. One pinned a behaviour worth keeping: `"1."` parses as 1000 g
       rather than null, so the echo holds steady mid-typing instead of blinking out and back.
+- [x] **Shared, not copied.** `ui/weight/WeightAmount.kt` holds the field's whole state machine —
+      the text, its unit, and the transitions — plus the `WeightUnitChips` composable. Both weight
+      fields in the app use it: *Record a weighing* and the **visit editor**, which is the one that
+      needed it most, since that number is usually copied off a vet's note. What is deliberately
+      *not* shared is the field itself: the weighing form's box is `6e`'s oversized hero and the
+      visit editor's is an ordinary optional row, and one composable forced to be both would be
+      worse than either.
+- [x] **The two preferences are proven not to collide** ✅ on the phone: with display set to
+      **Grams** and entry to **Kilograms**, the flag banner read *"2,380 g then, 1,200 g now."*
+      while the form still read *"Weight in kilograms"* with its recent-weighings row in kilograms.
+      Neither preference moves the other, and Settings' own help line now says so.
 - [x] **Driven on the phone**: chips default to Grams, `2495` → toggle → `2.495` with the help line,
-      echo and recent-weighings row all following; `1,2` saved and stored as 1200.
-
-## Carried forward — owner requests, not Phase 10
-
-**This section survives the phase close.**
-
-### The visit editor's weight field is still grams-only
-
-10g deliberately stopped at *Record a weighing*, which is what was asked for. `VisitEditorScreen` has its
-own weight box (ADR-0017 — the visit owns that number) and it still takes grams only. The parsing helpers
-are already shared and pure, so this is a small change rather than a second design — but it is the field
-where kilograms matter *most*, since the number is usually being copied off a vet's note. Decide it
-deliberately rather than letting the two weight fields drift apart.
+      echo and recent-weighings row all following; `1,2` saved and stored as 1200. The visit editor
+      does the same, opening in the unit the weighing form was left in — one preference, two
+      screens.
 
 ## Closing the phase
 

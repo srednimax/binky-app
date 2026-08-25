@@ -932,6 +932,8 @@
     <string name="visit_weight_label">Váha v gramech, pokud vážili</string>
     <string name="visit_weight_help">Nepovinné. Zapíše se jednou, jako vážení tohohle králíka pro ten den.</string>
     <string name="visit_weight_invalid">Celé gramy, nebo nech prázdné.</string>
+    <string name="visit_weight_label_kilograms">Váha v kilogramech, pokud ji vážili</string>
+    <string name="visit_weight_invalid_kilograms">Váha v kilogramech, nebo nech pole prázdné.</string>
 
     <string name="visit_delete_title">Smazat tuhle návštěvu?</string>
     <string name="visit_delete_body">Návštěva z %1$s zmizí i s poznámkami.</string>

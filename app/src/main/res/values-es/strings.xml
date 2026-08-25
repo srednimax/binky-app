@@ -747,6 +747,8 @@
     <string name="visit_weight_label">Peso en gramos, si lo pesaron</string>
     <string name="visit_weight_help">Opcional. Se registra una vez, como el pesaje de este conejo de ese día.</string>
     <string name="visit_weight_invalid">Gramos enteros, o déjalo vacío.</string>
+    <string name="visit_weight_label_kilograms">Peso en kilogramos, si lo pesaron</string>
+    <string name="visit_weight_invalid_kilograms">Un peso en kilogramos, o déjalo vacío.</string>
 
     <string name="visit_delete_title">¿Eliminar esta visita?</string>
     <string name="visit_delete_body">La visita del %1$s desaparece, con sus notas.</string>
