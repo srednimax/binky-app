@@ -71,7 +71,9 @@ the *why*, don't restate the line. Prefer explicit and readable over clever.
   separator arrives is decided by the keyboard, not the app's locale. **Changes are always shown in
   grams** whatever either preference says, because `−0.04 kg` hides the signal that `−40 g` makes
   obvious. Text going *into* an entry field carries no grouping separator — use `weightEntryText`, not
-  `gramsNumber`, or "2 495" re-parses as a different number.
+  `gramsNumber`, or "2 495" re-parses as a different number. **Every weight field uses
+  `ui/weight/WeightAmount.kt`** — the state machine and the `WeightUnitChips` toggle — so the two that
+  exist cannot drift apart; the field's *styling* is per-screen and deliberately not shared.
 - **DAOs return `Flow`**, screens collect it. Don't hand-roll refresh calls.
 - **Enums with `TypeConverter`s, not loose strings**, for droppings, mood and care type — closed
   vocabularies. For **care type** the closed enum only tags the *known* kinds; a care reminder is

@@ -683,6 +683,8 @@
     <string name="visit_weight_label">Gewicht in Gramm, falls gewogen wurde</string>
     <string name="visit_weight_help">Optional. Es wird einmal erfasst, als die Wägung dieses Kaninchens für diesen Tag.</string>
     <string name="visit_weight_invalid">Ganze Gramm, oder leer lassen.</string>
+    <string name="visit_weight_label_kilograms">Gewicht in Kilogramm, falls gewogen wurde</string>
+    <string name="visit_weight_invalid_kilograms">Ein Gewicht in Kilogramm, oder lass das Feld leer.</string>
 
     <string name="visit_delete_title">Diesen Besuch löschen?</string>
     <string name="visit_delete_body">Der Besuch vom %1$s wird entfernt, mit seinen Notizen.</string>

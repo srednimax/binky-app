@@ -40,10 +40,8 @@ import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
 import app.binky.tracker.ui.common.BinkyDialog
-import app.binky.tracker.ui.common.ChipRow
 import app.binky.tracker.ui.common.ErrorText
 import app.binky.tracker.ui.common.FieldRadius
-import app.binky.tracker.ui.common.FormChip
 import app.binky.tracker.ui.common.GroupedCard
 import app.binky.tracker.ui.common.HelpText
 import app.binky.tracker.ui.common.RecordedAtField
@@ -262,16 +260,16 @@ private fun AmountField(
     val locale = currentLocale()
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.tight)) {
         OutlinedTextField(
-            value = state.amount,
+            value = state.amount.text,
             onValueChange = onAmountChanged,
-            isError = state.amountInvalid,
+            isError = state.amount.invalid,
             textStyle = MaterialTheme.typography.headlineMedium,
             // Decimal, not Number, once kilograms are in play — `Number` offers no separator key
             // on most keyboards, so the field would refuse the very input it is asking for.
             keyboardOptions =
                 KeyboardOptions(
                     keyboardType =
-                        if (state.entryUnit == WeightUnit.KILOGRAMS) {
+                        if (state.amount.unit == WeightUnit.KILOGRAMS) {
                             KeyboardType.Decimal
                         } else {
                             KeyboardType.Number
@@ -286,27 +284,16 @@ private fun AmountField(
         // route, and a chip row above the field would push the one thing this screen is for down.
         // Absent on a visit-owned weighing, where the field is read-only anyway (ADR-0017).
         if (state.visitId == null) {
-            ChipRow {
-                FormChip(
-                    selected = state.entryUnit == WeightUnit.GRAMS,
-                    onClick = { onEntryUnitChanged(WeightUnit.GRAMS) },
-                    label = stringResource(R.string.settings_unit_grams),
-                )
-                FormChip(
-                    selected = state.entryUnit == WeightUnit.KILOGRAMS,
-                    onClick = { onEntryUnitChanged(WeightUnit.KILOGRAMS) },
-                    label = stringResource(R.string.settings_unit_kilograms),
-                )
-            }
+            WeightUnitChips(selected = state.amount.unit, onSelected = onEntryUnitChanged)
         }
 
         // Help and error are siblings rather than `supportingText`, which is Forms.kt's rule and
         // also the only way to keep the box itself 72dp: a text field's height modifier covers its
         // supporting slot too, so a supporting line would come out of the number's own room.
-        if (state.amountInvalid) {
+        if (state.amount.invalid) {
             ErrorText(
                 stringResource(
-                    if (state.entryUnit == WeightUnit.KILOGRAMS) {
+                    if (state.amount.unit == WeightUnit.KILOGRAMS) {
                         R.string.weight_kilograms_required
                     } else {
                         R.string.weight_grams_required
@@ -316,7 +303,7 @@ private fun AmountField(
         } else {
             HelpText(
                 stringResource(
-                    if (state.entryUnit == WeightUnit.KILOGRAMS) {
+                    if (state.amount.unit == WeightUnit.KILOGRAMS) {
                         R.string.weight_kilograms_help
                     } else {
                         R.string.weight_grams_help
@@ -330,7 +317,7 @@ private fun AmountField(
         // was never about grams, and renaming a shipped key would cost eight re-translations of a
         // sentence that does not change.
         state.parsedGrams?.let { grams ->
-            HelpText(stringResource(R.string.weight_grams_as_kilograms, weightLabel(grams, state.echoUnit)))
+            HelpText(stringResource(R.string.weight_grams_as_kilograms, weightLabel(grams, state.amount.echoUnit)))
         }
 
         // `6e`'s one addition. Absent rather than empty on a bunny with no history: "Recent
@@ -343,7 +330,7 @@ private fun AmountField(
             HelpText(
                 stringResource(
                     R.string.weight_recent,
-                    state.recentGrams.joinToString(", ") { weightEntryText(it, state.entryUnit, locale) },
+                    state.recentGrams.joinToString(", ") { weightEntryText(it, state.amount.unit, locale) },
                 ),
             )
         }

@@ -21,6 +21,7 @@ import app.binky.tracker.media.MediaFiles
 import app.binky.tracker.ui.documents.DocumentRow
 import app.binky.tracker.ui.documents.ScanNotice
 import app.binky.tracker.ui.documents.toRow
+import app.binky.tracker.ui.weight.WeightAmount
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,9 +37,14 @@ private const val VISIT_SCAN_LOG_TAG = "BinkyVisitScan"
 /**
  * The visit form, as one immutable data class (house rule).
  *
- * [grams] is a `String` for the reason the weight form's is: it holds what the owner has typed so
- * far, which includes "" and "2" on the way to "2495". **Empty means no weighing was taken**, which
- * is the ordinary case for a consultation — not a validation failure.
+ * [weight] is a [WeightAmount] for the reason the weighing form's is: it holds what the owner has
+ * typed so far, which includes "" and "2" on the way to "2495", together with the unit that text is
+ * read in. **Empty means no weighing was taken**, which is the ordinary case for a consultation —
+ * not a validation failure.
+ *
+ * The unit there is the **entry** preference. [unit] beside it is the **display** one and is used
+ * only to render stored figures; they are separate keys with different defaults, and `WeightAmount`
+ * carries the table saying why.
  */
 data class VisitEditorUiState(
     val loading: Boolean = true,
@@ -53,8 +59,9 @@ data class VisitEditorUiState(
     val vetId: String? = null,
     /** The whole directory, live: the inline "add a new vet" writes into it mid-form (ADR-0017). */
     val vets: List<VetEntity> = emptyList(),
-    val grams: String = "",
-    val gramsInvalid: Boolean = false,
+    /** The weight box: its text and the **entry** unit it is read in. Optional, so blank is valid. */
+    val weight: WeightAmount = WeightAmount(),
+    /** How stored weights are *shown*. Display only — it never decides what the box accepts. */
     val unit: WeightUnit = WeightUnit.KILOGRAMS,
     /**
      * The paperwork this visit produced (ADR-0017). Empty for a visit not yet saved — there is no
@@ -78,10 +85,10 @@ data class VisitEditorUiState(
 ) {
     val vetName: String? get() = vets.firstOrNull { it.id == vetId }?.name
 
-    val parsedGrams: Int? get() = grams.trim().toIntOrNull()?.takeIf { it > 0 }
+    val parsedGrams: Int? get() = weight.grams
 
     /** Typed something that is not a weight, as opposed to having typed nothing at all. */
-    val gramsUnparseable: Boolean get() = grams.isNotBlank() && parsedGrams == null
+    val gramsUnparseable: Boolean get() = weight.unparseable
 }
 
 /**
@@ -99,7 +106,7 @@ class VisitEditorViewModel(
     private val bunnies: BunnyRepository,
     private val documents: DocumentRepository,
     private val media: MediaFiles,
-    preferences: AppPreferences,
+    private val preferences: AppPreferences,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(VisitEditorUiState(isNew = visitId == null))
     val uiState: StateFlow<VisitEditorUiState> = _uiState.asStateFlow()
@@ -112,6 +119,7 @@ class VisitEditorViewModel(
             // Read once rather than collecting, so an emission cannot overwrite a half-typed form.
             val details = visitId?.let { visits.visit(it).first() }
             existing = details?.visit
+            val entryUnit = preferences.weightEntryUnit.first()
             _uiState.update { state ->
                 state.copy(
                     loading = false,
@@ -121,7 +129,7 @@ class VisitEditorViewModel(
                     reason = details?.visit?.reason.orEmpty(),
                     notes = details?.visit?.notes.orEmpty(),
                     vetId = details?.visit?.vetId,
-                    grams = details?.weightGrams?.toString() ?: "",
+                    weight = WeightAmount.of(details?.weightGrams, entryUnit),
                     storedGrams = details?.weightGrams,
                 )
             }
@@ -205,9 +213,18 @@ class VisitEditorViewModel(
         _uiState.update { it.copy(notes = notes) }
     }
 
-    fun onGramsChanged(grams: String) {
-        // Digits only: the field is grams, and a stray separator would parse as a different number.
-        _uiState.update { it.copy(grams = grams.filter(Char::isDigit), gramsInvalid = false) }
+    fun onWeightChanged(text: String) {
+        _uiState.update { it.copy(weight = it.weight.typed(text)) }
+    }
+
+    /**
+     * The same grams/kilograms toggle the weighing form has, on the same shared preference — a vet's
+     * note is the *most* likely place for a weight to be written in kilograms, so this is the field
+     * that needed it most.
+     */
+    fun onWeightUnitChanged(unit: WeightUnit) {
+        _uiState.update { it.copy(weight = it.weight.switchedTo(unit)) }
+        viewModelScope.launch { preferences.setWeightEntryUnit(unit) }
     }
 
     fun onVetChanged(vetId: String?) {
@@ -235,7 +252,7 @@ class VisitEditorViewModel(
             return
         }
         if (state.gramsUnparseable) {
-            _uiState.update { it.copy(gramsInvalid = true) }
+            _uiState.update { it.copy(weight = it.weight.invalidated()) }
             return
         }
         // **Rejected with the reason stated, never silently clamped** — the same rule every other

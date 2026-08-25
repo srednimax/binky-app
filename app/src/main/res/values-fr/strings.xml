@@ -820,6 +820,8 @@
     <string name="visit_weight_label">Le poids en grammes, s’il y a eu une pesée</string>
     <string name="visit_weight_help">Facultatif. C’est enregistré une seule fois, comme la pesée de ce lapin pour ce jour-là.</string>
     <string name="visit_weight_invalid">Des grammes entiers, ou laisse vide.</string>
+    <string name="visit_weight_label_kilograms">Le poids en kilogrammes, s’ils l’ont pesé</string>
+    <string name="visit_weight_invalid_kilograms">Un poids en kilogrammes, ou laisse le champ vide.</string>
 
     <string name="visit_delete_title">Supprimer cette visite ?</string>
     <string name="visit_delete_body">La visite du %1$s disparaît, avec ses notes.</string>

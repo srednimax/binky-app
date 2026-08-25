@@ -901,6 +901,8 @@
     <string name="visit_weight_label">Peso em gramas, se pesaram</string>
     <string name="visit_weight_help">Opcional. É registrado uma vez, como a pesagem deste coelho naquele dia.</string>
     <string name="visit_weight_invalid">Gramas inteiros, ou deixe em branco.</string>
+    <string name="visit_weight_label_kilograms">Peso em quilogramas, se pesaram</string>
+    <string name="visit_weight_invalid_kilograms">Um peso em quilogramas, ou deixe vazio.</string>
 
     <string name="visit_delete_title">Excluir esta consulta?</string>
     <string name="visit_delete_body">A consulta de %1$s sai, com as anotações.</string>
