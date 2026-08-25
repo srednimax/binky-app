@@ -91,7 +91,26 @@ half Compose needs; the colours are theme attributes across four qualified `colo
       below API 29 rested on the four qualified `colors.xml` files and `SystemBarsTest`, not on a
       screenshot. It is the reason the CI answer below is *yes* — the nightly matrix observes it on an
       API 26 emulator. Until a nightly has run green, the limit stands as written.
-- [ ] The full 75-scene × 4-configuration matrix, against 9c's 300-cell baseline.
+- [x] **The full 4-configuration matrix** ✅ 2026-08-25 — **276 cells (69 scenes × 4), 0 skipped,
+      no defect.** Evidence in `~/binky-screenshots/1.9.0-e2e/` (report + every PNG). 7 `drawn`
+      findings were raised and **all seven are explained, none is a bug**:
+
+  - `reminders-sheet` (3 cells) and `care-reminder-editor` (1 cell) are the **opening frame of a
+    scroll taller than the screen** — the case `edge-to-edge.py` already calls "a list scrolling, not
+    a defect". Both `-bottom` companions came back clean, which is the proof that design asks for.
+  - `document-viewer` (3 cells) is **13 px of line leading** inside the TextView's node box. ⚠️ The
+    number that settles it: the overlap is **constant at 13 px while the navigation bar varies 48 →
+    142 px**, and content sits exactly 94 px higher in three-button than in gesture — the difference
+    between the two bars. An unpadded screen's overlap tracks the bar; this one does not, so the
+    shell's `Scaffold` was padding correctly all along. Confirmed against the PNG: the glyphs clear
+    the pill.
+  - ⚠️ **A `drawn` finding is arithmetic, not a verdict.** A fix was written for `document-viewer`
+    and reverted: `navigationBarsPadding()` under a `Scaffold` that already calls
+    `consumeWindowInsets(insets)` adds nothing, and the re-shot bounds came back byte-identical.
+    Read the screenshot and check whether the overlap scales with the inset **before** changing code.
+  - Worth doing sometime: the `drawn` tier could ignore sub-4dp overlaps, which cannot be a real
+    collision — and `document-viewer` has no `-bottom` companion, which is why it alone lacked the
+    disambiguating evidence the other two had.
 
 ### 10b — The ML Kit delegate ✅ built 2026-08-24
 
