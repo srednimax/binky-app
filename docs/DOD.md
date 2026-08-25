@@ -85,9 +85,12 @@ half Compose needs; the colours are theme attributes across four qualified `colo
 - [x] Built, `spotless`/`assembleDebug`/`test`/`lint` green — lint 0 errors, and the 2 remaining
       `IconXmlAndPng` warnings are pre-existing on the launcher icon.
 - [x] Smoke-checked on the phone: 8/8 matrix cells clean, dark mode → light icons, light mode → dark.
-- [ ] ⚠️ **API 26–28 is argued from theme XML and never observed** — the phone is the only device, and a
-      local emulator needs `usermod -aG kvm` and a re-login. This is the strongest argument for the CI
-      question below; record it as a limit either way.
+- [x] ⚠️ **API 26–28 was argued from theme XML and never observed** ✅ recorded 2026-08-25 — the phone
+      is the only physical device and it is modern, and a local emulator needs `usermod -aG kvm` and a
+      re-login. **This is the limit, stated:** every claim about how the app draws under the system bars
+      below API 29 rested on the four qualified `colors.xml` files and `SystemBarsTest`, not on a
+      screenshot. It is the reason the CI answer below is *yes* — the nightly matrix observes it on an
+      API 26 emulator. Until a nightly has run green, the limit stands as written.
 - [ ] The full 75-scene × 4-configuration matrix, against 9c's 300-cell baseline.
 
 ### 10b — The ML Kit delegate ✅ built 2026-08-24
@@ -277,15 +280,37 @@ Default stays *follow the phone*; Settings gains *System / Light / Dark*. The bu
   name**, so `edge-to-edge.py` and `alarm-gate.py` moved with the seeder. **Reseed before the next
   driver run** — a phone still holding the old seed will fail on its first tap.
 
-## Deferred to the end of the phase
+## Decided at the end of the phase
 
-- **Can the four configurations run in CI instead of serially on the one phone?** Raised 2026-08-24, to
-  be decided when the code is ready. The real prize is not parallelism but the **API 26–28 coverage the
-  phone cannot give** (10a's stated limit). What cannot move: the **field upgrade proof**, which crosses
-  a Play-signed 1.0.0 install that refuses a locally-signed APK, and anything about HyperOS itself. The
-  hidden cost: `apply_config` flips navigation mode through MIUI's `force_fsg_nav_bar` *because* the
-  AOSP overlays are all present-and-disabled on this phone, so an emulator needs a device-family seam in
-  `edge-to-edge.py` rather than a CI config file.
+- **Can the four configurations run in CI instead of serially on the one phone?** **Yes — decided
+  2026-08-25, and built.** The full four-config matrix runs on emulators at **API 26 / 34 / 36**, the
+  same three levels `instrumented` already covers. `ci.yml` was already running emulators with KVM, so
+  this extended an existing pattern rather than starting a project.
+
+  - **Nightly and `workflow_dispatch`, never `pull_request`**, and deliberately *not* wired into
+    `instrumented-gate`. `edge-to-edge.py` walks ~75 scenes a cell through uiautomator taps whose
+    `settle()` timings are tuned to real hardware, and an emulator is where those go flaky rather than
+    fail. A flaky required check is one people learn to re-run without reading. Promote it to
+    `pull_request` after a few weeks of steady nightlies, not before.
+  - **The device-family seam landed where the research said it would**: `set_nav_mode` in
+    `edge-to-edge.py`. HyperOS drives navigation mode from `force_fsg_nav_bar` *because* the AOSP
+    `com.android.internal.systemui.navbar.*` overlays are present-and-disabled on it; everything else
+    takes `cmd overlay enable-exclusive --category`. ⚠️ **The overlay path is a no-op that reports
+    success on the phone**, which is why the family is *detected* and never passed in — a cell driven
+    the wrong way still captures, still checks and still says "clean" against an inset that never moved.
+  - ⚠️ **API 26–28 has no gesture navigation at all**, so that leg runs **two** configurations, not
+    four. `usable_configs` drops the gesture cells **by name** into the report rather than capturing
+    them under a label the device never matched — the same class of lie the `_PINNED` rotation guard
+    exists to prevent, and worse in CI where nobody is watching the screen.
+  - `--assert-clean` is what makes it a check: non-zero on any `drawn`-tier finding **or any SKIPPED
+    scene**, because a driver that could not reach a screen has not shown it to be clean. `touch`-tier
+    findings stay advisory.
+  - **What still cannot move**, unchanged: the **field upgrade proof** (it crosses a Play-signed 1.0.0
+    install that refuses a locally-signed APK), and anything about HyperOS itself — autostart, Doze, the
+    battery-optimisation exemption.
+  - ⚠️ **Written against emulators that have never run it.** There is no local KVM, so the seam, the
+    two-config API 26 leg and the job itself are unproven until the first nightly. Read that run before
+    trusting this box.
 
 ### 10g — Weight entry gains a kg/g toggle ✅ built 2026-08-25
 

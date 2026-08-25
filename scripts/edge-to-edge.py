@@ -21,9 +21,15 @@ Usage:
     scripts/edge-to-edge.py --out DIR --config landscape-threebutton
     scripts/edge-to-edge.py --out DIR --scene home,weight-chart
     scripts/edge-to-edge.py --out DIR --locale pl         # the same walk, in Polish
+    scripts/edge-to-edge.py --out DIR --assert-clean       # exit 1 on a defect, for CI
     scripts/edge-to-edge.py --restore                     # hand the phone back to auto-rotate
 
 The phone is left in whatever configuration the last cell used; `--restore` puts it back.
+
+**It runs on an emulator as well as on the phone.** Navigation mode is set through whichever
+mechanism the device family actually reads — see [set_nav_mode] — and the configurations a device
+cannot be put into are dropped by name rather than captured under a label that would be a lie; see
+[usable_configs], which is what keeps API 26-28 honest about having no gesture navigation at all.
 """
 
 from __future__ import annotations
@@ -63,6 +69,16 @@ def shell(cmd: str) -> str:
     return adb("shell", cmd)
 
 
+def shell_ok(cmd: str) -> bool:
+    """Run a shell command, reporting whether it worked instead of raising.
+
+    For the handful of calls that address a *device feature* rather than the app: a command missing
+    on an older API level must not abort a two-hour matrix, and `adb` reports that case as a
+    non-zero exit rather than as an exception worth unwinding for.
+    """
+    return subprocess.run(["adb", "shell", cmd], capture_output=True).returncode == 0
+
+
 def settle(seconds: float = 0.6) -> None:
     time.sleep(seconds)
 
@@ -89,6 +105,78 @@ CONFIGS = [
 ]
 
 
+_FAMILY: "str | None" = None
+
+
+def device_family() -> str:
+    """"miui" for HyperOS, "aosp" for everything else — an emulator, in practice.
+
+    The seam exists for exactly one line of [apply_config], and it is detected rather than passed in
+    because a run that has to be *told* what it is running on is a run somebody eventually tells
+    wrong. What makes it worth detecting: the AOSP overlay path is a no-op **that reports success**
+    on this phone, so a cell driven the wrong way still captures, still checks and still says
+    "clean" — against an inset that never moved.
+    """
+    global _FAMILY
+    if _FAMILY is None:
+        _FAMILY = "miui" if shell("getprop ro.miui.ui.version.name").strip() else "aosp"
+    return _FAMILY
+
+
+_API: "int | None" = None
+
+
+def api_level() -> int:
+    global _API
+    if _API is None:
+        _API = int(shell("getprop ro.build.version.sdk").strip())
+    return _API
+
+
+# Gesture navigation is Android 10. Below it the platform has no gestural overlay to enable and no
+# `force_fsg_nav_bar` to set, so a "gesture" cell on API 26-28 is a three-button cell wearing the
+# wrong name — see [usable_configs].
+GESTURE_MIN_API = 29
+
+# The AOSP navigation-mode overlays, all declaring `android:category="…systemui.navbar"`, which is
+# what makes `enable-exclusive --category` a single call rather than an enable plus N disables.
+NAVBAR_OVERLAYS = {
+    "gesture": "com.android.internal.systemui.navbar.gestural",
+    "threebutton": "com.android.internal.systemui.navbar.threebutton",
+}
+
+
+def set_nav_mode(nav: str) -> None:
+    """Put the device into `nav`, by whichever mechanism its family actually reads."""
+    if device_family() == "miui":
+        shell(f"settings put global force_fsg_nav_bar {1 if nav == 'gesture' else 0}")
+        return
+    if api_level() < GESTURE_MIN_API:
+        # Three-button is the only navigation this platform has and it is already in place, so the
+        # honest action is none. `enable-exclusive` is not reliably present this far back either,
+        # and [usable_configs] has already dropped the gesture cells — so `nav` can only be
+        # "threebutton" by the time control reaches here.
+        return
+    shell(f"cmd overlay enable-exclusive --category {NAVBAR_OVERLAYS[nav]}")
+
+
+def usable_configs(configs: "list[Config]") -> "tuple[list[Config], list[Config]]":
+    """Split the requested configs into the ones this device can be put into, and the rest.
+
+    **A skipped cell and a silently wrong one are not the same result.** Below API 29 there is no
+    gesture navigation on the platform, so pinning one leaves the three-button bar exactly where it
+    was — and the cell would capture, check and report "clean" under a name describing a
+    configuration the device was never in. That is the failure [_PINNED] exists to prevent, arriving
+    by a different road, and it is worse in CI where nobody is watching the screen.
+    """
+    if api_level() >= GESTURE_MIN_API:
+        return list(configs), []
+    return (
+        [config for config in configs if config.nav != "gesture"],
+        [config for config in configs if config.nav == "gesture"],
+    )
+
+
 # The config the phone is currently pinned to, so a wipe can put the rotation back. `pm clear` kills
 # the app, which hands the foreground to the portrait-locked launcher, and HyperOS writes
 # `user_rotation` back to 0 when it does — silently turning a landscape cell into a second portrait
@@ -102,20 +190,22 @@ def apply_config(config: Config) -> None:
     HyperOS does not use the AOSP `com.android.internal.systemui.navbar.*` overlays — they are all
     present and all disabled — so the navigation mode is flipped through MIUI's own
     `force_fsg_nav_bar` global instead. Verified against the navigation bar's reported inset, which
-    is the thing being tested and cannot be faked by the setting alone.
+    is the thing being tested and cannot be faked by the setting alone. Everything else — an
+    emulator — has the overlays and no such global, and takes the other half of [set_nav_mode].
     """
     global _PINNED
     _PINNED = config
     shell("settings put system accelerometer_rotation 0")
     shell(f"settings put system user_rotation {config.rotation}")
-    shell(f"settings put global force_fsg_nav_bar {1 if config.nav == 'gesture' else 0}")
+    set_nav_mode(config.nav)
     # SystemUI rebuilds the navigation bar out of process; there is nothing to poll that is ready
     # before the new inset is published, so this is a wait rather than a check.
     settle(3.0)
 
 
 def restore_device() -> None:
-    shell("settings put global force_fsg_nav_bar 1")
+    # Gesture is the phone's own default; below API 29 there is no such thing to go back to.
+    set_nav_mode("gesture" if api_level() >= GESTURE_MIN_API else "threebutton")
     shell("settings put system accelerometer_rotation 1")
     set_dnd(False)
 
@@ -138,7 +228,10 @@ def set_dnd(on: bool) -> None:
     It is **phone-wide**, which is why every caller's `off` belongs in a `finally`. A crashed run
     must not leave somebody's phone silent.
     """
-    shell(f"cmd notification set_dnd {'on' if on else 'off'}")
+    if not shell_ok(f"cmd notification set_dnd {'on' if on else 'off'}"):
+        # Tolerated rather than fatal: on an emulator with no heads-up banner to suppress this is
+        # cosmetic, and losing a whole matrix to a missing device command would not be.
+        print("  -- note: `cmd notification set_dnd` unavailable, continuing without it")
     settle(0.5)
 
 
@@ -1790,6 +1883,14 @@ def main() -> int:
         ),
     )
     parser.add_argument("--restore", action="store_true", help="undo the pinned rotation and nav mode")
+    parser.add_argument(
+        "--assert-clean",
+        action="store_true",
+        help=(
+            "exit non-zero if any scene drew a control under a system inset, or if any scene was "
+            "SKIPPED by a driver error. For CI, where nobody reads the report unless it is red"
+        ),
+    )
     args = parser.parse_args()
 
     global _LIVE_DOSE
@@ -1808,6 +1909,11 @@ def main() -> int:
     if args.config:
         wanted = set(args.config.split(","))
         configs = [config for config in CONFIGS if config.name in wanted]
+    configs, unsupported = usable_configs(configs)
+    for config in unsupported:
+        print(f"-- {config.name}: skipped, gesture navigation needs API {GESTURE_MIN_API} (this is {api_level()})")
+    if not configs:
+        parser.error(f"no requested configuration is reachable on API {api_level()}")
     scenes = [scene for scene in SCENES if scene.suite == args.suite]
     if args.scene:
         wanted = set(args.scene.split(","))
@@ -1819,7 +1925,17 @@ def main() -> int:
         resolve_needles(args.locale)
         set_locale(args.locale)
 
-    report = {"configs": []}
+    report = {
+        "configs": [],
+        # Downloaded from a CI artifact three weeks later, a report that does not say what it ran on
+        # is a list of rectangles nobody can act on.
+        "device": {
+            "family": device_family(),
+            "api": api_level(),
+            "model": shell("getprop ro.product.model").strip(),
+            "skipped_configs": [config.name for config in unsupported],
+        },
+    }
     # Before the run rather than with the first cell's screenshots: the report is written in a
     # `finally`, so a run that dies on its first scene would otherwise lose its own error to a
     # missing directory.
@@ -1845,6 +1961,21 @@ def main() -> int:
         # complete for every cell that finished.
         write_report(report_path, report)
     print(f"\nreport: {report_path}")
+    if args.assert_clean:
+        drawn, broken = 0, 0
+        for cell in report["configs"]:
+            for scene in cell["scenes"]:
+                if "error" in scene:
+                    broken += 1
+                else:
+                    drawn += sum(1 for hit in scene["findings"] if hit["tier"] == "drawn")
+        # `drawn` is the defect; `touch` is a target smaller than the guideline inside an inset,
+        # which is a judgement call and deliberately not a build breaker. A SKIPPED scene fails too:
+        # a driver that could not reach a screen has not shown it to be clean.
+        if drawn or broken:
+            print(f"FAILED: {drawn} control(s) drawn under a system inset, {broken} scene(s) unreached")
+            return 1
+        print("clean: nothing drawn under a system inset")
     return 0
 
 
