@@ -200,10 +200,36 @@ Three of the four claims came back clean on the minified build:
 - **Export writes.** An export produced `bunny-records-20260825T153931Z.zip`, so kotlinx.serialization's
   write path survives minification.
 
-⚠️ **The restore half was not completed on this phone.** *Restore from a file* opens SAF, and this ROM's
-document picker will not open its roots drawer to `input touchscreen tap` — the SAF limitation already on
-record. The write path is proven; the read path still rests on the instrumented restore tests, which run
-unminified. One hand restore before the release would close it.
+✅ **The restore half, completed 2026-08-25 on the minified build.** It had been left open on the belief
+that SAF's roots drawer was in the way — this ROM's document picker will not open it to
+`input touchscreen tap`. **The drawer was never on the path.** What was missing was a file somewhere the
+picker already looked. Setting an **export folder** supplies exactly that: `OpenDocumentTree` opens on
+DocumentsUI's last-used location with *USE THIS FOLDER* already on screen, so the grant costs two ordinary
+taps and no drawer; and once a folder is set, the restore's `OpenDocument` reopens in that same location
+with the export sitting in it. The general lesson is worth more than the workaround: **a picker that will
+not navigate can still be driven, if the file is put where it already is.**
+
+The round trip, in the order that makes it a proof rather than a screenshot:
+
+1. An **Everything** export written straight to the folder — `bunny-everything-20260825T162128Z.zip`,
+   4.48 MB, so the media half is in it and not just the rows.
+2. A **1234 g weighing recorded after the export**, deliberately. Without a change between export and
+   restore, a restore that quietly did nothing looks exactly like one that worked.
+3. The restore. The confirmation dialog read *"Everything backup from Aug 25, 2026, 6:21 PM"* — the
+   manifest was parsed **before** anything was replaced, which is kotlinx.serialization's *read* path
+   surviving R8, observed rather than argued. It finished with *13 images came from the backup* and wrote
+   its pre-restore snapshot to `preserved/`.
+4. Verified by installing a plain `assembleDebug` over the top and reading the database directly: **all 22
+   tables back to their baseline counts, and the 1234 g row gone.** Media landed too — 5 photo files
+   against 5 `photos` rows, 8 document pages against 8 `document_pages` rows, which is the 13 the app
+   claimed.
+
+⚠️ **One honest limit.** The intermediate state — the database *with* the 1234 g row in it — was read from
+the **UI**, not from a pulled file. The release-shaped build is not debuggable, so `run-as` is unavailable
+for as long as it is the installed build, and installing the readable one first would have ended the very
+code path being tested. The app reported the row (*"2.380 kg then, 1.234 kg now."*) and the app is the
+process that wrote it, so the gap is narrow — but it is a gap, and pretending otherwise would make this
+write-up worth less than the run.
 
 ### 🔴 R8 silently disabled the guided document scanner
 
