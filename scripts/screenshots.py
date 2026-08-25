@@ -18,6 +18,7 @@ Run it before the redesign starts and again at the gate, same scenes, same cells
     scripts/screenshots.py --out docs/screenshots/after
     scripts/screenshots.py --out DIR --theme light          # one cell
     scripts/screenshots.py --out DIR --scene home,weight    # one screen, while iterating
+    scripts/screenshots.py --out DIR --scene home,weight --numbered   # 1_home-en.png, 2_weight-en.png
     scripts/screenshots.py --restore                        # hand the phone back
 
 **The Play listing takes the LIGHT set** (changed 2026-08-24; it was dark for the whole of Phase 9, and
@@ -27,6 +28,13 @@ the before/after comparison needs the pair — this is a decision about what goe
 
 Filenames carry the locale they were taken in — `home-pl.png`, not `home.png` — because a PNG loses the
 directory that used to carry its language the moment anyone moves it. See [locale_tag].
+
+`--numbered` additionally prefixes each file with its position in the `--scene` list — `1_home-pl.png`.
+Play orders a listing's screenshots by the order they are uploaded, and a file manager sorts
+alphabetically, so without the prefix "backup" leads and "weight" trails whatever order was intended.
+The number comes from the order **asked for**, not from [SCENES], which is why `--scene` preserves its
+argument order rather than the table's. Opt-in, because every other consumer of these filenames — the
+before/after comparisons, the manifest — refers to them without one.
 
 Each cell runs all three suites in the one order that works: `full` against the seeded sample data,
 then `mismatch`, then `empty` — which wipes the install and is therefore last. Each cell then reseeds,
@@ -137,6 +145,12 @@ def locale_tag(locale: str | None) -> str:
 # --------------------------------------------------------------------------------------------
 
 
+# Scene name -> its 1-based position in the `--scene` list, empty unless `--numbered` was asked for.
+# A module global rather than a parameter threaded through `run_cell`, matching how the driver already
+# carries per-run device state.
+_ORDER: dict[str, int] = {}
+
+
 def capture(scene, out_dir: Path, tag: str) -> dict:
     """Walk to one scene and shoot it. No inset checking — that is `edge-to-edge.py`'s job.
 
@@ -148,7 +162,12 @@ def capture(scene, out_dir: Path, tag: str) -> dict:
         return {"scene": scene.name, "family": scene.family, "error": error}
 
     e2e.settle(0.8)
-    shot = out_dir / f"{scene.name}-{tag}.png"
+    # Padded only when the set actually reaches double digits. A Play listing is capped at 8, where
+    # `1_` is what you want and `01_` is noise; but the capture suite is 30-odd scenes and nothing
+    # stops someone numbering all of them, and there `10_` unpadded would sort between 1 and 2.
+    width = 2 if len(_ORDER) >= 10 else 1
+    prefix = f"{_ORDER[scene.name]:0{width}d}_" if scene.name in _ORDER else ""
+    shot = out_dir / f"{prefix}{scene.name}-{tag}.png"
     shot.write_bytes(e2e.adb("exec-out", "screencap", "-p", binary=True))
     return {
         "scene": scene.name,
@@ -251,6 +270,14 @@ def main() -> int:
     )
     parser.add_argument("--restore", action="store_true", help="undo the pinned rotation, nav mode and locale")
     parser.add_argument(
+        "--numbered",
+        action="store_true",
+        help=(
+            "prefix each file with its position in --scene, e.g. 1_home-pl.png, so a listing's "
+            "screenshots sort into the order they should be uploaded in"
+        ),
+    )
+    parser.add_argument(
         "--no-reseed",
         action="store_true",
         help="skip the wipe-and-seed each cell starts with. For iterating on one screen, not for a full set",
@@ -277,11 +304,20 @@ def main() -> int:
 
     scenes = list(e2e.SCENES)
     if args.scene:
-        wanted = set(args.scene.split(","))
-        unknown = wanted - {scene.name for scene in scenes}
+        # A list, not a set: under --numbered the order asked for *is* the listing's order, and a set
+        # would silently substitute SCENES' own ordering for the one that was typed.
+        wanted = [name.strip() for name in args.scene.split(",") if name.strip()]
+        unknown = set(wanted) - {scene.name for scene in scenes}
         if unknown:
             parser.error(f"unknown scene(s): {', '.join(sorted(unknown))}")
-        scenes = [scene for scene in scenes if scene.name in wanted]
+        by_name = {scene.name: scene for scene in scenes}
+        scenes = [by_name[name] for name in wanted]
+    elif args.numbered:
+        parser.error("--numbered needs --scene: the number is the position in the list you asked for")
+
+    if args.numbered:
+        global _ORDER
+        _ORDER = {scene.name: i for i, scene in enumerate(scenes, 1)}
 
     # Needles first, phone second: an ambiguous or missing one is a fact about this repository, and
     # finding it out before the first tap is the difference between a minute and an evening.
