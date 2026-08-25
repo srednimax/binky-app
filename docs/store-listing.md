@@ -718,6 +718,18 @@ Binky не скаже, чи кролик хворий, і ніколи не ро
 
 ## Release notes (Play's "What's new", 500 chars per locale)
 
+**Don't paste these nine by hand.** The Console takes all languages in one textarea, tagged by
+locale, and `scripts/play-whatsnew.py` renders exactly that from the blocks below:
+
+```bash
+python3 scripts/play-whatsnew.py                 # newest version here, to stdout
+python3 scripts/play-whatsnew.py --version 1.8.0 # a named one
+```
+
+It reformats and never retypes, so this document stays the only copy. It exits non-zero if a note
+is over 500 characters or if a language the **app** ships has no note at all — both being things
+Play accepts in silence and an owner then reads.
+
 Per release, per locale, and pasted at upload time. 1.0 had none — it was the first build on the track
 and there was nothing to be new against. **1.0.1**:
 
