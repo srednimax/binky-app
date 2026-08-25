@@ -329,6 +329,10 @@
     <string name="settings_language_report_help">Напиши, якщо якесь слово у твоїй мові виглядає неправильно.</string>
     <string name="settings_material_you">Кольори з твоїх шпалер</string>
     <string name="settings_material_you_help">У Binky власні кольори. Увімкни це — і кольори братимуться зі шпалер, як це робить сам Android.</string>
+    <string name="settings_theme">Світла чи темна</string>
+    <string name="settings_theme_system">Як на телефоні</string>
+    <string name="settings_theme_light">Світла</string>
+    <string name="settings_theme_dark">Темна</string>
 
     <!-- First-run setup (ADR-0006) -->
     <string name="setup_step">Крок %1$d з %2$d</string>

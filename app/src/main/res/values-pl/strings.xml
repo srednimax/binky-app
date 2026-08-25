@@ -228,6 +228,10 @@
     <!-- ADR-0027 -->
     <string name="settings_material_you">Kolory z tapety</string>
     <string name="settings_material_you_help">Binky ma własne kolory. Po włączeniu tej opcji bierze je z Twojej tapety, tak jak Android koloruje własne ekrany.</string>
+    <string name="settings_theme">Jasny lub ciemny</string>
+    <string name="settings_theme_system">Tak jak w telefonie</string>
+    <string name="settings_theme_light">Jasny</string>
+    <string name="settings_theme_dark">Ciemny</string>
 
     <!-- First-run setup (ADR-0006) -->
     <string name="setup_step">Krok %1$d z %2$d</string>

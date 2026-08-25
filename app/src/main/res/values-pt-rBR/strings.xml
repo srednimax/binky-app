@@ -411,6 +411,10 @@
     <!-- ADR-0027, Android 12+ only. -->
     <string name="settings_material_you">Cores do seu papel de parede</string>
     <string name="settings_material_you_help">O Binky tem cores próprias. Ative isto e ele passa a tirá-las do seu papel de parede, como o Android faz nas próprias telas.</string>
+    <string name="settings_theme">Claro ou escuro</string>
+    <string name="settings_theme_system">O mesmo do celular</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Escuro</string>
 
     <!-- First-run setup (ADR-0006). -->
     <string name="setup_step">Etapa %1$d de %2$d</string>

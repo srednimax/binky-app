@@ -418,6 +418,10 @@
     <!-- ADR-0027. Shown on Android 12 and newer only. -->
     <string name="settings_material_you">Barvy podle tapety</string>
     <string name="settings_material_you_help">Binky má vlastní barvy. Když tohle zapneš, vezme si je z tapety — tak, jak Android barví svoje vlastní obrazovky.</string>
+    <string name="settings_theme">Světlý nebo tmavý</string>
+    <string name="settings_theme_system">Stejný jako v telefonu</string>
+    <string name="settings_theme_light">Světlý</string>
+    <string name="settings_theme_dark">Tmavý</string>
 
     <!-- First-run setup (ADR-0006). -->
     <string name="setup_step">Krok %1$d z %2$d</string>

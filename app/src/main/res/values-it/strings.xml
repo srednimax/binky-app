@@ -360,6 +360,10 @@
     <!-- ADR-0027. Shown on Android 12 and newer only. -->
     <string name="settings_material_you">Colori dallo sfondo</string>
     <string name="settings_material_you_help">Binky ha i suoi colori. Attiva questa voce e li prende invece dal tuo sfondo, come fa Android con le proprie schermate.</string>
+    <string name="settings_theme">Chiaro o scuro</string>
+    <string name="settings_theme_system">Come il telefono</string>
+    <string name="settings_theme_light">Chiaro</string>
+    <string name="settings_theme_dark">Scuro</string>
 
     <!-- First-run setup (ADR-0006). "Benvenuto" would gender the owner on the first screen
          they ever see, so the app takes the verb and the owner takes nothing (§7.3). -->

@@ -10,7 +10,9 @@ import app.binky.tracker.data.backup.BackupScope
 import app.binky.tracker.work.DEFAULT_REMINDER_TIME
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import java.io.IOException
 import java.time.LocalDate
 import java.time.LocalTime
@@ -25,6 +27,19 @@ import java.time.format.DateTimeFormatter
  * survive ADR-0007's wipes.
  */
 enum class WeightUnit { KILOGRAMS, GRAMS }
+
+/**
+ * Whether the app follows the phone's dark-mode setting or overrides it (ADR-0027's amendment).
+ *
+ * [SYSTEM] is the default and the ordinary state: an override is an override, and most owners will
+ * never set one. The other two exist because "follow the phone" is not always the right answer —
+ * a phone on a schedule flips the app mid-read, and the Play screenshots are captured light-only
+ * whatever the capture phone happens to be set to.
+ *
+ * A preference rather than a column, for the same two reasons as [WeightUnit]: it is a display
+ * choice about the whole app, and it has to survive ADR-0007's wipes.
+ */
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 /**
  * Owner preferences held outside the database, because ADR-0007 lets the database be wiped and
@@ -46,6 +61,10 @@ enum class WeightUnit { KILOGRAMS, GRAMS }
  * **1.4 adds one more** (ADR-0027): whether Material You has been switched back on. It is the only
  * key here read before the app is allowed to touch the database, because the theme wraps ADR-0007's
  * blocking screen as well as the app.
+ *
+ * **1.9 adds the second of those** (ADR-0027's amendment): the light/dark override. It is read
+ * earlier still — synchronously, before the first Activity exists — for the reason
+ * [themeModeAtStartup] gives.
  *
  * These **travel in every export scope, from Essential upward** (ADR-0005). They are a few hundred
  * bytes, and a restored phone that has forgotten its display unit, its selected bunny and its chosen
@@ -279,6 +298,41 @@ class AppPreferences(
         dataStore.edit { preferences -> preferences[MATERIAL_YOU] = enabled }
     }
 
+    /**
+     * Light, dark, or whatever the phone says (ADR-0027's amendment).
+     *
+     * Read **in front of** ADR-0007's gate, like [materialYou] and for the same reason: the theme
+     * wraps the schema-mismatch screen too.
+     *
+     * Unlike the app language, this has to be stored here rather than left to AppCompat.
+     * `AppCompatDelegate.setApplicationLocales` persists itself; `setDefaultNightMode` does **not**
+     * — it is process state, and a fresh process comes up following the system until something
+     * re-applies it. [themeModeAtStartup] is that something.
+     */
+    val themeMode: Flow<ThemeMode> =
+        dataStore.data
+            .catch { cause -> if (cause is IOException) emit(emptyPreferences()) else throw cause }
+            .map { preferences -> decodeThemeMode(preferences[THEME_MODE]) }
+
+    suspend fun setThemeMode(mode: ThemeMode) {
+        dataStore.edit { preferences -> preferences[THEME_MODE] = mode.name }
+    }
+
+    /**
+     * [themeMode]'s current value, read **synchronously**, for the one caller that cannot wait: the
+     * night mode has to be applied before the first Activity is created, because the window
+     * background is painted before Compose composes anything (`BinkyApplication.onCreate`).
+     *
+     * Kotlin note: `runBlocking` parks the calling thread until the coroutine finishes — the thing
+     * `suspend` normally exists to avoid, and an `await` on the main thread is the closest analogue.
+     * It is deliberate here and it is cheap relative to its neighbours: `onCreate` already reads a
+     * database header and copies the whole database file on the same thread, so one small key-value
+     * read is not what puts that method over. The alternative is collecting a flow, which means
+     * drawing at least one frame in the wrong theme and then repainting — the exact mismatch this
+     * setting exists to remove.
+     */
+    fun themeModeAtStartup(): ThemeMode = runBlocking { themeMode.first() }
+
     suspend fun setSelection(selection: StoredSelection) {
         dataStore.edit { preferences ->
             when (selection) {
@@ -314,6 +368,7 @@ class AppPreferences(
         val EXPORT_LAST_ON = stringPreferencesKey("export_last_on")
         val EXPORT_REMINDER_NOTIFIED_FOR = stringPreferencesKey("export_reminder_notified_for")
         val MATERIAL_YOU = booleanPreferencesKey("material_you")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
 
         /** `HH:mm`, so a stored time is readable in a `.preferences_pb` dump and in a backup. */
         val REMINDER_TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
@@ -335,6 +390,12 @@ class AppPreferences(
 
         fun decodeScope(value: String?): BackupScope =
             BackupScope.entries.firstOrNull { it.name == value } ?: BackupScope.Records
+
+        // Same rule again, and here the fallback is also the default the app ships with: an
+        // unreadable or unrecognised name means "follow the phone", which is where an install that
+        // has never opened Settings already is.
+        fun decodeThemeMode(value: String?): ThemeMode =
+            ThemeMode.entries.firstOrNull { it.name == value } ?: ThemeMode.SYSTEM
 
         // Null rather than a default, because "nothing recorded" is a real state here and not a
         // missing value — see resolveSetupState. An unrecognised name reads as nothing recorded,

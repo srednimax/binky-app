@@ -272,6 +272,10 @@
     <!-- ADR-0027 -->
     <string name="settings_material_you">Colores de tu fondo de pantalla</string>
     <string name="settings_material_you_help">Binky tiene sus propios colores. Actívalo y los tomará de tu fondo de pantalla, como hace Android con sus propias pantallas.</string>
+    <string name="settings_theme">Claro u oscuro</string>
+    <string name="settings_theme_system">El del teléfono</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Oscuro</string>
 
     <!-- First-run setup (ADR-0006). "Bienvenida" is a noun here: "Bienvenido" would gender the
          owner on the first screen they ever see. -->

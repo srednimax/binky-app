@@ -329,6 +329,10 @@
     <!-- ADR-0027. Shown on Android 12 and newer only. -->
     <string name="settings_material_you">Les couleurs de ton fond d’écran</string>
     <string name="settings_material_you_help">Binky a ses propres couleurs. Active ceci et il les prendra dans ton fond d’écran, comme Android le fait pour ses propres écrans.</string>
+    <string name="settings_theme">Clair ou sombre</string>
+    <string name="settings_theme_system">Comme le téléphone</string>
+    <string name="settings_theme_light">Clair</string>
+    <string name="settings_theme_dark">Sombre</string>
 
     <!-- First-run setup (ADR-0006). "Bienvenue" is a noun: nothing to gender on the first
          screen an owner ever sees. -->

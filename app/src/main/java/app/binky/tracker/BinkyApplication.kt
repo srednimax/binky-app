@@ -8,11 +8,13 @@ import app.binky.tracker.data.BUNNY_DATABASE_FILE
 import app.binky.tracker.data.BUNNY_SCHEMA_VERSION
 import app.binky.tracker.data.PRESERVED_DIRECTORY
 import app.binky.tracker.data.SchemaGate
+import app.binky.tracker.data.ThemeMode
 import app.binky.tracker.data.backup.adoptRestoredDatabase
 import app.binky.tracker.data.destructiveMigrationAllowed
 import app.binky.tracker.data.preserveBeforeWipe
 import app.binky.tracker.data.readUserVersion
 import app.binky.tracker.data.schemaGateDecision
+import app.binky.tracker.theme.applyThemeMode
 import app.binky.tracker.work.ensureSweepEnqueued
 import app.binky.tracker.work.postBackupExclusionNoticeIfDue
 import app.binky.tracker.work.rescheduleDoseAlarm
@@ -81,6 +83,18 @@ class BinkyApplication :
     val container: AppContainer by lazy { AppContainer(this, preferences = preferences) }
 
     /**
+     * The light/dark override as it stood when the process started, read once in [onCreate] and kept
+     * so nothing has to read it off disk twice.
+     *
+     * `MainActivity` collects the live flow — the owner can change this while the app is open — and
+     * uses this as the flow's *initial* value, which is the only way the first composition can be
+     * the right colour. `lateinit` rather than a `by lazy`, because the read has to happen at a
+     * known moment: before [applyThemeMode], before any Activity, and in front of ADR-0007's gate.
+     */
+    lateinit var startupThemeMode: ThemeMode
+        private set
+
+    /**
      * WorkManager's configuration, supplied **on demand**: the manifest removes its `androidx.startup`
      * initializer, so nothing exists until the first `WorkManager.getInstance` call and this property
      * is what that call builds from.
@@ -109,6 +123,15 @@ class BinkyApplication :
 
     override fun onCreate() {
         super.onCreate()
+
+        // **First, and before any Activity exists.** AppCompat does not persist a night mode the
+        // way it persists a language, so every cold start comes up following the phone until this
+        // line runs — and the window background is painted from the theme before Compose composes,
+        // so "until this line runs" would be a visible flash if it ran any later. The read blocks;
+        // `AppPreferences.themeModeAtStartup` explains why that is the cheaper of the two mistakes,
+        // and it is a fraction of what the database work below already does on this thread.
+        startupThemeMode = preferences.themeModeAtStartup()
+        applyThemeMode(startupThemeMode)
 
         val databaseFile = getDatabasePath(BUNNY_DATABASE_FILE)
 

@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.binky.tracker.R
+import app.binky.tracker.data.ThemeMode
 import app.binky.tracker.data.WeightUnit
 import app.binky.tracker.theme.Spacing
 import app.binky.tracker.ui.appViewModelExtras
@@ -133,6 +134,12 @@ fun SettingsScreen(
         ) {
             WeightUnitSetting(unit = state.unit, onSelect = viewModel::setUnit)
 
+            // Above the card and below the unit, which puts the two header-and-chips sections
+            // together and leaves the card as the rows. Not folded in beside Material You either:
+            // that switch answers *which* colours, this answers *light or dark*, and on a phone
+            // below Android 12 the switch is not drawn at all while this always is.
+            ThemeSetting(mode = state.themeMode, onSelect = viewModel::setThemeMode)
+
             GroupedCard {
                 LanguageRow()
                 // **Hidden below Android 12**, where there is no wallpaper palette to take.
@@ -207,6 +214,44 @@ private fun WeightUnitSetting(
             }
         }
         HelpText(stringResource(R.string.settings_weight_unit_help))
+    }
+}
+
+/**
+ * Light, dark, or whatever the phone says — ADR-0027's amendment.
+ *
+ * The same shape as [WeightUnitSetting] deliberately: a header the chips finish, in a card. Chips
+ * rather than the language row's dialog, because three options fit on one line and there is nothing
+ * to explain — where the language list is nine entries plus a report link and needs the room.
+ *
+ * No help text, and that is the one difference from the unit section. *Light* and *Dark* need no
+ * gloss, and a footnote under them would be furniture.
+ *
+ * **[ThemeMode.SYSTEM] is first**, so the default reads as the default and the two overrides sit
+ * after it — the same order the language dialog puts "Same as this phone" in.
+ */
+@Composable
+private fun ThemeSetting(
+    mode: ThemeMode,
+    onSelect: (ThemeMode) -> Unit,
+) {
+    FormSection(title = stringResource(R.string.settings_theme)) {
+        ChipRow {
+            ThemeMode.entries.forEach { option ->
+                FormChip(
+                    selected = option == mode,
+                    onClick = { onSelect(option) },
+                    label =
+                        stringResource(
+                            when (option) {
+                                ThemeMode.SYSTEM -> R.string.settings_theme_system
+                                ThemeMode.LIGHT -> R.string.settings_theme_light
+                                ThemeMode.DARK -> R.string.settings_theme_dark
+                            },
+                        ),
+                )
+            }
+        }
     }
 }
 

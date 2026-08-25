@@ -57,7 +57,7 @@ Play quality notices against release 386, and one settings request.
 | **10c** | R8 on | ✅ **built 2026-08-24**, device proof owed |
 | **10d** | Several photos on a tray — **schema 8** | ✅ **built 2026-08-24**, device proof owed |
 | **10e** | Events: a timeline, and dated events an owner writes — **same schema 8** | ✅ **built 2026-08-25**, device proof owed |
-| **10f** | A light/dark override in Settings | open |
+| **10f** | A light/dark override in Settings | ✅ **built 2026-08-25**, device proof owed |
 
 **One edge must not be reordered**: **10c before 10d/10e**, so every artifact check after R8 goes on
 runs against a minified build rather than proving something about a build nobody ships. Everything else
@@ -201,17 +201,22 @@ carries it; the build record is [`phase-10.md`](phase-10.md) §5.
 - [ ] Device proof by hand, with the rest of the phase's device work: the timeline on a real database,
       an event notification landing on the day, and the calendar hand-off opening something.
 
-### 10f — A light/dark override in Settings
+### 10f — A light/dark override in Settings ✅ built 2026-08-25
 
-Default stays *follow the phone*; Settings gains *System / Light / Dark*.
+Default stays *follow the phone*; Settings gains *System / Light / Dark*. The build record is
+[`phase-10.md`](phase-10.md) §6.
 
-- [ ] ⚠️ **`AppCompatDelegate.setDefaultNightMode`, not a Compose flag alone.** A Compose-only override
+- [x] ⚠️ **`AppCompatDelegate.setDefaultNightMode`, not a Compose flag alone.** A Compose-only override
       leaves the window background (painted before Compose composes) and the `values-night/` scrim from
       10a following the *system* while the app follows the override — the exact mismatch 10a exists to
-      prevent, and it shows on API 26–28.
-- [ ] 10a's `SystemBarAppearance` needs no change: it already keys off `BinkyTheme`'s `darkTheme`.
-- [ ] Amendment to **ADR-0027** — that decision gaining a lever, not a new one.
-- [ ] Copy ×9 (section label + three options).
+      prevent, and it shows on API 26–28. `theme/NightMode.kt` is the one call site, reached from
+      `BinkyApplication.onCreate` and from `SettingsViewModel.setThemeMode`.
+- [x] 10a's `SystemBarAppearance` needs no change: it already keys off `BinkyTheme`'s `darkTheme`.
+      It needed none.
+- [x] Amendment to **ADR-0027** — that decision gaining a lever, not a new one.
+- [x] Copy ×9 (section label + three options) — 4 new resources, gate green at 718.
+- [ ] Device proof by hand, with the rest of the phase's device work: the override held across a cold
+      start, and the window background and system-bar scrim moving with it rather than with the phone.
 
 ---
 
