@@ -64,7 +64,7 @@ Play quality notices against release 386, and one settings request.
 | --- | --- | --- |
 | **10a** | Edge-to-edge off the deprecated bar setters | ✅ **built 2026-08-24** |
 | **10b** | The ML Kit delegate stops being portrait-locked | ✅ **done**, rotated mid-scan 2026-08-25 |
-| **10c** | R8 on | ⚠️ **proved on the phone 2026-08-25** — found and fixed a silent ML Kit break; one restore still owed |
+| **10c** | R8 on | ✅ **done** — found and fixed a silent ML Kit break; export *and* restore proven on the minified build 2026-08-25 |
 | **10d** | Several photos on a tray — **schema 8** | ✅ **done**, upgrade watched on the phone 2026-08-25 |
 | **10e** | Events: a timeline, and dated events an owner writes — **same schema 8** | ✅ **done**, driven on the phone 2026-08-25 |
 | **10f** | A light/dark override in Settings | ✅ **done**, proved on the phone 2026-08-25 |
@@ -134,9 +134,19 @@ turn it on against, and watch that build run."* **1.8.0 is live in production.**
       sweep fires**: `WM-WorkerWrapper: Starting work for …ReminderSweepWorker`, SUCCESS — WorkManager
       resolved the worker from its persisted class name under R8. **Export writes** a zip, so
       kotlinx.serialization's write path survives.
-- [ ] ⚠️ **The restore half is still owed.** *Restore from a file* opens SAF, and this ROM's picker will
-      not open its roots drawer to taps. The read path still rests on the instrumented restore tests,
-      which run unminified. One hand restore before the release closes it.
+- [x] ✅ **The restore half is done** 2026-08-25, on the minified build, and the roots drawer turned out
+      not to be on the path at all. **Choosing an export folder is what unblocks it**: `OpenDocumentTree`
+      opens on DocumentsUI's last-used location with a *USE THIS FOLDER* button already on screen, and
+      once a folder is set, `OpenDocument` reopens in that same location with the export sitting in it.
+      The drawer only ever needed opening because nothing had put a file somewhere the picker already
+      looked. Round trip: an *Everything* export written straight to the folder (4.48 MB), a 1234 g
+      weighing recorded **after** it so a no-op restore could not pass, then the restore — manifest
+      parsed (*"Everything backup from Aug 25, 2026, 6:21 PM"*, so kotlinx.serialization's read path
+      survives R8), *13 images came from the backup*, and a pre-restore snapshot preserved. Verified by
+      installing a plain `assembleDebug` over the top and reading the database: **all 22 tables back to
+      their baseline counts, the 1234 g row gone**, 5 photo files / 5 rows and 8 document pages / 8 rows
+      on disk. ⚠️ The intermediate state was read from the **UI**, not a pulled database — the
+      release-shaped build is not debuggable, so `run-as` is unavailable while it is the installed one.
 - [x] 🔴 **R8 silently disabled the guided document scanner, and it is fixed** ✅ 2026-08-25. It did not
       crash: `MlKitDocumentScanner` catches everything and falls back to the plain camera by design, so a
       feature owners have simply stopped existing behind one log line. ML Kit's registrar is named inside
@@ -275,6 +285,36 @@ Default stays *follow the phone*; Settings gains *System / Light / Dark*. The bu
   hidden cost: `apply_config` flips navigation mode through MIUI's `force_fsg_nav_bar` *because* the
   AOSP overlays are all present-and-disabled on this phone, so an emulator needs a device-family seam in
   `edge-to-edge.py` rather than a CI config file.
+
+## Carried forward — owner requests, not Phase 10
+
+These arrived after Phase 10's scope was set. They are recorded here rather than folded in, because
+Phase 10 is closing and each one is a decision, not a tweak. **This section survives the phase close.**
+
+### Weight entry should offer kg as well as grams — owner request 2026-08-25
+
+Asked for while watching the 10c restore proof being driven: on **Record a weighing** (and on editing an
+existing one) an owner should be able to pick the unit and type `1.2` kg instead of `1200` g, with the
+displayed value converting live when the unit is switched.
+
+⚠️ **This reverses a stated house rule, so it is a decision and not a bug.** `CLAUDE.md` currently says
+*"Entry is in grams (that's what scales show); display unit is a user preference defaulting to kg"*, and
+the app says the same thing to the owner in two places — the form's *"Weight in grams. Whole grams, as the
+scale reads it."* and Settings' *"This changes how weights are shown, not how they are entered — entry is
+always in grams."* All three change together or none do.
+
+What the work actually involves, none of it hard but none of it free:
+
+- **Storage does not move.** `Int` grams stays (house rule, and the reason `−40 g` is legible where
+  `−0.04 kg` is not). kg entry is a *parse*, not a new column: `1.2` → `1200`, and the rounding rule at
+  three decimals has to be decided rather than inherited — `1.2345` kg is not a whole gram.
+- **The unit toggle is per-entry state, not the display preference.** Reusing the Settings preference
+  would make the form's unit change under an owner who only wanted the *chart* in kg.
+- **Copy in 9 languages.** Three strings above are wrong the moment this ships, plus whatever the toggle
+  needs. `translation-gate.py` is a merge gate, so the copy lands translated once — settle the wording
+  before translating, not after.
+- **Do it before the end-to-end tests**, per the request: an E2E suite written against a grams-only form
+  is a suite that has to be rewritten.
 
 ## Closing the phase
 
