@@ -46,3 +46,46 @@
 # The rule to follow when this file next changes: **add a keep only with the mapping or usage output
 # that shows something was renamed or removed.** A rule added on suspicion cannot be removed later,
 # because nobody can prove it was doing nothing.
+
+# ---------------------------------------------------------------------------
+# The one keep rule, added 2026-08-25 with the evidence the paragraph above asks for.
+#
+# **Symptom.** On the phone, under R8, the guided document scanner never opened. It did not crash:
+# `MlKitDocumentScanner.start` catches every exception and falls back to the plain camera by design
+# (ADR-0009), so the whole defect surfaced as one `I BinkyScanner: Guided scanner unavailable`
+# line and an owner quietly losing the feature. An unminified build of the same commit opens
+# `com.google.android.gms/.mlkit.docscan.ui.DocumentScanningActivity` on the same phone.
+#
+# **Cause, read out of the build's own output rather than guessed.** ML Kit finds its components the
+# Firebase way: the merged manifest declares
+#
+#     <service android:name="com.google.mlkit.common.internal.MlKitComponentDiscoveryService">
+#       <meta-data android:name="com.google.firebase.components:com.google.mlkit.common.internal.CommonComponentRegistrar"
+#                  android:value="com.google.firebase.components.ComponentRegistrar" />
+#
+# — the registrar's class name is a *fragment of a meta-data key*, and it is instantiated by
+# reflection through its no-arg constructor. AGP's `aapt_rules.txt` reads `android:name` on
+# components, not class names embedded in meta-data keys, so nothing tells R8 that constructor is
+# reachable.
+#
+# `mapping.txt` shows the class itself surviving unrenamed — `CommonComponentRegistrar ->
+# CommonComponentRegistrar` — **with no members under it**: a plain `-keep class` keeps the class and
+# lets the shrinker take the members, and the constructor is exactly what got taken. The runtime says
+# the same thing in one line:
+#
+#     W ComponentDiscovery: Caused by: java.lang.NoSuchMethodException:
+#         com.google.mlkit.common.internal.CommonComponentRegistrar.<init> []
+#
+# With discovery failing, the component the scanner client needs is never registered, and building
+# the client dies on a `requireNonNull` deep inside
+# `com.google.android.gms.internal.mlkit_vision_document_scanner.zztp.<init>` — which is the
+# NullPointerException that reached the log, retraced through this build's own mapping.
+#
+# **Why members and not the class.** The class is already kept; only `<init>()` is missing. So this is
+# `-keepclassmembers`, which adds nothing when a registrar is absent and keeps only the constructor
+# when one is present. It is scoped to the interface rather than to `com.google.mlkit.**`, because the
+# contract being satisfied is Firebase's component discovery and any future registrar has the same
+# hole.
+-keepclassmembers class * implements com.google.firebase.components.ComponentRegistrar {
+    <init>();
+}
