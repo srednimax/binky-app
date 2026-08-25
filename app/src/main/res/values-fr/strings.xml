@@ -245,6 +245,8 @@
     <string name="weight_grams_help">Le poids en grammes. Des grammes entiers, tels que la balance les affiche.</string>
     <string name="weight_recent">Pesées récentes : %1$s.</string>
     <string name="weight_grams_required">Indique le poids en grammes.</string>
+    <string name="weight_kilograms_help">Le poids en kilogrammes. Jusqu’à trois décimales : 1,2 ou 1,234.</string>
+    <string name="weight_kilograms_required">Indique le poids en kilogrammes.</string>
     <string name="weight_grams_as_kilograms">Soit %1$s.</string>
     <string name="weight_recorded_at_label">Quand le lapin était sur la balance</string>
     <string name="weight_backdating_help">Par défaut, maintenant. Pèse le matin et note-le le soir si ça t’arrange — c’est l’heure que tu indiques qui compte.</string>
@@ -316,7 +318,7 @@
     <string name="settings_weight_unit">Afficher les poids en</string>
     <string name="settings_unit_kilograms">Kilogrammes</string>
     <string name="settings_unit_grams">Grammes</string>
-    <string name="settings_weight_unit_help">Ceci change l’affichage des poids, pas leur saisie : la saisie se fait toujours en grammes, et les écarts sont toujours indiqués en grammes.</string>
+    <string name="settings_weight_unit_help">Ceci change l’affichage des poids, pas leur saisie : l’unité de saisie se choisit sur la pesée elle-même, et les écarts sont toujours indiqués en grammes.</string>
     <string name="settings_backup">Sauvegarde et restauration</string>
     <string name="settings_backup_summary">Exporte tes données dans un fichier, restaure-les depuis un fichier, et vois les copies gardées sur ce téléphone.</string>
     <string name="settings_language">Langue</string>

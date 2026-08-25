@@ -65,9 +65,13 @@ the *why*, don't restate the line. Prefer explicit and readable over clever.
   file before the row (ADR-0020). Bypassing it puts full-resolution bitmaps in memory and blows up the photo
   grid.
 - **Missing media renders as a placeholder, never a crash.** A restore may legitimately lack photos.
-- **Weight is stored as `Int` grams.** Never a float. Entry is in grams (that's what scales show); display
-  unit is a user preference defaulting to kg; **changes are always shown in grams**, because `−0.04 kg`
-  hides the signal that `−40 g` makes obvious.
+- **Weight is stored as `Int` grams.** Never a float. **Two separate unit preferences, and they are not
+  interchangeable**: the *entry* unit defaults to **grams** (what scales show), the *display* unit to
+  **kg**. Kilogram entry is a parse to whole grams accepting `.` **or** `,` in either direction — which
+  separator arrives is decided by the keyboard, not the app's locale. **Changes are always shown in
+  grams** whatever either preference says, because `−0.04 kg` hides the signal that `−40 g` makes
+  obvious. Text going *into* an entry field carries no grouping separator — use `weightEntryText`, not
+  `gramsNumber`, or "2 495" re-parses as a different number.
 - **DAOs return `Flow`**, screens collect it. Don't hand-roll refresh calls.
 - **Enums with `TypeConverter`s, not loose strings**, for droppings, mood and care type — closed
   vocabularies. For **care type** the closed enum only tags the *known* kinds; a care reminder is

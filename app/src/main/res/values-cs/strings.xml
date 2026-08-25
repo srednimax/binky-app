@@ -321,6 +321,8 @@
     <string name="weight_grams_help">Váha v gramech. Celé gramy, jak je ukazuje váha.</string>
     <string name="weight_recent">Poslední vážení: %1$s.</string>
     <string name="weight_grams_required">Zadej váhu v gramech.</string>
+    <string name="weight_kilograms_help">Váha v kilogramech. Až tři desetinná místa — 1,2 nebo 1,234.</string>
+    <string name="weight_kilograms_required">Zadej váhu v kilogramech.</string>
     <string name="weight_grams_as_kilograms">To je %1$s.</string>
     <!-- *byl* agrees with the common noun *králík*, which is a fact about the word and not a guess
          about the animal — the one place a past tense is safe here. -->
@@ -407,7 +409,7 @@
     <string name="settings_weight_unit">Jednotka váhy</string>
     <string name="settings_unit_kilograms">Kilogramy</string>
     <string name="settings_unit_grams">Gramy</string>
-    <string name="settings_weight_unit_help">Mění to, jak se váha zobrazuje, ne jak se zadává — zadává se vždy v gramech a změny se vždy ukazují v gramech.</string>
+    <string name="settings_weight_unit_help">Mění to, jak se váha zobrazuje, ne jak se zadává — jednotku zadávání si vybereš přímo u vážení a změny se vždy ukazují v gramech.</string>
     <string name="settings_backup">Zálohy a obnovení</string>
     <string name="settings_backup_summary">Ulož si záznamy do souboru, obnov je z něj a podívej se na kopie uložené v tomhle telefonu.</string>
     <string name="settings_language">Jazyk</string>

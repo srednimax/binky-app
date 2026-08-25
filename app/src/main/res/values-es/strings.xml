@@ -187,6 +187,8 @@
     <string name="weight_grams_help">Peso en gramos. Gramos enteros, tal como los da la báscula.</string>
     <string name="weight_recent">Pesajes recientes: %1$s.</string>
     <string name="weight_grams_required">Escribe el peso en gramos.</string>
+    <string name="weight_kilograms_help">Peso en kilogramos. Hasta tres decimales: 1,2 o 1,234.</string>
+    <string name="weight_kilograms_required">Escribe el peso en kilogramos.</string>
     <string name="weight_grams_as_kilograms">Son %1$s.</string>
     <string name="weight_recorded_at_label">Cuándo estuvo el conejo en la báscula</string>
     <string name="weight_backdating_help">Por defecto, ahora. Si pesas por la mañana y lo anotas por la noche, no pasa nada: la hora que pongas es la que cuenta.</string>
@@ -260,7 +262,7 @@
     <string name="settings_weight_unit">Mostrar los pesos en</string>
     <string name="settings_unit_kilograms">Kilogramos</string>
     <string name="settings_unit_grams">Gramos</string>
-    <string name="settings_weight_unit_help">Esto cambia cómo se muestran los pesos, no cómo se escriben: se escriben siempre en gramos, y los cambios se muestran siempre en gramos.</string>
+    <string name="settings_weight_unit_help">Esto cambia cómo se muestran los pesos, no cómo se escriben: la unidad de entrada se elige en el propio pesaje, y los cambios se muestran siempre en gramos.</string>
     <string name="settings_backup">Copia y restauración</string>
     <string name="settings_backup_summary">Exporta tus registros a un archivo, restáuralos desde uno, y mira las copias guardadas en este teléfono.</string>
     <string name="settings_language">Idioma</string>

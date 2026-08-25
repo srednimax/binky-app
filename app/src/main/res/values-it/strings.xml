@@ -279,6 +279,8 @@
     <string name="weight_grams_help">Peso in grammi. Grammi interi, come li legge la bilancia.</string>
     <string name="weight_recent">Ultime pesate: %1$s.</string>
     <string name="weight_grams_required">Inserisci il peso in grammi.</string>
+    <string name="weight_kilograms_help">Peso in chilogrammi. Fino a tre decimali: 1,2 o 1,234.</string>
+    <string name="weight_kilograms_required">Inserisci il peso in chilogrammi.</string>
     <string name="weight_grams_as_kilograms">Sono %1$s.</string>
     <string name="weight_recorded_at_label">Quando il coniglio era sulla bilancia</string>
     <string name="weight_backdating_help">Di base è adesso. Se pesi la mattina e annoti la sera va benissimo: conta l’ora che imposti tu.</string>
@@ -349,7 +351,7 @@
     <string name="settings_weight_unit">Mostra i pesi in</string>
     <string name="settings_unit_kilograms">Chilogrammi</string>
     <string name="settings_unit_grams">Grammi</string>
-    <string name="settings_weight_unit_help">Cambia come vengono mostrati i pesi, non come si inseriscono: l’inserimento è sempre in grammi, e le variazioni si vedono sempre in grammi.</string>
+    <string name="settings_weight_unit_help">Cambia come vengono mostrati i pesi, non come si inseriscono: l’unità di inserimento si sceglie nella pesata stessa, e le variazioni si vedono sempre in grammi.</string>
     <string name="settings_backup">Backup e ripristino</string>
     <string name="settings_backup_summary">Esporta i tuoi dati in un file, ripristinali da un file e guarda le copie tenute su questo telefono.</string>
     <string name="settings_language">Lingua</string>

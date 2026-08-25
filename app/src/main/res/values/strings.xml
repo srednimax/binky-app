@@ -122,6 +122,8 @@
     <string name="weight_grams_help">Weight in grams. Whole grams, as the scale reads it.</string>
     <string name="weight_recent">Recent weighings: %1$s.</string>
     <string name="weight_grams_required">Enter the weight in grams.</string>
+    <string name="weight_kilograms_help">Weight in kilograms. Up to three decimals — 1.2 or 1.234.</string>
+    <string name="weight_kilograms_required">Enter the weight in kilograms.</string>
     <string name="weight_grams_as_kilograms">That is %1$s.</string>
     <string name="weight_recorded_at_label">When the bunny was on the scale</string>
     <string name="weight_backdating_help">Defaults to now. Weigh in the morning and log it in the evening if that suits — the time you set is the one that counts.</string>
@@ -198,7 +200,7 @@
     <string name="settings_weight_unit">Show weights in</string>
     <string name="settings_unit_kilograms">Kilograms</string>
     <string name="settings_unit_grams">Grams</string>
-    <string name="settings_weight_unit_help">This changes how weights are shown, not how they are entered — entry is always in grams, and changes are always shown in grams.</string>
+    <string name="settings_weight_unit_help">This changes how weights are shown, not how they are entered — the entry unit is chosen on the weighing itself, and changes are always shown in grams.</string>
     <string name="settings_backup">Backup &amp; restore</string>
     <string name="settings_backup_summary">Export your records to a file, restore them from one, and see the copies kept on this phone.</string>
     <string name="settings_language">Language</string>

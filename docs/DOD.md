@@ -68,6 +68,7 @@ Play quality notices against release 386, and one settings request.
 | **10d** | Several photos on a tray — **schema 8** | ✅ **done**, upgrade watched on the phone 2026-08-25 |
 | **10e** | Events: a timeline, and dated events an owner writes — **same schema 8** | ✅ **done**, driven on the phone 2026-08-25 |
 | **10f** | A light/dark override in Settings | ✅ **done**, proved on the phone 2026-08-25 |
+| **10g** | Weight entry gains a kg/g toggle | ✅ **done**, driven on the phone 2026-08-25 |
 
 **One edge must not be reordered**: **10c before 10d/10e**, so every artifact check after R8 goes on
 runs against a minified build rather than proving something about a build nobody ships. Everything else
@@ -286,35 +287,51 @@ Default stays *follow the phone*; Settings gains *System / Light / Dark*. The bu
   AOSP overlays are all present-and-disabled on this phone, so an emulator needs a device-family seam in
   `edge-to-edge.py` rather than a CI config file.
 
+### 10g — Weight entry gains a kg/g toggle ✅ built 2026-08-25
+
+Owner request, made while the 10c restore proof was being driven: *"you can only specify in grams, so a
+simple switch gram/kg when providing new / updating old data"*. Folded into Phase 10 rather than deferred,
+because Phase 10 is explicitly the phase that takes whatever owners report — 10d and 10e arrived the same
+way.
+
+⚠️ **It reverses a stated house rule, so it is a decision and not a tweak.** `CLAUDE.md` said *"entry is
+in grams"*, and the app said so to the owner in two places. All three moved together.
+
+- [x] **Two preferences, not one.** `weightEntryUnit` defaults to **grams**; the display preference
+      defaults to **kilograms** and is untouched. Reusing the display one would have moved every existing
+      owner's field to kilograms at a stroke — and `2495` typed into a kilogram field is exactly the
+      fat-fingered reading the *recent weighings* line exists to catch. Making it form-only instead would
+      make an owner who thinks in kilograms re-choose on every weighing.
+- [x] **Storage does not move.** `Int` grams on disk, verified on the phone: `1,2` typed as kilograms
+      landed as `(1200, 'integer')`.
+- [x] **Both separators, both directions.** `.` and `,` are accepted on input and the locale's own is used
+      on output, because which one arrives is decided by the keyboard rather than the app's locale. A
+      Polish phone offers a comma; refusing it would fail the ordinary case.
+- [x] **The echo became the safety net and is now unconditional** — whichever unit the field is in, the
+      other is spelled out underneath. `2495` entered as kilograms reads back *"That is 2 495 000 g."*,
+      which is unmissable in a way a silently-accepted number is not.
+- [x] The field caps kilograms at three decimals rather than rounding a fourth away silently, and
+      *recent weighings* renders in the **entry** unit so the magnitude comparison stays like-for-like.
+- [x] Entry text carries **no grouping separator** — it goes back into the box, and "2 495" re-parses as
+      a different number. That is the one place `weightEntryText` must differ from `gramsNumber`.
+- [x] Copy ×9 — 2 new strings, and `settings_weight_unit_help` reworded because it asserted the old rule.
+      Gate green at **720 × 8**.
+- [x] 13 JVM tests in `WeightFormatTest`. One pinned a behaviour worth keeping: `"1."` parses as 1000 g
+      rather than null, so the echo holds steady mid-typing instead of blinking out and back.
+- [x] **Driven on the phone**: chips default to Grams, `2495` → toggle → `2.495` with the help line,
+      echo and recent-weighings row all following; `1,2` saved and stored as 1200.
+
 ## Carried forward — owner requests, not Phase 10
 
-These arrived after Phase 10's scope was set. They are recorded here rather than folded in, because
-Phase 10 is closing and each one is a decision, not a tweak. **This section survives the phase close.**
+**This section survives the phase close.**
 
-### Weight entry should offer kg as well as grams — owner request 2026-08-25
+### The visit editor's weight field is still grams-only
 
-Asked for while watching the 10c restore proof being driven: on **Record a weighing** (and on editing an
-existing one) an owner should be able to pick the unit and type `1.2` kg instead of `1200` g, with the
-displayed value converting live when the unit is switched.
-
-⚠️ **This reverses a stated house rule, so it is a decision and not a bug.** `CLAUDE.md` currently says
-*"Entry is in grams (that's what scales show); display unit is a user preference defaulting to kg"*, and
-the app says the same thing to the owner in two places — the form's *"Weight in grams. Whole grams, as the
-scale reads it."* and Settings' *"This changes how weights are shown, not how they are entered — entry is
-always in grams."* All three change together or none do.
-
-What the work actually involves, none of it hard but none of it free:
-
-- **Storage does not move.** `Int` grams stays (house rule, and the reason `−40 g` is legible where
-  `−0.04 kg` is not). kg entry is a *parse*, not a new column: `1.2` → `1200`, and the rounding rule at
-  three decimals has to be decided rather than inherited — `1.2345` kg is not a whole gram.
-- **The unit toggle is per-entry state, not the display preference.** Reusing the Settings preference
-  would make the form's unit change under an owner who only wanted the *chart* in kg.
-- **Copy in 9 languages.** Three strings above are wrong the moment this ships, plus whatever the toggle
-  needs. `translation-gate.py` is a merge gate, so the copy lands translated once — settle the wording
-  before translating, not after.
-- **Do it before the end-to-end tests**, per the request: an E2E suite written against a grams-only form
-  is a suite that has to be rewritten.
+10g deliberately stopped at *Record a weighing*, which is what was asked for. `VisitEditorScreen` has its
+own weight box (ADR-0017 — the visit owns that number) and it still takes grams only. The parsing helpers
+are already shared and pure, so this is a small change rather than a second design — but it is the field
+where kilograms matter *most*, since the number is usually being copied off a vet's note. Decide it
+deliberately rather than letting the two weight fields drift apart.
 
 ## Closing the phase
 

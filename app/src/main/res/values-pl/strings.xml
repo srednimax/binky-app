@@ -132,6 +132,8 @@
     <string name="weight_grams_help">Waga w gramach. Pełne gramy, tak jak pokazuje waga.</string>
     <string name="weight_recent">Ostatnie ważenia: %1$s.</string>
     <string name="weight_grams_required">Wpisz wagę w gramach.</string>
+    <string name="weight_kilograms_help">Waga w kilogramach. Do trzech miejsc po przecinku — 1,2 lub 1,234.</string>
+    <string name="weight_kilograms_required">Wpisz wagę w kilogramach.</string>
     <string name="weight_grams_as_kilograms">To %1$s.</string>
     <string name="weight_recorded_at_label">Kiedy królik był na wadze</string>
     <string name="weight_backdating_help">Domyślnie teraz. Można zważyć rano, a zapisać wieczorem — liczy się godzina ustawiona tutaj.</string>
@@ -213,7 +215,7 @@
     <string name="settings_weight_unit">Jednostka wagi</string>
     <string name="settings_unit_kilograms">Kilogramy</string>
     <string name="settings_unit_grams">Gramy</string>
-    <string name="settings_weight_unit_help">To zmienia sposób wyświetlania wagi, a nie jej wpisywania — wpisuje się zawsze w gramach, a zmiany zawsze pokazywane są w gramach.</string>
+    <string name="settings_weight_unit_help">To zmienia sposób wyświetlania wagi, a nie jej wpisywania — jednostkę wpisywania wybierasz przy samym ważeniu, a zmiany zawsze pokazywane są w gramach.</string>
     <string name="settings_backup">Kopia zapasowa i przywracanie</string>
     <string name="settings_backup_summary">Wyeksportuj zapisy do pliku, przywróć je z pliku i zobacz kopie trzymane na tym telefonie.</string>
     <string name="settings_language">Język</string>
