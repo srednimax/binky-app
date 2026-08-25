@@ -122,8 +122,15 @@ zero `screenOrientation` attributes and `configChanges=0x0fa0`. The *text* merge
 comments, so a grep there hits this override's own explanation and reads like a surviving restriction —
 which is exactly the false positive a naive check would produce.
 
-Still owed: rotate the phone mid-scan. If the page is lost the override comes back out and the notice is
-recorded as accepted, since Android 16 ignores the restriction on large screens regardless.
+### Rotated mid-scan, twice, 2026-08-25 ✅
+
+Done on the phone, and the second run on the **minified** artifact so the claim covers what ships. The
+guided scanner was opened, rotated to landscape mid-scan (the screenshot comes back 2712×1220, so the
+activity really did re-lay out), a page was captured in landscape, and the phone was rotated back to
+portrait. `dumpsys` reports the **same `ActivityRecord` id** across all three states — the delegate was
+never recreated, which is the concern the library's own manifest comment states — and the captured page
+was still sitting on *Adjust corners* afterwards. Finishing the scan returned the page to the app, where
+it saved as *Scanned document · 1 page*. Nothing was lost, so the override stays out.
 
 ## §3 — R8 ✅ built 2026-08-24
 
@@ -178,8 +185,71 @@ upload step.
 
 Both artifact scripts were re-run against the minified bundle, which is the entire reason §3 goes first:
 `aab-permissions.py` still reads 8 permissions and 0 `<uses-feature>`, and §2's compiled-manifest check
-still finds zero `screenOrientation`. What is owed is behaviour on the phone — enums round-tripping, an
-export→restore, the daily sweep firing — batched with the rest of the phase's device work.
+still finds zero `screenOrientation`.
+
+### The behaviour half, 2026-08-25 — and it found what the static half could not ✅
+
+Three of the four claims came back clean on the minified build:
+
+- **Enums round-trip by name.** An observation recorded *by the minified build* stored `MANY`, `EATEN`,
+  `BRIGHT`, `MORE`, with `LARGE` and `ROUND` in the join rows — read back out of `bunny.db` afterwards.
+  Not one of them became an ordinal. This is the claim no rule can pin, so it had to be watched.
+- **The daily sweep fires**, and with it the cross-version worry: `WM-WorkerWrapper: Starting work for
+  app.binky.tracker.work.ReminderSweepWorker`, result SUCCESS. WorkManager resolved the worker from the
+  class name it had persisted, under R8, which is what `-keepnames` was being trusted for.
+- **Export writes.** An export produced `bunny-records-20260825T153931Z.zip`, so kotlinx.serialization's
+  write path survives minification.
+
+⚠️ **The restore half was not completed on this phone.** *Restore from a file* opens SAF, and this ROM's
+document picker will not open its roots drawer to `input touchscreen tap` — the SAF limitation already on
+record. The write path is proven; the read path still rests on the instrumented restore tests, which run
+unminified. One hand restore before the release would close it.
+
+### 🔴 R8 silently disabled the guided document scanner
+
+The one that justifies the whole "prove by behaviour" rule, because every static check had passed.
+
+Under R8 the guided scanner never opened. **It did not crash**: `MlKitDocumentScanner.start` catches every
+exception and falls back to the plain camera by design (ADR-0009), so a feature owners have simply stopped
+existing, and said so in one `I BinkyScanner: Guided scanner unavailable` line nobody would read. An
+unminified build of the same commit opened `com.google.android.gms/.mlkit.docscan.ui.DocumentScanningActivity`
+on the same phone, which is what isolated it to R8 rather than to Play services or this device.
+
+**The cause is a class name that lives in a manifest meta-data *key*.** ML Kit discovers its components the
+Firebase way, and the merged manifest declares
+
+```xml
+<service android:name="com.google.mlkit.common.internal.MlKitComponentDiscoveryService">
+  <meta-data android:name="com.google.firebase.components:com.google.mlkit.common.internal.CommonComponentRegistrar"
+             android:value="com.google.firebase.components.ComponentRegistrar" />
+```
+
+AGP's generated `aapt_rules.txt` reads `android:name` on *components* — it does not go looking for class
+names spliced into meta-data keys. So R8 saw no caller for the registrar's no-arg constructor and removed
+it, while keeping the class: `mapping.txt` shows `CommonComponentRegistrar -> CommonComponentRegistrar`
+**with no members under it**, which is exactly what a plain `-keep class` leaves behind. The runtime said
+the same thing in one line — `NoSuchMethodException: CommonComponentRegistrar.<init> []` — and with
+discovery broken, building the scanner client died on a `requireNonNull` deep inside
+`mlkit_vision_document_scanner.zztp.<init>`. That NPE is what reached the log, retraced through this
+build's own mapping.
+
+**The fix is one rule**, and it is `-keepclassmembers` rather than `-keep` because the class was never the
+problem:
+
+```
+-keepclassmembers class * implements com.google.firebase.components.ComponentRegistrar {
+    <init>();
+}
+```
+
+Scoped to the interface, not to `com.google.mlkit.**`: the contract with the hole in it is Firebase's
+component discovery, and any registrar added later has the same hole. Verified both ways — `usage.txt` no
+longer lists the constructor among what was removed, and on the phone the minified build now opens
+`DocumentScanningActivity` with **zero** fallback lines.
+
+`app/proguard-rules.pro` said the next keep must arrive with the mapping or usage output that justifies it.
+This one did, and the file's opening claim — that it holds no keep rules — is amended rather than deleted,
+because *why* it held none for a day is still the useful part.
 
 ## §4 — Several photos on a tray ✅ built 2026-08-24
 
@@ -267,6 +337,54 @@ same wall, because Gradle uninstalls the test package after every run — so eac
 `…debug.test`, which is the case CLAUDE.md records as an outright refusal. What worked was installing both
 APKs plain and then running `am instrument` directly, which skips Gradle's install cycle entirely.
 
+
+### The upgrade watched on the phone, 2026-08-25 — the standing gate's rule 5 ✅
+
+The fixture had to be built, because nothing on the phone was at schema 7 any more: the `schema-7` tag
+(`ddb430a`) was built in a worktree, installed over the debug package with `-r -d`, and seeded through the
+app itself — Bijou and Nugget, 44 weighings, the whole medication and document graph, four droppings rows
+in each join table and **two symptom ticks**, which are the cascade canary.
+
+⚠️ **One value had to be injected, and it is the important one.** The schema-7 seeder never wrote a
+`trayPhotoPath` — the column MIGRATION_7_8 exists to move — so a seed alone would have proven the move
+against zero rows. Two observations were given paths pointing at real orphan files already in
+`files/photos/`, the database pushed back over `run-as` and checked byte-for-byte by md5 before the
+upgrade.
+
+Then the release-shaped build over the top, launched, and read:
+
+- The app **opened**. No refusal screen, no crash, and the seeded watch-expiry prompt still standing on
+  Nugget afterwards.
+- `user_version` **7 → 8**.
+- `scripts/upgrade-diff.py`: **nothing lost.** All 20 tables equal on shared columns, both tray photo
+  paths landed in `observation_photos` at `position` 0, `events` arrived present-and-empty, 24/24 media
+  files.
+
+**`upgrade-diff.py` had to be taught this migration first.** Its check 4 — the one for columns that *move*
+rather than vanish — knew only about MIGRATION_6_7's two droppings columns. `trayPhotoPath` is the same
+shape of blind spot: dropped from `observations`, so check 3 cannot compare it, and landing in a table
+check 3 has never seen. It now carries a general `COLUMN_MOVES` table and picks the moves this particular
+upgrade is on the hook for by asking the before-image which columns it has, so a 6 → 7 run and a 7 → 8 run
+each get exactly their own checks. Tested both ways against synthetic archives — a deliberately dropped
+path is reported and names `MIGRATION_7_8` — before it was ever pointed at the phone.
+
+### 🔴 "Release-shaped" has to mean `BuildConfig.DEBUG == false`, or it proves nothing
+
+The first attempt at this ran on a build that was minified and still debuggable, and it met the
+wipe-consent screen: *"This update has to clear the records on this phone. Records on this phone: format
+7. This version: format 8."*
+
+**That is correct behaviour, and that is what makes it dangerous.** `destructiveMigrationAllowed()` is
+`BuildConfig.DEBUG` (`BunnyDatabase.kt`), so a debug build registers **no migrations at all** and honestly
+offers to wipe. At a glance it is indistinguishable from the refusal screen 1.5 nearly shipped — and an
+upgrade proof run on a debuggable build is not a weaker proof, it is a proof of the wrong code path.
+
+So `-PreleaseShapedDebug` (`app/build.gradle.kts`) now sets `isMinifyEnabled = true` **and**
+`isDebuggable = false`, keeping the debug build's identity — the `.debug` suffix and the local signing key
+— while borrowing the release build's behaviour. It costs `run-as`, so the migrated database is read by
+installing an ordinary `assembleDebug` over the top afterwards: same package, same key, and an install
+never touches the data directory, so the rows that come back are the ones the release-shaped build
+migrated. The flag is off by default and no CI job passes it.
 ## §5 — Events and the timeline ✅ built 2026-08-25
 
 **ADR-0031** carries the decision. The owner's sentence was two requests wearing one coat — *"when was
@@ -329,8 +447,26 @@ stored row, so neither is offered while adding.
 ### Tests
 
 `TimelineTest` and `EventSweepTest` on the JVM, `EventRepositoryTest` on the phone — 9 green, and the
-whole instrumented suite green at 235 (2026-08-25). What is still owed is the part no test can hold: the
-timeline read on a real database, a notification landing on the day, and the hand-off opening a calendar.
+whole instrumented suite green at 235 (2026-08-25).
+
+**The part no test can hold, done by hand the same day** ✅, all three on the minified build:
+
+- **The timeline on a real database.** Sznycel's timeline drew *Coming up → August 2026 → Hay order, due
+  in 3 days* over *Already happened → July 2026 → Scratched eye, Dr Nowak · Jul 16, 2026* — a care
+  schedule and a vet visit, two different derived sources, grouped by month with upcoming above past.
+- **A notification landing on the day.** An event *Nail trim* dated today, then the sweep forced: a
+  notification on `channel=events`, titled *Nail trim*, reading *Today, for Sznycel.* The run also
+  produced, by coincidence, the argument for the fifth channel — the seed's own **care** reminder is also
+  called "Nail trim", so the shade held two notifications with the same title on two different channels,
+  one mutable without the other. That is the design point, observed rather than asserted.
+- **The calendar hand-off opening something.** `ACTION_INSERT` with a
+  `content://com.android.calendar/…` URI reached the chooser, and Google Calendar opened with **New
+  event: Nail trim, August 25** already filled in.
+
+ℹ️ One thing worth knowing: the editor flips to *Added to your calendar* when the intent is **launched**,
+not when the calendar saves — cancelling in Calendar still leaves `calendarHandedOffAt` stamped. That is
+the only honest option, since Binky never hears the outcome, and the copy beneath already says the two are
+not kept in step.
 
 ## §6 — A light/dark override in Settings ✅ built 2026-08-25
 
@@ -405,11 +541,34 @@ this answers *light or dark*, and the switch is not drawn at all below Android 1
 `settings_theme_system` says the same thing as `settings_language_system` in all nine languages, on
 purpose — the same promise about the same phone, and two wordings would read as two behaviours.
 
-### What is still owed
+### Proven on the phone, 2026-08-25 ✅
 
-Device proof, batched with the rest of the phase: the override held across a cold start, and the window
-background and scrim moving with it rather than with the phone. The API 26–28 claim is the one this phone
-cannot check — it is the same gap §1 ships with, and the same emulator matrix would close it.
+By pinning the phone's own night mode with `cmd uimode night` and then **sampling pixels** rather than
+eyeballing screenshots, so "the scrim moved too" is a number:
+
+| phone | app | background | status bar | nav bar |
+| --- | --- | --- | --- | --- |
+| Light | Dark | `(22,19,13)` | `(22,19,13)` | `(22,19,13)` |
+| Dark | Light | `(255,248,239)` | `(255,248,239)` | `(246,237,227)` |
+| Dark | System | `(22,19,13)` | `(22,19,13)` | `(22,19,13)` |
+
+Both divergent directions, so neither result can be the phone leaking through. The middle row is the
+one that matters: it survived a `force-stop` and a cold start, which is what the DataStore key plus the
+re-apply in `BinkyApplication.onCreate` exist for. All three chips also repaint **in place**, with no
+restart, from both entry paths.
+
+⚠️ **A measurement trap worth writing down.** *Same as this phone* takes about 2.5 s to settle, where
+*Light* and *Dark* are repainted inside 0.6 s — FOLLOW_SYSTEM goes through a real configuration recompute.
+A screenshot taken at 0.6 s catches the old frame and reads exactly like "switching to System does not
+repaint". It was recorded as a defect here for several minutes before a longer settle disproved it twice
+over.
+
+ℹ️ And the light-grey frame at the very start of a cold start is **HyperOS's window-open transition, not
+the app** — `(241,241,241)`, which matches neither the app's light `(255,248,239)` nor its dark
+`(22,19,13)`. Worth knowing before someone reports it as the flash this design exists to prevent.
+
+The API 26–28 claim is the one this phone cannot check — it is the same gap §1 ships with, and the same
+emulator matrix would close it.
 
 ## Standing decisions changed this phase
 
