@@ -20,11 +20,12 @@ What it asserts, in the order the failures actually happen:
   3. Every row of every surviving table is still there, compared on the
      columns the two schemas share. Added columns are not a loss; a dropped
      column is not compared, which is why 4 exists.
-  4. The droppings columns MIGRATION_6_7 takes off `observations` arrived in
-     the join tables that replaced them. A generic column diff cannot see this
-     — the columns are gone from both sides of the comparison by definition —
-     and it is the only place in the whole 1.0.0 -> 1.7 chain where an owner's
-     data physically moves between tables.
+  4. Every column a migration takes off `observations` arrived in the table
+     that replaced it — the two droppings columns under MIGRATION_6_7, and
+     `trayPhotoPath` under MIGRATION_7_8. A generic column diff cannot see any
+     of them — the column is gone from one side of the comparison by definition
+     — and they are the only places in the whole 1.0.0 -> 1.9 chain where an
+     owner's data physically moves between tables.
   5. Media files survived. "An update never loses an owner's data" is not
      only about rows.
 
@@ -52,13 +53,23 @@ DB_ENTRY = "database/bunny.db"
 # to differ between two versions. Comparing it would fail every honest upgrade.
 IGNORED_TABLES = {"room_master_table", "android_metadata", "sqlite_sequence"}
 
-# The one non-generic assertion: where MIGRATION_6_7 moved the two columns it
-# took off `observations`. (before_column, after_table) — the join tables store
-# the same enum *names*, since the house rule is that enums are stored by name
-# and never by ordinal, so a value migrates as itself with no translation.
-DROPPINGS_MOVES = [
-    ("droppingsForm", "observation_droppings_appearance"),
-    ("droppingsSize", "observation_droppings_sizes"),
+# The non-generic assertions: every place a migration *moved* a column off
+# `observations` rather than dropping it. Check 3 is blind to these by
+# definition — the column is gone from one side of the comparison, so a generic
+# diff has nothing to compare — and they are the only places in the whole
+# 1.0.0 -> 1.9 chain where an owner's data physically changes tables.
+#
+# (before_column, after_table, after_value_column, migration)
+COLUMN_MOVES = [
+    # The join tables store the same enum *names*, since the house rule is that
+    # enums are stored by name and never by ordinal, so a value migrates as
+    # itself with no translation.
+    ("droppingsForm", "observation_droppings_appearance", "value", "MIGRATION_6_7"),
+    ("droppingsSize", "observation_droppings_sizes", "value", "MIGRATION_6_7"),
+    # One tray photo path became a table holding up to six of them (phase 10,
+    # 10d). The old single path has to be *among* what landed, which is the same
+    # shape as the multi-valued droppings above rather than a new kind of check.
+    ("trayPhotoPath", "observation_photos", "path", "MIGRATION_7_8"),
 ]
 
 
@@ -232,36 +243,43 @@ def main():
 
         # 4 — the columns that moved rather than vanished.
         print()
-        if "observations" in t_before and "droppingsForm" in columns(before, "observations"):
-            for column, destination in DROPPINGS_MOVES:
-                if destination not in t_after:
-                    losses.append(
-                        f"`observations.{column}` was dropped and `{destination}` does not exist"
-                    )
-                    continue
+        was_there = columns(before, "observations") if "observations" in t_before else []
+        # Which moves this particular upgrade is even on the hook for: a 7 -> 8
+        # jump never had a droppingsForm to move, and a 6 -> 7 one never had a
+        # trayPhotoPath. Asking the before image is what tells them apart.
+        due = [move for move in COLUMN_MOVES if move[0] in was_there]
 
-                staged = before.execute(
-                    f'SELECT id, "{column}" FROM observations WHERE "{column}" IS NOT NULL'
-                ).fetchall()
-
-                landed = collections.Counter(
-                    after.execute(f'SELECT observationId, value FROM "{destination}"').fetchall()
+        for column, destination, value_column, migration in due:
+            if destination not in t_after:
+                losses.append(
+                    f"`observations.{column}` was dropped and `{destination}` does not exist"
                 )
-                # The join tables are multi-valued, so a single old value must be
-                # *among* what landed, not equal to all of it.
-                lost = [pair for pair in staged if landed[pair] == 0]
+                continue
 
-                status = "ok  " if not lost else "LOST"
-                print(f"  {status} observations.{column:18} {len(staged):5} value(s) "
-                      f"-> {destination}")
-                if lost:
-                    losses.append(
-                        f"{len(lost)} value(s) of `observations.{column}` did not arrive in "
-                        f"`{destination}`; first: {lost[0]!r}"
-                    )
-        else:
-            print("  ·    no droppingsForm/droppingsSize in the before image — "
-                  "nothing for MIGRATION_6_7 to move")
+            staged = before.execute(
+                f'SELECT id, "{column}" FROM observations WHERE "{column}" IS NOT NULL'
+            ).fetchall()
+
+            landed = collections.Counter(
+                after.execute(
+                    f'SELECT observationId, "{value_column}" FROM "{destination}"'
+                ).fetchall()
+            )
+            # The destinations are all multi-valued, so a single old value must be
+            # *among* what landed, not equal to all of it.
+            lost = [pair for pair in staged if landed[pair] == 0]
+
+            status = "ok  " if not lost else "LOST"
+            print(f"  {status} observations.{column:18} {len(staged):5} value(s) "
+                  f"-> {destination}")
+            if lost:
+                losses.append(
+                    f"{len(lost)} value(s) of `observations.{column}` did not arrive in "
+                    f"`{destination}` ({migration}); first: {lost[0]!r}"
+                )
+
+        if not due:
+            print("  ·    the before image holds no column any migration moves")
 
         # 5 — media is data too.
         print()
