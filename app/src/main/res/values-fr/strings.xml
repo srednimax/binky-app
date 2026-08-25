@@ -197,6 +197,8 @@
     <!-- Name first: "À propos de %1$s" would render "de Alice", and the app cannot elide a
          name the owner typed. Polish reorders this string for a case; French for an elision. -->
     <string name="home_about_bunny">%1$s — informations</string>
+    <string name="home_timeline_title">Chronologie</string>
+    <string name="home_timeline_open">Voir toute la chronologie</string>
     <string name="home_last_weight_label">Dernière pesée</string>
     <string name="home_last_weight_value">%1$s le %2$s</string>
     <string name="home_last_observation_label">Dernière observation</string>
@@ -397,6 +399,8 @@
          about it (ADR-0026). -->
     <string name="channel_doses_name">Doses de médicament</string>
     <string name="channel_doses_description">Un rappel à l’heure d’une dose que tu as programmée. Uniquement pendant un traitement en cours.</string>
+    <string name="channel_events_name">Événements</string>
+    <string name="channel_events_description">Un avis le jour de quelque chose que tu as noté — un rendez-vous, un anniversaire. Une fois par événement, le jour même.</string>
 
     <!-- Backup and restore (ADR-0005) -->
     <string name="backup_title">Sauvegarde et restauration</string>
@@ -820,6 +824,36 @@
 
     <!-- The vet directory, reached from More. App-wide, and it outlives the visits that name
          it (ADR-0017). -->
+    <string name="events_title">Chronologie</string>
+    <string name="event_which_bunny">La chronologie de qui ?</string>
+    <string name="events_empty">Rien encore dans la chronologie.</string>
+    <string name="events_empty_help">Les visites chez le vétérinaire et les soins que tu enregistres arrivent ici tout seuls. Ajoute un événement pour tout le reste qui mérite une date.</string>
+    <string name="event_add">Ajouter un événement</string>
+    <string name="events_upcoming">À venir</string>
+    <string name="events_past">Déjà passé</string>
+    <string name="timeline_vet_visit">Visite chez le vétérinaire</string>
+    <string name="timeline_care_done">Fait</string>
+    <string name="event_when_today">Aujourd’hui</string>
+    <string name="event_when_tomorrow">Demain</string>
+    <string name="event_when_in">Dans %1$s</string>
+    <string name="event_editor_add_title">Nouvel événement</string>
+    <string name="event_editor_edit_title">Modifier l’événement</string>
+    <string name="event_label">De quoi s’agit-il ?</string>
+    <string name="event_label_required">Donne-lui un nom, pour que la date veuille encore dire quelque chose dans un an.</string>
+    <string name="event_label_help">Ce que tu écrirais dans un agenda — « Stérilisation », « Arrivée à la maison », « Renouvellement de l’assurance ».</string>
+    <string name="event_note_label">Des notes, si tu veux</string>
+    <string name="event_date_label">C’est quand ?</string>
+    <string name="event_date_help">Passé ou futur, les deux conviennent. Binky te le dit une fois, le jour même.</string>
+    <string name="event_calendar_help">Transmet cette date à ton application de calendrier, où elle survivra à un nouveau téléphone. Binky ne garde pas les deux en phase ensuite — modifier l’événement ici ne change rien là-bas.</string>
+    <string name="event_delete_title">Supprimer cet événement ?</string>
+    <string name="event_delete_body">La date et sa note disparaissent. Rien d’autre dans la chronologie ne bouge.</string>
+    <string name="event_notification_today">Pour %1$s : c’est aujourd’hui.</string>
+    <plurals name="event_summary_title">
+        <item quantity="one">%d événement aujourd’hui</item>
+        <item quantity="many">%d événements aujourd’hui</item>
+        <item quantity="other">%d événements aujourd’hui</item>
+    </plurals>
+
     <string name="vets_title">Vétérinaires</string>
     <string name="vets_empty">Aucun vétérinaire pour l’instant. Ajoute le cabinet que tu fréquentes et n’importe quelle visite pourra le nommer — ou ajoutes-en un pendant que tu saisis une visite.</string>
     <string name="vet_add">Ajouter un vétérinaire</string>
@@ -964,6 +998,8 @@
     <string name="more_photos_summary">Les images d’un lapin, gardées sur ce téléphone.</string>
     <string name="more_documents">Documents</string>
     <string name="more_documents_summary">Les papiers scannés d’un lapin, gardés sur ce téléphone.</string>
+    <string name="more_events">Chronologie</string>
+    <string name="more_events_summary">Ce qui attend un lapin, et ce qui est déjà passé.</string>
     <string name="more_vets">Vétérinaires</string>
     <string name="more_vets_summary">Des noms et des numéros, partagés par tous les lapins.</string>
     <string name="more_settings">Paramètres</string>

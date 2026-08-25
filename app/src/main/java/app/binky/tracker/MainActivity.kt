@@ -18,6 +18,7 @@ import app.binky.tracker.ui.wipe.SchemaMismatchScreen
 import app.binky.tracker.work.EXTRA_CARE_BUNNY_ID
 import app.binky.tracker.work.EXTRA_DOSE_BUNNY_ID
 import app.binky.tracker.work.EXTRA_DOSE_COURSE_ID
+import app.binky.tracker.work.EXTRA_EVENT_BUNNY_ID
 import app.binky.tracker.work.EXTRA_OPEN_BACKUP
 import app.binky.tracker.work.EXTRA_WATCH_BUNNY_ID
 import app.binky.tracker.work.ReminderTap
@@ -135,7 +136,11 @@ private fun Intent?.reminderTap(): ReminderTap? {
     if (care != null) return ReminderTap.Care(care)
     val watch = this?.getStringExtra(EXTRA_WATCH_BUNNY_ID)
     if (watch != null) return ReminderTap.LogObservation(watch)
-    // Last, and deliberately: the two above are about an animal and this one is about a file.
+    // After the watch and before the backup, which is where the existing order puts it: these are
+    // about an animal and the one below is about a file.
+    val event = this?.getStringExtra(EXTRA_EVENT_BUNNY_ID)
+    if (event != null) return ReminderTap.Event(event)
+    // Last, and deliberately: the three above are about an animal and this one is about a file.
     if (this?.getBooleanExtra(EXTRA_OPEN_BACKUP, false) == true) return ReminderTap.OpenBackup
     return null
 }

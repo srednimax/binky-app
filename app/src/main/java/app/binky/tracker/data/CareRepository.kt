@@ -66,6 +66,16 @@ class CareRepository(
     fun events(reminderId: String): Flow<List<CareEventEntity>> = careDao.events(reminderId)
 
     /**
+     * **Every** completion this bunny has recorded, across all their reminders, each carrying enough
+     * of its reminder to be named — the timeline's read (ADR-0031).
+     *
+     * The one read here that crosses reminders, and the only caller that wants it: a timeline is
+     * history, and history does not care which reminder a completion came from. Everything else in
+     * this class is scoped to one reminder because everything else is about a schedule.
+     */
+    fun completions(bunnyId: String): Flow<List<CompletedCare>> = careDao.completionsForBunny(bunnyId)
+
+    /**
      * One reminder, watched — the `Flow`/`Now` pair every repository here draws (`bunny` /
      * `bunnyNow`). Null once the row is gone, which is how its own screen learns to close.
      */

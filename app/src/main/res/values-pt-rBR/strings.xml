@@ -278,6 +278,8 @@
          English's shape where Polish had to put the name first. See the header for the register
          one step away where it would not have. -->
     <string name="home_about_bunny">Sobre %1$s</string>
+    <string name="home_timeline_title">Linha do tempo</string>
+    <string name="home_timeline_open">Ver a linha do tempo inteira</string>
     <string name="home_last_weight_label">Última pesagem</string>
     <string name="home_last_weight_value">%1$s em %2$s</string>
     <string name="home_last_observation_label">Última observação</string>
@@ -481,6 +483,8 @@
     <string name="channel_backup_description">Um aviso ocasional para exportar seus registros, no intervalo que você escolheu. Nada a ver com nenhum coelho.</string>
     <string name="channel_doses_name">Doses de medicamento</string>
     <string name="channel_doses_description">Um lembrete na hora de uma dose que você agendou. Só enquanto um tratamento está em andamento.</string>
+    <string name="channel_events_name">Eventos</string>
+    <string name="channel_events_description">Um aviso no dia de algo que você anotou — uma consulta, um aniversário. Uma vez por evento, no próprio dia.</string>
 
     <!-- Backup and restore (ADR-0005). See the header on the word "backup" itself. -->
     <string name="backup_title">Backup e restauração</string>
@@ -900,6 +904,36 @@
     <string name="visit_delete_remove_weighing">Excluir a pesagem também</string>
 
     <!-- The vet directory, reached from More. App-wide (ADR-0017). -->
+    <string name="events_title">Linha do tempo</string>
+    <string name="event_which_bunny">Linha do tempo de quem?</string>
+    <string name="events_empty">Ainda não há nada na linha do tempo.</string>
+    <string name="events_empty_help">Consultas veterinárias e os cuidados que você registra aparecem aqui sozinhos. Adicione um evento para qualquer outra coisa que mereça uma data.</string>
+    <string name="event_add">Adicionar um evento</string>
+    <string name="events_upcoming">A caminho</string>
+    <string name="events_past">Já aconteceu</string>
+    <string name="timeline_vet_visit">Consulta veterinária</string>
+    <string name="timeline_care_done">Feito</string>
+    <string name="event_when_today">Hoje</string>
+    <string name="event_when_tomorrow">Amanhã</string>
+    <string name="event_when_in">Daqui a %1$s</string>
+    <string name="event_editor_add_title">Novo evento</string>
+    <string name="event_editor_edit_title">Editar evento</string>
+    <string name="event_label">Do que se trata?</string>
+    <string name="event_label_required">Dê um nome a ele, para que a data ainda signifique algo daqui a um ano.</string>
+    <string name="event_label_help">O que você escreveria numa agenda — “Castração”, “Chegou em casa”, “Renovação do seguro”.</string>
+    <string name="event_note_label">Anotações, se você quiser</string>
+    <string name="event_date_label">Quando é?</string>
+    <string name="event_date_help">Passado ou futuro, os dois servem. O Binky avisa uma vez, no próprio dia.</string>
+    <string name="event_calendar_help">Entrega esta data ao seu app de calendário, onde ela sobrevive a um celular novo. O Binky não mantém os dois em sincronia depois disso — editar o evento aqui não muda nada lá.</string>
+    <string name="event_delete_title">Excluir este evento?</string>
+    <string name="event_delete_body">A data e a anotação dela somem. Nada mais na linha do tempo é mexido.</string>
+    <string name="event_notification_today">%1$s: é hoje.</string>
+    <plurals name="event_summary_title">
+        <item quantity="one">%d evento hoje</item>
+        <item quantity="many">%d eventos hoje</item>
+        <item quantity="other">%d eventos hoje</item>
+    </plurals>
+
     <string name="vets_title">Veterinários</string>
     <string name="vets_empty">Nenhum veterinário ainda. Adicione a clínica que você usa e qualquer consulta pode citá-la — ou adicione um enquanto digita uma consulta.</string>
     <string name="vet_add">Adicionar um veterinário</string>
@@ -1046,6 +1080,8 @@
     <string name="more_photos_summary">Fotos de um coelho, guardadas neste celular.</string>
     <string name="more_documents">Documentos</string>
     <string name="more_documents_summary">Papelada digitalizada de um coelho, guardada neste celular.</string>
+    <string name="more_events">Linha do tempo</string>
+    <string name="more_events_summary">O que vem por aí para um coelho e o que já aconteceu.</string>
     <string name="more_vets">Veterinários</string>
     <string name="more_vets_summary">Nomes e telefones, compartilhados por todos os coelhos.</string>
     <string name="more_settings">Configurações</string>

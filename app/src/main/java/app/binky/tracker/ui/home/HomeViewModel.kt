@@ -22,6 +22,9 @@ import app.binky.tracker.ui.bunny.BunnyActions
 import app.binky.tracker.ui.bunny.BunnyDialog
 import app.binky.tracker.ui.bunny.BunnyProfile
 import app.binky.tracker.ui.bunny.toProfile
+import app.binky.tracker.ui.events.TimelineEntry
+import app.binky.tracker.ui.events.buildTimeline
+import app.binky.tracker.ui.events.timelineHighlights
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,10 +32,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 /**
  * ADR-0015's vitals card: what the record says about this bunny right now — last weight, last
@@ -70,6 +74,19 @@ data class HomeUiState(
     val vitals: Map<String, BunnyVitals> = emptyMap(),
     val unit: WeightUnit = WeightUnit.KILOGRAMS,
     val dialog: BunnyDialog? = null,
+    /**
+     * The next thing owed and the last two that happened, for the one bunny on screen (ADR-0031).
+     *
+     * **Empty under "All bunnies"**, and not because it is hidden there: a timeline is one rabbit's
+     * agenda, and the dashboard already gives each of them a card. Empty also for a bunny with
+     * nothing dated at all, which is what makes the card absent rather than an empty box.
+     */
+    val timeline: List<TimelineEntry> = emptyList(),
+    /**
+     * The day [timeline] was built against — carried because every row needs it to say *Today* or
+     * *In 3 days*, and reading the clock in a composable would answer differently each recomposition.
+     */
+    val timelineToday: LocalDate = LocalDate.now(),
 ) {
     /** An archived bunny is a read-only scope: no write actions (ADR-0015). */
     val readOnly: Boolean get() = selection.readOnlyScope
@@ -119,16 +136,20 @@ class HomeViewModel(
                 unit = unit,
             )
         }.flatMapLatest { shown ->
-            vitals(shown.profiles, liveState = !shown.selection.readOnlyScope)
-                .map { vitals ->
-                    HomeUiState(
-                        selection = shown.selection,
-                        profiles = shown.profiles,
-                        vitals = vitals,
-                        unit = shown.unit,
-                        dialog = shown.dialog,
-                    )
-                }
+            combine(
+                vitals(shown.profiles, liveState = !shown.selection.readOnlyScope),
+                highlights(shown.profiles, shown.selection),
+            ) { vitals, timeline ->
+                HomeUiState(
+                    selection = shown.selection,
+                    profiles = shown.profiles,
+                    vitals = vitals,
+                    unit = shown.unit,
+                    dialog = shown.dialog,
+                    timeline = timeline.entries,
+                    timelineToday = timeline.today,
+                )
+            }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     /**
@@ -150,6 +171,58 @@ class HomeViewModel(
         } else {
             combine(profiles.map { profile -> vitalsFor(profile, liveState) }) { entries -> entries.toMap() }
         }
+
+    /** [highlights]' answer: the rows, and the day they were built against. */
+    private data class Highlights(
+        val today: LocalDate,
+        val entries: List<TimelineEntry>,
+    )
+
+    /**
+     * Home's slice of the timeline — the next thing owed and the last two that happened.
+     *
+     * **Four more flows, and only ever four**, because this is built for the single-bunny selection
+     * alone. Deliberately *not* folded into [vitalsFor]: that one fans out per profile, so putting
+     * the timeline in it would cost four reads per rabbit under "All bunnies" to render a card that
+     * screen does not draw — which is exactly the quiet multiplication [vitals] warns about.
+     *
+     * Derived from the same [buildTimeline] the timeline screen renders rather than from a second
+     * query with its own ordering: a card that disagreed with the screen it links to would be worse
+     * than no card at all (ADR-0031).
+     */
+    private fun highlights(
+        profiles: List<BunnyProfile>,
+        selection: BunnySelection,
+    ): Flow<Highlights> {
+        val today = LocalDate.now()
+        // `singleOrNull` is the whole condition: "All bunnies" hands several profiles and the empty
+        // and loading selections hand none, so only a single bunny — active or archived — gets past
+        // it. The archived one does too, and should: the record is what an archive keeps.
+        val bunnyId =
+            profiles.singleOrNull()?.takeIf { selection != BunnySelection.All }?.id
+                ?: return flowOf(Highlights(today, emptyList()))
+        val zone = ZoneId.systemDefault()
+        return combine(
+            container.eventRepository.events(bunnyId),
+            container.visitRepository.visits(bunnyId),
+            container.careRepository.completions(bunnyId),
+            container.careRepository.schedule(bunnyId, zone),
+        ) { events, visits, completions, schedule ->
+            Highlights(
+                today = today,
+                entries =
+                    timelineHighlights(
+                        buildTimeline(
+                            events = events,
+                            visits = visits,
+                            completions = completions,
+                            careDue = schedule,
+                            today = today,
+                        ),
+                    ),
+            )
+        }
+    }
 
     /**
      * [liveState] is false in the archived scope, and it governs **both** derived facts — the trend

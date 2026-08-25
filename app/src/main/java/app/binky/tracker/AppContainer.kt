@@ -12,6 +12,7 @@ import app.binky.tracker.data.BunnySelection
 import app.binky.tracker.data.CareRepository
 import app.binky.tracker.data.DocumentRepository
 import app.binky.tracker.data.DoseAlarmScheduler
+import app.binky.tracker.data.EventRepository
 import app.binky.tracker.data.FluffleRepository
 import app.binky.tracker.data.MedicationRepository
 import app.binky.tracker.data.ObservationRepository
@@ -35,6 +36,7 @@ import app.binky.tracker.scan.CameraDocumentScanner
 import app.binky.tracker.scan.DocumentScanner
 import app.binky.tracker.scan.MlKitDocumentScanner
 import app.binky.tracker.work.CareNotifier
+import app.binky.tracker.work.EventNotifier
 import app.binky.tracker.work.ExportNotifier
 import app.binky.tracker.work.WatchNotifier
 import app.binky.tracker.work.rescheduleDoseAlarm
@@ -180,6 +182,12 @@ class AppContainer(
 
     val careRepository = CareRepository(database)
 
+    /**
+     * The dated labels an owner keeps (ADR-0031). The database alone: an event has no media, no
+     * derived schedule and no second source to reconcile.
+     */
+    val eventRepository = EventRepository(database)
+
     val vetRepository = VetRepository(database)
 
     /**
@@ -226,6 +234,12 @@ class AppContainer(
      * an observation landing for that bunny — or the watch being closed — cancels.
      */
     val watchNotifier = WatchNotifier(appContext)
+
+    /**
+     * The event sweep's other end (ADR-0031). The same shape and the same reason as [careNotifier]:
+     * the sweep posts, and deleting the event — or its bunny — cancels.
+     */
+    val eventNotifier = EventNotifier(appContext)
 
     /**
      * The export prompt's other end (ADR-0005). The odd one out of the three: it is about the app

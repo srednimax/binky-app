@@ -69,8 +69,38 @@ fun Context.addCareToCalendar(
     title: String,
     dueOn: LocalDate,
     interval: CareInterval,
+): Boolean = handOffToCalendar(title = title, on = dueOn, rrule = careRrule(interval))
+
+/**
+ * The same hand-off for a dated event (ADR-0031), and it is **the same call with the `RRULE` left
+ * out** — which is the whole of what ADR-0014 costs to extend.
+ *
+ * No repeat rule because an event has no recurrence: one that repeated would be a care reminder, and
+ * two spellings of one fact is what this codebase keeps refusing. A one-off in a calendar is simply a
+ * one-off.
+ *
+ * It lives in this file rather than in `ui/events/` because the file is about the *hand-off* rather
+ * than about care — the ownership rule at the top ("no event id is stored, so editing here changes
+ * nothing out there") is the part that must not be re-derived from scratch by a second caller.
+ */
+fun Context.addEventToCalendar(
+    title: String,
+    on: LocalDate,
+): Boolean = handOffToCalendar(title = title, on = on, rrule = null)
+
+/**
+ * The one `ACTION_INSERT`, with or without a repeat.
+ *
+ * Kotlin note: `apply` runs a block on the receiver and returns it, so the optional extra is added
+ * in place rather than by building two intents — closer to a conditional spread in an object literal
+ * than to a ternary.
+ */
+private fun Context.handOffToCalendar(
+    title: String,
+    on: LocalDate,
+    rrule: String?,
 ): Boolean {
-    val begin = careCalendarBeginMillis(dueOn)
+    val begin = careCalendarBeginMillis(on)
     val intent =
         Intent(Intent.ACTION_INSERT)
             .setData(CalendarContract.Events.CONTENT_URI)
@@ -79,9 +109,9 @@ fun Context.addCareToCalendar(
             .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, begin)
             // One whole day: an all-day event ends at the start of the next one.
             .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, begin + MILLIS_IN_DAY)
-            .putExtra(CalendarContract.Events.RRULE, careRrule(interval))
             // Launched from a screen, but the receiver is another app's task.
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            .apply { if (rrule != null) putExtra(CalendarContract.Events.RRULE, rrule) }
     return try {
         startActivity(intent)
         true

@@ -109,6 +109,8 @@ abstract class BunnyDatabase : RoomDatabase() {
 
     abstract fun careDao(): CareDao
 
+    abstract fun eventDao(): EventDao
+
     abstract fun watchDao(): WatchDao
 
     abstract fun vetDao(): VetDao

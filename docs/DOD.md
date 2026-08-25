@@ -56,7 +56,7 @@ Play quality notices against release 386, and one settings request.
 | **10b** | The ML Kit delegate stops being portrait-locked | ✅ **built 2026-08-24**, device check owed |
 | **10c** | R8 on | ✅ **built 2026-08-24**, device proof owed |
 | **10d** | Several photos on a tray — **schema 8** | ✅ **built 2026-08-24**, device proof owed |
-| **10e** | Events: a timeline, and dated events an owner writes — **same schema 8** | open |
+| **10e** | Events: a timeline, and dated events an owner writes — **same schema 8** | ✅ **built 2026-08-25**, device proof owed |
 | **10f** | A light/dark override in Settings | open |
 
 **One edge must not be reordered**: **10c before 10d/10e**, so every artifact check after R8 goes on
@@ -175,22 +175,31 @@ own shape for the multi-valued droppings fields. Amendment on **ADR-0029**, not 
 `CREATE INDEX` in `MIGRATION_7_8` is a byte-for-byte transcription of the exported shape. That is the
 house rule stated in the migration's own doc, and now the way it was actually checked.
 
-### 10e — Events (same schema 8)
+### 10e — Events ✅ built 2026-08-25 (same schema 8)
 
 Owner request, 2026-08-23: *"a calendar or event list — when was the last vet visit, the last nail trim,
 or other events the user would like to remember."* An agenda derived from records that already exist,
-plus a new dated record an owner writes. **ADR-0031** owed.
+plus a new dated record an owner writes. **[ADR-0031](adr/0031-an-event-is-a-dated-label-and-the-timeline-is-derived.md)**
+carries it; the build record is [`phase-10.md`](phase-10.md) §5.
 
-- [ ] `events` table — per bunny, free label, **no type enum and no recurrence** (care reminders own
+- [x] `events` table — per bunny, free label, **no type enum and no recurrence** (care reminders own
       repetition; two spellings of one fact is what this codebase keeps refusing). Folded into the same
-      `MIGRATION_7_8`.
-- [ ] The timeline **stores nothing** — merged from `EventDao`, `VetDao.detailsForBunny`,
-      `CareDao.events`/`latestCompletions` and `CareSchedule.scheduleFor`. Weighings, observations and
-      doses stay out of the default set; each already owns a screen.
-- [ ] Entry points: a row in `MoreScreen` and a compact card on Home. **No sixth bottom tab** (ADR-0015).
-- [ ] Reminding via the one daily sweep (ADR-0024), never an exact alarm (ADR-0003).
-- [ ] ADR-0014's calendar hand-off extends to an event for free — same `ACTION_INSERT`, no `RRULE`.
-- [ ] Copy ×9.
+      `MIGRATION_7_8`, so **no second migration and no `BUNNY_SCHEMA_VERSION` change**.
+- [x] The timeline **stores nothing** — `ui/events/Timeline.kt` merges `EventDao`, `VisitRepository`,
+      a new `CareDao.completionsForBunny` join and `CareSchedule`. Weighings, observations and doses
+      stay out of the default set; each already owns a screen.
+- [x] Entry points: the **first** row in `MoreScreen` and a compact card on Home from
+      `timelineHighlights(sections, 1, 2)`. **No sixth bottom tab** (ADR-0015).
+- [x] Reminding via the one daily sweep (ADR-0024), never an exact alarm (ADR-0003) — a **fifth
+      notification channel**, because muting weekly care nagging must not mute next Thursday's
+      neutering.
+- [x] ADR-0014's calendar hand-off extends to an event for free — same `ACTION_INSERT`, no `RRULE`.
+- [x] Copy ×9 — 31 new resources, gate green.
+- [x] JVM: `TimelineTest`, `EventSweepTest`. Instrumented: `EventRepositoryTest` (round-trip, the day
+      query, both stamps, the cascade on bunny delete) — **9 green on the phone, 2026-08-25**, and the
+      whole instrumented suite green at 235.
+- [ ] Device proof by hand, with the rest of the phase's device work: the timeline on a real database,
+      an event notification landing on the day, and the calendar hand-off opening something.
 
 ### 10f — A light/dark override in Settings
 

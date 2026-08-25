@@ -30,6 +30,15 @@ const val EXTRA_CARE_BUNNY_ID = "app.binky.tracker.extra.CARE_BUNNY_ID"
 const val EXTRA_WATCH_BUNNY_ID = "app.binky.tracker.extra.WATCH_BUNNY_ID"
 
 /**
+ * The extra an event notice carries: **whose** event it is (ADR-0031).
+ *
+ * A third per-bunny extra rather than a third meaning for one of the two above, for the reason the
+ * watch nag's exists: three extras each landing somewhere different is checkable, and one extra plus
+ * an unwritten convention about which screen wanted it is how the wrong screen eventually gets it.
+ */
+const val EXTRA_EVENT_BUNNY_ID = "app.binky.tracker.extra.EVENT_BUNNY_ID"
+
+/**
  * The flag the export prompt carries. **No bunny**, and that is the point: a backup reminder hangs
  * off the app rather than off any animal (ADR-0005), so there is nothing to select and one
  * destination to open.
@@ -56,6 +65,14 @@ sealed interface ReminderTap {
      * whether the owner has looked and the form is the answer.
      */
     data class LogObservation(
+        val bunnyId: String,
+    ) : ReminderTap
+
+    /**
+     * This bunny's events, where an event notice lands — the timeline is what an owner opens after
+     * being told something is on today, and the event they were told about is on it.
+     */
+    data class Event(
         val bunnyId: String,
     ) : ReminderTap
 
@@ -191,6 +208,10 @@ private fun Context.openAppIntent(tap: ReminderTap): PendingIntent {
                 intent.putExtra(EXTRA_WATCH_BUNNY_ID, tap.bunnyId)
                 tap.bunnyId.hashCode() xor TAP_OBSERVATION_SALT
             }
+            is ReminderTap.Event -> {
+                intent.putExtra(EXTRA_EVENT_BUNNY_ID, tap.bunnyId)
+                tap.bunnyId.hashCode() xor TAP_EVENT_SALT
+            }
             ReminderTap.OpenBackup -> {
                 intent.putExtra(EXTRA_OPEN_BACKUP, true)
                 TAP_BACKUP_REQUEST
@@ -220,6 +241,9 @@ private const val TAP_OBSERVATION_SALT = 0x4F62_7376
 
 /** The same, for the per-course space a dose tap lives in. */
 private const val TAP_MEDICATION_SALT = 0x4D65_6473
+
+/** And again for events, which are per bunny like care and the watch nag and must not collapse into either. */
+private const val TAP_EVENT_SALT = 0x4576_5461
 
 /**
  * The export prompt's request code — a constant, because there is one export reminder and it always

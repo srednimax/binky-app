@@ -60,6 +60,8 @@ import app.binky.tracker.ui.care.MedicationCourseScreen
 import app.binky.tracker.ui.care.VisitEditorScreen
 import app.binky.tracker.ui.documents.DocumentScreen
 import app.binky.tracker.ui.documents.DocumentsScreen
+import app.binky.tracker.ui.events.EventEditorScreen
+import app.binky.tracker.ui.events.EventsScreen
 import app.binky.tracker.ui.home.HomeScreen
 import app.binky.tracker.ui.more.MoreScreen
 import app.binky.tracker.ui.observations.ChooseBunnyDialog
@@ -279,6 +281,10 @@ private fun AppShell(
     // flag would answer each other's question.
     var choosingDocumentBunny by rememberSaveable { mutableStateOf(false) }
 
+    // And once more for the timeline, which is per bunny for the same reason: "All bunnies" is not
+    // one agenda but several. Its own flag, so no two of these dialogs can answer each other.
+    var choosingEventBunny by rememberSaveable { mutableStateOf(false) }
+
     // The snackbar host belongs to the **same** Scaffold as the FAB, or the two lay out in ignorance
     // of each other and the FAB covers the snackbar's action — which for the healthy day means an
     // Undo the owner can see and cannot press. Material3's Scaffold lifts the FAB above whatever its
@@ -309,13 +315,14 @@ private fun AppShell(
         // list would send an honest tap to Home.
         if (state.selection == BunnySelection.Loading) return@LaunchedEffect
 
-        // Kotlin note: `when` over a sealed interface is exhaustive without an `else`, so a fourth
+        // Kotlin note: `when` over a sealed interface is exhaustive without an `else`, so another
         // destination would stop this compiling rather than silently falling through to Home.
         val target =
             when (tap) {
                 is ReminderTap.Care -> tap.bunnyId
                 is ReminderTap.LogObservation -> tap.bunnyId
                 is ReminderTap.Medication -> tap.bunnyId
+                is ReminderTap.Event -> tap.bunnyId
                 // "The app as it stands" means exactly that: nothing to select and nowhere to send
                 // them, so the stack is left where the owner last had it.
                 ReminderTap.OpenApp -> {
@@ -351,6 +358,14 @@ private fun AppShell(
                 is ReminderTap.Medication -> {
                     backStack.showTopLevel(TopLevelDestination.CARE)
                     backStack.add(MedicationCourse(tap.courseId))
+                }
+                // More first, then the timeline on top of it — the same two-entry stack, and
+                // the tab under it is where the timeline is normally reached from. The event's own
+                // screen is deliberately *not* pushed: the notice names the day rather than one
+                // row, and a day can hold several (ADR-0031).
+                is ReminderTap.Event -> {
+                    backStack.showTopLevel(TopLevelDestination.MORE)
+                    backStack.add(Events(target))
                 }
                 ReminderTap.OpenApp, ReminderTap.OpenBackup -> Unit
             }
@@ -452,6 +467,10 @@ private fun AppShell(
                                     shellViewModel.selectBunny(housemate.id)
                                 }
                             },
+                            // Straight to the key, without touching the selection: the card is
+                            // already drawn for the bunny on screen, so the id it hands back is the
+                            // one whose timeline it slices (ADR-0031).
+                            onOpenTimeline = { bunnyId -> backStack.add(Events(bunnyId)) },
                         )
                     }
                     entry<Weight> {
@@ -543,8 +562,23 @@ private fun AppShell(
                             onOpenVets = { backStack.add(Vets) },
                             // Never inert and never bunny-scoped: a bug report is about the app.
                             onOpenSupport = { backStack.add(Support) },
-                            // Null while there is no bunny to have photos of — the row is then one
-                            // of ADR-0015's inert entries rather than a way into an empty screen.
+                            // Null while there is no bunny to have a timeline — the row is then
+                            // one of ADR-0015's inert entries rather than a way into an empty screen.
+                            onOpenEvents =
+                                if (state.hasBunnyInScope) {
+                                    {
+                                        val bunnyId = state.selection.bunnyId
+                                        if (bunnyId != null) {
+                                            backStack.add(Events(bunnyId))
+                                        } else {
+                                            choosingEventBunny = true
+                                        }
+                                    }
+                                } else {
+                                    null
+                                },
+                            // The same rule again — the row is inert rather than a way into an
+                            // empty screen.
                             onOpenPhotos =
                                 if (state.hasBunnyInScope) {
                                     {
@@ -688,6 +722,29 @@ private fun AppShell(
                             onBack = { backStack.removeLastOrNull() },
                         )
                     }
+                    entry<Events> { key ->
+                        EventsScreen(
+                            bunnyId = key.bunnyId,
+                            // The archived scope is the only read-only one, and it pins exactly the
+                            // bunny this key carries, so the shell's flag is the right answer here.
+                            readOnly = state.readOnly,
+                            onBack = { backStack.removeLastOrNull() },
+                            onAddEvent = { backStack.add(EventEditor(key.bunnyId)) },
+                            onOpenEvent = { eventId -> backStack.add(EventEditor(key.bunnyId, eventId)) },
+                            // The other three kinds tap back through to the screen that owns them,
+                            // which is what keeps a derived list from becoming a second place to
+                            // change things (ADR-0031).
+                            onOpenVisit = { visitId -> backStack.add(VisitEditor(key.bunnyId, visitId)) },
+                            onOpenCareReminder = { reminderId -> backStack.add(CareReminder(reminderId)) },
+                        )
+                    }
+                    entry<EventEditor> { key ->
+                        EventEditorScreen(
+                            bunnyId = key.bunnyId,
+                            eventId = key.eventId,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
                     entry<PhotoGallery> { key ->
                         PhotoGalleryScreen(
                             bunnyId = key.bunnyId,
@@ -754,6 +811,18 @@ private fun AppShell(
                 backStack.add(PhotoGallery(bunnyId))
             },
             onDismiss = { choosingGalleryBunny = false },
+        )
+    }
+
+    if (choosingEventBunny) {
+        ChooseBunnyDialog(
+            title = stringResource(R.string.event_which_bunny),
+            bunnies = state.activeBunnies,
+            onPick = { bunnyId ->
+                choosingEventBunny = false
+                backStack.add(Events(bunnyId))
+            },
+            onDismiss = { choosingEventBunny = false },
         )
     }
 

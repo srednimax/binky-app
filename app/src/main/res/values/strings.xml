@@ -66,6 +66,10 @@
          has to put the name first because "o" governs the locative and a name the owner typed
          cannot be declined by the app. -->
     <string name="home_about_bunny">About %1$s</string>
+    <!-- Home's slice of the timeline (ADR-0031): the next thing owed and the last two that
+         happened, with the way into the whole agenda. A pointer at the timeline, not a copy of it. -->
+    <string name="home_timeline_title">Timeline</string>
+    <string name="home_timeline_open">See the whole timeline</string>
     <string name="home_last_weight_label">Last weighing</string>
     <string name="home_last_weight_value">%1$s on %2$s</string>
     <string name="home_last_observation_label">Last observation</string>
@@ -315,6 +319,11 @@
          to do about it — Binky records doses and never advises on them (ADR-0026). -->
     <string name="channel_doses_name">Medication doses</string>
     <string name="channel_doses_description">A reminder at the time of a dose you have scheduled. Only while a course of medication is running.</string>
+    <!-- The fifth channel. Separate from care reminders because it is the opposite kind of thing:
+         a care reminder repeats forever and an event happens once, so an owner who has muted the
+         weekly nagging must still hear about next Thursday's neutering (ADR-0031). -->
+    <string name="channel_events_name">Events</string>
+    <string name="channel_events_description">A notice on the day of something you noted down — an appointment, an anniversary. Once each, on the day itself.</string>
 
     <!-- Backup and restore (ADR-0005). The photo-gallery warning is not decoration: photos are the
          least protected data in the app, and ADR-0001's rule about silence says a gap the owner
@@ -740,6 +749,46 @@
     <string name="visit_delete_keep_weighing">Keep the weighing on its own</string>
     <string name="visit_delete_remove_weighing">Delete the weighing too</string>
 
+    <!-- Events and the timeline they sit in (ADR-0031). An event is a dated label the owner typed;
+         the timeline merges it with vet visits, care completions and next-due dates, and stores
+         nothing. A row never names its own kind out loud — that is which table it came from, which
+         is the app's business rather than the owner's — so what distinguishes the kinds is the
+         shape of the second line: a due date says "Due", a completion says "Done", a visit names
+         the vet, and an event just says when. -->
+    <string name="events_title">Timeline</string>
+    <string name="event_which_bunny">Whose timeline?</string>
+    <string name="events_empty">Nothing on the timeline yet.</string>
+    <string name="events_empty_help">Vet visits and the care you record turn up here on their own. Add an event for anything else worth a date.</string>
+    <string name="event_add">Add an event</string>
+    <string name="events_upcoming">Coming up</string>
+    <string name="events_past">Already happened</string>
+    <string name="timeline_vet_visit">Vet visit</string>
+    <string name="timeline_care_done">Done</string>
+    <!-- An event's own voice for a near date, which is the care reminder's wording with "Due" taken
+         off the front: an adoption day is not due, it simply arrives. -->
+    <string name="event_when_today">Today</string>
+    <string name="event_when_tomorrow">Tomorrow</string>
+    <string name="event_when_in">In %1$s</string>
+    <string name="event_editor_add_title">New event</string>
+    <string name="event_editor_edit_title">Edit event</string>
+    <string name="event_label">What is it?</string>
+    <string name="event_label_required">Give it a name, so the date still means something in a year.</string>
+    <string name="event_label_help">Whatever you would write in a diary — “Neutering”, “Came home”, “Insurance renews”.</string>
+    <string name="event_note_label">Notes, if you want them</string>
+    <string name="event_date_label">When is it?</string>
+    <!-- The one date field in the app that accepts the future, and it says so: every other one is a
+         record of something that happened, and an owner who has met those has no reason to expect
+         this one to differ. -->
+    <string name="event_date_help">Past or future, both are fine. Binky tells you once, on the day itself.</string>
+    <string name="event_calendar_help">Hands this one date to your calendar app, where it survives a new phone. Binky does not keep the two in step afterwards — editing the event here changes nothing there.</string>
+    <string name="event_delete_title">Delete this event?</string>
+    <string name="event_delete_body">The date and its note go. Nothing else on the timeline is touched.</string>
+    <string name="event_notification_today">Today, for %1$s.</string>
+    <plurals name="event_summary_title">
+        <item quantity="one">%d event today</item>
+        <item quantity="other">%d events today</item>
+    </plurals>
+
     <!-- The vet directory, reached from More. App-wide, because a household's bunnies see the same
          vet, and it outlives the visits that name it (ADR-0017). -->
     <string name="vets_title">Vets</string>
@@ -891,6 +940,8 @@
     <string name="more_photos_summary">Pictures of one bunny, kept on this phone.</string>
     <string name="more_documents">Documents</string>
     <string name="more_documents_summary">Scanned paperwork for one bunny, kept on this phone.</string>
+    <string name="more_events">Timeline</string>
+    <string name="more_events_summary">What is coming up for one bunny, and what already happened.</string>
     <string name="more_vets">Vets</string>
     <string name="more_vets_summary">Names and numbers, shared by every bunny.</string>
     <string name="more_settings">Settings</string>

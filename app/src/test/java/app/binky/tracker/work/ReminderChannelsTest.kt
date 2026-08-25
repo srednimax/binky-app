@@ -39,14 +39,18 @@ class ReminderChannelsTest {
     }
 
     @Test
-    fun `there are exactly four channels, and they are the four this release has behind them`() {
+    fun `there are exactly five channels, and they are the five this release has behind them`() {
         // One per thing that posts, and no more. A channel is the owner's only per-kind control:
         // muting a daily watch nag must not mute an annual vaccination, deciding a monthly "make a
         // backup" prompt is not for you must not cost either of the other two, and muting doses must
-        // not follow from any of the three. `backup` arrived in 4e and `doses` in 5a, each with
-        // something behind it — this test is what makes an addition a deliberate act rather than a
-        // passing convenience.
-        assertEquals(setOf("care", "watch", "backup", "doses"), ReminderChannel.entries.map { it.id }.toSet())
+        // not follow from any of the three. `backup` arrived in 4e, `doses` in 5a and `events` in
+        // 10e — care is a job the app is asking for and an event is a day the owner asked to be
+        // reminded of, which is a distinction the per-channel switch is the only place to act on.
+        // This test is what makes an addition a deliberate act rather than a passing convenience.
+        assertEquals(
+            setOf("care", "watch", "events", "backup", "doses"),
+            ReminderChannel.entries.map { it.id }.toSet(),
+        )
     }
 
     @Test

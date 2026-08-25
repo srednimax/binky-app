@@ -200,6 +200,8 @@
     <string name="home_empty_body">Додай першого кролика, щоб почати вести записи.</string>
     <string name="home_all_bunnies_stub">Торкнися кролика, щоб відкрити його.</string>
     <string name="home_about_bunny">Про кролика %1$s</string>
+    <string name="home_timeline_title">Хронологія</string>
+    <string name="home_timeline_open">Переглянути всю хронологію</string>
     <string name="home_last_weight_label">Останнє зважування</string>
     <string name="home_last_weight_value">%1$s, %2$s</string>
     <string name="home_last_observation_label">Останнє спостереження</string>
@@ -393,6 +395,8 @@
     <string name="channel_backup_description">Час від часу — підказка експортувати записи, з обраним тобою інтервалом. Жодного стосунку до кроликів.</string>
     <string name="channel_doses_name">Дози ліків</string>
     <string name="channel_doses_description">Нагадування в час запланованої тобою дози. Лише поки триває курс лікування.</string>
+    <string name="channel_events_name">Події</string>
+    <string name="channel_events_description">Сповіщення в день того, що є в записах — візит, річниця. Один раз на подію, саме того дня.</string>
 
     <!-- Backup and restore (ADR-0005) -->
     <string name="backup_title">Резервні копії та відновлення</string>
@@ -794,6 +798,37 @@
     <string name="visit_delete_remove_weighing">Видалити й зважування</string>
 
     <!-- The vet directory (ADR-0017) -->
+    <string name="events_title">Хронологія</string>
+    <string name="event_which_bunny">Чия хронологія?</string>
+    <string name="events_empty">У хронології поки нічого немає.</string>
+    <string name="events_empty_help">Візити до ветеринара й записаний догляд потрапляють сюди самі. Подію додавай для всього іншого, що варте дати.</string>
+    <string name="event_add">Додати подію</string>
+    <string name="events_upcoming">Попереду</string>
+    <string name="events_past">Уже було</string>
+    <string name="timeline_vet_visit">Візит до ветеринара</string>
+    <string name="timeline_care_done">Зроблено</string>
+    <string name="event_when_today">Сьогодні</string>
+    <string name="event_when_tomorrow">Завтра</string>
+    <string name="event_when_in">Через %1$s</string>
+    <string name="event_editor_add_title">Нова подія</string>
+    <string name="event_editor_edit_title">Редагувати подію</string>
+    <string name="event_label">Про що це?</string>
+    <string name="event_label_required">Дай їй назву, щоб дата й за рік щось означала.</string>
+    <string name="event_label_help">Те, що записують у щоденник — «Стерилізація», «Приїхав додому», «Поновлення страховки».</string>
+    <string name="event_note_label">Нотатки, якщо потрібні</string>
+    <string name="event_date_label">Коли це?</string>
+    <string name="event_date_help">Минуле й майбутнє — обидва підходять. Binky скаже один раз, саме того дня.</string>
+    <string name="event_calendar_help">Передає цю одну дату твоєму календарю, і там вона переживе новий телефон. Далі Binky не тримає їх у злагоді: зміна події тут нічого там не змінює.</string>
+    <string name="event_delete_title">Видалити цю подію?</string>
+    <string name="event_delete_body">Дата та її нотатка зникають. Більше на хронології нічого не змінюється.</string>
+    <string name="event_notification_today">Сьогодні — для кролика %1$s.</string>
+    <plurals name="event_summary_title">
+        <item quantity="one">%d подія сьогодні</item>
+        <item quantity="few">%d події сьогодні</item>
+        <item quantity="many">%d подій сьогодні</item>
+        <item quantity="other">%d події сьогодні</item>
+    </plurals>
+
     <string name="vets_title">Ветеринари</string>
     <string name="vets_empty">Ветеринарів ще немає. Додай клініку, до якої ходиш, і будь-який візит зможе її назвати — або додай ветеринара просто під час запису візиту.</string>
     <string name="vet_add">Додати ветеринара</string>
@@ -932,6 +967,8 @@
     <string name="more_photos_summary">Фото одного кролика, збережені на цьому телефоні.</string>
     <string name="more_documents">Документи</string>
     <string name="more_documents_summary">Скановані папери одного кролика, збережені на цьому телефоні.</string>
+    <string name="more_events">Хронологія</string>
+    <string name="more_events_summary">Що чекає на одного кролика і що вже було.</string>
     <string name="more_vets">Ветеринари</string>
     <string name="more_vets_summary">Імена й номери, спільні для всіх кроликів.</string>
     <string name="more_settings">Налаштування</string>

@@ -266,6 +266,8 @@
     <!-- §7.4: *O %1$s* would need the locative of a name the owner typed, so the name goes first
          and the sentence becomes a heading. Polish's shape, for Polish's reason. -->
     <string name="home_about_bunny">%1$s — informace</string>
+    <string name="home_timeline_title">Časová osa</string>
+    <string name="home_timeline_open">Zobrazit celou časovou osu</string>
     <string name="home_last_weight_label">Poslední vážení</string>
     <string name="home_last_weight_value">%1$s dne %2$s</string>
     <string name="home_last_observation_label">Poslední pozorování</string>
@@ -489,6 +491,8 @@
     <string name="channel_backup_description">Občasná pobídka vyexportovat záznamy, v intervalu, který je nastavený. S králíky to nemá nic společného.</string>
     <string name="channel_doses_name">Dávky léků</string>
     <string name="channel_doses_description">Připomínka v čase dávky, kterou máš naplánovanou. Jen po dobu kúry.</string>
+    <string name="channel_events_name">Události</string>
+    <string name="channel_events_description">Upozornění v den něčeho, co máš poznamenané — schůzka, výročí. U každé události jednou, přímo v ten den.</string>
 
     <!-- Backup and restore (ADR-0005). -->
     <string name="backup_title">Zálohy a obnovení</string>
@@ -932,6 +936,37 @@
 
     <!-- The vet directory, reached from More. App-wide, and it outlives the visits that name it
          (ADR-0017). §7.1: a vet may be a person (*jméno*) or a practice (*název*). -->
+    <string name="events_title">Časová osa</string>
+    <string name="event_which_bunny">Čí časová osa?</string>
+    <string name="events_empty">Na časové ose zatím nic není.</string>
+    <string name="events_empty_help">Návštěvy veterináře a zaznamenaná péče se sem dostanou samy. Událost přidej pro cokoli dalšího, co si zaslouží datum.</string>
+    <string name="event_add">Přidat událost</string>
+    <string name="events_upcoming">Co se blíží</string>
+    <string name="events_past">Co už bylo</string>
+    <string name="timeline_vet_visit">Návštěva veterináře</string>
+    <string name="timeline_care_done">Hotovo</string>
+    <string name="event_when_today">Dnes</string>
+    <string name="event_when_tomorrow">Zítra</string>
+    <string name="event_when_in">Za %1$s</string>
+    <string name="event_editor_add_title">Nová událost</string>
+    <string name="event_editor_edit_title">Upravit událost</string>
+    <string name="event_label">O co jde?</string>
+    <string name="event_label_required">Dej tomu název, ať to datum bude i za rok něco znamenat.</string>
+    <string name="event_label_help">Cokoli, co patří do diáře — „Kastrace“, „Přijel domů“, „Obnova pojištění“.</string>
+    <string name="event_note_label">Poznámky, jestli chceš</string>
+    <string name="event_date_label">Kdy to je?</string>
+    <string name="event_date_help">Minulost i budoucnost, obojí je v pořádku. Binky ti dá vědět jednou, přímo v ten den.</string>
+    <string name="event_calendar_help">Předá tohle jedno datum do kalendáře, kde přežije i nový telefon. Binky pak už oba nedrží v souladu — úprava události tady v kalendáři nic nezmění.</string>
+    <string name="event_delete_title">Smazat tuhle událost?</string>
+    <string name="event_delete_body">Datum i jeho poznámka zmizí. Nic dalšího na časové ose se nezmění.</string>
+    <string name="event_notification_today">%1$s — je to dnes.</string>
+    <plurals name="event_summary_title">
+        <item quantity="one">%d událost dnes</item>
+        <item quantity="few">%d události dnes</item>
+        <item quantity="many">%d události dnes</item>
+        <item quantity="other">%d událostí dnes</item>
+    </plurals>
+
     <string name="vets_title">Veterináři</string>
     <string name="vets_empty">Zatím žádní veterináři. Přidej ordinaci, kam chodíš, a každá návštěva ji může pojmenovat — nebo přidej veterináře rovnou při psaní návštěvy.</string>
     <string name="vet_add">Přidat veterináře</string>
@@ -1077,6 +1112,8 @@
     <string name="more_photos_summary">Obrázky jednoho králíka, uložené v tomhle telefonu.</string>
     <string name="more_documents">Dokumenty</string>
     <string name="more_documents_summary">Naskenované papíry jednoho králíka, uložené v tomhle telefonu.</string>
+    <string name="more_events">Časová osa</string>
+    <string name="more_events_summary">Co jednoho králíka čeká a co už bylo.</string>
     <string name="more_vets">Veterináři</string>
     <string name="more_vets_summary">Jména a čísla, společná pro všechny králíky.</string>
     <string name="more_settings">Nastavení</string>
