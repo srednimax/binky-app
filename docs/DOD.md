@@ -20,15 +20,25 @@ phase. Whenever `BUNNY_SCHEMA_VERSION` changes, all five hold before the release
    value, at API 26/34/36.
 5. **An actual upgrade watched on the phone**: seed the previous tag, install the new build over it,
    confirm the app opens, `user_version` climbed, and a table-by-table diff on common columns is empty.
-   A release-shaped debug build is how to do this without touching the Play install (phase-7.5.md §7).
+   A release-shaped debug build is how to do this without touching the Play install (phase-7.5.md §7) —
+   build it with **`./gradlew assembleDebug -PreleaseShapedDebug`**, which is minified *and*
+   `BuildConfig.DEBUG == false`. ⚠️ **Both halves are load-bearing**: migrations are registered only when
+   `destructiveMigrationAllowed()` says no, so a merely-minified debug build meets the older database with
+   the *wipe-consent* screen and migrates nothing — a proof of the wrong code path, and one that looks at a
+   glance like the refusal screen 1.5 nearly shipped. It is not debuggable, so read the result by
+   installing a plain `assembleDebug` over the top afterwards; an install never touches the data directory.
+   And **teach `upgrade-diff.py` any column the migration *moves*** before trusting it — a moved column is
+   invisible to its generic diff by definition.
 
 `scripts/schema-gate.py` enforces 1–3 in CI on every pull request. 4 and 5 are judgement, and 5 is the one
 that caught the refusal screen 1.5 would otherwise have shipped to every existing owner.
 
-⚠️ **It fires in this phase.** Phase 10 takes the schema to **8** — §4 and §5 below share one
-`MIGRATION_7_8`. Rule 5 has an extra clause this time: the upgrade must be watched on a **minified**
-build, because §3 turns R8 on in the same release. A proof over an unminified artifact does not cover
-the artifact owners install.
+⚠️ **It fired in this phase, and it is discharged.** Phase 10 takes the schema to **8** — §4 and §5
+share one `MIGRATION_7_8` — and rule 5 carried an extra clause, that the upgrade be watched on a
+**minified** build, because §3 turns R8 on in the same release. ✅ **Done 2026-08-25**: a real schema-7
+fixture seeded through the schema-7 tag's own build, the release-shaped build installed over it, the app
+opened with no refusal, `user_version` 7 → 8, and `upgrade-diff.py` reporting nothing lost across all 20
+tables with both tray photo paths landed in `observation_photos`. The record is `phase-10.md` §4.
 
 ---
 
@@ -53,11 +63,11 @@ Play quality notices against release 386, and one settings request.
 | | What | State |
 | --- | --- | --- |
 | **10a** | Edge-to-edge off the deprecated bar setters | ✅ **built 2026-08-24** |
-| **10b** | The ML Kit delegate stops being portrait-locked | ✅ **built 2026-08-24**, device check owed |
-| **10c** | R8 on | ✅ **built 2026-08-24**, device proof owed |
-| **10d** | Several photos on a tray — **schema 8** | ✅ **built 2026-08-24**, device proof owed |
-| **10e** | Events: a timeline, and dated events an owner writes — **same schema 8** | ✅ **built 2026-08-25**, device proof owed |
-| **10f** | A light/dark override in Settings | ✅ **built 2026-08-25**, device proof owed |
+| **10b** | The ML Kit delegate stops being portrait-locked | ✅ **done**, rotated mid-scan 2026-08-25 |
+| **10c** | R8 on | ⚠️ **proved on the phone 2026-08-25** — found and fixed a silent ML Kit break; one restore still owed |
+| **10d** | Several photos on a tray — **schema 8** | ✅ **done**, upgrade watched on the phone 2026-08-25 |
+| **10e** | Events: a timeline, and dated events an owner writes — **same schema 8** | ✅ **done**, driven on the phone 2026-08-25 |
+| **10f** | A light/dark override in Settings | ✅ **done**, proved on the phone 2026-08-25 |
 
 **One edge must not be reordered**: **10c before 10d/10e**, so every artifact check after R8 goes on
 runs against a minified build rather than proving something about a build nobody ships. Everything else
@@ -89,8 +99,9 @@ a rotation instead of being recreated — which is the concern the library's own
 - [x] Verified against the artifact: `aapt2 dump xmltree` over the APK shows **zero** `screenOrientation`
       attributes and `configChanges=0x0fa0` on the delegate. ⚠️ Read the **compiled** manifest, not the
       text one — the text merged manifest keeps XML comments, so a grep there hits our own explanation.
-- [ ] **Rotate the phone mid-scan.** If the page is lost, the override comes back out and the notice is
-      recorded as accepted — Android 16 ignores the restriction on large screens anyway.
+- [x] **Rotated mid-scan** ✅ 2026-08-25, and the second run on the **minified** artifact: landscape
+      mid-scan, a page captured, rotated back — same `ActivityRecord` id throughout, page intact, and the
+      finished scan saved into the app. Nothing lost, so the override stays out.
 - [ ] Optional: teach `scripts/aab-permissions.py` to assert no `screenOrientation` survives into the
       AAB. Needs a new primitive decoder — in the protobuf manifest the value compiles to an int with no
       source string, so the existing string-reading path cannot see it.
@@ -117,9 +128,24 @@ turn it on against, and watch that build run."* **1.8.0 is live in production.**
 - [x] **The artifact checks re-run on the minified bundle**, which is the whole reason 10c goes first:
       `aab-permissions.py` still reads 8 permissions and 0 `<uses-feature>`, and 10b's compiled-manifest
       check still finds zero `screenOrientation` with `configChanges` intact.
-- [ ] **Prove by behaviour, not by reading rules** — the device half, batched with the rest:
-      **enums round-trip by name** (the house rule, and the one that can silently rewrite history),
-      an export→restore under kotlinx.serialization, and the daily sweep actually firing.
+- [x] **Proved by behaviour** ✅ 2026-08-25 on the minified build — and it found a defect every static
+      check had passed. **Enums round-trip by name**: an observation written *by the minified build*
+      stored `MANY`, `EATEN`, `BRIGHT`, `MORE`, `LARGE`, `ROUND`, none of them an ordinal. **The daily
+      sweep fires**: `WM-WorkerWrapper: Starting work for …ReminderSweepWorker`, SUCCESS — WorkManager
+      resolved the worker from its persisted class name under R8. **Export writes** a zip, so
+      kotlinx.serialization's write path survives.
+- [ ] ⚠️ **The restore half is still owed.** *Restore from a file* opens SAF, and this ROM's picker will
+      not open its roots drawer to taps. The read path still rests on the instrumented restore tests,
+      which run unminified. One hand restore before the release closes it.
+- [x] 🔴 **R8 silently disabled the guided document scanner, and it is fixed** ✅ 2026-08-25. It did not
+      crash: `MlKitDocumentScanner` catches everything and falls back to the plain camera by design, so a
+      feature owners have simply stopped existing behind one log line. ML Kit's registrar is named inside
+      a manifest **meta-data key**, which `aapt_rules.txt` does not read, so R8 kept the class and shrank
+      away its no-arg constructor — `NoSuchMethodException: CommonComponentRegistrar.<init> []`, then an
+      NPE building the client. Fixed by one evidence-backed rule in `proguard-rules.pro`
+      (`-keepclassmembers class * implements …ComponentRegistrar { <init>(); }`); the minified build now
+      opens `DocumentScanningActivity` with zero fallback lines. **`proguard-rules.pro` no longer holds
+      zero keep rules**, and §3 of `phase-10.md` says why that changed.
 
 **Size:** the AAB goes **12.3 MB → 8.1 MB**, a third off, with resource shrinking still switched off.
 
@@ -198,8 +224,12 @@ carries it; the build record is [`phase-10.md`](phase-10.md) §5.
 - [x] JVM: `TimelineTest`, `EventSweepTest`. Instrumented: `EventRepositoryTest` (round-trip, the day
       query, both stamps, the cascade on bunny delete) — **9 green on the phone, 2026-08-25**, and the
       whole instrumented suite green at 235.
-- [ ] Device proof by hand, with the rest of the phase's device work: the timeline on a real database,
-      an event notification landing on the day, and the calendar hand-off opening something.
+- [x] **Device proof by hand** ✅ 2026-08-25, all three on the minified build: the timeline on a real
+      database (a care schedule and a vet visit, two derived sources, upcoming above past, grouped by
+      month); an event dated today notified by the forced sweep on `channel=events` — *Nail trim ·
+      Today, for Sznycel.*, sitting in the shade beside the seed's own **care** reminder of the same
+      name, which is the fifth channel's argument observed rather than asserted; and the hand-off opening
+      Google Calendar with *New event: Nail trim, August 25* prefilled.
 
 ### 10f — A light/dark override in Settings ✅ built 2026-08-25
 
@@ -215,8 +245,12 @@ Default stays *follow the phone*; Settings gains *System / Light / Dark*. The bu
       It needed none.
 - [x] Amendment to **ADR-0027** — that decision gaining a lever, not a new one.
 - [x] Copy ×9 (section label + three options) — 4 new resources, gate green at 718.
-- [ ] Device proof by hand, with the rest of the phase's device work: the override held across a cold
-      start, and the window background and system-bar scrim moving with it rather than with the phone.
+- [x] **Device proof by hand** ✅ 2026-08-25, by pinning `cmd uimode night` and sampling pixels rather
+      than eyeballing: phone Light + app Dark → background and both bar strips `(22,19,13)`; phone Dark +
+      app Light → `(255,248,239)`, **across a cold start**; phone Dark + app System → dark. Both
+      divergent directions, so neither can be the phone leaking through, and all three chips repaint in
+      place with no restart. ⚠️ *Same as this phone* needs ~2.5 s to settle where the other two take
+      0.6 s — a screenshot taken too early reads exactly like "it did not repaint", and briefly did.
 
 ---
 
