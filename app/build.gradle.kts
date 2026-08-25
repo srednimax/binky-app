@@ -15,6 +15,36 @@ plugins {
 // is ours.
 val buildingRelease = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
 
+// `-PreleaseShapedDebug` builds the debug variant with the *release* build's two load-bearing
+// properties: minified, and `BuildConfig.DEBUG == false`. It exists to serve one recurring
+// obligation rather than as a convenience — the standing schema gate's rule 5 (docs/DOD.md) asks for
+// an upgrade watched on a phone, and from 1.9.0, the release that turns R8 on, it has to be watched
+// on a **minified** build, because a proof over an unminified artifact says nothing about the
+// artifact owners install.
+//
+// ⚠️ **Minifying alone is not enough, and the failure looks like a bug in the app.** Migrations are
+// registered only when `destructiveMigrationAllowed()` says no (BunnyDatabase.kt), and that is
+// `BuildConfig.DEBUG` — so a *debuggable* build meeting an older database shows the wipe-consent
+// screen and migrates nothing. That is correct behaviour, and it is indistinguishable at a glance
+// from the refusal screen 1.5 nearly shipped, which is why it is written here: an upgrade proof run
+// on a debuggable build is not a weaker proof, it is a proof of the wrong code path.
+//
+// `isDebuggable = false` costs `adb shell run-as`, so the migrated database cannot be read out of
+// this build. Read it by installing an ordinary `assembleDebug` over the top afterwards — same
+// package, same signing key, and an install does not touch the data directory, so the rows that
+// come back are the ones the release-shaped build actually migrated.
+//
+// The real release build cannot do this job at all: signed with the upload key, it can neither be
+// installed over the Play build (signature mismatch) nor sit beside it. This flag keeps the debug
+// build's *identity* — the `.debug` suffix and the local signing key — and borrows the release
+// build's *behaviour*.
+//
+// Off by default and passed by no CI job: an everyday `assembleDebug` must stay the fast unminified
+// one. The R8 run this produces still differs from the release variant's — `src/debug/`'s seeder and
+// receiver are in its input — so it is close enough for the artifact question and deliberately not
+// claimed to be the same dex.
+val releaseShapedDebug = providers.gradleProperty("releaseShapedDebug").isPresent
+
 // versionCode must strictly increase for every installable build. We derive it
 // from the git commit count so it climbs on its own and is never hand-edited.
 // (Unlike versionName below, this number is NOT semver — it only has to keep
@@ -140,6 +170,21 @@ android {
             // so it follows this automatically. The instrumentation package follows too, becoming
             // binky.bunny.and.rabbit.tracker.debug.test — see CLAUDE.md's Xiaomi fallback commands.
             applicationIdSuffix = ".debug"
+
+            // Off unless `-PreleaseShapedDebug` was passed — see the flag's own comment above.
+            // The same rules file as the release build, because a proof built against a different
+            // configuration is a proof about a different artifact.
+            if (releaseShapedDebug) {
+                isMinifyEnabled = true
+                proguardFiles(
+                    getDefaultProguardFile("proguard-android-optimize.txt"),
+                    "proguard-rules.pro",
+                )
+                // The half that makes it a proof rather than a screenshot: AGP derives
+                // `BuildConfig.DEBUG` from this, and `BuildConfig.DEBUG` is what decides whether
+                // BUNNY_MIGRATIONS is registered at all.
+                isDebuggable = false
+            }
         }
 
         release {
