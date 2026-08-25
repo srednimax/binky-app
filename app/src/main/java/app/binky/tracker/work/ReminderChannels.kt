@@ -53,6 +53,19 @@ enum class ReminderChannel(
         R.string.channel_watch_description,
         NotificationManager.IMPORTANCE_DEFAULT,
     ),
+
+    /**
+     * Dated events an owner wrote down (ADR-0031). Its own channel rather than care's, because the
+     * two are different promises: care is a job the app is asking for, an event is a day the owner
+     * asked to be reminded of, and Android's per-channel switch is the only place that distinction
+     * can be acted on.
+     */
+    Event(
+        "events",
+        R.string.channel_events_name,
+        R.string.channel_events_description,
+        NotificationManager.IMPORTANCE_DEFAULT,
+    ),
     Backup(
         "backup",
         R.string.channel_backup_name,

@@ -81,6 +81,8 @@
     <!-- Not "O %1$s": after "o" Polish wants the locative, and the app cannot decline a name the
          owner typed. Name first, then the noun, which reads naturally whatever the name is. -->
     <string name="home_about_bunny">%1$s — informacje</string>
+    <string name="home_timeline_title">Oś czasu</string>
+    <string name="home_timeline_open">Zobacz całą oś czasu</string>
     <string name="home_last_weight_label">Ostatnie ważenie</string>
     <string name="home_last_weight_value">%1$s, %2$s</string>
     <string name="home_last_observation_label">Ostatnia obserwacja</string>
@@ -296,6 +298,8 @@
     <string name="channel_backup_description">Rzadkie przypomnienie, żeby wyeksportować zapisy, w wybranym przez Ciebie odstępie. Nie dotyczy żadnego królika.</string>
     <string name="channel_doses_name">Dawki leków</string>
     <string name="channel_doses_description">Przypomnienie o godzinie zaplanowanej dawki. Tylko w czasie trwania kuracji.</string>
+    <string name="channel_events_name">Wydarzenia</string>
+    <string name="channel_events_description">Powiadomienie w dniu czegoś, co masz zapisane — wizyta, rocznica. Raz na wydarzenie, dokładnie tego dnia.</string>
 
     <!-- Backup and restore (ADR-0005) -->
     <string name="backup_title">Kopia zapasowa i przywracanie</string>
@@ -719,6 +723,37 @@
 
     <!-- Lista weterynarzy, dostępna z ekranu Więcej. Wspólna dla wszystkich królików i trwalsza niż
          wizyty, które ją wskazują (ADR-0017). -->
+    <string name="events_title">Oś czasu</string>
+    <string name="event_which_bunny">Czyja oś czasu?</string>
+    <string name="events_empty">Na osi czasu jeszcze nic nie ma.</string>
+    <string name="events_empty_help">Wizyty u weterynarza i zapisana opieka trafiają tu same. Wydarzenie dodaj dla wszystkiego innego, co zasługuje na datę.</string>
+    <string name="event_add">Dodaj wydarzenie</string>
+    <string name="events_upcoming">Nadchodzi</string>
+    <string name="events_past">Już było</string>
+    <string name="timeline_vet_visit">Wizyta u weterynarza</string>
+    <string name="timeline_care_done">Zrobione</string>
+    <string name="event_when_today">Dzisiaj</string>
+    <string name="event_when_tomorrow">Jutro</string>
+    <string name="event_when_in">Za %1$s</string>
+    <string name="event_editor_add_title">Nowe wydarzenie</string>
+    <string name="event_editor_edit_title">Edytuj wydarzenie</string>
+    <string name="event_label">O co chodzi?</string>
+    <string name="event_label_required">Nadaj mu nazwę, żeby ta data i za rok coś znaczyła.</string>
+    <string name="event_label_help">Cokolwiek, co zapisuje się w kalendarzu — „Kastracja”, „Przyjechał do domu”, „Odnowienie ubezpieczenia”.</string>
+    <string name="event_note_label">Notatki, jeśli chcesz</string>
+    <string name="event_date_label">Kiedy to jest?</string>
+    <string name="event_date_help">Przeszłość i przyszłość, obie są w porządku. Binky odezwie się raz, dokładnie tego dnia.</string>
+    <string name="event_calendar_help">Przekazuje tę jedną datę do aplikacji kalendarza — tam przetrwa nawet zmianę telefonu. Binky później niczego nie synchronizuje: zmiana wydarzenia tutaj nie zmienia nic tam.</string>
+    <string name="event_delete_title">Usunąć to wydarzenie?</string>
+    <string name="event_delete_body">Data i jej notatka znikają. Nic innego na osi czasu się nie zmienia.</string>
+    <string name="event_notification_today">To dzisiaj — %1$s.</string>
+    <plurals name="event_summary_title">
+        <item quantity="one">%d wydarzenie dzisiaj</item>
+        <item quantity="few">%d wydarzenia dzisiaj</item>
+        <item quantity="many">%d wydarzeń dzisiaj</item>
+        <item quantity="other">%d wydarzeń dzisiaj</item>
+    </plurals>
+
     <string name="vets_title">Weterynarze</string>
     <string name="vets_empty">Nie ma jeszcze żadnego weterynarza. Dodaj gabinet, z którego korzystasz, a każda wizyta będzie mogła go wskazać — można go też dodać w trakcie wpisywania wizyty.</string>
     <string name="vet_add">Dodaj weterynarza</string>
@@ -846,6 +881,8 @@
     <string name="more_photos_summary">Zdjęcia jednego królika, trzymane na tym telefonie.</string>
     <string name="more_documents">Dokumenty</string>
     <string name="more_documents_summary">Zeskanowane dokumenty jednego królika, trzymane w tym telefonie.</string>
+    <string name="more_events">Oś czasu</string>
+    <string name="more_events_summary">Co czeka jednego królika i co już było.</string>
     <string name="more_vets">Weterynarze</string>
     <string name="more_vets_summary">Nazwy i numery, wspólne dla wszystkich królików.</string>
     <string name="more_settings">Ustawienia</string>

@@ -97,6 +97,8 @@
     <!-- §7.4 does not bite here: "über" takes the accusative and a German name does not decline
          in it, so the name can stay where the English puts it. -->
     <string name="home_about_bunny">Über %1$s</string>
+    <string name="home_timeline_title">Zeitleiste</string>
+    <string name="home_timeline_open">Ganze Zeitleiste ansehen</string>
     <string name="home_last_weight_label">Letzte Wägung</string>
     <string name="home_last_weight_value">%1$s am %2$s</string>
     <string name="home_last_observation_label">Letzte Beobachtung</string>
@@ -293,6 +295,8 @@
     <string name="channel_backup_description">Ein gelegentlicher Anstoß, deine Aufzeichnungen zu exportieren, in dem Abstand, den du gewählt hast. Hat mit keinem Kaninchen zu tun.</string>
     <string name="channel_doses_name">Gaben von Medikamenten</string>
     <string name="channel_doses_description">Eine Erinnerung zur Zeit einer Gabe, die du geplant hast. Nur solange ein Medikament läuft.</string>
+    <string name="channel_events_name">Ereignisse</string>
+    <string name="channel_events_description">Eine Nachricht am Tag von etwas, das du notiert hast — ein Termin, ein Jahrestag. Einmal pro Ereignis, am Tag selbst.</string>
 
     <!-- Backup and restore (ADR-0005) -->
     <string name="backup_title">Sicherung &amp; Wiederherstellung</string>
@@ -681,6 +685,35 @@
     <string name="visit_delete_remove_weighing">Wägung auch löschen</string>
 
     <!-- The vet directory, reached from More (ADR-0017) -->
+    <string name="events_title">Zeitleiste</string>
+    <string name="event_which_bunny">Wessen Zeitleiste?</string>
+    <string name="events_empty">Noch nichts auf der Zeitleiste.</string>
+    <string name="events_empty_help">Tierarztbesuche und erfasste Pflege landen von selbst hier. Ein Ereignis ist für alles andere, das ein Datum verdient.</string>
+    <string name="event_add">Ereignis hinzufügen</string>
+    <string name="events_upcoming">Kommt noch</string>
+    <string name="events_past">War schon</string>
+    <string name="timeline_vet_visit">Tierarztbesuch</string>
+    <string name="timeline_care_done">Erledigt</string>
+    <string name="event_when_today">Heute</string>
+    <string name="event_when_tomorrow">Morgen</string>
+    <string name="event_when_in">Noch %1$s</string>
+    <string name="event_editor_add_title">Neues Ereignis</string>
+    <string name="event_editor_edit_title">Ereignis bearbeiten</string>
+    <string name="event_label">Worum geht es?</string>
+    <string name="event_label_required">Gib ihm einen Namen, damit das Datum auch in einem Jahr noch etwas bedeutet.</string>
+    <string name="event_label_help">Was du in einen Kalender schreiben würdest — „Kastration“, „Eingezogen“, „Versicherung verlängert sich“.</string>
+    <string name="event_note_label">Notizen, wenn du magst</string>
+    <string name="event_date_label">Wann ist es?</string>
+    <string name="event_date_help">Vergangenheit oder Zukunft, beides geht. Binky sagt einmal Bescheid, am Tag selbst.</string>
+    <string name="event_calendar_help">Übergibt dieses eine Datum an deine Kalender-App, wo es ein neues Handy übersteht. Binky hält die beiden danach nicht in Einklang — wenn du das Ereignis hier änderst, ändert sich dort nichts.</string>
+    <string name="event_delete_title">Dieses Ereignis löschen?</string>
+    <string name="event_delete_body">Das Datum und seine Notiz gehen. Sonst bleibt auf der Zeitleiste alles, wie es ist.</string>
+    <string name="event_notification_today">Heute, für %1$s.</string>
+    <plurals name="event_summary_title">
+        <item quantity="one">%d Ereignis heute</item>
+        <item quantity="other">%d Ereignisse heute</item>
+    </plurals>
+
     <string name="vets_title">Tierärzte</string>
     <string name="vets_empty">Noch keine Tierärzte. Füge die Praxis hinzu, zu der du gehst, dann kann jeder Besuch sie nennen — oder lege einen an, während du einen Besuch einträgst.</string>
     <string name="vet_add">Tierarzt hinzufügen</string>
@@ -816,6 +849,8 @@
     <string name="more_photos_summary">Bilder eines Kaninchens, auf diesem Handy.</string>
     <string name="more_documents">Dokumente</string>
     <string name="more_documents_summary">Gescannte Unterlagen eines Kaninchens, auf diesem Handy.</string>
+    <string name="more_events">Zeitleiste</string>
+    <string name="more_events_summary">Was für ein Kaninchen ansteht und was schon war.</string>
     <string name="more_vets">Tierärzte</string>
     <string name="more_vets_summary">Namen und Nummern, für alle Kaninchen gemeinsam.</string>
     <string name="more_settings">Einstellungen</string>

@@ -209,6 +209,31 @@ data class DocumentDetail(
 ) : NavKey
 
 /**
+ * One bunny's events and the timeline they sit in (ADR-0031), reached from More and from Home's
+ * card — the same shape and the same reason as [PhotoGallery] and [Documents].
+ *
+ * Keyed by the bunny rather than reading the shell's selection, so a restored back stack records
+ * *whose* timeline was open: under "All bunnies" there is no selection to fall back on, so More asks
+ * which bunny before pushing this.
+ */
+@Serializable
+data class Events(
+    val bunnyId: String,
+) : NavKey
+
+/**
+ * Add or edit one event. `null` [eventId] adds, mirroring [BunnyEditor] and [WeightEntry].
+ *
+ * [bunnyId] is carried even when editing, for the reason [CareReminderEditor] and [VisitEditor] carry
+ * it: adding needs it, and a key that took it only sometimes would be two keys wearing one name.
+ */
+@Serializable
+data class EventEditor(
+    val bunnyId: String,
+    val eventId: String? = null,
+) : NavKey
+
+/**
  * The vet directory, reached from More — a detail route off a tab, like [ArchivedBunnies].
  *
  * **In More rather than on the Care tab, and that is ADR-0015's rule rather than a preference.** A

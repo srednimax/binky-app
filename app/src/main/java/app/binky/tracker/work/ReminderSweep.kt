@@ -71,18 +71,21 @@ class ReminderSweepWorker(
             return Result.success()
         }
 
-        // The three halves. Wrapped, and deliberately: this is the one place where a failure must
+        // The four halves. Wrapped, and deliberately: this is the one place where a failure must
         // not cost the *next* sweep. A throw here would return `Result.failure` with the re-enqueue
         // below unreached, and the app would go quiet until the next launch or reboot — a far worse
         // outcome than one missed morning.
         //
-        // **One `runCatching` each**, not one around all three: a care reminder that throws must not
+        // **One `runCatching` each**, not one around all four: a care reminder that throws must not
         // cost the watch nag its morning, and a watch is running precisely because somebody is
-        // worried. The export prompt is last for the same reason it is least urgent — and it is
-        // wrapped separately so a preferences file that will not read cannot silence the other two.
+        // worried. Events sit third — after the two that are about a rabbit's health and before the
+        // one that is about a file. The export prompt is last for the same reason it is least
+        // urgent, and it is wrapped separately so a preferences file that will not read cannot
+        // silence the other three.
         val container = (applicationContext as BinkyApplication).container
         runCatching { sweepCare(container) }
         runCatching { sweepWatch(container) }
+        runCatching { sweepEvents(container) }
         runCatching { sweepExport(container) }
 
         // **The sweep repairs the dose alarm, and never delivers a dose** (ADR-0025). It is already
@@ -179,6 +182,43 @@ private suspend fun sweepWatch(
     container.watchNotifier.post(due)
     val today = today(now, zone)
     due.forEach { container.watchRepository.markNagged(it.bunnyId, today) }
+}
+
+/**
+ * Posts the events dated today, and records that it did (ADR-0031).
+ *
+ * The same post-then-mark order as [sweepCare], for the same reason: a process killed between the
+ * two leaves the event still needing notifying, and the next sweep replaces its own notification
+ * because the id is derived from the event id (see [eventNotificationId]). The other order loses the
+ * notice for good.
+ *
+ * **One day's query per bunny**, not the whole table: an event has one date in its life, so "is it
+ * today" is answered off the `(bunnyId, occursOn)` index rather than by reading a decade of
+ * anniversaries every morning. Archived bunnies are read and *then* excluded, in
+ * [eventsDueForNotifying], because that exclusion is the rule ADR-0001 cares about and it belongs
+ * where it can be asserted.
+ */
+private suspend fun sweepEvents(
+    container: AppContainer,
+    now: Instant = Instant.now(),
+    zone: ZoneId = ZoneId.systemDefault(),
+) {
+    val bunnies = container.bunnyRepository.activeBunnies.first() + container.bunnyRepository.archivedBunnies.first()
+    val today = today(now, zone)
+
+    val sweepable =
+        bunnies.map { bunny ->
+            SweepEvents(
+                id = bunny.id,
+                name = bunny.name,
+                archived = bunny.archivedAt != null,
+                events = container.eventRepository.onDayNow(bunny.id, today),
+            )
+        }
+
+    val due = eventsDueForNotifying(sweepable, today)
+    container.eventNotifier.post(due)
+    due.forEach { container.eventRepository.markNotified(it.event.id, now) }
 }
 
 /**

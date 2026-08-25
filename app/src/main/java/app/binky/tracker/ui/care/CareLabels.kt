@@ -90,9 +90,12 @@ fun careDueLabel(due: CareDue): String =
  * Reuses `gap_weeks` / `gap_months` / `gap_years` from the trend flag rather than minting a parallel
  * set: "3 weeks" is the same phrase whether it separates two weighings or stands between today and a
  * nail trim, and one copy is one thing to translate.
+ *
+ * `internal` rather than private for the third caller of that same argument: the timeline says "In 3
+ * days" about an event (`EventLabels.kt`), which is this phrase without care's *Due* in front of it.
  */
 @Composable
-private fun careGapLabel(gap: CareGap): String =
+internal fun careGapLabel(gap: CareGap): String =
     when (gap) {
         is CareGap.Days -> pluralStringResource(R.plurals.gap_days, gap.days, gap.days)
         is CareGap.Weeks -> pluralStringResource(R.plurals.gap_weeks, gap.weeks, gap.weeks)

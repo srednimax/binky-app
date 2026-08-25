@@ -55,17 +55,23 @@ import app.binky.tracker.ui.bunny.dateLabel
 import app.binky.tracker.ui.bunny.housematesLabel
 import app.binky.tracker.ui.bunny.neuterLabel
 import app.binky.tracker.ui.bunny.sexLabel
+import app.binky.tracker.ui.common.Chevron
 import app.binky.tracker.ui.common.FabClearance
 import app.binky.tracker.ui.common.FactRow
 import app.binky.tracker.ui.common.GroupedCard
+import app.binky.tracker.ui.common.ListRow
 import app.binky.tracker.ui.common.RowDivider
 import app.binky.tracker.ui.common.SectionHeader
+import app.binky.tracker.ui.events.TimelineEntry
+import app.binky.tracker.ui.events.timelineSubtitle
+import app.binky.tracker.ui.events.timelineTitle
 import app.binky.tracker.ui.watch.StartWatchAction
 import app.binky.tracker.ui.watch.WatchActiveCard
 import app.binky.tracker.ui.weight.TrendFlagBanner
 import app.binky.tracker.ui.weight.instantDateLabel
 import app.binky.tracker.ui.weight.showsBanner
 import app.binky.tracker.ui.weight.weightLabel
+import java.time.LocalDate
 
 /**
  * Home — the selected bunny's profile, and under "All bunnies" the fluffle dashboard (ADR-0015).
@@ -85,6 +91,7 @@ fun HomeScreen(
     onEditBunny: (String) -> Unit,
     onSelectBunny: (String) -> Unit,
     onOpenHousemate: (Housemate) -> Unit,
+    onOpenTimeline: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory, extras = appViewModelExtras())
@@ -112,7 +119,10 @@ fun HomeScreen(
                     vitals = state.vitalsFor(profile.id),
                     unit = state.unit,
                     readOnly = state.readOnly,
+                    timeline = state.timeline,
+                    timelineToday = state.timelineToday,
                     onOpenHousemate = onOpenHousemate,
+                    onOpenTimeline = { onOpenTimeline(profile.id) },
                     onEdit = { onEditBunny(profile.id) },
                     onArchive = { viewModel.requestArchive(profile) },
                     onDelete = { viewModel.requestDelete(profile) },
@@ -180,7 +190,10 @@ private fun OneBunny(
     vitals: BunnyVitals,
     unit: WeightUnit,
     readOnly: Boolean,
+    timeline: List<TimelineEntry>,
+    timelineToday: LocalDate,
     onOpenHousemate: (Housemate) -> Unit,
+    onOpenTimeline: () -> Unit,
     onEdit: () -> Unit,
     onArchive: () -> Unit,
     onDelete: () -> Unit,
@@ -280,6 +293,18 @@ private fun OneBunny(
             }
         }
 
+        // Absent rather than empty when there is nothing dated at all: a box saying "no timeline"
+        // on a screen that already carries the vitals card would be a second empty state about the
+        // same silence (ADR-0001). Most bunnies have at least one care reminder, so most draw it.
+        if (timeline.isNotEmpty()) {
+            Spacer(Modifier.height(Spacing.section))
+            TimelineCard(
+                entries = timeline,
+                today = timelineToday,
+                onOpenTimeline = onOpenTimeline,
+            )
+        }
+
         if (!readOnly) {
             Spacer(Modifier.height(Spacing.section))
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.tight)) {
@@ -315,6 +340,45 @@ private fun OneBunny(
                 onOpenHousemate(housemate)
             },
             onDismiss = { showHousemates = false },
+        )
+    }
+}
+
+/**
+ * The next thing owed and the last two that happened, with the way into the whole agenda.
+ *
+ * **Three rows and a way out, never more.** The card is a *pointer* at the timeline rather than a
+ * short copy of it: an owner who wants the month scrolls the screen it links to, and a Home that
+ * grew a second scrolling list would have two places to read the same thing and no reason to
+ * prefer either.
+ *
+ * The entry rows are **inert**. Each kind has its own screen and the timeline already taps through
+ * to them; doing it from here too would put four destinations behind one card the owner did not
+ * open. The one row that navigates says so, and goes to the one place — which is also what makes
+ * the card's own reason for existing legible.
+ */
+@Composable
+private fun TimelineCard(
+    entries: List<TimelineEntry>,
+    today: LocalDate,
+    onOpenTimeline: () -> Unit,
+) {
+    SectionHeader(stringResource(R.string.home_timeline_title))
+    Spacer(Modifier.height(Spacing.tight))
+    GroupedCard {
+        entries.forEach { entry ->
+            ListRow(
+                title = timelineTitle(entry),
+                subtitle = timelineSubtitle(entry, today),
+            )
+            RowDivider()
+        }
+        // Last, and after a divider every time — the rows above it are facts and this one is a
+        // door, so the seam between them is the card's own grammar rather than a flourish.
+        ListRow(
+            title = stringResource(R.string.home_timeline_open),
+            onClick = onOpenTimeline,
+            trailing = { Chevron() },
         )
     }
 }

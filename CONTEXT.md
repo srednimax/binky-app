@@ -70,6 +70,24 @@ A prompt for recurring husbandry due around a date — nail trim, vaccination, r
 from a dose reminder, which belongs to a medication course and is time-critical.
 _Avoid_: task, todo, alert, notification
 
+**Event**:
+One dated thing an owner wrote down themselves: a label, a day, and optionally a note. Freely in the
+**past or the future** — an appointment next Thursday and the day a bunny came home three years ago are
+the same record — which is what distinguishes it from every other dated write in the app, all of which
+are records of something that happened. It has **no type and no recurrence**: repetition belongs to a
+care reminder, and two spellings of one fact is what this codebase keeps refusing (ADR-0031). It
+announces itself **once**, on the day, through the daily sweep (ADR-0024).
+_Avoid_: appointment, reminder, anniversary, milestone, note
+
+**Timeline**:
+One bunny's agenda, **upcoming above past**, merged on read from four things the app already keeps:
+events, vet visits, recorded care completions, and the next-due dates care schedules derive. **It stores
+nothing** — back-dating a visit, deleting a completion or changing an interval all move it with nothing
+being written anywhere (ADR-0031). An overdue care reminder is **still upcoming**, on every day it has
+been overdue. Weighings, observations and doses are deliberately absent: each already owns a screen, and
+a feed that repeated them would be noise rather than history.
+_Avoid_: history, feed, calendar, agenda, activity log
+
 **Watch**:
 A **time-boxed** period during which the owner has declared a bunny needs closer attention: the owner sets
 a duration when starting it and it auto-expires with a prompt to extend or close. Only while a watch is

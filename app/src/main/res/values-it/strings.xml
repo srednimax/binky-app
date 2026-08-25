@@ -226,6 +226,8 @@
     <!-- English's own shape survives here: "su" governs nothing the app cannot produce and
          does not elide, so Italian needs neither Polish's reordering nor French's. -->
     <string name="home_about_bunny">Informazioni su %1$s</string>
+    <string name="home_timeline_title">Cronologia</string>
+    <string name="home_timeline_open">Vedi tutta la cronologia</string>
     <string name="home_last_weight_label">Ultima pesata</string>
     <string name="home_last_weight_value">%1$s il %2$s</string>
     <string name="home_last_observation_label">Ultima osservazione</string>
@@ -432,6 +434,8 @@
          what to do about it (ADR-0026). -->
     <string name="channel_doses_name">Dosi di farmaci</string>
     <string name="channel_doses_description">Un promemoria all’ora di una dose che hai programmato. Solo mentre una terapia è in corso.</string>
+    <string name="channel_events_name">Eventi</string>
+    <string name="channel_events_description">Un avviso il giorno di qualcosa che hai annotato — un appuntamento, un anniversario. Una volta per evento, il giorno stesso.</string>
 
     <!-- Backup and restore (ADR-0005) -->
     <string name="backup_title">Backup e ripristino</string>
@@ -861,6 +865,36 @@
 
     <!-- The vet directory, reached from More: app-wide, because a household's bunnies see the
          same vet, and it outlives the visits that name it (ADR-0017). -->
+    <string name="events_title">Cronologia</string>
+    <string name="event_which_bunny">Cronologia di chi?</string>
+    <string name="events_empty">Ancora niente nella cronologia.</string>
+    <string name="events_empty_help">Le visite veterinarie e le cure che registri arrivano qui da sole. Aggiungi un evento per tutto il resto che merita una data.</string>
+    <string name="event_add">Aggiungi un evento</string>
+    <string name="events_upcoming">In arrivo</string>
+    <string name="events_past">Già successo</string>
+    <string name="timeline_vet_visit">Visita veterinaria</string>
+    <string name="timeline_care_done">Fatto</string>
+    <string name="event_when_today">Oggi</string>
+    <string name="event_when_tomorrow">Domani</string>
+    <string name="event_when_in">Tra %1$s</string>
+    <string name="event_editor_add_title">Nuovo evento</string>
+    <string name="event_editor_edit_title">Modifica evento</string>
+    <string name="event_label">Di cosa si tratta?</string>
+    <string name="event_label_required">Dagli un nome, così fra un anno la data vorrà ancora dire qualcosa.</string>
+    <string name="event_label_help">Quello che scriveresti su un’agenda — «Sterilizzazione», «Arrivato a casa», «Rinnovo assicurazione».</string>
+    <string name="event_note_label">Note, se le vuoi</string>
+    <string name="event_date_label">Quando è?</string>
+    <string name="event_date_help">Passato o futuro, vanno bene entrambi. Binky te lo dice una volta, il giorno stesso.</string>
+    <string name="event_calendar_help">Passa questa data alla tua app calendario, dove sopravvive a un telefono nuovo. Binky non tiene poi allineate le due cose: modificare l’evento qui non cambia niente lì.</string>
+    <string name="event_delete_title">Eliminare questo evento?</string>
+    <string name="event_delete_body">La data e la sua nota spariscono. Nella cronologia non cambia altro.</string>
+    <string name="event_notification_today">Oggi, per %1$s.</string>
+    <plurals name="event_summary_title">
+        <item quantity="one">%d evento oggi</item>
+        <item quantity="many">%d eventi oggi</item>
+        <item quantity="other">%d eventi oggi</item>
+    </plurals>
+
     <string name="vets_title">Veterinari</string>
     <string name="vets_empty">Ancora nessun veterinario. Aggiungi lo studio a cui ti rivolgi e ogni visita potrà nominarlo, oppure aggiungine uno mentre scrivi una visita.</string>
     <string name="vet_add">Aggiungi un veterinario</string>
@@ -1014,6 +1048,8 @@
     <string name="more_photos_summary">Le foto di un coniglio, tenute su questo telefono.</string>
     <string name="more_documents">Documenti</string>
     <string name="more_documents_summary">I fogli scansionati di un coniglio, tenuti su questo telefono.</string>
+    <string name="more_events">Cronologia</string>
+    <string name="more_events_summary">Cosa aspetta un coniglio e cosa è già successo.</string>
     <string name="more_vets">Veterinari</string>
     <string name="more_vets_summary">Nomi e numeri, in comune fra tutti i conigli.</string>
     <string name="more_settings">Impostazioni</string>

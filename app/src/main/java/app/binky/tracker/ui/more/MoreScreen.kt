@@ -48,6 +48,7 @@ fun MoreScreen(
     onOpenSettings: () -> Unit,
     onOpenVets: () -> Unit,
     onOpenSupport: () -> Unit,
+    onOpenEvents: (() -> Unit)?,
     onOpenPhotos: (() -> Unit)?,
     onOpenDocuments: (() -> Unit)?,
     modifier: Modifier = Modifier,
@@ -58,9 +59,9 @@ fun MoreScreen(
     // owner who archived their last bunny, not a fresh install.
     val needsBunny = stringResource(R.string.more_needs_bunny)
 
-    // Six rows fit on any phone, so a plain scrolling Column rather than a LazyColumn: nothing here
-    // is ever off screen for long enough for lazy composition to buy anything, and a GroupedCard of
-    // six is not the hundreds-of-rows case GroupedCardItem exists for.
+    // Seven rows fit on any phone, so a plain scrolling Column rather than a LazyColumn: nothing
+    // here is ever off screen for long enough for lazy composition to buy anything, and a
+    // GroupedCard of seven is not the hundreds-of-rows case GroupedCardItem exists for.
     Column(
         modifier =
             modifier
@@ -69,6 +70,21 @@ fun MoreScreen(
                 .padding(horizontal = Spacing.base, vertical = Spacing.tight),
     ) {
         GroupedCard {
+            // **First**, and that is a claim rather than an accident: the timeline is the one row
+            // here that answers "what is going on with this rabbit" rather than "where did I put
+            // that". Bunny-scoped for the reason photos and documents are — "All bunnies" is not one
+            // agenda but several — so More asks which before pushing the screen.
+            MoreRow(
+                title = stringResource(R.string.more_events),
+                subtitle =
+                    if (onOpenEvents == null) {
+                        needsBunny
+                    } else {
+                        stringResource(R.string.more_events_summary)
+                    },
+                onClick = onOpenEvents,
+            )
+            RowDivider()
             MoreRow(
                 title = stringResource(R.string.more_photos),
                 // Inert while no bunny exists to have photos of, which is the same row as before

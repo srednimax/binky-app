@@ -267,17 +267,76 @@ same wall, because Gradle uninstalls the test package after every run — so eac
 `…debug.test`, which is the case CLAUDE.md records as an outright refusal. What worked was installing both
 APKs plain and then running `am instrument` directly, which skips Gradle's install cycle entirely.
 
-## §5–§6
+## §5 — Events and the timeline ✅ built 2026-08-25
 
-Not yet built. The reasoning for each is in [`DOD.md`](DOD.md)'s boxes while they are live; it moves here
-as each closes. The two worth flagging in advance:
+**ADR-0031** carries the decision. The owner's sentence was two requests wearing one coat — *"when was
+the last vet visit, the last nail trim"* asks for a **read** of things the app already knows, and
+*"other events the user would like to remember"* asks for a table that does not exist. Building one
+thing for both would have got both wrong.
 
-- **§4's migration is the risk in the phase.** ADR-0029 wrote the create-copy-drop-rename recipe once
-  and named its trap: `DROP TABLE observations` implicitly deletes every row, firing `ON DELETE CASCADE`
-  on the children, and Room emits `PRAGMA defer_foreign_keys` only inside `clearAllTables`, never around
-  a migration. **Since 1.5 there are three children, not the one that ADR staged.** The test has to
-  assert rows, not shape — `runMigrationsAndValidate` passes happily on a database whose every symptom
-  tick has been cascaded away.
+`events` was already in **schema 8**, folded into `MIGRATION_7_8` alongside §4's tray photos, so this
+section wrote **no migration and did not touch `BUNNY_SCHEMA_VERSION`**. What it added is the DAO, a
+thin repository, the pure merge, two screens, the sweep's third branch and 31 strings × 9.
+
+### The timeline stores nothing, and that is where the tests are
+
+`ui/events/Timeline.kt` is a pure function from four lists to month sections. Everything hard about it
+is arithmetic on dates, so `TimelineTest` is a case table rather than a phone: upcoming above past, the
+today boundary, an overdue reminder dragging a *past* month above the fold, a day holding all four kinds
+sorting the same way twice, month grouping order, id uniqueness across four tables, and the Home card's
+slice.
+
+Two of those are worth naming because they look like bugs until the reason is read.
+
+- **`TimelineEntry.CareDue` is always outstanding**, including when its date is in the past. An overdue
+  nail trim belongs above the fold on every one of the twenty-one days it has been overdue, which is the
+  reading the Care screen already takes. The consequence is that `TimelineSection` **carries** which
+  side it is on rather than deriving it from the month — the two genuinely disagree.
+- **The screen heads the two halves out loud** (*Coming up* / *Already happened*) rather than relying on
+  order. Because of the rule above, the upcoming half can end on a past month, so scrolling from one
+  "February 2026" into another one is otherwise a mystery.
+
+### The day query does not filter on `notifiedAt`, and the plan's sketch said it should
+
+`EventDao.onDayNow` returns everything dated today, announced or not. Both of the sweep's rules —
+*"announces once"* and *"archived bunnies are never notified"* — live in the pure
+`eventsDueForNotifying`, matching `careDueForNotifying`, so both are JVM-assertable rather than facts
+about a `WHERE` clause. The `(bunnyId, occursOn)` index answers the query row for row either way.
+`EventRepositoryTest` pins the deviation directly: an already-notified event still comes back.
+
+### Its own notification channel, and the fifth one broke a test that was doing its job
+
+Care is a job the app is asking for; an event is a day the owner asked to be reminded of. Android's
+per-channel switch is the only place that distinction can be acted on, so `ReminderChannel.Event` is a
+fifth channel rather than a second sender on care's.
+
+`ReminderChannelsTest` failed on both counts and was right to. It pins the channel set at exactly the
+ones this release has behind them — an addition has to be a deliberate act — and it derives the expected
+resource names as `channel_${id}_*`, which caught `channel_event_name` sitting under an id of `events`.
+The strings were renamed to `channel_events_*`; the id is the half that is permanent once shipped.
+
+### What the timeline may not do
+
+Only event rows are created, edited or deleted from these screens. A vet visit, a completion and a
+derived due date each tap through to the screen that owns them, and in the archived scope the rows stop
+being navigable at all — every destination they lead to is an editor. A derived list that could destroy
+its sources would be a second place to delete every one of them.
+
+Delete lives on the **editor**, not the row (`1d`'s finding), because an event has no detail screen of
+its own — the editor is that screen, and it is also where the calendar hand-off sits. Both act on a
+stored row, so neither is offered while adding.
+
+### Tests
+
+`TimelineTest` and `EventSweepTest` on the JVM, `EventRepositoryTest` on the phone — 9 green, and the
+whole instrumented suite green at 235 (2026-08-25). What is still owed is the part no test can hold: the
+timeline read on a real database, a notification landing on the day, and the hand-off opening a calendar.
+
+## §6
+
+Not yet built. The reasoning is in [`DOD.md`](DOD.md)'s box while it is live; it moves here when it
+closes.
+
 - **§6 needs `AppCompatDelegate.setDefaultNightMode`, not a Compose flag.** A Compose-only override
   leaves the window background (painted before Compose composes) and §1's `values-night/` scrim following
   the *system* while the app follows the override — the exact mismatch §1 exists to prevent, visible on
