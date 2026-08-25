@@ -83,8 +83,14 @@ class MainActivity : AppCompatActivity() {
             // collecting one as state needs an initial. `false` is also the stored default, which is
             // what keeps the first frame from being the wrong palette and then repainting.
             val materialYou by app.preferences.materialYou.collectAsStateWithLifecycle(initialValue = false)
+            // The initial value is the one `onCreate` already read off disk, not `SYSTEM`: this
+            // flow's first emission arrives after the first composition, so a stored `DARK` would
+            // otherwise light-flash on every cold start. `BinkyApplication` paid for that read
+            // before any Activity existed; spending it again here is free.
+            val themeMode by
+                app.preferences.themeMode.collectAsStateWithLifecycle(initialValue = app.startupThemeMode)
 
-            BinkyTheme(dynamicColor = materialYou) {
+            BinkyTheme(themeMode = themeMode, dynamicColor = materialYou) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,

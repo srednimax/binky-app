@@ -11,6 +11,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import app.binky.tracker.data.ThemeMode
 
 /**
  * Binky's theme.
@@ -22,13 +23,27 @@ import androidx.core.view.WindowCompat
  * device. The brand is only visible because this defaults off.
  *
  * The Settings toggle that lets a user turn Material You back on passes `true` here.
+ *
+ * [themeMode] is the other Settings lever (ADR-0027's amendment). It only decides which of the two
+ * schemes below applies; the window background and the system-bar scrim are outside Compose's reach
+ * and are moved by [applyThemeMode] instead. Resolved here rather than read back from the
+ * configuration so that the scheme is right on the *first* composition — AppCompat's
+ * `onConfigurationChanged` arrives a beat later, and one frame in the wrong palette is what this
+ * whole setting exists to stop.
  */
 @Composable
 fun BinkyTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    val darkTheme =
+        when (themeMode) {
+            ThemeMode.SYSTEM -> isSystemInDarkTheme()
+            ThemeMode.LIGHT -> false
+            ThemeMode.DARK -> true
+        }
+
     val colorScheme =
         when {
             // Wallpaper-derived schemes exist only on Android 12+; below that the

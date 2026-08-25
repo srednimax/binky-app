@@ -226,6 +226,14 @@
          to take; below that the app has always used its own colours and there is nothing to offer. -->
     <string name="settings_material_you">Colours from your wallpaper</string>
     <string name="settings_material_you_help">Binky has its own colours. Turn this on and it takes them from your wallpaper instead, the way Android colours its own screens.</string>
+    <!-- ADR-0027's amendment. The header is a question the three chips answer, so it is not a noun
+         ("Appearance") but the choice itself. `settings_theme_system` says the same thing as
+         `settings_language_system` on purpose: it is the same promise about the same phone, and two
+         wordings for it would read as two different behaviours. -->
+    <string name="settings_theme">Light or dark</string>
+    <string name="settings_theme_system">Same as this phone</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
 
     <!-- First-run setup (ADR-0006). Three steps at 1.1: the first bunny, backup, then reminders.
          The reminders step waited for the reminders themselves — an opt-in that cannot demonstrate

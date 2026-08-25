@@ -58,3 +58,72 @@ are exactly what does not depend on the palette. The after set is the first repr
 **ADR-0012 is amended, not overturned.** Its deferral of visual identity to a dedicated phase stands, and
 this is that phase arriving on schedule. What changes is that "the visual pass edits one file" becomes a
 statement about the shipping app rather than about API 26–30.
+
+## Amendment (Phase 10, 10f): the palette gains a light/dark lever
+
+The decision above chose *which* colours Binky uses. It left *when* each of the two schemes applies to
+the phone — `isSystemInDarkTheme()`, and nothing else. Settings now offers **System / Light / Dark**,
+defaulting to System.
+
+### Why the app needs its own answer
+
+Three reasons, and none of them is taste.
+
+**A phone on a dark-mode schedule flips the app mid-read.** An owner filling in an observation at dusk
+watches the form change colour under them. That is the platform working correctly and it is still the
+app's problem.
+
+**The Play screenshots are light-only** (decided 2026-08-24), and the capture phone is a real device
+with a real dark-mode setting. Driving the whole capture through the *system* setting means the
+screenshot run and the owner's phone share one global — `edge-to-edge.py` has to put it back, and a
+failed run leaves the phone somewhere the owner did not choose. An in-app override is a knob the
+capture can turn that belongs to the app.
+
+**Dark mode is not universal below Android 10.** `minSdk` is 26, and API 26–28 have no system-wide
+dark setting at all. Without this, a third of the supported range cannot reach `DarkColors` — the very
+scheme this ADR's consequences say is owed "in full, and dark is not a derivation of light". The
+in-app override is what makes half the work this ADR commissioned reachable on the phones it commissioned
+it for.
+
+### The mechanism is `AppCompatDelegate`, not a Compose flag
+
+`BinkyTheme` picks a `ColorScheme` and that is the whole of what Compose can reach. Two things the owner
+sees are outside it:
+
+- **The window background**, painted from `Theme.Binky` — a `Theme.AppCompat.DayNight` theme — *before*
+  Compose composes anything.
+- **The system-bar scrim**, a `values-night/` colour resolved at inflation (`values/colors.xml`, and
+  `SystemBarsTest` for why there are four qualifier files).
+
+Both follow Android's configuration. A Compose-only override leaves them following the **phone** while
+the app follows the **owner**, which is the exact mismatch those four `colors.xml` files exist to
+prevent, and it is worst on API 26–28 where there is no system dark mode to have agreed with by
+accident.
+
+`AppCompatDelegate.setDefaultNightMode` moves the configuration itself, so all three agree at once.
+`theme/NightMode.kt` is the one call site.
+
+### Consequences
+
+**The preference is ours to persist, unlike the language.** ADR-0013's switcher stores nothing:
+`setApplicationLocales` persists itself, which is why `AppLanguage` reads back from the delegate rather
+than from DataStore. Night mode does **not** persist — it is process state, and a fresh process comes up
+following the system. So this one is a DataStore key, and something has to re-apply it on every cold
+start.
+
+**That start-up read blocks the main thread, deliberately.** `AppPreferences.themeModeAtStartup()` is a
+`runBlocking` read in `BinkyApplication.onCreate`, because the night mode has to be applied before the
+first Activity exists and a flow's first emission does not arrive until after the first frame. The
+alternative is a visible flash on every cold start of a phone set to Dark — the thing the setting exists
+to remove. It is also cheap next to what that method already does synchronously: it reads a database
+header and copies the whole database file.
+
+**Two paths move the theme and they agree by construction.** `applyThemeMode` moves the window;
+`MainActivity` collects the same preference and hands it to `BinkyTheme`, which moves the scheme. Neither
+can reach what the other does, so both are needed. The manifest already lists `uiMode` in
+`configChanges`, so AppCompat hands the running Activity an `onConfigurationChanged` rather than
+recreating it — the tap repaints the app in place.
+
+**`SystemBarAppearance` needed no change.** It keys off `BinkyTheme`'s resolved `darkTheme`, which is now
+the override's answer rather than the system's, so the bar icons follow for free. That it needed no edit
+is evidence for where this ADR put the runtime half in the first place.

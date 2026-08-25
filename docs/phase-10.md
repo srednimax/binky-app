@@ -332,15 +332,84 @@ stored row, so neither is offered while adding.
 whole instrumented suite green at 235 (2026-08-25). What is still owed is the part no test can hold: the
 timeline read on a real database, a notification landing on the day, and the hand-off opening a calendar.
 
-## §6
+## §6 — A light/dark override in Settings ✅ built 2026-08-25
 
-Not yet built. The reasoning is in [`DOD.md`](DOD.md)'s box while it is live; it moves here when it
-closes.
+**ADR-0027's amendment** carries the decision: the ADR that chose *which* colours Binky uses now also
+answers *when each scheme applies*. Settings gains **System / Light / Dark**, defaulting to System.
 
-- **§6 needs `AppCompatDelegate.setDefaultNightMode`, not a Compose flag.** A Compose-only override
-  leaves the window background (painted before Compose composes) and §1's `values-night/` scrim following
-  the *system* while the app follows the override — the exact mismatch §1 exists to prevent, visible on
-  API 26–28.
+Four strings, one new file, and edits to six. No schema change and no migration — it is a DataStore key
+beside the weight unit.
+
+### The warning held, and it was the whole design
+
+The advance note said `AppCompatDelegate.setDefaultNightMode`, not a Compose flag, and building it made
+clear that is not a preference between two mechanisms — **it is the only one that reaches all three
+things an owner sees**:
+
+| What | Painted by | Reached by |
+| --- | --- | --- |
+| The colour scheme | `BinkyTheme` → `LightColors` / `DarkColors` | Compose |
+| The window background | `Theme.Binky`, a `DayNight` theme, **before Compose composes** | the configuration |
+| The system-bar scrim | `values-night/colors.xml`, resolved at inflation | the configuration |
+
+A Compose-only override moves the first and leaves the other two following the phone. That is precisely
+the mismatch §1's four `colors.xml` qualifiers exist to prevent, and it is worst on **API 26–28**, where
+there is no system dark mode that might have agreed by accident.
+
+`theme/NightMode.kt` holds the one call. `MODE_NIGHT_FOLLOW_SYSTEM` rather than `MODE_NIGHT_UNSPECIFIED`
+for *System*: "unspecified" is the per-Activity value meaning *defer to the default*, and setting it as
+the default is the one combination AppCompat treats as a no-op.
+
+### The language switcher's shape does not transfer, and the reason is worth writing down
+
+ADR-0013's switcher stores **nothing** — `AppCompatDelegate.setApplicationLocales` persists itself, so
+`AppLanguage.currentAppLanguage()` reads back from the delegate rather than from a preference. The
+obvious move here was to copy that.
+
+It does not work: **AppCompat persists a locale and does not persist a night mode.** Night mode is
+process state, and a fresh process comes up following the system. So this one needs a DataStore key
+*and* something that re-applies it on every cold start.
+
+That something is `BinkyApplication.onCreate`, and the read is `runBlocking` — a deliberate blocking read
+on the main thread. The night mode has to be applied before the first Activity exists, and a flow's first
+emission does not arrive until after the first frame; collecting one instead means a **light flash on
+every cold start** of a phone set to Dark, which is the thing the setting exists to remove. It is also
+cheap next to its neighbours: the same method already reads a database header and copies the whole
+database file synchronously. The value is kept as `startupThemeMode` and handed to `MainActivity` as the
+flow's initial value, so the disk is read once and the first composition is already the right colour.
+
+### Two paths move the theme, and that is not redundancy
+
+`applyThemeMode` moves the window; `MainActivity` collects the same preference and hands it to
+`BinkyTheme`, which moves the scheme. Neither can reach what the other does. `SettingsViewModel` applies
+first and persists second — the window turns on the tap, and nothing on screen waits for a disk
+round-trip.
+
+The tap does **not** restart the app, unlike the language row two sections below it: the manifest already
+lists `uiMode` in `configChanges`, so AppCompat hands the running Activity an `onConfigurationChanged`
+and the app repaints in place.
+
+**`SystemBarAppearance` needed no change**, as §1 predicted — it keys off `BinkyTheme`'s resolved
+`darkTheme`, which is now the override's answer. That it needed no edit is evidence for where §1 put the
+runtime half.
+
+### The UI is the weight unit's shape
+
+`FormSection` + `ChipRow` + three `FormChip`s, above the card and below the unit — the two
+header-and-chips sections together, the card left as rows. One difference: **no help text**. *Light* and
+*Dark* need no gloss.
+
+Not folded in beside Material You, though both are about appearance: that switch answers *which colours*,
+this answers *light or dark*, and the switch is not drawn at all below Android 12 while this always is.
+
+`settings_theme_system` says the same thing as `settings_language_system` in all nine languages, on
+purpose — the same promise about the same phone, and two wordings would read as two behaviours.
+
+### What is still owed
+
+Device proof, batched with the rest of the phase: the override held across a cold start, and the window
+background and scrim moving with it rather than with the phone. The API 26–28 claim is the one this phone
+cannot check — it is the same gap §1 ships with, and the same emulator matrix would close it.
 
 ## Standing decisions changed this phase
 
