@@ -88,16 +88,27 @@ that was supposed to produce it:
 python3 scripts/aab-version.py        # versionCode/versionName vs. git
 python3 scripts/aab-permissions.py    # the <uses-permission> set, vs. an allowlist
 python3 scripts/aab-locale.py         # every string of every shipped locale, vs. the resource table
+python3 scripts/aab-reflection.py     # the classes only the manifest names, vs. what R8 left in the dex
 keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab
 ```
 
-All three scripts **exit non-zero** rather than printing and leaving you to read.
-Each exists because the corresponding claim was once wrong in a shipped artifact
-while every source-side check was green: `versionCode` 1 on a signed bundle (3a),
-Polish missing from the build that went up (fixed in 1.0.1), and a permission set
-that had quietly grown from two to six (found at 4h). The pattern is the same
-every time — the config said one thing, the artifact said another, and nothing
-compared them.
+All four scripts **exit non-zero** rather than printing and leaving you to read.
+Each exists because the corresponding claim was once wrong in an artifact while
+every source-side check was green: `versionCode` 1 on a signed bundle (3a), Polish
+missing from the build that went up (fixed in 1.0.1), a permission set that had
+quietly grown from two to six (found at 4h), and R8 shrinking away the no-arg
+constructor of a class only the manifest names, which disabled the guided document
+scanner without raising anything (10c). The pattern is the same every time — the
+config said one thing, the artifact said another, and nothing compared them.
+
+`aab-reflection.py` is the newest and the one whose failure is quietest, because
+its subject never crashes: a class discovered by `Class.forName` and built with a
+no-arg constructor just isn't there, and the framework that wanted it carries on
+without it. It reads the classes to check **out of the manifest** — every
+`<meta-data>` whose value marks one — rather than from a list that would go stale,
+and looks each up in the dex. `aab-permissions.py` grew 10b's half of the same
+job: no `android:screenOrientation` survives into the artifact, so a dependency
+bump cannot quietly re-lock the screen ML Kit's delegate used to lock.
 
 Don't reach for `aapt2 dump xmltree` here. An AAB stores its manifest as
 **protobuf**, not the binary XML aapt2 reads, so it prints nothing and exits `0` —
@@ -115,7 +126,7 @@ this only removes the hand-build that used to follow it.
 
 What the workflow does, in order: full checkout (`fetch-depth: 0`, because `versionCode`
 is the commit count), materialise the upload key from secrets, `bundleRelease`, run all
-three `aab-*.py` artifact checks, print the signing certificate, upload the AAB **and its
+four `aab-*.py` artifact checks, print the signing certificate, upload the AAB **and its
 R8 mapping**, keep both as a build artifact for 90 days, delete the key.
 
 The mapping matters from 1.9.0: R8 is on, so without it every Play crash report is

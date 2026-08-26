@@ -24,6 +24,15 @@ distribution change no permission list would show, so the tool of record has to
 be able to see it. 5g's finding was that the ML Kit scanner merges no
 <uses-feature> at all; the check stays because the *next* dependency might.
 
+**Orientation is checked too, and that is 10b's fix made permanent.** ML Kit's
+scanner ships `android:screenOrientation="portrait"` on its invisible delegate
+activity; `tools:remove` takes it back out, and nothing in this app's source
+would show if a dependency bump quietly put one back. The merged *text* manifest
+is no help either — it keeps XML comments, so a grep there hits our own
+explanation of the removal. So every `screenOrientation` reaching the compiled
+manifest fails here: this app locks no screen, and a library that wants to lock
+one is a decision to make rather than a default to inherit.
+
 `strings | grep` cannot do this job: it cannot tell a <uses-permission> from an
 android:permission guard on a service, and this artifact carries three of the
 latter (BIND_JOB_SERVICE, and DUMP twice) that are not requests at all. So the
@@ -51,6 +60,13 @@ ATTR_NAME, ATTR_VALUE = 2, 3
 ATTR_COMPILED_ITEM = 6
 ITEM_PRIM = 7
 PRIM_BOOLEAN = 8
+# Primitive's two integer fields, for an attribute that compiled to a number.
+# android:screenOrientation turned out not to need them — aapt2 keeps "portrait" in
+# ATTR_VALUE, checked against a fixture rather than assumed — but an attribute set by
+# resource reference has no source string, and the reading worth having then is the
+# number, because an orientation that is silently unreadable is the one that ships.
+PRIM_INT_DEC = 6
+PRIM_INT_HEX = 7
 
 # Every <uses-permission> the release artifact is allowed to carry. Each is
 # accounted for in docs/play-app-content.md — keep the two in step.
@@ -167,6 +183,26 @@ def walk(element):
         yield from walk(child)
 
 
+def compiled_primitive(attrs_raw, wanted):
+    """(field number, value) of one attribute's compiled Primitive, or None.
+
+    An attribute aapt2 compiled from literal text keeps that text in ATTR_VALUE; a
+    boolean has no text form at all, and one set by resource reference lost its
+    literal, so for both the only answer left is inside the compiled Item.
+    """
+    for name, payload in attrs_raw:
+        if name != wanted:
+            continue
+        for number, value in fields(payload):
+            if number != ATTR_COMPILED_ITEM or not isinstance(value, bytes):
+                continue
+            for inumber, ipayload in fields(value):
+                if inumber != ITEM_PRIM or not isinstance(ipayload, bytes):
+                    continue
+                return next(iter(fields(ipayload)), None)
+    return None
+
+
 def required_attribute(attrs, attrs_raw):
     """The android:required boolean of a <uses-feature>, or None when it is omitted.
 
@@ -179,23 +215,30 @@ def required_attribute(attrs, attrs_raw):
     if text:
         return text.strip().lower() not in ("false", "0")
 
-    # Set by resource reference rather than literally: no source string, so the
-    # answer is in the compiled Item.
-    for name, payload in attrs_raw:
-        if name != "required":
-            continue
-        for number, value in fields(payload):
-            if number != ATTR_COMPILED_ITEM or not isinstance(value, bytes):
-                continue
-            for inumber, ipayload in fields(value):
-                if inumber != ITEM_PRIM or not isinstance(ipayload, bytes):
-                    continue
-                for pnumber, pvalue in fields(ipayload):
-                    if pnumber == PRIM_BOOLEAN:
-                        return bool(pvalue)
+    primitive = compiled_primitive(attrs_raw, "required")
+    if primitive is not None and primitive[0] == PRIM_BOOLEAN:
+        return bool(primitive[1])
     # Declared and unreadable is treated as declared-and-required: the conservative
     # reading is the one that fails loudly rather than the one that ships quietly.
     return True
+
+
+def orientation_attribute(attrs, attrs_raw):
+    """What android:screenOrientation this element asks for, or None when absent.
+
+    Presence is the whole finding — every value here is a failure — so an attribute
+    that cannot be read still returns something rather than None.
+    """
+    if "screenOrientation" not in attrs:
+        return None
+    text = attrs.get("screenOrientation")
+    if text:
+        return text
+
+    primitive = compiled_primitive(attrs_raw, "screenOrientation")
+    if primitive is not None and primitive[0] in (PRIM_INT_DEC, PRIM_INT_HEX):
+        return f"compiled value {primitive[1]}"
+    return "declared, and its value could not be read"
 
 
 def matches(permission, allowed):
@@ -218,7 +261,7 @@ def main():
     if root is None:
         sys.exit("no root element in base/manifest/AndroidManifest.xml")
 
-    requested, guards, features = [], [], []
+    requested, guards, features, oriented, handled, activities = [], [], [], [], [], []
     for tag, attrs, raw in walk(root):
         name = attrs.get("name")
         if tag in ("uses-permission", "uses-permission-sdk-23") and name:
@@ -228,6 +271,16 @@ def main():
         elif tag in ("service", "receiver", "provider", "activity") and attrs.get("permission"):
             guards.append((name or "?", attrs["permission"]))
 
+        # Not part of that chain: an orientation lock is worth finding on an activity
+        # that also carries a permission guard, and those two branches are exclusive.
+        orientation = orientation_attribute(attrs, raw)
+        if orientation is not None:
+            oriented.append((name or tag, orientation))
+        if tag == "activity":
+            activities.append(name or "?")
+            if attrs.get("configChanges"):
+                handled.append((name or "?", attrs["configChanges"]))
+
     for permission in sorted(requested):
         note = next((n for a, n in EXPECTED.items() if matches(permission, a)), None)
         print(f"  {'ok ' if note else 'NEW'} {permission}" + (f"  — {note}" if note else ""))
@@ -236,6 +289,12 @@ def main():
     # may *call* it. Printed so they are never mistaken for the list above.
     for component, permission in guards:
         print(f"  ·   {permission}  — guard on {component.rsplit('.', 1)[-1]}, not a request")
+
+    # Context, like the guards: an activity that handles a configuration change itself
+    # is not recreated by it. That is 10b's other half — the scanner's delegate keeps
+    # the page it has captured across a rotation instead of starting the scan over.
+    for component, changes in handled:
+        print(f"  ·   configChanges {changes}  — {component.rsplit('.', 1)[-1]} handles these itself")
 
     # An omitted android:required reads as true to the platform, and the print says
     # so rather than showing a blank — the silent default is the dangerous one.
@@ -280,6 +339,15 @@ def main():
             "docs/play-app-content.md, then add it to EXPECTED_FEATURES."
         )
 
+    if oriented:
+        problems.append(
+            "android:screenOrientation survives into the artifact:\n"
+            + "\n".join(f"  {c} — {v}" for c, v in sorted(oriented))
+            + "\nThis app locks no screen (10b). A dependency's own manifest is the usual\n"
+            "source; take it back out with tools:remove rather than tools:replace with a\n"
+            "value, which lint's DiscouragedApi flags without reading it."
+        )
+
     if problems:
         print("\n" + "\n\n".join(problems) + "\n\nDo not upload this artifact.", file=sys.stderr)
         return 1
@@ -287,7 +355,8 @@ def main():
     print(
         f"\n{len(requested)} permissions, all accounted for; "
         f"none of the {len(FORBIDDEN)} forbidden ones present; "
-        f"{len(features)} <uses-feature> declared"
+        f"{len(features)} <uses-feature> declared; "
+        f"no screenOrientation on any of the {len(activities)} activities"
     )
     return 0
 

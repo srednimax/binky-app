@@ -125,9 +125,14 @@ a rotation instead of being recreated — which is the concern the library's own
 - [x] **Rotated mid-scan** ✅ 2026-08-25, and the second run on the **minified** artifact: landscape
       mid-scan, a page captured, rotated back — same `ActivityRecord` id throughout, page intact, and the
       finished scan saved into the app. Nothing lost, so the override stays out.
-- [ ] Optional: teach `scripts/aab-permissions.py` to assert no `screenOrientation` survives into the
-      AAB. Needs a new primitive decoder — in the protobuf manifest the value compiles to an int with no
-      source string, so the existing string-reading path cannot see it.
+- [x] **`scripts/aab-permissions.py` now asserts it** ✅ 2026-08-26, so a dependency bump cannot quietly
+      re-lock the screen. ⚠️ **The primitive decoder this box was written around turned out not to be
+      needed, and that was checked rather than assumed**: a fixture manifest compiled with `aapt2 link
+      --proto-format` shows `screenOrientation` keeping its source string (`portrait`) *alongside* the
+      compiled int, unlike `android:required`, which has no text form at all. The int path is still
+      there — for a value set by resource reference, which does lose its literal — but detection never
+      reaches it. Proven both ways: green on the real bundle, and exit 1 naming both locked activities
+      on the fixture. The delegate's `configChanges` prints as context beside the permission guards.
 
 ### 10c — R8 ✅ built 2026-08-24
 
@@ -180,6 +185,19 @@ turn it on against, and watch that build run."* **1.8.0 is live in production.**
       opens `DocumentScanningActivity` with zero fallback lines. **`proguard-rules.pro` no longer holds
       zero keep rules**, and §3 of `phase-10.md` says why that changed.
 
+- [x] **`scripts/aab-reflection.py`** ✅ 2026-08-26 — the gate that was missing when this broke. Every
+      class named in an `<meta-data>` for reflection is looked up in the artifact's dex and must have a
+      public no-arg constructor. It reads the class names **out of the manifest** (any `<meta-data>`
+      whose value is one of three markers: Firebase's registrar sentinel, `androidx.startup`, and
+      datatransport's `backend:` namespace) rather than from a list that would go stale, and finds five.
+      ⚠️ **`mapping.txt` cannot answer this** — R8 writes a bare `CommonComponentRegistrar ->
+      CommonComponentRegistrar:` line with **no members under it** for a class it kept unrenamed, so
+      absence from the mapping is not absence from the artifact. The dex is what gets read: class_defs
+      for "this artifact *defines* it", then the class's own direct methods, because a method_id alone
+      could be satisfied by a caller elsewhere. **Proven by removing the keep rule and rebuilding**: the
+      check reports `GONE CommonComponentRegistrar()` and exits 1 on that bundle, and green on the one
+      with the rule. Wired into both publish workflows, which now run four `aab-*.py` checks.
+
 **Size:** the AAB goes **12.3 MB → 8.1 MB**, a third off, with resource shrinking still switched off.
 
 **What was verified, and what it rules out.** The static half is genuinely done, because R8 writes down
@@ -228,7 +246,9 @@ own shape for the multi-valued droppings fields. Amendment on **ADR-0029**, not 
       `observation-entry-tray-photos` reports `drawn=0 touch=3`, which is **not** a regression — the
       unmodified `observation-entry` scene already reports two such findings with a *larger* overlap, and
       phase-7.5.md's rule is that an unlabelled `touch` hit area says nothing on its own.
-- [ ] The other three configurations, with the rest of the phase's device work.
+- [x] **The other three configurations** ✅ in 10a's matrix. `observations-tray-photos` is clean in all
+      four; `observation-entry-tray-photos` reports **no `drawn` finding in any of them** and only
+      `touch`-tier hit areas, tracking the unmodified `observation-entry` baseline scene cell for cell.
 
 **The SQL was verified against `schemas/8.json` mechanically, not by eye**: every `CREATE TABLE` and
 `CREATE INDEX` in `MIGRATION_7_8` is a byte-for-byte transcription of the exported shape. That is the

@@ -94,7 +94,7 @@ jobs:
       - name: Build the bundle
         run: ./gradlew bundleRelease
 
-      # Same three checks as the internal workflow, and for the same reason: the artifact is read,
+      # Same four checks as the internal workflow, and for the same reason: the artifact is read,
       # never the config that was meant to produce it. They matter more here — this is the copy that
       # reaches the public.
       - name: Verify the artifact
@@ -102,6 +102,7 @@ jobs:
           python3 scripts/aab-version.py
           python3 scripts/aab-permissions.py
           python3 scripts/aab-locale.py
+          python3 scripts/aab-reflection.py
 
       # Generated, not committed: docs/store-listing.md is the authored copy and this is a rendering
       # of it. Runs unconditionally because it also writes the release notes, which accompany every
