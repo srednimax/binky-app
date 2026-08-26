@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.9.0](https://github.com/srednimax/binky-app/compare/v1.8.0...v1.9.0) (2026-08-26)
+
+
+### Features
+
+* a screenshot carries the locale it was taken in ([cde3bb4](https://github.com/srednimax/binky-app/commit/cde3bb41f95fde392dbb5eee871c3665faba7ab9))
+* a tray holds several photos, on a schema-8 rebuild with three children ([1606590](https://github.com/srednimax/binky-app/commit/1606590ba946328ce8e8db9656a623f2173e716f))
+* an event is a dated label, and the timeline is derived from four sources ([0bb5428](https://github.com/srednimax/binky-app/commit/0bb5428a51ff65fd5b1062502500ec4d4e204218))
+* **debug:** a tray_photos seed variant, and the two scenes it makes reachable ([3356ba7](https://github.com/srednimax/binky-app/commit/3356ba7828c238a74c14b25b82aee399e58e5b81))
+* R8 goes on, and its rules file is empty on purpose ([ec6ed4f](https://github.com/srednimax/binky-app/commit/ec6ed4f0585c1898a045c7c57bcb7f87ad518c3d))
+* **release:** manual, gated, staged production release to Play ([2204b35](https://github.com/srednimax/binky-app/commit/2204b35cf50766ad15959bc3beeff456220f8296))
+* **release:** render Play's "What's new" for all nine locales at once ([238deb6](https://github.com/srednimax/binky-app/commit/238deb6b98399693fe6e77314d96af5da2f93542))
+* **release:** two artifact checks for what R8 and a manifest merge can take away ([bce220c](https://github.com/srednimax/binky-app/commit/bce220cdc5fd8b749e0e51f9227c1fb878a81982))
+* **screenshots:** --numbered prefixes a listing set with its upload order ([4a998e9](https://github.com/srednimax/binky-app/commit/4a998e968455300f521360a440b7164f16fdf82c))
+* **screenshots:** a scene for the timeline, the one screen the matrix never saw ([c0780ff](https://github.com/srednimax/binky-app/commit/c0780ff978ab56b65b8f5120ee8acc4c6178ca71))
+* the app follows the phone, or the owner — a light/dark override ([2383b5f](https://github.com/srednimax/binky-app/commit/2383b5f3b2eaed47e6cf02f31a2a92efd8107eb7))
+* **weight:** entry takes kilograms as well as grams ([793e5c0](https://github.com/srednimax/binky-app/commit/793e5c09d4eb8c881650e0036b553cd2083397a2))
+
+
+### Bug Fixes
+
+* enableEdgeToEdge leaves the app, and the scrim moves into four qualified files ([b0c13bd](https://github.com/srednimax/binky-app/commit/b0c13bd521ef5e646cf457b13cb9b6eae306688f))
+* **scan:** R8 was shrinking away ML Kit's registrar constructor ([b6a0715](https://github.com/srednimax/binky-app/commit/b6a0715bb573b14e819e4a0f6c17c4e53346ef0a))
+* the ML Kit delegate stops being portrait-locked, and stops being recreated ([5010e93](https://github.com/srednimax/binky-app/commit/5010e93c61b9d0ab30006ef52bdebc42b0798391))
+
 ## [1.8.0](https://github.com/srednimax/binky-app/compare/v1.7.0...v1.8.0) (2026-08-22)
 
 
