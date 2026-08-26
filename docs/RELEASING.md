@@ -192,10 +192,31 @@ And a fourth for the first run: **`dry_run` defaults to true**, which passes `--
 Play validates the whole edit and discards it. Nothing publishes, nothing is sent for review. Untick
 it when you mean it.
 
+### It promotes; it does not build
+
+The artifact that reaches production is the **exact one `publish-play.yml` already put on the
+internal track** — same bytes, same signature, the copy you actually tested. This workflow never
+runs `bundleRelease` and never materialises the upload key, because it has nothing to sign.
+
+Rebuilding here was the original shape and it could not have worked. `versionCode` is the commit
+count, so rebuilding a released tag reproduces a code Play has already accepted on internal, and
+Play refuses a **new upload** of a versionCode it has seen:
+
+```
+[!] Google Api Error: Invalid request - Version code 423 has already been used.
+```
+
+Two tracks *sharing* a versionCode is not the problem — that is precisely what promotion produces,
+and it is why promoting by hand in the Console never hit this. The refusal is about uploading the
+same code twice. `--skip_upload_aab` / `--skip_upload_apk` are what turn the supply call into a
+promotion: it moves the release already sitting on `from_track` instead of looking for a binary.
+
 | Input | Default | What it does |
 | --- | --- | --- |
-| `track` | `production` | also `beta` / `alpha` / `internal` |
+| `track` | `production` | destination — also `beta` / `alpha` |
+| `from_track` | `internal` | source track holding the build being promoted |
 | `rollout` | `0.1` | fraction of users; `1.0` is everyone |
+| `version_code` | *(blank)* | which build to promote; blank derives it from the checked-out ref |
 | `update_listing` | `false` | push descriptions + screenshots as well |
 | `dry_run` | `true` | validate against Play, commit nothing |
 
