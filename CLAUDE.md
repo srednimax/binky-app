@@ -10,10 +10,10 @@ care. Free, ad-free, no server, all data on the device.
   it is short by design, and `PLAN.md` is the long record behind it.
 - **The phases big enough for a file of their own:** [`phase-6.md`](docs/phase-6.md),
   [`phase-7.md`](docs/phase-7.md), [`phase-7.5.md`](docs/phase-7.5.md), [`phase-8.md`](docs/phase-8.md),
-  [`phase-9.md`](docs/phase-9.md) — all five **closed**, each holding its own record, and phase 9's
-  carries an appendix with the run narratives `DOD.md` used to hold — and
-  [`phase-10.md`](docs/phase-10.md), the one still **open**. Every other phase's record is in `PLAN.md`;
-  don't load it to build one.
+  [`phase-9.md`](docs/phase-9.md), [`phase-10.md`](docs/phase-10.md) — all six **closed**, each
+  holding its own record, and phases 9 and 10 each carry an appendix with the checklist `DOD.md` used
+  to hold. Every other phase's record is in `PLAN.md`; don't load it to build one. **No phase is open**
+  — `DOD.md` is down to the standing schema gate and what is open without being a phase.
 - **Roadmap and status:** [`docs/PLAN.md`](docs/PLAN.md) — read the phase you're in, not the file.
 - **Commits & releasing:** [`docs/RELEASING.md`](docs/RELEASING.md). Commit subjects **must** be
   [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `feat!:`, `docs:`, …) — a
