@@ -51,7 +51,7 @@ LOCALES = {
     "Italian": "it-IT",
     "Brazilian Portuguese": "pt-BR",
     "Czech": "cs-CZ",
-    "Ukrainian": "uk-UA",
+    "Ukrainian": "uk",
 }
 
 # The same mapping seen from the other end: an Android resource qualifier -> Play's code. This is
@@ -65,7 +65,7 @@ RES_QUALIFIER = {
     "it": "it-IT",
     "pl": "pl-PL",
     "pt-rBR": "pt-BR",
-    "uk": "uk-UA",
+    "uk": "uk",
 }
 
 LABEL = re.compile(r"^\*\*(?P<name>[^*]+)\*\*\s*—\s*\d+/\d+:\s*$")

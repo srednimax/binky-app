@@ -48,10 +48,9 @@ on:
           - '0.5'
           - '1.0'
       version_code:
-        # Blank is right whenever you dispatch from the release tag. It stops being right the moment
-        # `main` has moved on: the count would then name a build that was never uploaded, and the
-        # promotion fails on a version Play has never seen.
-        description: 'versionCode to promote — blank derives it from the checked-out ref'
+        # Blank is the normal case: the workflow asks Play which build is on the source track. Fill
+        # it in only to pin a specific older build.
+        description: 'versionCode to promote — blank asks Play what is on the source track'
         type: string
         required: false
       update_listing:
@@ -79,23 +78,52 @@ jobs:
     # ⚠️ Without that reviewer configured the environment is a label and gates nothing.
     environment: production
     steps:
+      # A shallow checkout is fine here, unlike every other workflow: nothing is built and nothing
+      # is derived from history. The versionCode comes from Play, not from `git rev-list --count`.
       - uses: actions/checkout@v7
-        with:
-          # versionCode is the commit count; a shallow checkout silently makes it 1. Still required
-          # even though nothing is built here — the count is what names the build being promoted and
-          # the changelog file that accompanies it.
-          fetch-depth: 0
 
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      # ⚠️ The commit count — which every other workflow uses for versionCode — is the WRONG answer
+      # here, and wrong in a way that looks right. It describes the checkout; a promotion is about a
+      # build that was uploaded earlier. The two agree only while `main` still points at the release
+      # tag, and stop agreeing the moment anything else merges. So ask Play instead: the source track
+      # knows exactly which build it is holding, from any ref, with no dialog to get right.
       - name: Resolve the versionCode being promoted
         id: version
+        env:
+          JSON_KEY_DATA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
         run: |
           set -euo pipefail
           code='${{ inputs.version_code }}'
-          if [ -z "${code}" ]; then
-            code="$(git rev-list --count HEAD)"
-            echo "Derived versionCode ${code} from $(git rev-parse --short HEAD)"
+          if [ -n "${code}" ]; then
+            echo "Pinned by the dialog: versionCode ${code}"
           else
-            echo "Using the versionCode given in the dialog: ${code}"
+            # Written to a file rather than passed inline: the key is a multi-line JSON blob and the
+            # shell is not a good place for it.
+            key="${RUNNER_TEMP}/play-key.json"
+            printf '%s' "${JSON_KEY_DATA}" > "${key}"
+            echo "Asking Play which build is on '${{ inputs.from_track }}'..."
+            out="$(bundle exec fastlane run google_play_track_version_codes \
+              package_name:'binky.bunny.and.rabbit.tracker' \
+              track:'${{ inputs.from_track }}' \
+              json_key:"${key}" 2>&1)" || { echo "${out}"; rm -f "${key}"; exit 1; }
+            rm -f "${key}"
+            # `Result: [423]` — take the highest, so a track holding more than one release promotes
+            # the newest rather than whichever the API happened to list first.
+            code="$(printf '%s\n' "${out}" \
+              | sed -n 's/.*Result: *\[\([0-9,[:space:]]*\)\].*/\1/p' \
+              | tr ',' '\n' | tr -d '[:space:]' | grep -E '^[0-9]+$' | sort -n | tail -1)"
+            if [ -z "${code}" ]; then
+              echo "${out}"
+              echo "::error::No versionCode on track '${{ inputs.from_track }}'. Is its release live, or is it halted?"
+              exit 1
+            fi
+            echo "Play says '${{ inputs.from_track }}' holds versionCode ${code}"
           fi
           echo "code=${code}" >> "${GITHUB_OUTPUT}"
           echo "::notice::Promoting versionCode ${code} from '${{ inputs.from_track }}' to '${{ inputs.track }}'"
@@ -107,12 +135,6 @@ jobs:
       # is the update_listing input, applied at the supply step below.
       - name: Render the listing metadata
         run: python3 scripts/play-metadata.py --out fastlane/metadata/android --version-code '${{ steps.version.outputs.code }}'
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-          bundler-cache: true
 
       - name: Promote to Play
         env:
