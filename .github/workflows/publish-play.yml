@@ -83,15 +83,18 @@ jobs:
       # The repo's standing rule, and the reason this step sits before the upload rather than
       # after it: read the version, the permission set and the locales back out of the
       # **artifact**, never out of the config that was supposed to produce them. Each of these
-      # three exists because that exact claim was once wrong in a shipped build while every
-      # source-side check was green — versionCode 1 on a signed bundle, Polish missing from
-      # the build that went up, a permission set quietly grown from two to six. They exit
-      # non-zero, so a bad artifact stops here instead of reaching testers.
+      # four exists because that exact claim was once wrong in a build while every source-side
+      # check was green — versionCode 1 on a signed bundle, Polish missing from the build that
+      # went up, a permission set quietly grown from two to six, and R8 shrinking away the
+      # constructor of a class only the manifest names, which cost the guided scanner without
+      # costing a crash. They exit non-zero, so a bad artifact stops here instead of reaching
+      # testers.
       - name: Verify the artifact
         run: |
           python3 scripts/aab-version.py
           python3 scripts/aab-permissions.py
           python3 scripts/aab-locale.py
+          python3 scripts/aab-reflection.py
 
       - name: Show the signing certificate
         run: keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab
