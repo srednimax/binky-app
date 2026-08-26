@@ -66,11 +66,14 @@ the short list below of things that are open without being a phase.
   `publish-play.yml`, `publish-play-production.yml`, and `ci.yml`'s nightly edge-to-edge matrix, which
   was written against emulators no one here has (no local KVM). **Read the first run of each before
   believing any of them works**; a workflow that has never run is a draft with good syntax.
-- **The listing follow-up, deliberately its own PR.** Re-shoot 9 locales × 8 scenes **light only** with
-  `screenshots.py --numbered`, update [`store-listing.md`](store-listing.md) (it still says four
-  screenshots, and its per-locale folder layout is stale), replace `art/`'s four dark PNGs, and commit
-  `art/play-screenshots/` flat and latest-only (~16 MB). Then the production job with
-  `dry_run: true, update_listing: true` as its first real exercise, before a real one.
+- ~~**The listing follow-up, deliberately its own PR.**~~ **Folded into the Phase 10 PR and done
+  2026-08-26**: nine locales × eight scenes, light, in `art/play-screenshots/`, with
+  [`store-listing.md`](store-listing.md) and [`art/README.md`](../art/README.md) rewritten around
+  them. The shots are **cropped above the status bar** — the capture driver's Do Not Disturb puts a
+  crossed bell in every frame and this ROM ignores SystemUI demo mode, so `pad-screenshot.py
+  --crop-status-bar` is the only place it comes off. **What is left of this box is the Console:** the
+  production job with `dry_run: true, update_listing: true` as its first real exercise, before a real
+  one — and nine locales is nine uploads, not one.
 - **Google's developer-verification registration is due 30 Sept 2026.** The owner believes the app is
   already registered and has not confirmed it in the Console; confirming is the whole task. The other
   deadline Play surfaced — the target-API requirement on 31 Aug 2026 — is already satisfied, because

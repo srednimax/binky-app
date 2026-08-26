@@ -9,7 +9,7 @@ path data in the `VectorDrawable`s.
 | `rabbit.py`'s MARK and EYE curves | `concept-1.png` → `trace-mark.py` | final |
 | `drawable/ic_launcher_{foreground,monochrome}.xml`, `drawable/ic_notification.xml`, `mipmap-*`, `play-icon-512.png` | `rabbit.py` → `make-launcher-icon.py` | final |
 | `play-feature-graphic.png` (1024×500) | `rabbit.py` → `make-feature-graphic.py` | final |
-| `play-screenshot-{1-home,2-weight,3-observations,4-backup}.png` (1526×2713) | device capture → `pad-screenshot.py` | English dark, re-shot at 9g (2026-08-21). The other eight locales live outside the repo — `docs/store-listing.md` says where |
+| `play-screenshots/<n>_<scene>-<tag>.png` (1452×2582) | device capture → `pad-screenshot.py --crop-status-bar` | The Play set: eight scenes × nine locales, **light**, re-shot 2026-08-26. Flat and latest-only — the filename carries upload position and locale, so there is no folder per language to lose them in |
 
 **No third-party art is involved, and nothing here carries a licence obligation.** That is a
 deliberate property, not a coincidence — see below.
@@ -91,7 +91,15 @@ listing is just the wrong place to show it.
 
 The device is 1220×2712 (2.22:1), taller than the 9:16 Play documents for phone screenshots, so
 `pad-screenshot.py` centres each on a 9:16 canvas filled with the screenshot's own edge colour. It
-pads rather than crops because cropping a 2.22:1 shot to 9:16 would cut a fifth of the screen off.
+pads rather than crops **the UI** because cropping a 2.22:1 shot to 9:16 would cut a fifth of the
+screen off.
+
+`--crop-status-bar` is the one exception, and it is not about the ratio: it drops the top 130px —
+the portrait `statusBars` inset the edge-to-edge matrix measured, which coincides with the
+punch-hole cutout — before padding. The capture driver holds the phone in Do Not Disturb, which
+puts a crossed bell in every frame and cannot be suppressed on this ROM; the clock and battery go
+with it. `docs/store-listing.md` carries the full reasoning. No app content is inside those 130px:
+the shell applies the inset, so the frame starts at the `TopAppBar`.
 
 ## Regenerating
 
@@ -99,7 +107,7 @@ pads rather than crops because cropping a 2.22:1 shot to 9:16 would cut a fifth 
 python3 art/trace-mark.py              # concept-1.png -> the curves pasted into rabbit.py
 python3 art/make-launcher-icon.py      # VectorDrawables, notification icon, ten mipmaps, play-icon-512.png
 python3 art/make-feature-graphic.py    # play-feature-graphic.png
-python3 art/pad-screenshot.py in.png out.png
+python3 art/pad-screenshot.py in.png out.png --crop-status-bar   # the Play set; omit the flag to keep the status bar
 ```
 
 `trace-mark.py` is the only one whose output is **pasted** rather than written: it prints the two

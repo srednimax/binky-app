@@ -57,13 +57,15 @@ for consistency rather than because those languages need it.
 | Privacy policy URL | `https://srednimax.github.io/binky-app/privacy-policy.html` |
 | App icon (512²) | [`art/play-icon-512.png`](../art/play-icon-512.png) |
 | Feature graphic (1024×500) | [`art/play-feature-graphic.png`](../art/play-feature-graphic.png) |
-| Phone screenshots (1526×2713) | [`1-home`](../art/play-screenshot-1-home.png), [`2-weight`](../art/play-screenshot-2-weight.png), [`3-observations`](../art/play-screenshot-3-observations.png), [`4-backup`](../art/play-screenshot-4-backup.png) — re-shot at 9g. ⚠️ **The set that goes up is now LIGHT** (changed 2026-08-24); these four are the English *dark* capture from 9g and are superseded. The other eight locales are prepared outside the repo; see *Open* |
+| Phone screenshots (1452×2582) | [`art/play-screenshots/`](../art/play-screenshots/) — **eight scenes × nine locales, light**, re-shot 2026-08-26. Upload in filename order: `1_home`, `2_weight`, `3_observations`, `4_timeline`, `5_care`, `6_medication-course`, `7_documents`, `8_backup`, each suffixed with its locale tag (`-en`, `-cs`, `-de`, `-es`, `-fr`, `-it`, `-pl`, `-pt-BR`, `-uk`) |
 | App category | Lifestyle |
 | Contact email | `binky.support@gmail.com` — the per-app support address, set in Store settings, not the account-level developer email |
 | Website | `https://srednimax.github.io/binky-app/` — the Pages root 9e created, also in Store settings. The privacy-policy URL above is a page *under* it |
 
-✅ **The screenshots were re-shot at 9g on 2026-08-21** and photograph the app as 1.7 ships it,
-9f's Home header included. Entering them in the Console is a separate box (`DOD.md` §4).
+✅ **The screenshots were re-shot on 2026-08-26** and photograph the app as 1.9.0 builds it — 9f's
+Home header, 10e's timeline and the Phase 7 light scheme included. **Eight per locale, not four**,
+which is Play's maximum for phone screenshots. Entering them in the Console is a separate box
+(`DOD.md` §4).
 
 **Lifestyle, not Health & Fitness**, even though the app tracks health data. Health & Fitness is
 oriented at *human* health, where Play applies closer scrutiny to anything that reads as a medical
@@ -927,25 +929,40 @@ that lists everything gets read as none of it. Add them only if something comes 
 
 ## Open
 
-- ~~**The screenshots are 1.0's and are stale.**~~ **Re-shot at 9g, 2026-08-21**, in all nine
-  locales and both themes. Captured at the phone's native 1220×2712 and padded to 1526×2713, which
-  is exactly 9:16; Play's screenshot aspect limit is 2:1 and the raw capture is 2.22:1, so the padding
-  is a requirement rather than a style choice. The fill is the app's own surface, so the side bars are
-  invisible — **`#16130D` dark, `#FFF8EF` light**. ⚠️ This bullet said `#121318` until 2026-08-21: that
-  is the *pre*-Phase-7 dark, and it had outlived the palette by four releases. It was never load-bearing
-  — `art/pad-screenshot.py` samples the image's own edge rather than reading a constant — which is
-  exactly why nothing caught it. Both themes are at
-  `~/binky-screenshots/phase-9/listing/_play/{light,dark}/<tag>/`, outside the repo because 72 PNGs are
-  not source.
+- ~~**The screenshots are 1.0's and are stale.**~~ **Re-shot 2026-08-26**, nine locales × eight
+  scenes, **light only**, and this time committed: `art/play-screenshots/`, flat, latest-only. The
+  filename carries both the upload position and the locale (`4_timeline-pt-BR.png`), which is what
+  lets one flat directory hold all nine sets without a folder per language to lose them in.
+
+  **The arithmetic changed with the crop.** Captured at the phone's native 1220×2712, the top
+  **130px** cropped off, then padded to **1452×2582**. Play's screenshot aspect limit is 2:1 and the
+  raw capture is 2.22:1, so padding is a requirement rather than a style choice; the crop is what
+  removes the status bar. The fill is the app's own surface, so the bands are invisible —
+  **`#FFF8EF`** for the light set. ⚠️ This bullet said `#121318` until 2026-08-21: that is the
+  *pre*-Phase-7 dark, and it had outlived the palette by four releases. It was never load-bearing —
+  `art/pad-screenshot.py` samples the image's own edge rather than reading a constant — which is
+  exactly why nothing caught it.
+
+  ⚠️ **The status bar is cropped, and it is the driver that made that necessary.** `screenshots.py`
+  holds the phone in Do Not Disturb for the length of a run — `set_dnd` explains why, and why
+  revoking `POST_NOTIFICATIONS` instead would be worse — and Zen puts a crossed bell in the status
+  bar of every frame it captures. It cannot be suppressed on the device: HyperOS ignores SystemUI
+  demo mode outright (`sysui_demo_allowed` plus the clock/battery/notifications/zen broadcasts change
+  nothing), so `--crop-status-bar` on `art/pad-screenshot.py` is the only place it can go. 130px is
+  the portrait `statusBars` inset measured by the edge-to-edge matrix, and it coincides with the
+  punch-hole cutout. The clock and battery go with it, which is the point rather than a side effect.
+  **The 9g set kept them, bell included.**
 
   ⚠️ **The listing takes the LIGHT set from 2026-08-24.** This file said *dark is the set to upload,
   because it is what the store already shows* for the whole of Phase 9, and 1.8.0 went up under that
   rule. The rule is now light-only, and it is a decision about **the Console alone** — the app still
   ships both themes, `screenshots.py` still captures both cells, and Phase 10 adds an in-app
-  light/dark override. The four in `art/` are still the dark capture and are superseded until
-  re-exported.
+  light/dark override.
 
-  **Four, not the five 3h planned.** The gallery shot was dropped: the sample seeder writes
+  **Eight, and the eight are chosen.** Play allows eight phone screenshots and the set now uses all
+  of them: `home, weight, observations, timeline, care, medication-course, documents, backup`. The
+  in-app appearance override (10f) was the one left out. ⚠️ **The gallery shot is still dropped**,
+  for the reason 3h found: the sample seeder writes
   solid-colour JPEGs (`SampleData.writeSampleJpeg`) because the fixture exists to exercise the media
   pipeline, not to look like anything, so the gallery photographs as four flat rectangles. Shipping
   that would read as a broken app; staging it would have meant putting real photos in. Play requires a
@@ -953,8 +970,9 @@ that lists everything gets read as none of it. Add them only if something comes 
   section is currently the only place that claim is made.
 
   **Localised screenshots are per listing**, and Play falls back to the default listing's set for a
-  language that has none. They are taken for the languages with installs, once there are installs to
-  count, through the locale-aware capture driver (`DOD.md` §7).
+  language that has none — so the nine sets are nine separate uploads in the Console, not one. All
+  nine exist in the repo; which of them actually go up is a Console decision, and a language with no
+  installs loses nothing by falling back to English until it has some.
 - **A roadmap line** naming unreleased features was deliberately left out. It manages expectations
   for reviewers who might otherwise mark the app down for something missing, but it also puts
   unreleased features in indexed listing text. Add it later if reviews ask for it, not before.
