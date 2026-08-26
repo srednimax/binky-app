@@ -73,6 +73,14 @@ jobs:
           git fetch origin "$base"
           python3 scripts/translation-gate.py "origin/$base"
 
+      # The version Play is told about must be the version the notes describe. play-metadata.py
+      # uploads the newest notes it finds and nothing else consults them, so a bumped versionName
+      # with unmoved notes ships the *previous* release's text — silently. That is how 1.9.0 reached
+      # production describing 1.8.0, and Play does not allow notes to be edited on a live release.
+      # No base ref: this compares two files in the same tree, not this branch against another.
+      - name: Notes gate
+        run: python3 scripts/notes-gate.py
+
       - name: Build debug APK
         run: ./gradlew assembleDebug
 

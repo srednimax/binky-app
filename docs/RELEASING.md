@@ -76,6 +76,35 @@ lines), so squashing would throw away detail the changelog exists to carry.
 There is no release-please option for this. The merge strategy *is* the fix, which
 is why it is enforced by the repo setting instead of by remembering.
 
+## Release notes are a merge gate, not an afterthought
+
+`scripts/notes-gate.py` runs in CI on every pull request, beside the schema and translation gates. It
+asserts one thing: the newest `### x.y.z` under `## Release notes` in
+[`store-listing.md`](store-listing.md) is the `versionName` about to ship.
+
+It exists because `play-metadata.py` uploads **the newest notes it finds** and nothing else consults
+them. Bump `versionName` without moving the notes and the previous release's text goes up attached to
+the new build, with nothing to notice it. That is how **1.9.0 reached production describing 1.8.0** on
+2026-08-26 — a note predating the timeline, multi-photo trays, kilogram entry and the light/dark
+override. ⚠️ **Play does not allow release notes to be edited on a live release**, so the correction
+could not be made where it was needed; it waited for the next upload.
+
+The gate is invisible on ordinary branches — `versionName` is still the last released version and the
+notes already match. It fails on **release-please's PR**, which is the one moment the two are allowed
+to disagree and the last moment it is free to fix.
+
+**When nothing owner-visible changed, satisfying it is a rename, not a rewrite.** Move the heading to
+the new version and say why the bodies stand unchanged; 1.8.0 is the worked example. The gate reads
+the heading, so "these notes still hold" stays a decision someone made rather than the default.
+
+```bash
+python3 scripts/notes-gate.py            # the gate itself
+python3 scripts/notes-gate.py --report   # what does this branch owe?
+```
+
+It also checks what the notes must satisfy to be usable at all: a note for every locale the AAB
+carries, and every one inside Play's 500 characters.
+
 ## Checking the artifact before it reaches Play
 
 `bundleRelease`, never `assembleRelease` — Play wants an AAB and an AAB can't be
