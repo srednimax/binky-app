@@ -1409,6 +1409,20 @@ SCENES = [
     ),
     Scene("vets", "detail", [("tap", "More"), ("tap", "Vets")]),
     Scene("vet-editor", "form", [("tap", "More"), ("tap", "Vets"), ("tap", "Add a vet")]),
+    # The timeline is **derived and stores nothing** (ADR-0031): its rows come from four sources at
+    # once, so it is the one screen whose content is a query rather than a table. Reached the way
+    # `documents` is — a bunny already in scope pushes straight through, and the "Whose timeline?"
+    # chooser only appears when none is, which `SELECT_BUNNY` has already settled.
+    #
+    # ⚠️ **The seed writes no `events` rows of its own.** What this photographs is the derived half:
+    # vet visits and recorded care, merged into one agenda. That is the honest state of the sample
+    # data rather than a gap in the scene — an owner-written event would have to be seeded to appear.
+    Scene(
+        "timeline",
+        "detail",
+        [*SELECT_BUNNY, ("tap", "More"), ("tap", "Timeline")],
+        note="the derived agenda: vet visits and care completions, with no events table behind them",
+    ),
     # Documents are a grid of scanned pages with no chrome of their own, which is the photo gallery's
     # inset problem on content the owner cannot re-take.
     Scene("documents", "detail", [*SELECT_BUNNY, ("tap", "More"), ("tap", "Documents")]),
