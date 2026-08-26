@@ -158,6 +158,22 @@ NAVBAR_OVERLAYS = {
 _OVERLAY_LIST: "str | None" = None
 
 
+# `secure navigation_mode`: the platform's own record of which navigation the device is in, and the
+# only reading left when the overlays are missing. 1 is the two-button mode of Android 9-10, which
+# this matrix has no cell for.
+NAV_MODE_SETTING = {"0": "threebutton", "2": "gesture"}
+
+
+def current_nav_mode() -> "str | None":
+    """The navigation mode the device is in, or None if the setting cannot be read or understood.
+
+    None is not "three-button": an unreadable mode means a cell claiming to be in one would be the
+    silently-wrong cell [usable_configs] exists to prevent, so it is skipped instead of assumed.
+    """
+    raw = shell("settings get secure navigation_mode").strip()
+    return NAV_MODE_SETTING.get(raw)
+
+
 def navbar_overlay_present(nav: str) -> bool:
     """Whether the overlay [set_nav_mode] would enable is installed at all.
 
@@ -183,6 +199,13 @@ def set_nav_mode(nav: str) -> None:
         # and [usable_configs] has already dropped the gesture cells — so `nav` can only be
         # "threebutton" by the time control reaches here.
         return
+    if not navbar_overlay_present(nav):
+        # Same shape of no-op, reached a different way: an image with no navigation overlays cannot
+        # be moved between modes at all, so [usable_configs] kept this cell only because the device
+        # is already in `nav`. Calling `enable-exclusive` here is what took the API 34 leg down —
+        # with 255 and `Unable to retrieve overlay information`, for the three-button cells that
+        # image can otherwise run perfectly well.
+        return
     shell(f"cmd overlay enable-exclusive --category {NAVBAR_OVERLAYS[nav]}")
 
 
@@ -192,15 +215,26 @@ def unreachable_reason(config: "Config") -> "str | None":
     A reason rather than a boolean because it is printed and written into the report: "skipped" on
     its own, three weeks later in a CI artifact, is indistinguishable from "nobody asked for it".
     """
-    if config.nav != "gesture":
-        return None
-    if api_level() < GESTURE_MIN_API:
-        return f"gesture navigation needs API {GESTURE_MIN_API} (this is {api_level()})"
     # MIUI drives navigation through `force_fsg_nav_bar` and never touches the overlays, which are
     # all present and all disabled on that phone — so their absence would say nothing there.
-    if device_family() != "miui" and not navbar_overlay_present("gesture"):
-        return "no gestural navigation overlay is installed on this image, so the mode cannot be set"
-    return None
+    if device_family() == "miui":
+        return None
+    if config.nav == "gesture" and api_level() < GESTURE_MIN_API:
+        return f"gesture navigation needs API {GESTURE_MIN_API} (this is {api_level()})"
+    if api_level() < GESTURE_MIN_API:
+        # Three-button is the only navigation the platform has, and it is already in place.
+        return None
+    if navbar_overlay_present(config.nav):
+        return None
+    # No overlay for this mode: the device cannot be moved into it. It may already be there, which
+    # is the one case that still yields an honest cell — the mode is right, nothing had to set it.
+    current = current_nav_mode()
+    if current == config.nav:
+        return None
+    return (
+        f"this image ships no {config.nav} navigation overlay, and the device is in "
+        f"{current or 'a mode that cannot be read'} — the mode cannot be set"
+    )
 
 
 def usable_configs(configs: "list[Config]") -> "tuple[list[Config], list[tuple[Config, str]]]":
