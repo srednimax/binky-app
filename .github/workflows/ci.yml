@@ -254,8 +254,9 @@ jobs:
           disable-animations: true
           script: |
             ./gradlew installDebug
-            python3 scripts/edge-to-edge.py --out artifacts/edge-to-edge --assert-clean \
-              --config ${{ matrix.config }}
+            # One line on purpose: `android-emulator-runner` does not honour a backslash
+            # continuation here, and passes the backslash on as an argument of its own.
+            python3 scripts/edge-to-edge.py --out artifacts/edge-to-edge --assert-clean --config ${{ matrix.config }}
 
       # if: always() because a red run is exactly when the screenshots and the report are wanted.
       - name: Upload matrix
