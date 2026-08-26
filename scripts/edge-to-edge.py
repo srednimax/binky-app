@@ -209,7 +209,20 @@ def set_nav_mode(nav: str) -> None:
     shell(f"cmd overlay enable-exclusive --category {NAVBAR_OVERLAYS[nav]}")
 
 
-def unreachable_reason(config: "Config") -> "str | None":
+@dataclass(frozen=True)
+class Unreachable:
+    """Why a cell cannot run, and whether that is a fact about the device or a failure to read it.
+
+    The distinction decides an exit status. A leg whose every cell names a capability the device
+    genuinely lacks has done everything there was to do, and going red for it would train everyone
+    to ignore a red leg. A leg that could not *tell* has proven nothing, and green would be a lie.
+    """
+
+    reason: str
+    readable: bool = True
+
+
+def unreachable_reason(config: "Config") -> "Unreachable | None":
     """Why this device cannot be put into `config`, or None if it can.
 
     A reason rather than a boolean because it is printed and written into the report: "skipped" on
@@ -220,7 +233,7 @@ def unreachable_reason(config: "Config") -> "str | None":
     if device_family() == "miui":
         return None
     if config.nav == "gesture" and api_level() < GESTURE_MIN_API:
-        return f"gesture navigation needs API {GESTURE_MIN_API} (this is {api_level()})"
+        return Unreachable(f"gesture navigation needs API {GESTURE_MIN_API} (this is {api_level()})")
     if api_level() < GESTURE_MIN_API:
         # Three-button is the only navigation the platform has, and it is already in place.
         return None
@@ -231,13 +244,14 @@ def unreachable_reason(config: "Config") -> "str | None":
     current = current_nav_mode()
     if current == config.nav:
         return None
-    return (
+    return Unreachable(
         f"this image ships no {config.nav} navigation overlay, and the device is in "
-        f"{current or 'a mode that cannot be read'} — the mode cannot be set"
+        f"{current or 'a mode that cannot be read'} — the mode cannot be set",
+        readable=current is not None,
     )
 
 
-def usable_configs(configs: "list[Config]") -> "tuple[list[Config], list[tuple[Config, str]]]":
+def usable_configs(configs: "list[Config]") -> "tuple[list[Config], list[tuple[Config, Unreachable]]]":
     """Split the requested configs into the ones this device can be put into, and the rest.
 
     **A skipped cell and a silently wrong one are not the same result.** Below API 29 there is no
@@ -252,7 +266,7 @@ def usable_configs(configs: "list[Config]") -> "tuple[list[Config], list[tuple[C
     property of a cell, not of the run.
     """
     kept: list[Config] = []
-    dropped: list[tuple[Config, str]] = []
+    dropped: list[tuple[Config, Unreachable]] = []
     for config in configs:
         reason = unreachable_reason(config)
         if reason is None:
@@ -2010,9 +2024,33 @@ def main() -> int:
         wanted = set(args.config.split(","))
         configs = [config for config in CONFIGS if config.name in wanted]
     configs, unsupported = usable_configs(configs)
-    for config, reason in unsupported:
-        print(f"-- {config.name}: skipped, {reason}")
+    for config, unreachable in unsupported:
+        print(f"-- {config.name}: skipped, {unreachable.reason}")
     if not configs:
+        # Every requested cell was skipped. With one job per configuration — which is how CI fans
+        # this matrix out — that is the *expected* outcome for a leg like API 26's gesture cells,
+        # and failing it would make a red leg mean nothing. But only when the device could actually
+        # answer: an unreadable navigation mode is not a capability, it is a question that did not
+        # come back, and a green there would be a lie about a cell nobody ran.
+        if all(unreachable.readable for _, unreachable in unsupported):
+            print(f"-- nothing to run: every requested configuration is one this device cannot enter")
+            if args.out:
+                args.out.mkdir(parents=True, exist_ok=True)
+                (args.out / "report.json").write_text(
+                    json.dumps(
+                        {
+                            "configs": [],
+                            "device": {
+                                "family": device_family(),
+                                "api": api_level(),
+                                "model": shell("getprop ro.product.model").strip(),
+                                "skipped_configs": {c.name: u.reason for c, u in unsupported},
+                            },
+                        },
+                        indent=2,
+                    )
+                )
+            return 0
         parser.error(f"no requested configuration is reachable on API {api_level()}")
     scenes = [scene for scene in SCENES if scene.suite == args.suite]
     if args.scene:
@@ -2033,7 +2071,7 @@ def main() -> int:
             "family": device_family(),
             "api": api_level(),
             "model": shell("getprop ro.product.model").strip(),
-            "skipped_configs": {config.name: reason for config, reason in unsupported},
+            "skipped_configs": {config.name: unreachable.reason for config, unreachable in unsupported},
         },
     }
     # Before the run rather than with the first cell's screenshots: the report is written in a

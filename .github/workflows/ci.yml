@@ -189,27 +189,40 @@ jobs:
   # no check. Nightly plus the Run workflow button keeps the coverage and keeps the merge path
   # honest. Promote it to `pull_request` once a few weeks of nightlies have shown it steady.
   edge-to-edge:
-    name: Edge-to-edge matrix (API ${{ matrix.api-level }})
+    name: Edge-to-edge (API ${{ matrix.api-level }}, ${{ matrix.config }})
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    # 4 configurations x ~75 scenes, and a wipe-and-reseed between seed groups. The default 360
-    # would cut a leg off mid-cell and report it as a failure of the app.
-    timeout-minutes: 240
+    # One configuration per job, so ~75 scenes rather than the ~300 a whole leg used to walk in one
+    # go. The old shape put all four configurations of API 36 in a single job that was still going
+    # after 13 minutes with no cell finished, against a 240-minute ceiling it would plausibly have
+    # reached. Fanning out costs an emulator boot and a build per job — minutes are free on a public
+    # repository — and buys a wall clock a nightly can actually finish in, plus a red that names the
+    # configuration that broke instead of the API level that contained it.
+    timeout-minutes: 90
     strategy:
       # Same reasoning as `instrumented`: the bottom of the matrix exists to answer "is this broken
-      # *below API 29*", and stopping at the first red destroys that answer.
+      # *below API 29*", and stopping at the first red destroys that answer. It matters more here —
+      # these cells are now siblings rather than steps inside one job.
       fail-fast: false
       matrix:
+        api-level: [26, 34, 36]
+        config: [portrait-gesture, portrait-threebutton, landscape-gesture, landscape-threebutton]
         include:
-          # API 26-28 has no gesture navigation at all, so this leg runs the two three-button
-          # configurations and `usable_configs` drops the other two **by name** rather than
-          # capturing them under a label the device never matched.
           - api-level: 26
             target: default
           - api-level: 34
             target: aosp_atd
           - api-level: 36
             target: aosp_atd
+        exclude:
+          # API 26-28 has no gesture navigation at all. `usable_configs` knows that and would skip
+          # the cell green, but only after booting an emulator to be told a platform fact — so the
+          # job is not created in the first place. Everything the script discovers at *runtime*, an
+          # image with no navigation overlays included, is deliberately left to the script.
+          - api-level: 26
+            config: portrait-gesture
+          - api-level: 26
+            config: landscape-gesture
     steps:
       - uses: actions/checkout@v7
 
@@ -241,14 +254,17 @@ jobs:
           disable-animations: true
           script: |
             ./gradlew installDebug
-            python3 scripts/edge-to-edge.py --out artifacts/edge-to-edge --assert-clean
+            python3 scripts/edge-to-edge.py --out artifacts/edge-to-edge --assert-clean \
+              --config ${{ matrix.config }}
 
       # if: always() because a red run is exactly when the screenshots and the report are wanted.
       - name: Upload matrix
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: edge-to-edge-api${{ matrix.api-level }}
+          # The configuration is in the name because ten jobs now upload, and two artifacts with
+          # one name is an error rather than a merge.
+          name: edge-to-edge-api${{ matrix.api-level }}-${{ matrix.config }}
           path: artifacts/edge-to-edge/
           retention-days: 14
 
