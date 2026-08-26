@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/srednimax/binky-app/compare/v1.9.0...v1.9.1) (2026-08-26)
+
+
+### Bug Fixes
+
+* **release:** Ukrainian is `uk` to Play, and the promoted build comes from Play ([ed16910](https://github.com/srednimax/binky-app/commit/ed169107b6ce1669c3c1e6875ca385bd3aab0988))
+
 ## [1.9.0](https://github.com/srednimax/binky-app/compare/v1.8.0...v1.9.0) (2026-08-26)
 
 
