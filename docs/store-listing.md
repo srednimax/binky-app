@@ -925,6 +925,174 @@ as the app having decided something.
 shipped in 1.3, 1.5 and 1.1 and every one of them is real; 500 characters is the constraint and a note
 that lists everything gets read as none of it. Add them only if something comes out.
 
+### 1.9.0 — the same span, with the timeline in it
+
+⚠️ **1.9.0 went to production carrying 1.8.0's notes**, on 2026-08-26: these were not written yet, and
+`play-metadata.py` takes the newest version in this section, which was 1.8.0. The nine below are what
+that release should have said. Whether they can replace the text on a live release is a Console
+question; if not, they ride to the next upload.
+
+**Still a span note, for the same reason 1.8.0's was.** Production sat on 1.0.0 until this release, so
+whoever takes the update sees this note and no other — 1.1 through 1.9 is all new *to them*. A note
+scoped to 1.9.0's own commits would list the timeline and three smaller things and imply the other
+eight releases never happened.
+
+**Four things 1.9.0 adds that an owner can see**, folded in rather than appended: the timeline, several
+photos on one droppings tray, weight entry in kilograms as well as grams, and a light/dark override
+that no longer only follows the phone. Three of them cost nothing — the droppings bullet turns one
+photo into photos, the weight bullet names its units, the look bullet gains *light or dark*. The
+timeline is the one that needed a line of its own.
+
+⚠️ **The housemates bullet came out to pay for it.** It is a real feature, and this is the second time
+this document has had to say that 500 characters is the constraint and a note listing everything gets
+read as none of it. It was the weakest of the nine: an instruction to go and tap something, where
+every other bullet states what the app now does.
+
+**Each locale uses the app's own word for the timeline**, read off `values-*/strings.xml` rather than
+translated afresh — `Oś czasu`, `Zeitleiste`, `Cronología`, `Chronologie`, `Cronologia`,
+`Linha do tempo`, `Časová osa`, `Хронологія`. A note naming a screen the reader cannot find is worse
+than one that stays vague. Register follows [`translator-brief.md`](translator-brief.md) unchanged:
+infinitives in German and French, informal singular in Spanish, Italian, Polish and Portuguese, formal
+plural in Czech and Ukrainian, second person genderless throughout.
+
+**Counts are measured, and Portuguese is again the tightest** at 482. Nothing here implies a diagnosis
+or infers a problem from silence — *flagged* is still the app's own framing (ADR-0001).
+
+**English** — 427/500:
+
+```
+• Nine languages, switched inside the app
+• Timeline: everything that happened, in order
+• Vet visits, medication courses and dose reminders
+• Scan documents and keep them with the visit
+• Care reminders for anything that recurs
+• Weight in grams or kilograms; changes flagged, up or down
+• Droppings: every shape in the tray, with photos
+• A new look, light or dark; Material You optional
+
+Still no account, no ads, no server.
+```
+
+**Polish** — 464/500:
+
+```
+• Dziewięć języków, przełączanych w samej aplikacji
+• Oś czasu: wszystko, co się wydarzyło, po kolei
+• Wizyty u weterynarza, kuracje i przypomnienia o dawkach
+• Skanowanie dokumentów i trzymanie ich przy wizycie
+• Przypomnienia o opiece, która się powtarza
+• Waga w gramach lub kilogramach; zmiany oznaczone
+• Bobki: tyle kształtów, ile jest w kuwecie, ze zdjęciami
+• Nowy wygląd, jasny lub ciemny; Material You do wyboru
+
+Nadal bez konta, bez reklam, bez serwera.
+```
+
+**German** — 472/500:
+
+```
+• Neun Sprachen, direkt in der App umschaltbar
+• Zeitleiste: alles Geschehene, der Reihe nach
+• Tierarztbesuche, Medikamentenkuren und Dosis-Erinnerungen
+• Unterlagen scannen und beim Besuch aufbewahren
+• Pflege-Erinnerungen für alles, was wiederkehrt
+• Gewicht in Gramm oder Kilogramm; Änderungen markiert
+• Köttel: so viele Formen, wie im Klo liegen, mit Fotos
+• Neue Gestaltung, hell oder dunkel; Material You optional
+
+Weiterhin kein Konto, keine Werbung, kein Server.
+```
+
+**Spanish** — 471/500:
+
+```
+• Nueve idiomas, que se cambian dentro de la app
+• Cronología: todo lo ocurrido, en orden
+• Visitas al veterinario, tratamientos y avisos de cada dosis
+• Escanea documentos y guárdalos junto a la visita
+• Avisos de cuidados que vuelven cada cierto tiempo
+• Peso en gramos o kilogramos; cambios señalados
+• Cagarrutas: todas las formas que haya en la bandeja, con fotos
+• Aspecto nuevo, claro u oscuro; Material You opcional
+
+Sigue sin cuenta, sin anuncios y sin servidor.
+```
+
+**French** — 452/500:
+
+```
+• Neuf langues, à changer dans l’app même
+• Chronologie : tout ce qui s’est passé, dans l’ordre
+• Visites vétérinaires, traitements et rappel par dose
+• Scanner les documents et les garder avec la visite
+• Rappels pour les soins qui reviennent
+• Poids en grammes ou kilogrammes ; écarts signalés
+• Crottes : toutes les formes du bac, avec photos
+• Nouvelle allure, claire ou sombre ; Material You au choix
+
+Toujours sans compte, sans pub, sans serveur.
+```
+
+**Italian** — 464/500:
+
+```
+• Nove lingue, da cambiare nell’app stessa
+• Cronologia: tutto quello che è successo, in ordine
+• Visite dal veterinario, cure e promemoria per ogni dose
+• Scansiona i documenti e tienili con la visita
+• Promemoria per le cure che tornano
+• Peso in grammi o chilogrammi; variazioni segnalate
+• Palline: tutte le forme che ci sono nella lettiera, con foto
+• Aspetto nuovo, chiaro o scuro; Material You a scelta
+
+Sempre senza account, senza pubblicità, senza server.
+```
+
+**Brazilian Portuguese** — 482/500:
+
+```
+• Nove idiomas, trocados dentro do próprio app
+• Linha do tempo: tudo o que aconteceu, em ordem
+• Consultas veterinárias, tratamentos e lembretes de dose
+• Digitalize documentos e guarde-os junto da consulta
+• Lembretes de cuidados que voltam de tempos em tempos
+• Peso em gramas ou quilogramas; variações sinalizadas
+• Bolinhas: todos os formatos que houver na caixa, com fotos
+• Visual novo, claro ou escuro; Material You opcional
+
+Continua sem conta, sem anúncios e sem servidor.
+```
+
+**Czech** — 436/500:
+
+```
+• Devět jazyků, přepínatelných přímo v aplikaci
+• Časová osa: vše, co se stalo, popořadě
+• Návštěvy veterináře, léčebné kúry a připomínky dávek
+• Naskenujte dokumenty a nechte je u návštěvy
+• Připomínky péče, která se vrací
+• Hmotnost v gramech nebo kilogramech; změny označené
+• Bobky: všechny tvary, které na záchodku jsou, i s fotkami
+• Nový vzhled, světlý nebo tmavý; Material You volitelně
+
+Stále bez účtu, bez reklam, bez serveru.
+```
+
+**Ukrainian** — 448/500:
+
+```
+• Девʼять мов, які перемикаються в самому застосунку
+• Хронологія: усе, що сталося, по порядку
+• Візити до ветеринара, курси ліків і нагадування про дози
+• Скануйте документи й тримайте їх при візиті
+• Нагадування про догляд, що повертається
+• Вага у грамах або кілограмах; зміни позначені
+• Котяхи: усі форми, які є в лотку, і фото
+• Новий вигляд, світлий або темний; Material You за бажанням
+
+Досі без облікового запису, без реклами, без сервера.
+```
+
 ---
 
 ## Open
