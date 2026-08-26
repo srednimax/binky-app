@@ -138,12 +138,38 @@ def api_level() -> int:
 # wrong name — see [usable_configs].
 GESTURE_MIN_API = 29
 
+# `POST_NOTIFICATIONS` is Android 13. Below it the permission does not exist, `pm grant` fails with
+# a non-zero exit, and there is nothing to grant anyway: notifications are on until an owner turns
+# them off, so the banner the grant below exists to avoid cannot appear. The first nightly matrix
+# run died here on API 26, one minute in.
+POST_NOTIFICATIONS_MIN_API = 33
+
 # The AOSP navigation-mode overlays, all declaring `android:category="…systemui.navbar"`, which is
 # what makes `enable-exclusive --category` a single call rather than an enable plus N disables.
 NAVBAR_OVERLAYS = {
     "gesture": "com.android.internal.systemui.navbar.gestural",
     "threebutton": "com.android.internal.systemui.navbar.threebutton",
 }
+
+# `cmd overlay list`, read once. Not every image that reports API 29+ actually ships the overlays:
+# the first nightly matrix run died one minute in on `enable-exclusive` returning 255 on the API 34
+# `aosp_atd` emulator, while API 36 on the *same* target went straight through. An emulator image is
+# free to omit a system overlay, and an API level is not a promise that it did not.
+_OVERLAY_LIST: "str | None" = None
+
+
+def navbar_overlay_present(nav: str) -> bool:
+    """Whether the overlay [set_nav_mode] would enable is installed at all.
+
+    Presence, deliberately not *enabled*: `cmd overlay list` prints `[x] <package>` for an enabled
+    overlay and `[ ] <package>` for an installed one that is off, and the gestural overlay is off on
+    every device the moment before it is turned on. Asking for `[x]` would drop every cell.
+    """
+    global _OVERLAY_LIST
+    if _OVERLAY_LIST is None:
+        result = subprocess.run(["adb", "shell", "cmd overlay list"], capture_output=True)
+        _OVERLAY_LIST = result.stdout.decode("utf-8", "replace") if result.returncode == 0 else ""
+    return NAVBAR_OVERLAYS[nav] in _OVERLAY_LIST
 
 
 def set_nav_mode(nav: str) -> None:
@@ -160,7 +186,24 @@ def set_nav_mode(nav: str) -> None:
     shell(f"cmd overlay enable-exclusive --category {NAVBAR_OVERLAYS[nav]}")
 
 
-def usable_configs(configs: "list[Config]") -> "tuple[list[Config], list[Config]]":
+def unreachable_reason(config: "Config") -> "str | None":
+    """Why this device cannot be put into `config`, or None if it can.
+
+    A reason rather than a boolean because it is printed and written into the report: "skipped" on
+    its own, three weeks later in a CI artifact, is indistinguishable from "nobody asked for it".
+    """
+    if config.nav != "gesture":
+        return None
+    if api_level() < GESTURE_MIN_API:
+        return f"gesture navigation needs API {GESTURE_MIN_API} (this is {api_level()})"
+    # MIUI drives navigation through `force_fsg_nav_bar` and never touches the overlays, which are
+    # all present and all disabled on that phone — so their absence would say nothing there.
+    if device_family() != "miui" and not navbar_overlay_present("gesture"):
+        return "no gestural navigation overlay is installed on this image, so the mode cannot be set"
+    return None
+
+
+def usable_configs(configs: "list[Config]") -> "tuple[list[Config], list[tuple[Config, str]]]":
     """Split the requested configs into the ones this device can be put into, and the rest.
 
     **A skipped cell and a silently wrong one are not the same result.** Below API 29 there is no
@@ -168,13 +211,21 @@ def usable_configs(configs: "list[Config]") -> "tuple[list[Config], list[Config]
     was — and the cell would capture, check and report "clean" under a name describing a
     configuration the device was never in. That is the failure [_PINNED] exists to prevent, arriving
     by a different road, and it is worse in CI where nobody is watching the screen.
+
+    **Nor is a skipped cell the same as a dead run.** An image that reports API 34 and has no
+    gestural overlay used to reach [set_nav_mode] and abort the whole matrix on a 255, taking the
+    three-button cells — which that image can perfectly well run — down with it. Unreachable is a
+    property of a cell, not of the run.
     """
-    if api_level() >= GESTURE_MIN_API:
-        return list(configs), []
-    return (
-        [config for config in configs if config.nav != "gesture"],
-        [config for config in configs if config.nav == "gesture"],
-    )
+    kept: list[Config] = []
+    dropped: list[tuple[Config, str]] = []
+    for config in configs:
+        reason = unreachable_reason(config)
+        if reason is None:
+            kept.append(config)
+        else:
+            dropped.append((config, reason))
+    return kept, dropped
 
 
 # The config the phone is currently pinned to, so a wipe can put the rotation back. `pm clear` kills
@@ -887,8 +938,9 @@ def reset_to_seeded() -> None:
     # this package. Granting it back is also the honest state: a seeded install stands in for an app
     # in use, not for one whose permission was just refused. The `empty` suite is the deliberate
     # exception and keeps the denied state, because there it is the truth of a first run.
-    shell(f"pm grant {PACKAGE} android.permission.POST_NOTIFICATIONS")
-    settle(0.5)
+    if api_level() >= POST_NOTIFICATIONS_MIN_API:
+        shell(f"pm grant {PACKAGE} android.permission.POST_NOTIFICATIONS")
+        settle(0.5)
     global _SEEDED
     _SEEDED = ""
 
@@ -1924,8 +1976,8 @@ def main() -> int:
         wanted = set(args.config.split(","))
         configs = [config for config in CONFIGS if config.name in wanted]
     configs, unsupported = usable_configs(configs)
-    for config in unsupported:
-        print(f"-- {config.name}: skipped, gesture navigation needs API {GESTURE_MIN_API} (this is {api_level()})")
+    for config, reason in unsupported:
+        print(f"-- {config.name}: skipped, {reason}")
     if not configs:
         parser.error(f"no requested configuration is reachable on API {api_level()}")
     scenes = [scene for scene in SCENES if scene.suite == args.suite]
@@ -1947,7 +1999,7 @@ def main() -> int:
             "family": device_family(),
             "api": api_level(),
             "model": shell("getprop ro.product.model").strip(),
-            "skipped_configs": [config.name for config in unsupported],
+            "skipped_configs": {config.name: reason for config, reason in unsupported},
         },
     }
     # Before the run rather than with the first cell's screenshots: the report is written in a
@@ -2105,4 +2157,14 @@ def run_matrix(
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except subprocess.CalledProcessError as exc:
+        # `CalledProcessError.__str__` is the command and the exit status and nothing else, so the
+        # device's own explanation — the part that says *why* — is captured and then thrown away.
+        # That is how the first nightly matrix arrived: two red cells reporting `exit status 1` and
+        # `exit status 255`, neither carrying the one line that would have named the cause.
+        detail = (exc.stderr or b"").decode("utf-8", "replace").strip()
+        if detail:
+            print(f"\n-- the device said: {detail}", file=sys.stderr)
+        raise
