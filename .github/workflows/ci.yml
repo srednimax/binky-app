@@ -210,8 +210,14 @@ jobs:
         include:
           - api-level: 26
             target: default
+          # `default`, not `aosp_atd`, and API 36 next door keeps ATD deliberately. The API 34 ATD
+          # image ships no `com.android.internal.systemui.navbar.*` overlays and no readable
+          # `secure navigation_mode`, so every cell on it was a configuration nothing could confirm
+          # the device was in — four red jobs saying exactly that. ATD strips SystemUI pieces to run
+          # faster, and how much it strips varies by level: the same target on API 36 has the
+          # overlays and runs all four cells. A full AOSP image has them at every level.
           - api-level: 34
-            target: aosp_atd
+            target: default
           - api-level: 36
             target: aosp_atd
         exclude:
