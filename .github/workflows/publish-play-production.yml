@@ -6,18 +6,34 @@ name: Publish to Play (production)
 #
 # The internal-track workflow (publish-play.yml) stays the automatic one, because a bad build there
 # is visible only to you. Nothing about that reasoning transfers here.
+#
+# ⚠️ This workflow PROMOTES; it does not build. The artifact it moves to production is the exact one
+# publish-play.yml already put on the internal track — same bytes, same signature, the copy you
+# actually tested. Rebuilding here was the old shape and it could never have worked: versionCode is
+# the commit count, so a rebuild of a released tag reproduces a code Play has already accepted on
+# internal, and Play permanently refuses a *new upload* of a versionCode it has seen. (Two tracks
+# SHARING a versionCode is normal and is exactly what promotion produces — the refusal is about
+# uploading the same code twice, not about where it ends up.) Promotion sidesteps that entirely and
+# removes the upload key from this workflow: nothing is signed here, so no keystore is materialised.
 on:
   workflow_dispatch:
     inputs:
       track:
-        description: 'Track — production reaches real owners; internal is the safe rehearsal'
+        description: 'Destination track — production reaches real owners'
         type: choice
         default: production
         options:
           - production
           - beta
           - alpha
+      from_track:
+        description: 'Source track holding the build to promote — internal is where every release lands'
+        type: choice
+        default: internal
+        options:
           - internal
+          - alpha
+          - beta
       rollout:
         # A choice, not free text: supply wants a FRACTION, so typing 10 to mean "10%" would ask
         # Play for 1000%. The options are the only values anyone actually wants.
@@ -31,6 +47,13 @@ on:
           - '0.2'
           - '0.5'
           - '1.0'
+      version_code:
+        # Blank is right whenever you dispatch from the release tag. It stops being right the moment
+        # `main` has moved on: the count would then name a build that was never uploaded, and the
+        # promotion fails on a version Play has never seen.
+        description: 'versionCode to promote — blank derives it from the checked-out ref'
+        type: string
+        required: false
       update_listing:
         description: 'Push descriptions + screenshots too — ONLY if store-listing.md changed'
         type: boolean
@@ -58,58 +81,32 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # versionCode is the commit count; a shallow checkout silently makes it 1.
+          # versionCode is the commit count; a shallow checkout silently makes it 1. Still required
+          # even though nothing is built here — the count is what names the build being promoted and
+          # the changelog file that accompanies it.
           fetch-depth: 0
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
-
-      - name: Materialise the upload key
-        env:
-          KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
-          STORE_PASSWORD: ${{ secrets.UPLOAD_STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+      - name: Resolve the versionCode being promoted
+        id: version
         run: |
           set -euo pipefail
-          if [ -z "${KEYSTORE_BASE64}" ]; then
-            echo "::error::UPLOAD_KEYSTORE_BASE64 is not set — see docs/RELEASING.md."
-            exit 1
+          code='${{ inputs.version_code }}'
+          if [ -z "${code}" ]; then
+            code="$(git rev-list --count HEAD)"
+            echo "Derived versionCode ${code} from $(git rev-parse --short HEAD)"
+          else
+            echo "Using the versionCode given in the dialog: ${code}"
           fi
-          keystore="${RUNNER_TEMP}/upload.jks"
-          printf '%s' "${KEYSTORE_BASE64}" | base64 -d > "${keystore}"
-          {
-            echo "binky.upload.storeFile=${keystore}"
-            echo "binky.upload.storePassword=${STORE_PASSWORD}"
-            echo "binky.upload.keyAlias=${KEY_ALIAS}"
-            echo "binky.upload.keyPassword=${KEY_PASSWORD}"
-          } >> local.properties
-
-      - name: Build the bundle
-        run: ./gradlew bundleRelease
-
-      # Same four checks as the internal workflow, and for the same reason: the artifact is read,
-      # never the config that was meant to produce it. They matter more here — this is the copy that
-      # reaches the public.
-      - name: Verify the artifact
-        run: |
-          python3 scripts/aab-version.py
-          python3 scripts/aab-permissions.py
-          python3 scripts/aab-locale.py
-          python3 scripts/aab-reflection.py
+          echo "code=${code}" >> "${GITHUB_OUTPUT}"
+          echo "::notice::Promoting versionCode ${code} from '${{ inputs.from_track }}' to '${{ inputs.track }}'"
 
       # Generated, not committed: docs/store-listing.md is the authored copy and this is a rendering
       # of it. Runs unconditionally because it also writes the release notes, which accompany every
-      # build; whether the *descriptions and screenshots* are uploaded is the update_listing input,
-      # applied at the supply step below.
+      # promotion — publish-play.yml uploads no metadata at all, so this is the first and only place
+      # the notes for this versionCode reach Play. Whether the *descriptions and screenshots* go up
+      # is the update_listing input, applied at the supply step below.
       - name: Render the listing metadata
-        run: python3 scripts/play-metadata.py --out fastlane/metadata/android
+        run: python3 scripts/play-metadata.py --out fastlane/metadata/android --version-code '${{ steps.version.outputs.code }}'
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -117,21 +114,32 @@ jobs:
           ruby-version: '3.3'
           bundler-cache: true
 
-      - name: Upload to Play
+      - name: Promote to Play
         env:
           SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
         run: |
           set -euo pipefail
-          # One edit, committed once: the bundle, the release notes and — when asked — the listing
+          # One edit, committed once: the promotion, the release notes and — when asked — the listing
           # all go up together, so Play reviews them as a single change instead of two. Splitting
           # them is what turns one review wait into two.
+          #
+          # skip_upload_aab/apk are what make this a promotion rather than an upload: supply moves the
+          # release already sitting on the source track instead of looking for a binary to send.
           args=(
-            --aab app/build/outputs/bundle/release/app-release.aab
-            --mapping app/build/outputs/mapping/release/mapping.txt
+            --track '${{ inputs.from_track }}'
+            --track_promote_to '${{ inputs.track }}'
+            --version_code '${{ steps.version.outputs.code }}'
+            --skip_upload_aab true
+            --skip_upload_apk true
             --metadata_path fastlane/metadata/android
-            --track '${{ inputs.track }}'
-            --rollout '${{ inputs.rollout }}'
           )
+          if [ '${{ inputs.rollout }}' = '1.0' ]; then
+            # A full release is `completed`; passing a rollout fraction alongside it is what Play
+            # rejects as a contradiction.
+            args+=(--track_promote_release_status completed)
+          else
+            args+=(--rollout '${{ inputs.rollout }}' --track_promote_release_status inProgress)
+          fi
           if [ '${{ inputs.update_listing }}' != 'true' ]; then
             # Release notes still go up — they belong to this build. Descriptions, screenshots and
             # graphics are left exactly as they are.
@@ -144,17 +152,3 @@ jobs:
             echo "::notice::DRY RUN — validating against Play, committing nothing"
           fi
           bundle exec fastlane supply "${args[@]}"
-
-      - name: Keep the bundle and its mapping
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: production-${{ github.run_id }}
-          path: |
-            app/build/outputs/bundle/release/app-release.aab
-            app/build/outputs/mapping/release/mapping.txt
-          retention-days: 90
-
-      - name: Remove the key
-        if: always()
-        run: rm -f "${RUNNER_TEMP}/upload.jks" local.properties
