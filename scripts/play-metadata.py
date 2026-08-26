@@ -72,7 +72,7 @@ APP_TAG = {
     "fr": "fr-FR",
     "it": "it-IT",
     "pt-BR": "pt-BR",
-    "uk": "uk-UA",
+    "uk": "uk",
 }
 
 LANGUAGE_HEADING = re.compile(r"^##\s+(?P<name>[^(\n]+?)(?:\s*\(.*\))?\s*$")

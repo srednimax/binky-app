@@ -216,9 +216,20 @@ promotion: it moves the release already sitting on `from_track` instead of looki
 | `track` | `production` | destination — also `beta` / `alpha` |
 | `from_track` | `internal` | source track holding the build being promoted |
 | `rollout` | `0.1` | fraction of users; `1.0` is everyone |
-| `version_code` | *(blank)* | which build to promote; blank derives it from the checked-out ref |
+| `version_code` | *(blank)* | which build to promote; blank asks Play what is on `from_track` |
 | `update_listing` | `false` | push descriptions + screenshots as well |
 | `dry_run` | `true` | validate against Play, commit nothing |
+
+**The versionCode comes from Play, not from git.** Every other workflow derives it from the commit
+count, and doing that here is wrong in a way that looks right: the count describes the *checkout*,
+while a promotion is about a build uploaded earlier. They agree only while `main` still points at the
+release tag, and stop agreeing the moment anything else merges — which is a normal state to be in and
+produces `Track 'internal' doesn't have any releases`, an error about the version filter that reads
+like an error about the track. So the workflow asks the source track what it is holding. Any ref
+works, and there is no dialog field to get right.
+
+⚠️ A **halted** release is not promotable — Play hides the Promote button and the API will not
+report it. Resume it in the Console first.
 
 ### One edit, one review
 
