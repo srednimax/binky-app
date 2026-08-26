@@ -925,12 +925,21 @@ as the app having decided something.
 shipped in 1.3, 1.5 and 1.1 and every one of them is real; 500 characters is the constraint and a note
 that lists everything gets read as none of it. Add them only if something comes out.
 
-### 1.9.0 — the same span, with the timeline in it
+### 1.9.1 — the same span, with the timeline in it
 
-⚠️ **1.9.0 went to production carrying 1.8.0's notes**, on 2026-08-26: these were not written yet, and
-`play-metadata.py` takes the newest version in this section, which was 1.8.0. The nine below are what
-that release should have said. Whether they can replace the text on a live release is a Console
-question; if not, they ride to the next upload.
+⚠️ **The build these notes ship with is 1.9.1**, not the 1.9.0 this heading named for the few hours
+between them on 2026-08-26. 1.9.1 is 1.9.0 plus the promote workflow, a Play locale code and this
+gate — workflows, scripts and docs, none of which an owner can see — so **the nine note bodies below
+stand unchanged and need no re-translation**, exactly as 1.8.0 recorded when it inherited 1.7's. Only
+the version they are entered against moved. The heading is renamed rather than duplicated so there is
+one authoritative copy of the nine.
+
+⚠️ **1.9.0 reached production carrying 1.8.0's notes**, on 2026-08-26: these were not written yet, and
+`play-metadata.py` takes the newest version in this section, which was 1.8.0 at the time. **Play does
+not allow release notes to be edited on a live release** — checked in the Console, not assumed — so
+that text cannot be corrected where it stands. Promoting 1.9.1 is the correction: a new release
+carries new notes, and these are them. `scripts/notes-gate.py` exists so the next release cannot
+repeat it, and it is what reddened `main` until this heading moved.
 
 **Still a span note, for the same reason 1.8.0's was.** Production sat on 1.0.0 until this release, so
 whoever takes the update sees this note and no other — 1.1 through 1.9 is all new *to them*. A note
