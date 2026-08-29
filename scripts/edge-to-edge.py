@@ -22,6 +22,7 @@ Usage:
     scripts/edge-to-edge.py --out DIR --scene home,weight-chart
     scripts/edge-to-edge.py --out DIR --locale pl         # the same walk, in Polish
     scripts/edge-to-edge.py --out DIR --assert-clean       # exit 1 on a defect, for CI
+    scripts/edge-to-edge.py --out DIR --retry-unreached 2  # re-walk a scene the driver missed
     scripts/edge-to-edge.py --restore                     # hand the phone back to auto-rotate
 
 The phone is left in whatever configuration the last cell used; `--restore` puts it back.
@@ -1945,10 +1946,30 @@ def reach_scene(scene: Scene) -> str | None:
     return None
 
 
-def run_scene(scene: Scene, config: Config, out_dir: Path) -> dict:
-    error = reach_scene(scene)
+def run_scene(scene: Scene, config: Config, out_dir: Path, retries: int = 0) -> dict:
+    # **A retry is only honest where the scene puts the phone back itself.** [reach_scene] opens a
+    # `full` scene with [return_to_home] and an `empty` one with its own [wipe], so a second attempt
+    # starts from a known screen however the first one died — that recovery is what makes retrying a
+    # missed tap different from retrying a broken screen.
+    #
+    # `keeps_watch_prompt` scenes get no retries, and the rule is about correctness rather than
+    # caution. They skip both of those steps deliberately (see [reach_scene]), so attempt two would
+    # start wherever attempt one stopped; worse, a half-finished attempt may already have answered
+    # the expiry prompt, which *deletes the row* — so the retry would shoot a stale screen and
+    # record it clean. That is the exact failure retrying is supposed to avoid, arriving by the
+    # other road. It costs three scenes: `watch-expiry` and both `mismatch` cells.
+    allowed = 1 + (0 if scene.keeps_watch_prompt else max(retries, 0))
+    for attempt in range(1, allowed + 1):
+        error = reach_scene(scene)
+        if error is None:
+            break
+        if attempt < allowed:
+            print(f"  {scene.name:28s} retrying ({attempt}/{allowed - 1})  {error[:70]}")
     if error is not None:
-        return {"scene": scene.name, "family": scene.family, "error": error}
+        result = {"scene": scene.name, "family": scene.family, "error": error}
+        if attempt > 1:
+            result["attempts"] = attempt
+        return result
 
     settle(0.8)
     shot = out_dir / f"{scene.name}.png"
@@ -1956,7 +1977,7 @@ def run_scene(scene: Scene, config: Config, out_dir: Path) -> dict:
 
     insets = read_insets()
     findings = check(dump_ui(), insets)
-    return {
+    result = {
         "scene": scene.name,
         "family": scene.family,
         "note": scene.note,
@@ -1964,6 +1985,11 @@ def run_scene(scene: Scene, config: Config, out_dir: Path) -> dict:
         "insets": {kind: rect.as_list() for kind, rect in insets.items()},
         "findings": findings,
     }
+    # Only when it is news. A report where every scene carries `"attempts": 1` is a report where the
+    # one scene that needed two is no easier to find than it was without the field.
+    if attempt > 1:
+        result["attempts"] = attempt
+    return result
 
 
 def main() -> int:
@@ -1997,6 +2023,18 @@ def main() -> int:
         ),
     )
     parser.add_argument("--restore", action="store_true", help="undo the pinned rotation and nav mode")
+    parser.add_argument(
+        "--retry-unreached",
+        type=int,
+        default=0,
+        metavar="N",
+        help=(
+            "re-walk a scene up to N more times when the driver fails to reach it. For the nightly, "
+            "where a missed tap on a slow emulator is the common red and re-running the whole cell "
+            "costs half an hour to repair one scene. Default 0: on real hardware a scene that "
+            "cannot be reached is a finding, and the run should say so the first time"
+        ),
+    )
     parser.add_argument(
         "--assert-clean",
         action="store_true",
@@ -2081,7 +2119,7 @@ def main() -> int:
     report_path = args.out / f"report-{args.suite}.json"
     set_dnd(True)
     try:
-        run_matrix(report, configs, scenes, args.out, args.suite, report_path)
+        run_matrix(report, configs, scenes, args.out, args.suite, report_path, args.retry_unreached)
     finally:
         # First in the block, because it is the one piece of cleanup that is about the *phone*
         # rather than about this run's output.
@@ -2099,6 +2137,19 @@ def main() -> int:
         # complete for every cell that finished.
         write_report(report_path, report)
     print(f"\nreport: {report_path}")
+    # **Green after a retry is not the same result as green**, and that difference is the whole risk
+    # of retrying at all: a regression that only reproduces one run in three stops reddening
+    # anything the moment a retry can paper over it. Every scene that needed a second attempt is
+    # named here on every run, asserting or not, so "clean" never quietly absorbs "flaky" — the same
+    # reason a SKIPPED scene fails the assert rather than counting as clean.
+    flaky = [
+        (cell["config"], scene["scene"], scene["attempts"])
+        for cell in report["configs"]
+        for scene in cell["scenes"]
+        if scene.get("attempts", 1) > 1
+    ]
+    for config_name, scene_name, attempts in flaky:
+        print(f"flaky: {config_name}/{scene_name} reached on attempt {attempts}")
     if args.assert_clean:
         drawn, broken = 0, 0
         for cell in report["configs"]:
@@ -2160,6 +2211,7 @@ def run_matrix(
     out: Path,
     suite: str,
     report_path: Path | None = None,
+    retries: int = 0,
 ) -> None:
     # `keeps_watch_prompt` scenes go first, exactly as they do in `screenshots.py`, and for the same
     # reason: the seed leaves one expired watch and every other scene opens by tapping `Close it`,
@@ -2204,10 +2256,11 @@ def run_matrix(
             # second portrait one.
             if suite == "full":
                 ensure_seed(scene.seed)
-            result = run_scene(scene, config, out_dir)
+            result = run_scene(scene, config, out_dir, retries)
             results.append(result)
+            again = f"  (attempt {result['attempts']})" if result.get("attempts", 1) > 1 else ""
             if "error" in result:
-                print(f"  {scene.name:28s} SKIPPED  {result['error'][:90]}")
+                print(f"  {scene.name:28s} SKIPPED  {result['error'][:90]}{again}")
             else:
                 hits = result["findings"]
                 drawn = [hit for hit in hits if hit["tier"] == "drawn"]
@@ -2215,7 +2268,7 @@ def run_matrix(
                 mark = "clean" if not hits else f"drawn={len(drawn)} touch={len(touch)} " + str(
                     sorted({hit["inset"] for hit in hits})
                 )
-                print(f"  {scene.name:28s} {mark}")
+                print(f"  {scene.name:28s} {mark}{again}")
         report["configs"].append(
             {
                 "config": config.name,
