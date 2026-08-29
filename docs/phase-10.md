@@ -190,6 +190,14 @@ at a time, and resource shrinking argues with nine locales. `mapping.txt` rides 
 `BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map`, so Play deobfuscates crashes with no
 upload step.
 
+> **Taken later, after 1.9.1 had shipped R8 to production.** `isShrinkResources = true` costs about
+> **55 KB of per-device download on ~8 MB — 0.7%**, so the size argument the paragraph above makes for
+> R8 does *not* transfer; what it buys is that 110 dead resources (Play-services sign-in UI, AppCompat
+> theming, Fragment animators — none of which a Compose app uses) stop riding along, and stop accruing
+> as dependencies change. The nine-locale worry was measured rather than argued away: all 811 strings
+> of all eight shipped locales survive in `base/resources.pb`, which is `aab-locale.py`'s answer and
+> it runs on the release path. The reasoning now lives in `app/build.gradle.kts`.
+
 Both artifact scripts were re-run against the minified bundle, which is the entire reason §3 goes first:
 `aab-permissions.py` still reads 8 permissions and 0 `<uses-feature>`, and §2's compiled-manifest check
 still finds zero `screenOrientation`.
