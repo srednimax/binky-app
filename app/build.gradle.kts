@@ -176,6 +176,11 @@ android {
             // configuration is a proof about a different artifact.
             if (releaseShapedDebug) {
                 isMinifyEnabled = true
+                // Follows the release build, for the reason stated above: a proof built against a
+                // different configuration is a proof about a different artifact. When resource
+                // shrinking went on in `release`, leaving it off here would have quietly made this
+                // build the *old* shape while still calling itself release-shaped.
+                isShrinkResources = true
                 proguardFiles(
                     getDefaultProguardFile("proguard-android-optimize.txt"),
                     "proguard-rules.pro",
@@ -207,10 +212,27 @@ android {
             // the original condition asked to watch. `app/proguard-rules.pro` records what was
             // checked and why it holds no keep rules.
             //
-            // `isShrinkResources` stays **false**, and not by omission: one variable at a time, and
-            // resource shrinking argues with nine locales and the string count `aab-locale.py`
-            // asserts. R8 alone takes the AAB from 12.3 MB to 8.1 MB.
+            // **Resource shrinking is on as of this change**, and it is the second variable rather
+            // than a second guess. The comment this replaces held it back — "one variable at a
+            // time, and resource shrinking argues with nine locales and the string count
+            // `aab-locale.py` asserts" — against a build where R8 itself was one release old. R8
+            // has since crossed to production intact, so the first variable is settled and the
+            // second one can move. Play Console asked for it by name in the same week
+            // ("Resource shrinking isn't enabled"), which is the recommendation arriving, not the
+            // reason.
+            //
+            // **The nine-locale worry was the right worry and it is answered by the artifact, not
+            // by this comment.** `aab-locale.py` reads every shipped string of every shipped locale
+            // out of `base/resources.pb` and asserts it is there, and it runs on the release path
+            // in `publish-play.yml` — so a shrink that ate a translation is a red publish rather
+            // than a quiet one. That gate is exactly what 1.0.1 was missing.
+            //
+            // No `android.r8.optimizedResourceShrinking` in `gradle.properties`: that flag is for
+            // AGP 8.12-8.13, and on 9.0.1 optimized shrinking is what `isShrinkResources` already
+            // means. R8 full mode likewise needs nothing — it is the default since AGP 8.0 and
+            // `android.enableR8.fullMode=false` is deliberately absent.
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             // Google holds the permanent *app signing* key; this is only the *upload* key proving
             // the artifact came from us, and an upload key can be reset (ADR-0009). Losing it is
