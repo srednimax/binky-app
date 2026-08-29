@@ -298,6 +298,62 @@ longer lists the constructor among what was removed, and on the phone the minifi
 This one did, and the file's opening claim — that it holds no keep rules — is amended rather than deleted,
 because *why* it held none for a day is still the useful part.
 
+### The baseline profile question, asked on the phone and closed — 2026-08-29
+
+The last item on the app-optimization list was whether Binky should ship an **app-specific baseline
+profile**. It should not, and the reason is a measurement rather than a preference.
+
+**Binky already ships a baseline profile.** `compileDebugArtProfile` / `compileReleaseArtProfile` merge
+the `baseline-prof.txt` that AndroidX artifacts carry into `assets/dexopt/baseline.prof` — 6.8 KB in the
+APK — and the installer acts on it: `dumpsys package dexopt` reads
+`[status=speed-profile] [reason=baseline]`. So the question was never "profile or no profile". It was
+whether adding *app* classes to a profile that is already there and already working buys anything.
+
+**Measured with `adb` alone, on the Xiaomi, against a `-PreleaseShapedDebug` build** — minified and
+non-debuggable, which is load-bearing twice over: a debuggable app is not AOT-compiled at all, so the
+whole experiment would have read as noise. Ten `am force-stop` + `am start -W` launches per state, first
+discarded, all confirming `LaunchState: COLD`; the figure is `TotalTime`, milliseconds, median of ten.
+
+| ART compilation state | how it was set | median | span |
+| --- | --- | ---: | --- |
+| `verify` — no AOT at all, the floor | `compile -m verify -f` | **259.5** | 246–277 |
+| `speed-profile` / `reason=baseline` — **what ships today** | reinstall, then let it settle | **241.5** | 226–264 |
+| `speed` — every method AOT, an absolute ceiling | `compile -m speed -f` | **267.5** | 243–276 |
+
+**The shipped state is already the fastest of the three, and compiling *everything* is 26 ms slower than
+it.** That is the whole answer. A baseline profile is a *subset* of what `speed` compiles, so `speed` is
+the strict upper bound on anything any profile could ever deliver — and that bound is **below** where the
+app already sits. The headroom an app-specific profile could capture is not small, it is negative. The
+bundled AndroidX profile is worth its 6.8 KB (18 ms, 6.9% against no AOT); a hand-generated one on top of
+it has nothing left to win.
+
+Cold start is **~242 ms**, comfortably inside Google's 500 ms "good" mark, on a mid-range phone, on the
+minified artifact owners actually install.
+
+⚠️ **Three ways this measurement lies if taken carelessly**, all three hit here before the numbers above
+were trusted:
+
+- **`compile -m speed-profile -f` silently degrades to `verify`** when no profile is present. It exits 0
+  and reports success. The state has to be read back out of `dumpsys package dexopt` — never assumed from
+  the command having run.
+- **`compile --reset` does not restore the baseline state.** It drops the app to
+  `status=verify [reason=install]`, which is the *pre*-dexopt state, not the post-install one.
+- **Baseline dexopt is deferred to the background after install.** Straight after `adb install` the app
+  reads `verify [reason=install]`; it only becomes `speed-profile [reason=baseline]` once the app has run.
+  A run started immediately after installing straddles the transition and measures neither state.
+
+**No `:baselineprofile` module was added, and `settings.gradle.kts` stays `include(":app")`.** The
+macrobenchmark route would have bought frame-accurate numbers at the price of the repo's first multi-module
+build, a **third** build shape beside `release` and `releaseShapedDebug` (generation needs `-dontobfuscate`
+and `-dontoptimize`), profile generation on a ROM whose family Google's own docs list as hostile, and a
+standing obligation to keep the profile from going stale — a failure that degrades silently. `am start -W`
+is coarser, and coarse was sufficient: the gate question was go/no-go, and the gap it had to resolve turned
+out to be *inverted*, not merely small. A sharper instrument would have measured the same nothing.
+
+**What would reopen this:** a startup path that grows materially — a heavier `Application`, work moved
+ahead of first frame, a large dependency — or a cold start that a person can feel. Re-run the three rows
+above before building anything; the recipe is four `adb` commands and needs no module.
+
 ## §4 — Several photos on a tray ✅ built 2026-08-24
 
 The feature is three lines of shape: the column becomes a join table, the join table is written per
