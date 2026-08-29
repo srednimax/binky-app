@@ -191,8 +191,14 @@ at a time, and resource shrinking argues with nine locales. `mapping.txt` rides 
 upload step.
 
 > **Taken later, after 1.9.1 had shipped R8 to production.** `isShrinkResources = true` costs about
-> **55 KB of per-device download on ~8 MB — 0.7%**, so the size argument the paragraph above makes for
-> R8 does *not* transfer; what it buys is that 110 dead resources (Play-services sign-in UI, AppCompat
+> **about 55 KB of per-device download — roughly 1.8%**, so the size argument the paragraph above makes
+> for R8 does *not* transfer;
+>
+> ⚠️ **The denominator is not the 8.1 MB AAB, and using that number understates this by 2.5×.**
+> **59% of the bundle file is `BUNDLE-METADATA/…/proguard.map`** — 4.77 MB compressed of `mapping.txt`,
+> which stays with Play to deobfuscate crashes and never reaches a device. What ships as app content is
+> **~3.2 MB**, less again after Play's locale and density splits. Quote the shipped figure, not the file
+> on disk; what it buys is that 110 dead resources (Play-services sign-in UI, AppCompat
 > theming, Fragment animators — none of which a Compose app uses) stop riding along, and stop accruing
 > as dependencies change. The nine-locale worry was measured rather than argued away: all 811 strings
 > of all eight shipped locales survive in `base/resources.pb`, which is `aab-locale.py`'s answer and
