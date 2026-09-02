@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/srednimax/binky-app/compare/v1.9.1...v1.9.2) (2026-09-02)
+
+
+### Bug Fixes
+
+* **art:** lay the feature graphic out for the crop Play actually applies ([47567b1](https://github.com/srednimax/binky-app/commit/47567b132fd549fa859fd57714a37b5f064b21de))
+
 ## [1.9.1](https://github.com/srednimax/binky-app/compare/v1.9.0...v1.9.1) (2026-08-26)
 
 
