@@ -56,7 +56,7 @@ for consistency rather than because those languages need it.
 | --- | --- |
 | Privacy policy URL | `https://srednimax.github.io/binky-app/privacy-policy.html` |
 | App icon (512²) | [`art/play-icon-512.png`](../art/play-icon-512.png) |
-| Feature graphic (1024×500) | [`art/play-feature-graphic.png`](../art/play-feature-graphic.png) |
+| Feature graphic (1024×500) | [`art/play-feature-graphic.png`](../art/play-feature-graphic.png) — **Play crops it to 16:9**, `object-fit: cover` on the search results card, so 68px of each side never shows. `make-feature-graphic.py` derives the layout from that and prints the measured margins; re-upload after any change to it |
 | Phone screenshots (1452×2582) | [`art/play-screenshots/`](../art/play-screenshots/) — **eight scenes × nine locales, light**, re-shot 2026-08-26. Upload in filename order: `1_home`, `2_weight`, `3_observations`, `4_timeline`, `5_care`, `6_medication-course`, `7_documents`, `8_backup`, each suffixed with its locale tag (`-en`, `-cs`, `-de`, `-es`, `-fr`, `-it`, `-pl`, `-pt-BR`, `-uk`) |
 | App category | Lifestyle |
 | Contact email | `binky.support@gmail.com` — the per-app support address, set in Store settings, not the account-level developer email |
