@@ -99,8 +99,13 @@ jobs:
 
       # if: always() so reports still upload when a step above failed —
       # that is exactly when you want to read them.
+      #
+      # continue-on-error for the reason spelled out on the edge-to-edge upload: an artifact is
+      # evidence about a verdict already reached, so GitHub's storage having a bad minute must not
+      # be able to redden a build whose tests and lint passed.
       - name: Upload reports
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
           name: reports
@@ -108,7 +113,10 @@ jobs:
             app/build/reports/
           retention-days: 14
 
+      # Same again, and nothing downstream consumes this: no job in any workflow calls
+      # download-artifact, so the APK is a convenience download for a human, never an input.
       - name: Upload debug APK
+        continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
           name: app-debug
@@ -183,8 +191,13 @@ jobs:
 
       # The name has to carry the API level: upload-artifact refuses to write the same
       # artifact name twice, so a shared name fails every leg after the first.
+      #
+      # continue-on-error for the same reason as the edge-to-edge upload below: these reports are
+      # evidence about a verdict the test step has already delivered, so a storage-side failure
+      # must not be able to turn a leg that passed into a leg that reads as broken.
       - name: Upload reports
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
           name: instrumented-reports-api${{ matrix.api-level }}
@@ -285,8 +298,17 @@ jobs:
             python3 scripts/edge-to-edge.py --out artifacts/edge-to-edge --assert-clean --retry-unreached 2 --config ${{ matrix.config }}
 
       # if: always() because a red run is exactly when the screenshots and the report are wanted.
+      #
+      # continue-on-error because the upload is the evidence, never the check. On 2026-09-07 a cell
+      # walked all 70 scenes clean and then went red on `Failed to CreateArtifact: ETIMEDOUT` —
+      # GitHub's storage endpoint, nothing the app or the driver did. Note *Create*: that is the
+      # first API call, before a byte of the 71 files moves, so uploading less would not have
+      # helped and neither would a longer timeout. A verdict this repository cannot influence must
+      # not be able to redden a nightly. Losing the artifact is already survivable — the step
+      # annotates, and `if-no-files-found: warn` means an empty directory only warns anyway.
       - name: Upload matrix
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
           # The configuration is in the name because ten jobs now upload, and two artifacts with
